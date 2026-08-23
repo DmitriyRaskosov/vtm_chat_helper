@@ -1,0 +1,17 @@
+---
+description: Стек проекта — Laravel API и Vue SPA, без Blade и web-маршрутов
+alwaysApply: true
+---
+
+# Стек
+
+Два приложения в одном репозитории:
+
+- **Backend:** Laravel 13 в Docker (Sail). PHP, PostgreSQL, Redis. Только JSON API.
+- **Frontend:** Vue 3 + Vite + Vue Router + Axios в каталоге `frontend/`.
+
+Не использовать Blade, Inertia и маршруты `routes/web.php`. Браузер ходит в Vue (`http://localhost:5173`), Vue вызывает `http://localhost:8080/api/*` (в dev Vite проксирует `/api`).
+
+Авторизация: Laravel Sanctum personal access tokens (`Authorization: Bearer`), не сессии и не CSRF-cookie.
+
+Роли: первый зарегистрированный пользователь — рассказчик (`storyteller`), остальные — игроки (`player`). Чат общий. ИИ и НПС ещё нет.

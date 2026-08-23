@@ -5,31 +5,24 @@ namespace App\Http\Controllers\Auth;
 use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Resources\UserResource;
 use App\Models\User;
-use Illuminate\Http\RedirectResponse;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\View\View;
+use Illuminate\Http\JsonResponse;
 
 class RegisterController extends Controller
 {
-    public function create(): View
-    {
-        return view('auth.register');
-    }
-
-    public function store(RegisterRequest $request): RedirectResponse
+    public function store(RegisterRequest $request): JsonResponse
     {
         $user = User::query()->create([
-            ...$request->validated(),
+            ...$request->safe()->only(['name', 'login', 'password']),
             'role' => User::query()->where('role', UserRole::Storyteller)->exists()
                 ? UserRole::Player
                 : UserRole::Storyteller,
         ]);
 
-        Auth::login($user);
-
-        $request->session()->regenerate();
-
-        return redirect()->route('chat');
+        return response()->json([
+            'token' => $user->createToken('spa')->plainTextToken,
+            'user' => UserResource::make($user)->resolve(),
+        ], 201);
     }
 }

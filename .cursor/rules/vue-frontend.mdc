@@ -1,0 +1,13 @@
+---
+description: Соглашения Vue-фронтенда
+globs: frontend/**/*.{js,vue,css}
+alwaysApply: false
+---
+
+# Vue frontend
+
+Код UI только в `frontend/`. Новые экраны — SFC в `frontend/src/views`, маршруты в `frontend/src/router.js`.
+
+HTTP только через `api` из `frontend/src/auth.js` (`baseURL: '/api'`). Токен в `localStorage`. Не ходить на Laravel web-URL и не подключать Blade.
+
+Панель рассказчика показывать только если `user.is_storyteller`.

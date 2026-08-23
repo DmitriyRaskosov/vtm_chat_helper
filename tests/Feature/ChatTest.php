@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Models\Message;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class ChatTest extends TestCase
@@ -15,8 +16,9 @@ class ChatTest extends TestCase
     {
         $user = User::factory()->create(['name' => 'Анна']);
 
-        $this->actingAs($user)
-            ->postJson('/chat/messages', ['body' => 'Каинит входит в Элизиум.'])
+        Sanctum::actingAs($user);
+
+        $this->postJson('/api/messages', ['body' => 'Каинит входит в Элизиум.'])
             ->assertCreated()
             ->assertJsonPath('message.body', 'Каинит входит в Элизиум.')
             ->assertJsonPath('message.author', 'Анна');
@@ -26,12 +28,9 @@ class ChatTest extends TestCase
             'body' => 'Каинит входит в Элизиум.',
         ]);
 
-        $this->actingAs($user)
-            ->get('/chat')
+        $this->getJson('/api/messages')
             ->assertOk()
-            ->assertSee('Каинит входит в Элизиум.')
-            ->assertSee('Анна')
-            ->assertDontSee('Панель рассказчика');
+            ->assertJsonPath('messages.0.body', 'Каинит входит в Элизиум.');
     }
 
     public function test_messages_from_another_user_are_visible(): void
@@ -44,20 +43,23 @@ class ChatTest extends TestCase
             'body' => 'Добрый вечер.',
         ]);
 
-        $this->actingAs($boris)
-            ->get('/chat')
+        Sanctum::actingAs($boris);
+
+        $this->getJson('/api/messages')
             ->assertOk()
-            ->assertSee('Добрый вечер.')
-            ->assertSee('Анна');
+            ->assertJsonPath('messages.0.body', 'Добрый вечер.')
+            ->assertJsonPath('messages.0.author', 'Анна')
+            ->assertJsonPath('messages.0.mine', false);
     }
 
-    public function test_storyteller_sees_the_empty_panel(): void
+    public function test_storyteller_profile_flag_is_true(): void
     {
         $st = User::factory()->storyteller()->create(['name' => 'СТ']);
 
-        $this->actingAs($st)
-            ->get('/chat')
+        Sanctum::actingAs($st);
+
+        $this->getJson('/api/user')
             ->assertOk()
-            ->assertSee('Панель рассказчика');
+            ->assertJsonPath('user.is_storyteller', true);
     }
 }

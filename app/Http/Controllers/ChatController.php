@@ -5,23 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Requests\StoreMessageRequest;
 use App\Models\Message;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\View\View;
 
 class ChatController extends Controller
 {
-    public function index(): View
-    {
-        $messages = Message::query()
-            ->with('user:id,name')
-            ->orderBy('id')
-            ->get();
-
-        return view('chat.index', compact('messages'));
-    }
-
-    public function messages(Request $request): JsonResponse
+    public function index(Request $request): JsonResponse
     {
         $afterId = $request->integer('after_id');
 
@@ -35,7 +23,7 @@ class ChatController extends Controller
         return response()->json(['messages' => $messages]);
     }
 
-    public function store(StoreMessageRequest $request): JsonResponse|RedirectResponse
+    public function store(StoreMessageRequest $request): JsonResponse
     {
         $message = $request->user()->messages()->create([
             'body' => $request->validated('body'),
@@ -43,11 +31,7 @@ class ChatController extends Controller
 
         $message->load('user:id,name');
 
-        if ($request->wantsJson()) {
-            return response()->json(['message' => $this->serialize($message)], 201);
-        }
-
-        return redirect()->route('chat');
+        return response()->json(['message' => $this->serialize($message)], 201);
     }
 
     /**

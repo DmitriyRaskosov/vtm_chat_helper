@@ -1,0 +1,13 @@
+---
+description: Соглашения Laravel API
+globs: app/**/*.php,routes/api.php,tests/Feature/**/*.php
+alwaysApply: false
+---
+
+# Laravel API
+
+Новые HTTP-эндпоинты только в `routes/api.php` (префикс `/api`). Контроллеры возвращают JSON, не `view()`.
+
+Защищённые маршруты: `auth:sanctum`. Тесты: `getJson` / `postJson` и `Sanctum::actingAs()` или `withToken()`.
+
+Не добавлять редиректы на `/login` и `/chat`. Ошибки валидации — JSON 422.

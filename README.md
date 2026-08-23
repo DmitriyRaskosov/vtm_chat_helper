@@ -7,9 +7,14 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Stack
+
+- Backend: Laravel 13 JSON API (Docker / Sail). Open http://localhost:8080/api
+- Frontend: Vue 3 SPA in `frontend/` (Vite). Open http://localhost:5173
+
 ## Local development (Docker)
 
-The app runs in Docker (Laravel Sail): PHP 8.4, PostgreSQL, Redis, Mailpit.
+The API runs in Docker (Laravel Sail): PHP 8.4, PostgreSQL, Redis, Mailpit.
 
 ```bash
 cp .env.example .env
@@ -22,9 +27,18 @@ docker compose exec laravel.test php artisan key:generate
 docker compose exec laravel.test php artisan migrate
 ```
 
+Frontend (on the host, Node.js). Port 5173 is not published by Docker — Vite must run locally:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
 After the stack is up:
 
-- App: http://localhost:8080
+- Vue UI: http://localhost:5173
+- Laravel API: http://localhost:8080/api
 - Mailpit: http://localhost:8025
 
 On Windows you can use `sail.cmd` instead of `./vendor/bin/sail`:

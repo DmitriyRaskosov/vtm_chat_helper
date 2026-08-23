@@ -6,7 +6,6 @@
 .phpactor.json
 .phpunit.result.cache
 /.codex
-/.cursor/
 /.idea
 /.nova
 /.phpunit.cache
@@ -21,6 +20,8 @@
 /storage/*.key
 /storage/pail
 /vendor
+/frontend/node_modules
+/frontend/dist
 _ide_helper.php
 Homestead.json
 Homestead.yaml

@@ -1,0 +1,3 @@
+# Cursor rules
+
+Backend: Laravel 13 JSON API (Sail). Frontend: Vue 3 SPA in /frontend. No Blade, no routes/web.php. Auth: Sanctum Bearer tokens. Details: .cursor/rules/

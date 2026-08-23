@@ -4,40 +4,36 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\LoginRequest;
-use Illuminate\Http\RedirectResponse;
+use App\Http\Resources\UserResource;
+use App\Models\User;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\View\View;
+use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\ValidationException;
 
 class LoginController extends Controller
 {
-    public function create(): View
+    public function store(LoginRequest $request): JsonResponse
     {
-        return view('auth.login');
-    }
+        $user = User::query()->where('login', $request->validated('login'))->first();
 
-    public function store(LoginRequest $request): RedirectResponse
-    {
-        $credentials = $request->validated();
-
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
-            return back()->withErrors([
-                'login' => 'Неверный логин или пароль.',
-            ])->onlyInput('login');
+        if (! $user || ! Hash::check($request->validated('password'), $user->password)) {
+            throw ValidationException::withMessages([
+                'login' => ['Неверный логин или пароль.'],
+            ]);
         }
 
-        $request->session()->regenerate();
-
-        return redirect()->intended(route('chat'));
+        return response()->json([
+            'token' => $user->createToken('spa')->plainTextToken,
+            'user' => UserResource::make($user)->resolve(),
+        ]);
     }
 
-    public function destroy(Request $request): RedirectResponse
+    public function destroy(Request $request): Response
     {
-        Auth::logout();
+        $request->user()->currentAccessToken()->delete();
 
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
-
-        return redirect()->route('login');
+        return response()->noContent();
     }
 }

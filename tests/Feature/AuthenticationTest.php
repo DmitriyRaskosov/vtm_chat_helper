@@ -5,54 +5,51 @@ namespace Tests\Feature;
 use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 class AuthenticationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_guest_is_sent_to_login(): void
+    public function test_guest_cannot_read_messages(): void
     {
-        $this->get('/')->assertRedirect('/login');
-        $this->get('/chat')->assertRedirect('/login');
+        $this->getJson('/api/messages')->assertUnauthorized();
     }
 
     public function test_user_can_register_with_any_login(): void
     {
-        $response = $this->post('/register', [
+        $response = $this->postJson('/api/register', [
             'name' => 'Рассказчик',
             'login' => 'st-1',
-            'password' => 'password',
-            'password_confirmation' => 'password',
+            'password' => 'ab',
+            'password_confirmation' => 'ab',
         ]);
 
-        $response->assertRedirect('/chat');
-        $this->assertAuthenticated();
+        $response->assertCreated()
+            ->assertJsonPath('user.login', 'st-1')
+            ->assertJsonPath('user.role', UserRole::Storyteller->value)
+            ->assertJsonPath('user.is_storyteller', true)
+            ->assertJsonStructure(['token', 'user']);
+
         $this->assertDatabaseHas('users', [
             'login' => 'st-1',
             'role' => UserRole::Storyteller->value,
         ]);
-        $this->get('/chat')->assertOk()->assertSee('Панель рассказчика');
     }
 
-    public function test_second_user_is_a_player_and_does_not_see_the_panel(): void
+    public function test_second_user_is_a_player(): void
     {
         User::factory()->storyteller()->create();
 
-        $this->post('/register', [
+        $this->postJson('/api/register', [
             'name' => 'Игрок',
             'login' => 'vampire.pc',
-            'password' => 'password',
-            'password_confirmation' => 'password',
-        ])->assertRedirect('/chat');
-
-        $this->assertDatabaseHas('users', [
-            'login' => 'vampire.pc',
-            'role' => UserRole::Player->value,
-        ]);
-        $this->get('/chat')
-            ->assertOk()
-            ->assertDontSee('Панель рассказчика');
+            'password' => 'ab',
+            'password_confirmation' => 'ab',
+        ])->assertCreated()
+            ->assertJsonPath('user.role', UserRole::Player->value)
+            ->assertJsonPath('user.is_storyteller', false);
     }
 
     public function test_user_can_login_by_login(): void
@@ -61,11 +58,32 @@ class AuthenticationTest extends TestCase
             'login' => 'player1',
         ]);
 
-        $this->post('/login', [
+        $this->postJson('/api/login', [
             'login' => 'player1',
             'password' => 'password',
-        ])->assertRedirect('/chat');
+        ])->assertOk()
+            ->assertJsonPath('user.login', 'player1')
+            ->assertJsonStructure(['token']);
+    }
 
-        $this->assertAuthenticatedAs($user);
+    public function test_user_can_logout_and_token_stops_working(): void
+    {
+        $user = User::factory()->create();
+        $token = $user->createToken('spa')->plainTextToken;
+
+        $this->withToken($token)->postJson('/api/logout')->assertNoContent();
+        $this->withToken($token)->getJson('/api/user')->assertUnauthorized();
+    }
+
+    public function test_authenticated_user_can_fetch_profile(): void
+    {
+        $user = User::factory()->storyteller()->create(['name' => 'СТ']);
+
+        Sanctum::actingAs($user);
+
+        $this->getJson('/api/user')
+            ->assertOk()
+            ->assertJsonPath('user.name', 'СТ')
+            ->assertJsonPath('user.is_storyteller', true);
     }
 }
