@@ -12,9 +12,22 @@
 - Backend: Laravel 13 JSON API (Docker / Sail). Open http://localhost:8080/api
 - Frontend: Vue 3 SPA in `frontend/` (Vite). Open http://localhost:5173
 
+## Storyteller copilot
+
+The first registered user is the **storyteller**. In the chat sidebar they can enter an NPC name and a situation prompt, generate **3 draft replies** (`POST /api/copilot/drafts`, `qwen3:8b`), edit a draft, and post it to the shared chat as that NPC (`npc_name` on `POST /api/messages`). Players only see the main chat.
+
+See [ROADMAP.md](ROADMAP.md) and [PLAN-COPILOT.md](PLAN-COPILOT.md).
+
 ## Local development (Docker)
 
-The API runs in Docker (Laravel Sail): PHP 8.4, PostgreSQL, Redis, Mailpit.
+The API runs in Docker (Laravel Sail): PHP 8.4, PostgreSQL with pgvector, Redis, Mailpit, and **Ollama** (no host port 11434). Pull models into the Ollama container, not Laravel:
+
+```bat
+docker compose exec ollama ollama pull nomic-embed-text
+docker compose exec ollama ollama pull qwen3:8b
+```
+
+Then register users again. Set `RAG_EMBEDDING_DRIVER=ollama` in `.env`. Run `php artisan queue:work` only if `RAG_INDEX_SYNC=false`.
 
 ```bash
 cp .env.example .env
@@ -40,6 +53,7 @@ After the stack is up:
 - Vue UI: http://localhost:5173
 - Laravel API: http://localhost:8080/api
 - Mailpit: http://localhost:8025
+- Ollama: only inside Docker (`http://ollama:11434` from Laravel)
 
 On Windows you can use `sail.cmd` instead of `./vendor/bin/sail`:
 

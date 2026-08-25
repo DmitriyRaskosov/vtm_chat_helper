@@ -1,162 +1,80 @@
-Структура проекта game-chat (Laravel 13 + Sail)
-================================================
+Структура проекта game-chat (Laravel 13 + Vue 3)
+=================================================
 
-Mailpit в Docker оставляем как есть и не используем.
-
-Это свежий каркас: чата, агента и своих моделей ещё нет.
-Есть только заготовка плюс модель User.
+Два приложения: JSON API в Docker (Sail) и Vue SPA в frontend/.
+Браузер: http://localhost:5173 (Vite на хосте). API: http://localhost:8080/api.
 
 
 КОРЕНЬ
 ------
-Точка входа в репозиторий, не «логика игры».
-
-composer.json / composer.lock  — список PHP-пакетов и зафиксированные версии
-compose.yaml                   — Docker: PHP, PostgreSQL, Redis, Mailpit
-sail.cmd                       — обёртка Sail под Windows
-.env                           — секреты и порты этой машины (не в git)
-.env.example                   — шаблон без секретов
-artisan                        — CLI Laravel (migrate, make:…). Запускать через Sail
-phpunit.xml                    — настройки тестов
-README.md                      — как поднять Docker
-public/                        — единственная папка, которую видит браузер
+composer.json / compose.yaml   — PHP 8.4, PostgreSQL+pgvector, Redis, Mailpit, Ollama
+.env / .env.example            — порты, RAG, Ollama
+sail.cmd                       — Sail под Windows
+artisan                        — CLI (через docker compose exec laravel.test)
+README.md                      — как поднять стек
+ROADMAP.md                     — этапы разработки
+PLAN-COPILOT.md                — план copilot (этапы 5–6)
+STRUCTURA.txt                  — этот файл
 
 
-app — ваш код приложения
-------------------------
-Здесь будут контроллеры чата, модели партии, позже агент. Сейчас почти пусто.
-
-Контроллер — класс, который принимает HTTP-запрос («открыли /», «отправили
-сообщение») и решает, что вернуть: HTML, JSON, редирект. Маршруты Laravel
-читает в routes/, а работу делает контроллер.
-
-Модель — PHP-класс про одну сущность в БД: строка таблицы ↔ объект.
-User — пользователь. Позже: Conversation, Message, GameState.
-Это не «файл БД», а способ читать и писать таблицы из кода.
-
-Провайдер — место «при старте приложения подключи вот это»: биндинги,
-макросы, регистрация сервисов. Не страница сайта.
-
-Сейчас внутри:
-
-  Http/Controllers/Controller.php  — пустой базовый класс. Свои контроллеры
-                                     будут наследоваться от него.
-  Models/User.php                  — пользователь: имя, email, пароль;
-                                     нужен для входа, когда подключим auth.
-  Providers/AppServiceProvider.php — пустая заготовка; почти всё в Laravel 11+
-                                     живёт в bootstrap/app.php.
-
-Папок Http/Middleware, Jobs, Ai ещё нет — появятся, когда понадобятся.
+frontend/ — Vue 3 SPA
+---------------------
+src/views/ChatView.vue    — чат + панель рассказчика (copilot)
+src/auth.js               — axios + Sanctum token
+vite.config.js            — прокси /api → localhost:8080
+Запуск: cd frontend && npm run dev (порт 5173, не в Docker)
 
 
-bootstrap — запуск фреймворка
------------------------------
-Не «ваш сайт», а как Laravel собирается при каждом запросе.
+app/ — backend
+--------------
+Http/Controllers/
+  ChatController.php      — GET/POST /api/messages
+  CopilotController.php   — POST /api/copilot/drafts (storyteller)
+  RagSearchController.php — GET /api/rag/search (storyteller)
 
-  app.php       — маршруты (web.php, artisan, /up), middleware,
-                  как отдавать JSON при ошибках.
-  providers.php — список провайдеров (AppServiceProvider).
-  cache/        — сгенерированные services.php, packages.php.
-                  Не править руками. Это кэш, не логика игры.
+Http/Middleware/EnsureStoryteller.php
 
+Models/
+  User.php                — login, role (storyteller | player)
+  Message.php             — body, npc_name (реплика от НПС)
+  RagChunk.php            — векторный индекс для RAG
 
-config — настройки без кода фич
--------------------------------
-PHP-массивы: что читать из .env. Меняете поведение (драйвер БД, почта,
-очередь), не страницы.
+Rag/
+  RagIndexer.php          — индексация сообщений и лора
+  RagSearcher.php         — поиск по pgvector
+  OllamaEmbeddingProvider.php
 
-  app.php          — имя / окружение
-  database.php     — PostgreSQL
-  queue.php        — очереди (потом для агента)
-  mail.php         — почта (Mailpit в Docker, мы не используем)
-  auth.php
-  session.php
-  cache.php
-  filesystems.php
-  logging.php
-  services.php
+Llm/
+  OllamaChatProvider.php  — qwen3:8b
+  NpcCopilotService.php   — сборка промпта + 3 черновика
 
+Jobs/IndexRagMessageJob.php
 
-database — схема и тестовые данные
-----------------------------------
-Не «база», а как её создать и наполнить. Живые данные — в PostgreSQL в Docker.
-
-  migrations/              — пошаговые изменения таблиц.
-                             Сейчас: users (+ password_reset_tokens, sessions),
-                             cache, jobs (очередь).
-  factories/UserFactory.php — фейковые пользователи для тестов.
-  seeders/DatabaseSeeder.php — «залить демо-данные»; сейчас почти пустой.
+Enums/RagSourceType.php   — message, lore, npc, relationship (последние — задел)
 
 
-routes — карта URL и команд
----------------------------
-«Какой адрес → какая функция».
-
-  web.php     — браузер. Сейчас один маршрут: / → view welcome
-                (приветствие Laravel).
-  console.php — свои artisan-команды по расписанию; заготовка.
-
-API-файла нет; в bootstrap/app.php уже заложено, что /api/* может
-отвечать JSON.
+database/migrations/
+  messages                — user_id, body, npc_name
+  rag_chunks              — embedding vector(768), HNSW index
 
 
-resources — то, что видит человек (и фронт)
-------------------------------------------
-  views/welcome.blade.php — HTML стартовой страницы (шаблон Blade).
-  css/app.css, js/app.js  — заготовки стилей и JS.
-
-Чат UI позже будет здесь (views + js), не в vendor.
+routes/api.php            — единственные HTTP-маршруты (без web.php / Blade)
 
 
-public — вход с интернета
--------------------------
-Nginx/Sail отдаёт только это.
-
-  index.php   — каждый HTTP-запрос начинается здесь, дальше Laravel.
-  .htaccess   — Apache (у нас Docker/Sail, почти не важно).
-  robots.txt  — для поисковиков.
-
-Картинки и собранный фронт тоже кладут сюда.
-Не класть сюда .env и app/.
+config/
+  rag.php, ollama.php, copilot.php
 
 
-storage — файлы, которые пишет приложение
------------------------------------------
-Логи, сессии, кэш скомпилированных Blade, загрузки. Не исходники.
-
-  storage/logs           — смотреть ошибки
-  framework/views        — кэш шаблонов (не править)
+tests/Feature/
+  AuthenticationTest, ChatTest, RagSearchTest, CopilotTest
 
 
-tests — автопроверки
---------------------
-  TestCase.php              — база для тестов.
-  Feature/ExampleTest.php   — «сайт отвечает 200 на /».
-  Unit/ExampleTest.php      — заглушка.
+Как склеивается copilot
+-----------------------
+Рассказчик → POST /api/copilot/drafts
+  → последние сообщения чата + RAG (nomic-embed-text)
+  → Ollama qwen3:8b → 3 черновика JSON
+Рассказчик правит → POST /api/messages { body, npc_name }
+  → чат для всех, author = имя НПС, RAG-индекс сообщения
 
-Позже: «сообщение сохранилось», «агент вызвался».
-
-
-vendor — чужой код
-------------------
-То, что поставил Composer: Laravel, Sail, Symfony, PHPUnit.
-Не редактировать. Тысячи файлов — норма.
-
-
-Как это склеивается на один запрос
-----------------------------------
-Браузер
-  → public/index.php
-  → bootstrap/app.php
-  → routes/web.php  (маршрут /)
-  → сейчас сразу view('welcome') без своего контроллера
-  → resources/views/welcome.blade.php
-
-Модели и БД на главной ещё не участвуют.
-
-Когда появится чат:
-  маршрут в routes/web.php
-  → контроллер в app/Http/Controllers
-  → модели в app/Models
-  → таблицы из database/migrations
-  → ответ view или JSON.
+Ollama только внутри Docker: http://ollama:11434 (порт 11434 не на хосте).

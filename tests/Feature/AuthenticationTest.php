@@ -72,6 +72,9 @@ class AuthenticationTest extends TestCase
         $token = $user->createToken('spa')->plainTextToken;
 
         $this->withToken($token)->postJson('/api/logout')->assertNoContent();
+
+        $this->app['auth']->forgetGuards();
+
         $this->withToken($token)->getJson('/api/user')->assertUnauthorized();
     }
 

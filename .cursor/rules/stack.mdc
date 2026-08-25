@@ -15,3 +15,5 @@ alwaysApply: true
 Авторизация: Laravel Sanctum personal access tokens (`Authorization: Bearer`), не сессии и не CSRF-cookie.
 
 Роли: первый зарегистрированный пользователь — рассказчик (`storyteller`), остальные — игроки (`player`). Чат общий. ИИ и НПС ещё нет.
+
+PostgreSQL с **pgvector**. Ollama в Docker: эмбеддинги `nomic-embed-text`, генерация `qwen3:8b`. Pull моделей — в контейнер `ollama`, не в `laravel.test`.
