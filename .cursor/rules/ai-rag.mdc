@@ -1,0 +1,34 @@
+---
+description: Ollama, RAG и copilot — две модели, индексация, промпт
+globs: app/Rag/**/*.php,app/Llm/**/*.php,config/{rag,ollama,copilot}.php
+alwaysApply: false
+---
+
+# Ollama и RAG
+
+## Две модели — разные роли
+
+| Модель | Назначение | Где |
+|--------|------------|-----|
+| `nomic-embed-text` | Векторизация текста (768-d) | `OllamaEmbeddingProvider`, RAG |
+| `qwen3:8b` | Генерация черновиков | `OllamaChatProvider`, `NpcCopilotService` |
+
+Не путать: эмбеддинги не «отвечают» в чат; чат-модель не пишет в `rag_chunks`.
+
+## Индексация
+
+`RagIndexer::indexMessage` — после каждого сообщения. Канон в `messages`, производный слой в `rag_chunks` (`source_type`, `source_id`, `embedding`).
+
+`RagSearcher` — cosine nearest neighbors в pgvector. Copilot ищет по промпту рассказчика, тип `message` (не `lore` в текущем MVP).
+
+## Copilot prompt (`NpcCopilotService`)
+
+- **system** (англ.): VtM assistant, JSON `{"drafts":[…]}`.
+- **user**: имя НПС, промпт рассказчика, до N RAG-чанков, до 30 последних сообщений чата.
+
+Файлового лора и карточек НПС в контексте пока нет.
+
+## Artisan
+
+- `rag:embed-ping`, `llm:ping` — smoke Ollama из контейнера Laravel.
+- `rag:index-lore` — ручной чанк лора (copilot его пока не использует в search).

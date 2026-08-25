@@ -1,3 +1,7 @@
 # Cursor rules
 
-Backend: Laravel 13 JSON API (Sail). Frontend: Vue 3 SPA in /frontend. No Blade, no routes/web.php. Auth: Sanctum Bearer tokens. Details: .cursor/rules/
+Backend: Laravel 13 JSON API (Sail). Frontend: Vue 3 SPA in /frontend. No Blade, no routes/web.php. Auth: Sanctum Bearer tokens.
+
+Ollama in Docker: nomic-embed-text (RAG), qwen3:8b (storyteller copilot). Storyteller copilot: 3 NPC draft replies, post with npc_name.
+
+Details: .cursor/rules/ (stack.mdc always applies; laravel-api, vue-frontend, ai-rag by glob).
