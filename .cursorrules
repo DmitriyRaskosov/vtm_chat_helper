@@ -4,4 +4,6 @@ Backend: Laravel 13 JSON API (Sail). Frontend: Vue 3 SPA in /frontend. No Blade,
 
 Ollama in Docker: nomic-embed-text (RAG), qwen3:8b (storyteller copilot). Storyteller copilot: 3 NPC draft replies, post with npc_name.
 
-Details: .cursor/rules/ (stack.mdc always applies; laravel-api, vue-frontend, ai-rag by glob).
+**Documentation:** canonical narrative docs in `docs/` (Obsidian vault). Update relevant `docs/` notes when changing behavior, API, setup, or architecture. See `docs/Home.md`.
+
+Coding conventions: `.cursor/rules/` (stack.mdc, project-map.mdc, docs-obsidian.mdc always apply; laravel-api, vue-frontend, ai-rag by glob).

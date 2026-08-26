@@ -10,20 +10,8 @@ alwaysApply: false
 
 Защищённые маршруты: `auth:sanctum`. Только для рассказчика: middleware `storyteller` (`EnsureStoryteller`).
 
-Тесты: `getJson` / `postJson`, `Sanctum::actingAs()` или `withToken()`. Для Ollama в feature-тестах — `Http::fake` на `config('ollama.url').'/api/chat'`, не реальный контейнер. RAG в тестах: `RAG_EMBEDDING_DRIVER=stub` в `phpunit.xml`.
+Тесты: `getJson` / `postJson`, `Sanctum::actingAs()` или `withToken()`. Ollama в feature-тестах — `Http::fake` на `config('ollama.url').'/api/chat'`. RAG: `RAG_EMBEDDING_DRIVER=stub` в `phpunit.xml`.
 
 Не добавлять редиректы на `/login` и `/chat`. Ошибки валидации — JSON 422.
 
-## Ключевые эндпоинты
-
-- `GET/POST /api/messages` — чат; у рассказчика опционально `npc_name` (реплика от имени НПС, `author` = имя НПС).
-- `POST /api/copilot/drafts` — `{ npc_name, prompt }` → `{ drafts: string[] }` (`NpcCopilotService` + `OllamaChatProvider`).
-- `GET /api/rag/search?q=…&types[]=message` — семантический поиск по `rag_chunks`.
-
-## Слои
-
-- `app/Rag/` — `RagIndexer`, `RagSearcher`, `EmbeddingProvider` (ollama | stub).
-- `app/Llm/` — `ChatProvider`, `OllamaChatProvider`, `NpcCopilotService`.
-- `app/Jobs/IndexRagMessageJob` — индексация после `POST /messages` (`RAG_INDEX_SYNC`).
-
-Конфиг: `config/rag.php`, `config/ollama.php`, `config/copilot.php`.
+Канон API: `docs/API/`. Слои backend: `docs/Architecture/Backend.md`.

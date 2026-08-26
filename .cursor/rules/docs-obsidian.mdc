@@ -1,0 +1,45 @@
+---
+description: Obsidian docs в docs/ — канон; обновлять при каждом изменении кода
+alwaysApply: true
+---
+
+# Документация (Obsidian)
+
+Каноническая narrative-документация: vault `docs/` (Obsidian markdown). Hub: `docs/Home.md`. Не дублировать длинные описания в README или rules — только ссылки.
+
+## Когда обновлять docs
+
+В **той же задаче**, что и код, обновить релевантные заметки:
+
+| Область кода | Заметки |
+|--------------|---------|
+| `routes/api.php`, auth controllers | `docs/API/Auth.md`, `docs/API/Overview.md` |
+| messages, ChatController | `docs/API/Messages.md`, `docs/Features/Chat.md` |
+| copilot, NpcCopilotService, config/copilot.php | `docs/API/Copilot.md`, `docs/Features/Copilot.md` |
+| `app/Rag/**`, rag config, IndexRagMessageJob | `docs/API/RAG.md`, `docs/Architecture/Backend.md` |
+| `app/Llm/**`, ollama config | `docs/Architecture/Backend.md`, `docs/Features/Copilot.md` |
+| `frontend/**`, ChatView copilot UI | `docs/Architecture/Frontend.md`, `docs/Features/Copilot.md` |
+| compose.yaml, Sail, Ollama | `docs/Development/Setup.md` |
+| `.env.example` | `docs/Development/Environment.md` |
+| phpunit, feature tests conventions | `docs/Development/Testing.md` |
+| roadmap, отложенные фичи | `docs/Project/Roadmap.md` |
+| роли storyteller/player | `docs/Project/Roles.md` |
+| структура каталогов, новые слои | `docs/Meta/Structure.md` |
+
+## Что обновлять в заметке
+
+- Поведение и контракт API (path, body, response, errors, auth)
+- UX и поток данных при изменении UI или copilot
+- Setup/env при изменении запуска или переменных
+- Roadmap статус при готовности / отложении / работе над фичей
+
+## Формат
+
+- Markdown + `[[wikilinks]]` между заметками в `docs/`
+- Mermaid для sequence/flow при необходимости
+- Новый эндпоинт или фича: секция в API/Feature заметке или новая заметка + ссылка из `docs/Home.md` или `docs/API/Overview.md`
+
+## Не делать
+
+- Не дублировать narrative-документацию в корне репозитория — только `docs/`
+- Не раздувать `.cursor/rules/*.mdc` narrative-текстом — rules = coding conventions; продукт = `docs/`

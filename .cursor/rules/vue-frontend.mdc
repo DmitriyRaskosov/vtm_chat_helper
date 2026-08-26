@@ -12,15 +12,4 @@ HTTP только через `api` из `frontend/src/auth.js` (`baseURL: '/api'
 
 Запуск: `cd frontend && npm run dev` (порт 5173 на хосте).
 
-## Панель рассказчика (`ChatView.vue`)
-
-Показывать только если `user.is_storyteller`. Двухколоночный layout: чат + `aside.storyteller-panel`.
-
-Copilot:
-
-1. Поля `npc_name`, ситуационный `prompt`.
-2. `POST /api/copilot/drafts` — три черновика; показывать loading и ошибки API.
-3. Выбор черновика, правка в textarea.
-4. `POST /api/messages` с `{ body, npc_name }` — отправка в общий чат.
-
-Игроки видят только основной чат и свой composer; панель copilot не рендерить.
+Канон UI и copilot panel: `docs/Architecture/Frontend.md`, `docs/Features/Copilot.md`.

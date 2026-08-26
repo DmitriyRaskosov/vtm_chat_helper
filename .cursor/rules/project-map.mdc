@@ -1,0 +1,47 @@
+---
+description: Карта репозитория — где что лежит, тесты, out of scope
+alwaysApply: true
+---
+
+# Project map
+
+Полная карта: `docs/Meta/Structure.md`. Narrative: `docs/Home.md`.
+
+## Корень
+
+`compose.yaml`, `sail.cmd`, `.env.example` — Sail (PHP 8.4, pgvector, Redis, Mailpit, Ollama). Artisan: `docker compose exec laravel.test php artisan …`
+
+## HTTP
+
+Только `routes/api.php` + `bootstrap/app.php` (alias middleware `storyteller`). Без `web.php`, Blade, Inertia.
+
+## Backend (`app/`)
+
+| Путь | Назначение |
+|------|------------|
+| `Http/Controllers/` | Chat, Copilot, RagSearch, Auth |
+| `Http/Middleware/EnsureStoryteller.php` | ST-only routes |
+| `Rag/` | RagIndexer, RagSearcher, EmbeddingProvider |
+| `Llm/` | OllamaChatProvider, NpcCopilotService |
+| `Jobs/IndexRagMessageJob.php` | RAG после сообщения |
+| `Enums/RagSourceType.php` | message, lore (+ npc, relationship — задел) |
+
+Конфиг: `config/rag.php`, `config/ollama.php`, `config/copilot.php`.
+
+## Frontend (`frontend/`)
+
+`src/views/`, `src/auth.js`, `src/router.js`, `styles.css`. Vite на хосте: `cd frontend && npm run dev`.
+
+## Database
+
+`database/migrations/`, factories. Тестовая DB: `testing` (compose init script).
+
+## Тесты
+
+`tests/Feature/`: Authentication, Chat, Copilot, RagSearch. `UserFactory::storyteller()`, password `password`. Ollama: `Http::fake` на `config('ollama.url').'/api/chat'`. RAG: `stub` в `phpunit.xml`.
+
+## Out of scope (до этапа 4)
+
+Таблицы `npcs`/`events`/`relationships`, `world/`, streaming, `laravel/ai`. См. `docs/Project/Roadmap.md`.
+
+При изменении структуры каталогов — обновить `docs/Meta/Structure.md`.

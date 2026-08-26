@@ -1,0 +1,29 @@
+# Стек
+
+Два приложения в одном репозитории:
+
+- **Backend:** Laravel 13 в Docker (Sail). PHP 8.4, PostgreSQL + **pgvector**, Redis, Mailpit, **Ollama**. Только JSON API.
+- **Frontend:** Vue 3 + Vite + Vue Router + Axios в каталоге `frontend/`. Vite на **хосте** (порт 5173), не в Docker.
+
+Не использовать Blade, Inertia и маршруты `routes/web.php`. Браузер: `http://localhost:5173`, API: `http://localhost:8080/api/*` (в dev Vite проксирует `/api`).
+
+Авторизация: Laravel Sanctum personal access tokens (`Authorization: Bearer`), не сессии и не CSRF-cookie.
+
+Роли: первый зарегистрированный пользователь — **рассказчик** (`storyteller`), остальные — **игроки** (`player`). Общий чат `messages`. Подробнее: [[Project/Roles]].
+
+## ИИ (Ollama в Docker)
+
+- Сервис `ollama` в `compose.yaml`, том `sail-ollama`. Порт **11434 не на хост** — Laravel ходит на `http://ollama:11434`.
+- **nomic-embed-text** — эмбеддинги (768-d) для RAG. **qwen3:8b** — генерация черновиков copilot.
+- Pull моделей только в контейнер `ollama`: `docker compose exec ollama ollama pull …`
+- Env: см. [[Development/Environment]].
+
+## RAG
+
+Сообщения чата индексируются в `rag_chunks` (вектор + HNSW). `GET /api/rag/search` — только рассказчик. Copilot при генерации подмешивает RAG + последние сообщения. См. [[API/RAG]], [[Architecture/Backend]].
+
+## Copilot (рассказчик)
+
+`POST /api/copilot/drafts` → 3 черновика реплики НПС (имя вводится вручную, без таблицы `npcs`). Отправка в чат: `POST /api/messages` с `npc_name` + `body`. UI — боковая панель в `ChatView.vue`. См. [[Features/Copilot]].
+
+Этап 4 (мир: лор-файлы, НПС в БД, граф, события) — **отложен**. См. [[Project/Roadmap]].

@@ -5,30 +5,8 @@ alwaysApply: true
 
 # Стек
 
-Два приложения в одном репозитории:
+Канон narrative: `docs/Architecture/Stack.md`, `docs/Project/Roles.md`, `docs/Project/Roadmap.md`.
 
-- **Backend:** Laravel 13 в Docker (Sail). PHP 8.4, PostgreSQL + **pgvector**, Redis, Mailpit, **Ollama**. Только JSON API.
-- **Frontend:** Vue 3 + Vite + Vue Router + Axios в каталоге `frontend/`. Vite на **хосте** (порт 5173), не в Docker.
+Кратко: Laravel 13 API (Sail) + Vue 3 SPA в `frontend/`. Sanctum Bearer. Не Blade, не `routes/web.php`. Vite на хосте (5173), API `http://localhost:8080/api/*`.
 
-Не использовать Blade, Inertia и маршруты `routes/web.php`. Браузер: `http://localhost:5173`, API: `http://localhost:8080/api/*` (в dev Vite проксирует `/api`).
-
-Авторизация: Laravel Sanctum personal access tokens (`Authorization: Bearer`), не сессии и не CSRF-cookie.
-
-Роли: первый зарегистрированный пользователь — **рассказчик** (`storyteller`), остальные — **игроки** (`player`). Общий чат `messages`.
-
-## ИИ (Ollama в Docker)
-
-- Сервис `ollama` в `compose.yaml`, том `sail-ollama`. Порт **11434 не на хост** — Laravel ходит на `http://ollama:11434`.
-- **nomic-embed-text** — эмбеддинги (768-d) для RAG. **qwen3:8b** — генерация черновиков copilot.
-- Pull моделей только в контейнер `ollama`: `docker compose exec ollama ollama pull …`
-- В `.env`: `RAG_EMBEDDING_DRIVER=ollama`, `OLLAMA_URL=http://ollama:11434`. В `phpunit.xml` — `stub`, тесты без Ollama.
-
-## RAG
-
-Сообщения чата индексируются в `rag_chunks` (вектор + HNSW). `GET /api/rag/search` — только рассказчик. Copilot при генерации подмешивает RAG + последние сообщения.
-
-## Copilot (рассказчик)
-
-`POST /api/copilot/drafts` → 3 черновика реплики НПС (имя вводится вручную, без таблицы `npcs`). Отправка в чат: `POST /api/messages` с `npc_name` + `body`. UI — боковая панель в `ChatView.vue`.
-
-Этап 4 (мир: лор-файлы, НПС в БД, граф, события) — **отложен**. См. `ROADMAP.md`.
+RAG + Ollama + copilot: `docs/API/RAG.md`, `docs/Features/Copilot.md`. Setup: `docs/Development/Setup.md`.

@@ -1,0 +1,53 @@
+# RAG API
+
+Контроллер: `RagSearchController`. Слои: `app/Rag/`.
+
+## GET /api/rag/search
+
+**Auth:** sanctum + middleware `storyteller`
+
+**Query:**
+
+| Параметр | Тип | Правила |
+|----------|-----|---------|
+| `q` | string | required, max 2000 |
+| `limit` | int | optional, 1–20, default 5 |
+| `types` | array | optional, значения: `message`, `lore` |
+
+**Response 200:**
+
+```json
+{
+  "results": [
+    {
+      "id": 1,
+      "source_type": "message",
+      "source_id": 42,
+      "title": null,
+      "content": "…",
+      "distance": 0.12
+    }
+  ]
+}
+```
+
+## Индексация
+
+- После каждого `POST /api/messages` — `RagIndexer::indexMessage` (sync или queue, `RAG_INDEX_SYNC`)
+- Канон в `messages`, производный слой в `rag_chunks` (`source_type`, `source_id`, `embedding`)
+- Lore: `rag:index-lore` artisan / `RagIndexer::indexLore` (copilot в MVP ищет только `message`)
+
+## Модели Ollama
+
+| Модель | Назначение |
+|--------|------------|
+| `nomic-embed-text` | Эмбеддинги (768-d), `OllamaEmbeddingProvider` |
+| `qwen3:8b` | Генерация черновиков, не RAG |
+
+Не путать: эмбеддинги не «отвечают» в чат; чат-модель не пишет в `rag_chunks`.
+
+## Copilot
+
+`NpcCopilotService` ищет по промпту рассказчика, тип `message` (не `lore` в текущем MVP).
+
+См. [[Architecture/Backend]], [[API/Copilot]].
