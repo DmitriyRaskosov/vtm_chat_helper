@@ -18,7 +18,7 @@ cp .env.example .env
 docker compose up -d --build
 docker compose exec laravel.test php artisan key:generate
 docker compose exec laravel.test php artisan migrate
-docker compose exec ollama ollama pull nomic-embed-text
+docker compose exec ollama ollama pull qwen3-embedding:0.6b
 docker compose exec ollama ollama pull qwen3:8b
 ```
 

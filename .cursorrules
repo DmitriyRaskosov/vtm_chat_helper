@@ -2,7 +2,7 @@
 
 Backend: Laravel 13 JSON API (Sail). Frontend: Vue 3 SPA in /frontend. No Blade, no routes/web.php. Auth: Sanctum Bearer tokens.
 
-Ollama in Docker: nomic-embed-text (RAG), qwen3:8b (storyteller copilot). Storyteller copilot: 3 NPC draft replies, post with npc_name.
+Ollama in Docker: qwen3-embedding:0.6b (RAG), qwen3:8b (storyteller copilot). Storyteller copilot: 3 NPC draft replies, post with npc_name.
 
 **Documentation:** canonical narrative docs in `docs/` (Obsidian vault). Update relevant `docs/` notes when changing behavior, API, setup, or architecture. See `docs/Home.md`.
 

@@ -14,7 +14,7 @@
 ## ИИ (Ollama в Docker)
 
 - Сервис `ollama` в `compose.yaml`, том `sail-ollama`. Порт **11434 не на хост** — Laravel ходит на `http://ollama:11434`.
-- **nomic-embed-text** — эмбеддинги (768-d) для RAG. **qwen3:8b** — генерация черновиков copilot.
+- **qwen3-embedding:0.6b** — эмбеддинги (1024-d) для RAG. **qwen3:8b** — генерация черновиков copilot.
 - Pull моделей только в контейнер `ollama`: `docker compose exec ollama ollama pull …`
 - Env: см. [[Development/Environment]].
 

@@ -52,6 +52,7 @@ Laravel JSON API. Маршруты только в `routes/api.php`.
 
 - `rag:embed-ping`, `llm:ping` — smoke Ollama
 - `rag:index-lore` — ручная индексация чанка лора
+- `rag:reindex-messages` — полная переиндексация сообщений в RAG
 
 ## API
 

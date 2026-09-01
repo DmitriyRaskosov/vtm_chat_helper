@@ -6,7 +6,7 @@ return [
     ],
 
     'l0' => [
-        'max_tokens' => (int) env('CONTEXT_L0_MAX_TOKENS', 6000),
+        'max_tokens' => (int) env('CONTEXT_L0_MAX_TOKENS', 15000),
         'max_messages' => (int) env('CONTEXT_L0_MAX_MESSAGES', 50),
     ],
 ];

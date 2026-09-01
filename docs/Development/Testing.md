@@ -23,7 +23,7 @@ docker compose exec laravel.test php artisan test
 ## Unit-тесты контекста
 
 - `TokenEstimatorTest` — Unicode-оценка и валидация коэффициента.
-- `MessageWindowSelectorTest` — лимиты 6000/50, точная граница и oversized-сообщение.
+- `MessageWindowSelectorTest` — лимиты 15000/50, точная граница и oversized-сообщение.
 
 Selector проверяется без Ollama и никогда не делит одно сообщение между окнами.
 

@@ -84,7 +84,7 @@
 
 - `game_sessions`, `scenes` — доменная иерархия чата
 - `messages` — user_id, scene_id, body, npc_name, token estimate
-- `rag_chunks` — embedding `vector(768)`, HNSW index
+- `rag_chunks` — embedding `vector(1024)`, HNSW index
 
 ### factories/
 
@@ -107,7 +107,7 @@
 
 ## Copilot flow
 
-Рассказчик → `POST /api/copilot/drafts` → последние сообщения + RAG (`nomic-embed-text`) → Ollama `qwen3:8b` → JSON с черновиками.
+Рассказчик → `POST /api/copilot/drafts` → последние сообщения + RAG (`qwen3-embedding:0.6b`) → Ollama `qwen3:8b` → JSON с черновиками.
 
 Рассказчик правит → `POST /api/messages` `{ body, npc_name }` → чат для всех, `author` = имя НПС, RAG-индекс сообщения.
 

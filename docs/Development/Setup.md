@@ -20,11 +20,20 @@ docker compose exec laravel.test php artisan migrate
 ### Ollama — pull моделей в контейнер `ollama`
 
 ```bat
-docker compose exec ollama ollama pull nomic-embed-text
+docker compose exec ollama ollama pull qwen3-embedding:0.6b
 docker compose exec ollama ollama pull qwen3:8b
 ```
 
-После pull зарегистрируйте пользователей заново. В `.env`: `RAG_EMBEDDING_DRIVER=ollama` (см. [[Development/Environment]]).
+После pull зарегистрируйте пользователей заново. В `.env`: `RAG_EMBEDDING_DRIVER=ollama`, `RAG_EMBEDDING_MODEL=qwen3-embedding:0.6b`, `RAG_EMBEDDING_DIMENSIONS=1024` (см. [[Development/Environment]]).
+
+При смене embed-модели или размерности вектора:
+
+```bat
+docker compose exec laravel.test php artisan migrate
+docker compose exec laravel.test php artisan rag:reindex-messages
+```
+
+Миграция `resize_rag_chunks_embedding_for_qwen3` очищает `rag_chunks` и меняет размерность колонки; lore-чанки нужно проиндексировать заново через `rag:index-lore`.
 
 `php artisan queue:work` — только если `RAG_INDEX_SYNC=false`.
 

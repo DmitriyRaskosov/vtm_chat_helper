@@ -8,6 +8,6 @@ alwaysApply: false
 
 Канон: `docs/API/RAG.md`, `docs/API/Copilot.md`, `docs/Architecture/Backend.md`.
 
-Две модели: `nomic-embed-text` (embeddings) и `qwen3:8b` (chat drafts) — не путать роли.
+Две модели: `qwen3-embedding:0.6b` (embeddings) и `qwen3:8b` (chat drafts) — не путать роли.
 
-Artisan smoke: `rag:embed-ping`, `llm:ping`. Lore: `rag:index-lore` (copilot MVP search — только `message`).
+Artisan smoke: `rag:embed-ping`, `llm:ping`. Lore: `rag:index-lore` (copilot MVP search — только `message`). Переиндексация после смены embed-модели: `rag:reindex-messages`.

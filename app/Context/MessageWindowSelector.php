@@ -20,7 +20,7 @@ class MessageWindowSelector
         ?int $maxTokens = null,
         ?int $maxMessages = null,
     ): MessageWindow {
-        $tokenLimit = $maxTokens ?? (int) config('context.l0.max_tokens', 6000);
+        $tokenLimit = $maxTokens ?? (int) config('context.l0.max_tokens', 15000);
         $messageLimit = $maxMessages ?? (int) config('context.l0.max_messages', 50);
 
         if ($tokenLimit < 1 || $messageLimit < 1) {

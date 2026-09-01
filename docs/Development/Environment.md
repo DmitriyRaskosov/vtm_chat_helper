@@ -6,11 +6,11 @@
 
 | Переменная | По умолчанию | Описание |
 |------------|--------------|----------|
-| `RAG_EMBEDDING_DIMENSIONS` | `768` | Размер вектора эмбеддинга |
+| `RAG_EMBEDDING_DIMENSIONS` | `1024` | Размер вектора эмбеддинга |
 | `RAG_EMBEDDING_DRIVER` | `ollama` | `ollama` в dev; в тестах `stub` (см. [[Development/Testing]]) |
 | `RAG_INDEX_SYNC` | `true` | `true` — индексация RAG синхронно после сообщения; `false` — через очередь (`queue:work`) |
 | `OLLAMA_URL` | `http://ollama:11434` | URL Ollama из контейнера Laravel |
-| `RAG_EMBEDDING_MODEL` | `nomic-embed-text` | Модель эмбеддингов |
+| `RAG_EMBEDDING_MODEL` | `qwen3-embedding:0.6b` | Модель эмбеддингов |
 | `OLLAMA_CHAT_MODEL` | `qwen3:8b` | Модель генерации черновиков copilot |
 
 ## Copilot (опционально)
@@ -28,7 +28,7 @@
 | Переменная | По умолчанию | Описание |
 |------------|--------------|----------|
 | `CONTEXT_CHARACTERS_PER_TOKEN` | `3` | Unicode-символов на один оценочный токен |
-| `CONTEXT_L0_MAX_TOKENS` | `6000` | Максимум оценочных токенов в будущем L0-окне |
+| `CONTEXT_L0_MAX_TOKENS` | `15000` | Максимум оценочных токенов в будущем L0-окне |
 | `CONTEXT_L0_MAX_MESSAGES` | `50` | Максимум целых сообщений в L0-окне |
 
 Конфиг: `config/context.php`. Алгоритм и правило oversized описаны в [[Architecture/Context]].

@@ -7,7 +7,7 @@
 | 1 | Sail, PostgreSQL + pgvector, Redis, Mailpit | Готово |
 | 2 | Auth (login), общий чат `messages` | Готово |
 | 3 | Роли storyteller / player, панель рассказчика | Готово |
-| 3.5 | RAG (`rag_chunks`), Ollama (`nomic-embed-text`, `qwen3:8b`) | Готово |
+| 3.5 | RAG (`rag_chunks`), Ollama (`qwen3-embedding:0.6b`, `qwen3:8b`) | Готово |
 | 4 | Модель мира: файловый лор, НПС, граф отношений, события | **Отложен** |
 | 5–6 | Copilot: черновики реплик НПС + отправка в чат | **Готово (MVP)** |
 | 7 | Игровые сессии, сцены и scoped messages | **Готово** |

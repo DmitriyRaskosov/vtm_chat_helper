@@ -42,10 +42,20 @@
 
 | Модель | Назначение |
 |--------|------------|
-| `nomic-embed-text` | Эмбеддинги (768-d), `OllamaEmbeddingProvider` |
+| `qwen3-embedding:0.6b` | Эмбеддинги (1024-d), `OllamaEmbeddingProvider` |
 | `qwen3:8b` | Генерация черновиков, не RAG |
 
 Не путать: эмбеддинги не «отвечают» в чат; чат-модель не пишет в `rag_chunks`.
+
+## Переиндексация
+
+После смены `RAG_EMBEDDING_MODEL` или `RAG_EMBEDDING_DIMENSIONS` выполните миграцию (очистка `rag_chunks` и смена размерности вектора), затем:
+
+```bash
+php artisan rag:reindex-messages
+```
+
+Lore-чанки переиндексируются вручную через `rag:index-lore`.
 
 ## Copilot
 
