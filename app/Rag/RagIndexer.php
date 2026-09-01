@@ -12,7 +12,13 @@ class RagIndexer
 
     public function indexMessage(Message $message): RagChunk
     {
-        $metadata = ['user_id' => $message->user_id];
+        $message->loadMissing('scene:id,game_session_id');
+
+        $metadata = [
+            'user_id' => $message->user_id,
+            'scene_id' => $message->scene_id,
+            'game_session_id' => $message->scene->game_session_id,
+        ];
 
         if ($message->npc_name !== null && $message->npc_name !== '') {
             $metadata['npc_name'] = $message->npc_name;

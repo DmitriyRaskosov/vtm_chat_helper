@@ -20,13 +20,23 @@ Laravel JSON API. Маршруты только в `routes/api.php`.
 | `OllamaChatProvider` | Ollama `/api/chat` для `qwen3:8b` |
 | `NpcCopilotService` | Сборка промпта, вызов LLM, парсинг JSON drafts |
 
+### `app/Context/`
+
+| Компонент | Назначение |
+|-----------|------------|
+| `TokenEstimator` | Версионируемая локальная оценка токенов |
+| `MessageWindowSelector` | Выбор целых сообщений для будущего L0 |
+| `MessageWindow` | Результат выбора: сообщения, токены, oversized |
+
 ### Jobs
 
 - `IndexRagMessageJob` — после `POST /api/messages` (`RAG_INDEX_SYNC` sync vs queue)
 
 ## Модели
 
-- `Message` — канон чата; nullable `npc_name` для реплик НПС
+- `GameSession` — игровая сессия; глобально активна не более одной
+- `Scene` — сцена со статусом `draft`, `active` или `closed`
+- `Message` — канон чата; обязательный `scene_id`, nullable `npc_name`, кеш оценки токенов
 - `RagChunk` — `source_type` (`message`, `lore`), `embedding`, metadata
 
 ## Middleware
@@ -36,7 +46,7 @@ Laravel JSON API. Маршруты только в `routes/api.php`.
 
 ## Конфиг
 
-`config/rag.php`, `config/ollama.php`, `config/copilot.php`.
+`config/rag.php`, `config/ollama.php`, `config/copilot.php`, `config/context.php`.
 
 ## Artisan
 

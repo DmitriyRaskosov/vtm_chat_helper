@@ -31,7 +31,9 @@
 
 | Файл | Маршрут |
 |------|---------|
-| `ChatController.php` | GET/POST `/api/messages` |
+| `ChatController.php` | GET/POST `/api/messages`, scoped по сцене |
+| `GameSessionController.php` | active/create игровых сессий |
+| `SceneController.php` | create/activate/close сцен |
 | `CopilotController.php` | POST `/api/copilot/drafts` (storyteller) |
 | `RagSearchController.php` | GET `/api/rag/search` (storyteller) |
 | `Auth/*` | register, login, logout, `/api/user` |
@@ -45,8 +47,15 @@
 | Модель | Поля / роль |
 |--------|-------------|
 | `User.php` | login, role (storyteller \| player) |
-| `Message.php` | body, npc_name (реплика от НПС) |
+| `GameSession.php` | игровая сессия |
+| `Scene.php` | сцена и её lifecycle |
+| `Message.php` | scene_id, body, npc_name, token estimate |
 | `RagChunk.php` | векторный индекс для RAG |
+
+### Context/
+
+- `TokenEstimator.php` — версионируемая локальная оценка токенов
+- `MessageWindow.php`, `MessageWindowSelector.php` — целые окна будущей L0-суммаризации
 
 ### Rag/
 
@@ -73,7 +82,8 @@
 
 ### migrations/
 
-- `messages` — user_id, body, npc_name
+- `game_sessions`, `scenes` — доменная иерархия чата
+- `messages` — user_id, scene_id, body, npc_name, token estimate
 - `rag_chunks` — embedding `vector(768)`, HNSW index
 
 ### factories/
@@ -87,11 +97,11 @@
 
 ## config/
 
-- `rag.php`, `ollama.php`, `copilot.php`
+- `rag.php`, `ollama.php`, `copilot.php`, `context.php`
 
 ## tests/Feature/
 
-- `AuthenticationTest`, `ChatTest`, `RagSearchTest`, `CopilotTest`
+- `AuthenticationTest`, `ChatTest`, `GameSessionSceneTest`, `RagSearchTest`, `CopilotTest`
 
 См. [[Development/Testing]].
 

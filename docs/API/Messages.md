@@ -6,7 +6,14 @@
 
 **Auth:** sanctum
 
-**Query (опционально):** `after_id` — только сообщения с `id > after_id`
+**Query:**
+
+| Поле | Правила |
+|------|---------|
+| `scene_id` | optional integer; по умолчанию активная сцена |
+| `after_id` | optional integer; только сообщения с `id > after_id` |
+
+Возвращаются сообщения только выбранной сцены активной игровой сессии. Закрытая сцена доступна для чтения.
 
 **Response 200:**
 
@@ -15,6 +22,7 @@
   "messages": [
     {
       "id": 1,
+      "scene_id": 1,
       "body": "…",
       "author": "Анна",
       "mine": true,
@@ -38,8 +46,11 @@
 |------|-----|---------|
 | `body` | string | required, max 4000 |
 | `npc_name` | string | optional, max 64; только [[Project/Roles|рассказчик]], иначе 403 |
+| `scene_id` | integer | optional; по умолчанию активная сцена |
 
 **Response 201:** `{ "message": { … } }` — та же структура, что в GET.
+
+Запись разрешена только в активную сцену. Для `draft` или `closed` API возвращает **409**.
 
 После сохранения — индексация RAG (`IndexRagMessageJob`). См. [[API/RAG]].
 
@@ -47,4 +58,4 @@
 
 Рассказчик отправляет `npc_name` + `body`. `user_id` — рассказчик (аудит). В чате `author` = имя НПС, `mine` = false.
 
-См. [[Features/Chat]], [[Features/Copilot]].
+См. [[Features/Chat]], [[Features/Scenes]], [[Features/Copilot]].

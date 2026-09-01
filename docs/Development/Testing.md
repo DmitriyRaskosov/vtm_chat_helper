@@ -16,8 +16,16 @@ docker compose exec laravel.test php artisan test
 |------|----------|
 | `tests/Feature/AuthenticationTest.php` | register, login, logout, `/api/user` |
 | `tests/Feature/ChatTest.php` | GET/POST messages, author, mine |
+| `tests/Feature/GameSessionSceneTest.php` | lifecycle сессий/сцен, роли и статусы |
 | `tests/Feature/CopilotTest.php` | drafts, npc_name, 403 для player |
 | `tests/Feature/RagSearchTest.php` | индексация, search, lore chunks |
+
+## Unit-тесты контекста
+
+- `TokenEstimatorTest` — Unicode-оценка и валидация коэффициента.
+- `MessageWindowSelectorTest` — лимиты 6000/50, точная граница и oversized-сообщение.
+
+Selector проверяется без Ollama и никогда не делит одно сообщение между окнами.
 
 ## Ollama в feature-тестах
 

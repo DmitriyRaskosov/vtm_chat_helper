@@ -16,6 +16,11 @@
 | POST | `/api/login` | — | — | [[API/Auth]] |
 | GET | `/api/user` | sanctum | any | [[API/Auth]] |
 | POST | `/api/logout` | sanctum | any | [[API/Auth]] |
+| GET | `/api/game-sessions/active` | sanctum | any | [[API/Scenes]] |
+| POST | `/api/game-sessions` | sanctum | storyteller | [[API/Scenes]] |
+| POST | `/api/game-sessions/{id}/scenes` | sanctum | storyteller | [[API/Scenes]] |
+| PATCH | `/api/scenes/{id}/activate` | sanctum | storyteller | [[API/Scenes]] |
+| PATCH | `/api/scenes/{id}/close` | sanctum | storyteller | [[API/Scenes]] |
 | GET | `/api/messages` | sanctum | any | [[API/Messages]] |
 | POST | `/api/messages` | sanctum | any (+ npc: ST) | [[API/Messages]] |
 | GET | `/api/rag/search` | sanctum | storyteller | [[API/RAG]] |
@@ -28,5 +33,6 @@
 - Не рассказчик на ST-only маршрутах: **403**
 - Ollama недоступна (copilot): **503**
 - Невалидный ответ модели (copilot): **502**
+- Недоступная для действия сцена: **409**
 
 Не добавлять редиректы на `/login` и `/chat`.

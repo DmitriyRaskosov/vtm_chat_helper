@@ -34,6 +34,7 @@
 ## Индексация
 
 - После каждого `POST /api/messages` — `RagIndexer::indexMessage` (sync или queue, `RAG_INDEX_SYNC`)
+- Metadata message-чанка содержит `user_id`, `scene_id`, `game_session_id` и опциональный `npc_name`
 - Канон в `messages`, производный слой в `rag_chunks` (`source_type`, `source_id`, `embedding`)
 - Lore: `rag:index-lore` artisan / `RagIndexer::indexLore` (copilot в MVP ищет только `message`)
 
@@ -48,6 +49,6 @@
 
 ## Copilot
 
-`NpcCopilotService` ищет по промпту рассказчика, тип `message` (не `lore` в текущем MVP).
+`NpcCopilotService` ищет по промпту рассказчика, тип `message` (не `lore` в текущем MVP). Фильтрация RAG по сцене будет добавлена вместе с Context Builder; recent history уже scoped по активной сцене.
 
 См. [[Architecture/Backend]], [[API/Copilot]].

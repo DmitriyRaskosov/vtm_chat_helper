@@ -15,19 +15,23 @@ Vue 3 SPA в `frontend/`. Запуск: `cd frontend && npm run dev` (порт 5
 ## Экраны
 
 - `LoginView.vue`, `RegisterView.vue` — auth
-- `ChatView.vue` — общий чат + панель рассказчика
+- `ChatView.vue` — сценовый чат + управление сценами + панель рассказчика
 
 ## Панель рассказчика (`ChatView.vue`)
 
 Показывать только если `user.is_storyteller`. Двухколоночный layout: чат + `aside.storyteller-panel`.
+
+Над лентой все пользователи видят активную игровую сессию и selector её сцен. Переключение очищает локальную ленту и загружает сообщения с `scene_id`. Закрытая сцена read-only. Если активной сессии нет, рассказчик получает форму её создания, а игрок — состояние ожидания.
+
+Рассказчик дополнительно может создать и активировать сцену, активировать `draft` и закрыть активную. См. [[Features/Scenes]].
 
 Copilot flow:
 
 1. Поля `npc_name`, ситуационный `prompt`
 2. `POST /api/copilot/drafts` — три черновика; loading и ошибки API
 3. Выбор черновика, правка в textarea
-4. `POST /api/messages` с `{ body, npc_name }` — отправка в общий чат
+4. `POST /api/messages` с `{ body, npc_name, scene_id }` — отправка в активную сцену
 
-Игроки видят только основной чат и свой composer; панель copilot не рендерить.
+Игроки видят сцены, ленту и свой composer; управление сценами и панель copilot не рендерить.
 
 Подробнее: [[Features/Copilot]], [[API/Copilot]].

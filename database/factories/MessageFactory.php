@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Message;
+use App\Models\Scene;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -15,6 +16,8 @@ class MessageFactory extends Factory
     {
         return [
             'user_id' => User::factory(),
+            'scene_id' => fn () => Scene::query()->active()->value('id')
+                ?? Scene::factory()->active()->create()->id,
             'body' => fake()->sentence(),
         ];
     }

@@ -23,6 +23,7 @@ class StoreMessageRequest extends FormRequest
         return [
             'body' => ['required', 'string', 'max:4000'],
             'npc_name' => ['sometimes', 'nullable', 'string', 'max:64'],
+            'scene_id' => ['sometimes', 'integer', 'exists:scenes,id'],
         ];
     }
 }

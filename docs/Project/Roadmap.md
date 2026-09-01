@@ -10,8 +10,11 @@
 | 3.5 | RAG (`rag_chunks`), Ollama (`nomic-embed-text`, `qwen3:8b`) | Готово |
 | 4 | Модель мира: файловый лор, НПС, граф отношений, события | **Отложен** |
 | 5–6 | Copilot: черновики реплик НПС + отправка в чат | **Готово (MVP)** |
+| 7 | Игровые сессии, сцены и scoped messages | **Готово** |
+| 8 | UI выбора и управления сценами | **Готово** |
+| 9 | Context foundation: token estimate и целые L0-окна | **Готово** |
 
-Подробности copilot: [[Features/Copilot]], [[API/Copilot]].
+Подробности: [[Features/Copilot]], [[Features/Scenes]], [[Architecture/Context]].
 
 ## Этап 4 (отложен)
 
@@ -24,10 +27,14 @@
 
 Рассказчик вводит имя НПС и промпт → `POST /api/copilot/drafts` → 3 черновика через `qwen3:8b` с контекстом чата и RAG → правка → `POST /api/messages` с `npc_name`.
 
-Игроки видят только общий чат.
+Игроки видят сценовый чат; панель Copilot доступна только рассказчику.
 
 ## Дальше (после этапа 4)
 
+- Context Builder с бюджетом и дедупликацией
+- Хранение сырых запросов Copilot
+- Rolling L0 и иерархические summaries сцены/сессии
+- Scoped retrieval и LLM tools
 - Карточки НПС вместо ручного ввода имени
 - Файловый лор в system prompt
 - Граф отношений в контексте генерации

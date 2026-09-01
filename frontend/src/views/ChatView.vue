@@ -10,6 +10,94 @@
             </span>
         </div>
 
+        <section v-if="gameSession" class="card scene-toolbar">
+            <div class="scene-heading">
+                <div>
+                    <span class="muted">Игровая сессия</span>
+                    <strong>{{ gameSession.title }}</strong>
+                </div>
+                <label for="scene-select">
+                    Сцена
+                    <select
+                        id="scene-select"
+                        v-model.number="selectedSceneId"
+                        @change="switchScene"
+                    >
+                        <option v-for="scene in scenes" :key="scene.id" :value="scene.id">
+                            {{ scene.position }}. {{ scene.title }} · {{ sceneStatusLabel(scene.status) }}
+                        </option>
+                    </select>
+                </label>
+            </div>
+
+            <p v-if="selectedScene?.description" class="muted scene-description">
+                {{ selectedScene.description }}
+            </p>
+            <p v-if="sceneError" class="error">{{ sceneError }}</p>
+
+            <div v-if="auth.user.value?.is_storyteller" class="scene-management">
+                <input
+                    v-model="newSceneTitle"
+                    type="text"
+                    maxlength="120"
+                    placeholder="Название новой сцены"
+                />
+                <button
+                    type="button"
+                    :disabled="sceneLoading || !newSceneTitle.trim()"
+                    @click="createScene"
+                >
+                    Создать и открыть
+                </button>
+                <button
+                    v-if="selectedScene?.status === 'draft'"
+                    type="button"
+                    class="secondary"
+                    :disabled="sceneLoading"
+                    @click="activateScene"
+                >
+                    Сделать активной
+                </button>
+                <button
+                    v-if="selectedScene?.status === 'active'"
+                    type="button"
+                    class="secondary"
+                    :disabled="sceneLoading"
+                    @click="closeScene"
+                >
+                    Закрыть сцену
+                </button>
+            </div>
+        </section>
+        <section v-else class="card session-empty">
+            <template v-if="auth.user.value?.is_storyteller">
+                <h2>Нет активной игровой сессии</h2>
+                <p class="muted">
+                    Создайте игровую сессию. Начальная активная сцена будет добавлена автоматически.
+                </p>
+                <form class="session-create" @submit.prevent="createGameSession">
+                    <input
+                        v-model="newGameSessionTitle"
+                        type="text"
+                        maxlength="120"
+                        required
+                        placeholder="Название игровой сессии"
+                    />
+                    <button
+                        type="submit"
+                        :disabled="sceneLoading || !newGameSessionTitle.trim()"
+                    >
+                        {{ sceneLoading ? 'Создание…' : 'Создать сессию' }}
+                    </button>
+                </form>
+                <p v-if="sceneError" class="error">{{ sceneError }}</p>
+            </template>
+            <template v-else>
+                <h2>Нет активной игровой сессии</h2>
+                <p class="muted">Рассказчик ещё не открыл игровую сессию.</p>
+            </template>
+        </section>
+
         <div :class="{ stage: auth.user.value?.is_storyteller }">
             <div>
                 <div ref="logEl" class="chat-log" aria-live="polite">
@@ -26,8 +114,14 @@
                 </div>
 
                 <form class="composer" @submit.prevent="send">
-                    <textarea v-model="body" maxlength="4000" required placeholder="Сообщение…"></textarea>
-                    <button type="submit">Отправить</button>
+                    <textarea
+                        v-model="body"
+                        maxlength="4000"
+                        required
+                        :disabled="!canPost"
+                        :placeholder="composerPlaceholder"
+                    ></textarea>
+                    <button type="submit" :disabled="!canPost">Отправить</button>
                 </form>
             </div>
 
@@ -46,7 +140,11 @@
                     placeholder="Что происходит, тон, на что ответить…"
                 />
 
-                <button type="button" :disabled="copilotLoading || !canGenerate" @click="generateDrafts">
+                <button
+                    type="button"
+                    :disabled="copilotLoading || !canGenerate || !canPost"
+                    @click="generateDrafts"
+                >
                     {{ copilotLoading ? 'Генерация…' : 'Сгенерировать черновики' }}
                 </button>
 
@@ -83,6 +181,12 @@ import { api, useAuth } from '../auth';
 
 const router = useRouter();
 const auth = useAuth();
+const gameSession = ref(null);
+const newGameSessionTitle = ref('');
+const selectedSceneId = ref(null);
+const newSceneTitle = ref('');
+const sceneLoading = ref(false);
+const sceneError = ref('');
 const messages = ref([]);
 const body = ref('');
 const logEl = ref(null);
@@ -94,7 +198,20 @@ const editedDraft = ref('');
 const copilotLoading = ref(false);
 const copilotError = ref('');
 let timer;
+let polling = false;
 
+const scenes = computed(() => gameSession.value?.scenes ?? []);
+const selectedScene = computed(
+    () => scenes.value.find((scene) => scene.id === selectedSceneId.value) ?? null,
+);
+const canPost = computed(() => selectedScene.value?.status === 'active');
+const composerPlaceholder = computed(() => {
+    if (!gameSession.value) {
+        return 'Нет активной игровой сессии';
+    }
+
+    return canPost.value ? 'Сообщение…' : 'Сцена доступна только для чтения';
+});
 const canGenerate = computed(() => npcName.value.trim() !== '' && copilotPrompt.value.trim() !== '');
 const selectedDraft = computed(() =>
     selectedDraftIndex.value === null ? null : drafts.value[selectedDraftIndex.value] ?? null,
@@ -103,6 +220,14 @@ const canSendNpc = computed(() => npcName.value.trim() !== '' && editedDraft.val
 
 function lastId() {
     return messages.value.at(-1)?.id ?? 0;
+}
+
+function sceneStatusLabel(status) {
+    return {
+        active: 'активна',
+        draft: 'ожидает',
+        closed: 'закрыта',
+    }[status] ?? status;
 }
 
 function merge(incoming) {
@@ -121,17 +246,170 @@ async function scrollDown() {
 }
 
 async function load(afterId = 0) {
-    const { data } = await api.get('/messages', { params: { after_id: afterId } });
+    if (!selectedSceneId.value) {
+        return;
+    }
+
+    const sceneIdAtStart = selectedSceneId.value;
+    const { data } = await api.get('/messages', {
+        params: {
+            scene_id: sceneIdAtStart,
+            after_id: afterId,
+        },
+    });
+
+    if (selectedSceneId.value !== sceneIdAtStart) {
+        return;
+    }
+
     merge(data.messages);
     await scrollDown();
 }
 
-async function send() {
-    const text = body.value.trim();
-    if (!text) {
+async function loadGameSession(preferredSceneId = selectedSceneId.value) {
+    const { data } = await api.get('/game-sessions/active');
+    gameSession.value = data.game_session;
+
+    if (!gameSession.value) {
+        selectedSceneId.value = null;
+        messages.value = [];
         return;
     }
-    const { data } = await api.post('/messages', { body: text });
+
+    const preferredExists = gameSession.value.scenes.some(
+        (scene) => scene.id === preferredSceneId,
+    );
+    selectedSceneId.value = preferredExists
+        ? preferredSceneId
+        : gameSession.value.active_scene_id ?? gameSession.value.scenes[0]?.id ?? null;
+}
+
+async function switchScene() {
+    messages.value = [];
+    await load();
+}
+
+async function poll() {
+    if (polling) {
+        return;
+    }
+
+    polling = true;
+
+    try {
+        const previousSceneId = selectedSceneId.value;
+        const preferredSceneId = auth.user.value?.is_storyteller
+            ? previousSceneId
+            : null;
+
+        await loadGameSession(preferredSceneId);
+
+        if (selectedSceneId.value !== previousSceneId) {
+            messages.value = [];
+            await load();
+        } else {
+            await load(lastId());
+        }
+    } catch {
+        // A later poll retries transient API failures.
+    } finally {
+        polling = false;
+    }
+}
+
+async function createGameSession() {
+    const title = newGameSessionTitle.value.trim();
+    if (!title) {
+        return;
+    }
+
+    sceneLoading.value = true;
+    sceneError.value = '';
+
+    try {
+        const { data } = await api.post('/game-sessions', { title });
+        newGameSessionTitle.value = '';
+        gameSession.value = data.game_session;
+        selectedSceneId.value = gameSession.value.active_scene_id;
+        messages.value = [];
+        await load();
+    } catch (error) {
+        sceneError.value = error.response?.data?.message ?? 'Не удалось создать игровую сессию.';
+    } finally {
+        sceneLoading.value = false;
+    }
+}
+
+async function createScene() {
+    const title = newSceneTitle.value.trim();
+    if (!title || !gameSession.value) {
+        return;
+    }
+
+    sceneLoading.value = true;
+    sceneError.value = '';
+
+    try {
+        const { data } = await api.post(`/game-sessions/${gameSession.value.id}/scenes`, {
+            title,
+            activate: true,
+        });
+        newSceneTitle.value = '';
+        await loadGameSession(data.scene.id);
+        messages.value = [];
+        await load();
+    } catch (error) {
+        sceneError.value = error.response?.data?.message ?? 'Не удалось создать сцену.';
+    } finally {
+        sceneLoading.value = false;
+    }
+}
+
+async function activateScene() {
+    if (!selectedScene.value) {
+        return;
+    }
+
+    sceneLoading.value = true;
+    sceneError.value = '';
+
+    try {
+        await api.patch(`/scenes/${selectedScene.value.id}/activate`);
+        await loadGameSession(selectedScene.value.id);
+    } catch (error) {
+        sceneError.value = error.response?.data?.message ?? 'Не удалось активировать сцену.';
+    } finally {
+        sceneLoading.value = false;
+    }
+}
+
+async function closeScene() {
+    if (!selectedScene.value) {
+        return;
+    }
+
+    sceneLoading.value = true;
+    sceneError.value = '';
+
+    try {
+        await api.patch(`/scenes/${selectedScene.value.id}/close`);
+        await loadGameSession(selectedScene.value.id);
+    } catch (error) {
+        sceneError.value = error.response?.data?.message ?? 'Не удалось закрыть сцену.';
+    } finally {
+        sceneLoading.value = false;
+    }
+}
+
+async function send() {
+    const text = body.value.trim();
+    if (!text || !canPost.value) {
+        return;
+    }
+    const { data } = await api.post('/messages', {
+        body: text,
+        scene_id: selectedSceneId.value,
+    });
     merge([data.message]);
     body.value = '';
     await scrollDown();
@@ -153,6 +431,7 @@ async function generateDrafts() {
         const { data } = await api.post('/copilot/drafts', {
             npc_name: npcName.value.trim(),
             prompt: copilotPrompt.value.trim(),
+            scene_id: selectedSceneId.value,
         });
         drafts.value = data.drafts ?? [];
         if (drafts.value.length > 0) {
@@ -176,6 +455,7 @@ async function sendAsNpc() {
     const { data } = await api.post('/messages', {
         body: text,
         npc_name: name,
+        scene_id: selectedSceneId.value,
     });
     merge([data.message]);
     await scrollDown();
@@ -187,8 +467,9 @@ async function logout() {
 }
 
 onMounted(async () => {
+    await loadGameSession();
     await load();
-    timer = setInterval(() => load(lastId()), 3000);
+    timer = setInterval(poll, 3000);
 });
 
 onUnmounted(() => {

@@ -42,6 +42,68 @@ a { color: var(--accent); }
     opacity: 0.55;
     cursor: not-allowed;
 }
+.scene-toolbar {
+    margin-bottom: 1rem;
+}
+.session-empty {
+    margin-bottom: 1rem;
+}
+.session-empty h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+}
+.session-empty p {
+    margin: 0 0 0.75rem;
+}
+.session-create {
+    display: flex;
+    gap: 0.5rem;
+}
+.session-create input {
+    flex: 1;
+}
+.session-create button {
+    margin: 0;
+    white-space: nowrap;
+}
+.scene-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: end;
+    gap: 1rem;
+}
+.scene-heading strong {
+    display: block;
+    margin-top: 0.25rem;
+}
+.scene-heading label {
+    margin: 0;
+    min-width: min(100%, 320px);
+}
+.scene-description {
+    margin: 0.75rem 0 0;
+}
+.scene-management {
+    display: flex;
+    gap: 0.5rem;
+    align-items: end;
+    margin-top: 0.75rem;
+}
+.scene-management input {
+    flex: 1;
+}
+.scene-management button {
+    margin: 0;
+    white-space: nowrap;
+}
+@media (max-width: 650px) {
+    .scene-heading,
+    .scene-management,
+    .session-create {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}
 .draft-list {
     display: flex;
     flex-direction: column;
@@ -89,7 +151,7 @@ a { color: var(--accent); }
     padding: 1.25rem;
 }
 label { display: block; margin: 0.75rem 0 0.35rem; font-size: 0.9rem; }
-input[type="text"], input[type="password"], textarea {
+input[type="text"], input[type="password"], textarea, select {
     width: 100%;
     padding: 0.6rem 0.7rem;
     background: #141210;
@@ -107,6 +169,15 @@ button {
     border: 0;
     font: inherit;
     cursor: pointer;
+}
+button.secondary {
+    background: transparent;
+    border: 1px solid var(--line);
+    color: var(--text);
+}
+button:disabled {
+    opacity: 0.55;
+    cursor: not-allowed;
 }
 button.link {
     margin: 0;

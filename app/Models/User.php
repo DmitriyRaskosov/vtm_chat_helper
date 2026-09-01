@@ -27,6 +27,14 @@ class User extends Authenticatable
         return $this->hasMany(Message::class);
     }
 
+    /**
+     * @return HasMany<GameSession, $this>
+     */
+    public function createdGameSessions(): HasMany
+    {
+        return $this->hasMany(GameSession::class, 'created_by');
+    }
+
     public function isStoryteller(): bool
     {
         return $this->role === UserRole::Storyteller;

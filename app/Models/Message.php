@@ -2,13 +2,21 @@
 
 namespace App\Models;
 
+use App\Context\TokenEstimator;
 use Database\Factories\MessageFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['user_id', 'body', 'npc_name'])]
+#[Fillable([
+    'user_id',
+    'scene_id',
+    'body',
+    'npc_name',
+    'token_estimate',
+    'token_estimator_version',
+])]
 class Message extends Model
 {
     /** @use HasFactory<MessageFactory> */
@@ -29,5 +37,26 @@ class Message extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    /**
+     * @return BelongsTo<Scene, $this>
+     */
+    public function scene(): BelongsTo
+    {
+        return $this->belongsTo(Scene::class);
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (Message $message): void {
+            if (! $message->isDirty('body') && $message->token_estimate !== null) {
+                return;
+            }
+
+            $estimator = app(TokenEstimator::class);
+            $message->token_estimate = $estimator->estimate((string) $message->body);
+            $message->token_estimator_version = $estimator->version();
+        });
     }
 }

@@ -23,6 +23,16 @@
 
 Конфиг: `config/rag.php`, `config/ollama.php`, `config/copilot.php`.
 
+## Context
+
+| Переменная | По умолчанию | Описание |
+|------------|--------------|----------|
+| `CONTEXT_CHARACTERS_PER_TOKEN` | `3` | Unicode-символов на один оценочный токен |
+| `CONTEXT_L0_MAX_TOKENS` | `6000` | Максимум оценочных токенов в будущем L0-окне |
+| `CONTEXT_L0_MAX_MESSAGES` | `50` | Максимум целых сообщений в L0-окне |
+
+Конфиг: `config/context.php`. Алгоритм и правило oversized описаны в [[Architecture/Context]].
+
 ## Прочие
 
 | Переменная | Описание |

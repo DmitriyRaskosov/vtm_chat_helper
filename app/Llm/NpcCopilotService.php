@@ -4,6 +4,7 @@ namespace App\Llm;
 
 use App\Enums\RagSourceType;
 use App\Models\Message;
+use App\Models\RagChunk;
 use App\Rag\RagSearcher;
 use Illuminate\Support\Collection;
 use RuntimeException;
@@ -18,10 +19,10 @@ class NpcCopilotService
     /**
      * @return list<string>
      */
-    public function drafts(string $npcName, string $prompt): array
+    public function drafts(string $npcName, string $prompt, int $sceneId): array
     {
         $draftCount = (int) config('copilot.draft_count');
-        $history = $this->loadHistory();
+        $history = $this->loadHistory($sceneId);
         $ragChunks = $this->searcher->search(
             $prompt,
             (int) config('copilot.rag_limit'),
@@ -61,7 +62,7 @@ PROMPT;
 
     /**
      * @param  Collection<int, Message>  $history
-     * @param  Collection<int, \App\Models\RagChunk>  $ragChunks
+     * @param  Collection<int, RagChunk>  $ragChunks
      */
     private function userPrompt(
         string $npcName,
@@ -95,10 +96,11 @@ PROMPT;
     /**
      * @return Collection<int, Message>
      */
-    private function loadHistory(): Collection
+    private function loadHistory(int $sceneId): Collection
     {
         return Message::query()
             ->with('user:id,name')
+            ->where('scene_id', $sceneId)
             ->orderByDesc('id')
             ->limit((int) config('copilot.history_limit'))
             ->get()

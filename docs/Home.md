@@ -19,15 +19,17 @@
 - [[Architecture/Stack]]
 - [[Architecture/Backend]]
 - [[Architecture/Frontend]]
+- [[Architecture/Context]]
 
 ## API
 
 - [[API/Overview]]
-- [[API/Auth]] · [[API/Messages]] · [[API/Copilot]] · [[API/RAG]]
+- [[API/Auth]] · [[API/Messages]] · [[API/Scenes]] · [[API/Copilot]] · [[API/RAG]]
 
 ## Фичи
 
 - [[Features/Chat]]
+- [[Features/Scenes]]
 - [[Features/Copilot]]
 
 ## Мета
