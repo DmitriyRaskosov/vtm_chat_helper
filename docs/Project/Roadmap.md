@@ -13,6 +13,11 @@
 | 7 | Игровые сессии, сцены и scoped messages | **Готово** |
 | 8 | UI выбора и управления сценами | **Готово** |
 | 9 | Context foundation: token estimate и целые L0-окна | **Готово** |
+| 10 | Бюджетированный Context Builder без summaries | **Готово** |
+| 11 | Трассировка запросов Copilot и выбранных drafts | **Готово** |
+| 12 | Immutable L0 и фоновая идемпотентная суммаризация | **Готово** |
+| 13 | Summary RAG в Context Builder с дедупликацией | **Готово** |
+| 14 | L1, final scene и versioned session summaries | **Готово** |
 
 Подробности: [[Features/Copilot]], [[Features/Scenes]], [[Architecture/Context]].
 
@@ -25,15 +30,13 @@
 
 ## Copilot (этапы 5–6)
 
-Рассказчик вводит имя НПС и промпт → `POST /api/copilot/drafts` → 3 черновика через `qwen3:8b` с контекстом чата и RAG → правка → `POST /api/messages` с `npc_name`.
+Рассказчик вводит имя НПС и промпт → `POST /api/copilot/drafts` → бюджетированный Context Builder → 3 черновика через `qwen3:8b` → сохранение request/context provenance → правка → `POST /api/messages` с одноразовой связью на выбранный draft.
 
 Игроки видят сценовый чат; панель Copilot доступна только рассказчику.
 
 ## Дальше (после этапа 4)
 
-- Context Builder с бюджетом и дедупликацией
-- Хранение сырых запросов Copilot
-- Rolling L0 и иерархические summaries сцены/сессии
+- Явные scope-профили RAG: `active_scene`, `game_session`, `global`
 - Scoped retrieval и LLM tools
 - Карточки НПС вместо ручного ввода имени
 - Файловый лор в system prompt

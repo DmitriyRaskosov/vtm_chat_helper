@@ -2,115 +2,34 @@
 
 namespace App\Llm;
 
-use App\Enums\RagSourceType;
-use App\Models\Message;
-use App\Models\RagChunk;
-use App\Rag\RagSearcher;
-use Illuminate\Support\Collection;
+use App\Context\ContextBuilder;
 use RuntimeException;
 
 class NpcCopilotService
 {
     public function __construct(
         private ChatProvider $chat,
-        private RagSearcher $searcher,
+        private ContextBuilder $contextBuilder,
     ) {}
 
-    /**
-     * @return list<string>
-     */
-    public function drafts(string $npcName, string $prompt, int $sceneId): array
+    public function drafts(string $npcName, string $prompt, int $sceneId): CopilotDraftResult
     {
         $draftCount = (int) config('copilot.draft_count');
-        $history = $this->loadHistory($sceneId);
-        $ragChunks = $this->searcher->search(
-            $prompt,
-            (int) config('copilot.rag_limit'),
-            [RagSourceType::Message],
-        );
-
-        $messages = [
-            [
-                'role' => 'system',
-                'content' => $this->systemPrompt($npcName, $draftCount),
-            ],
-            [
-                'role' => 'user',
-                'content' => $this->userPrompt($npcName, $prompt, $history, $ragChunks),
-            ],
-        ];
+        $context = $this->contextBuilder->build($npcName, $prompt, $sceneId, $draftCount);
 
         try {
-            $raw = $this->chat->chat($messages);
+            $raw = $this->chat->chat($context->messages);
         } catch (\Throwable $e) {
             throw new RuntimeException('Ollama is unavailable.', 0, $e);
         }
 
-        return $this->parseDrafts($raw, $draftCount);
-    }
-
-    private function systemPrompt(string $npcName, int $draftCount): string
-    {
-        return <<<PROMPT
-You are a storyteller assistant for a Vampire: The Masquerade text chat game.
-Write exactly {$draftCount} different in-character reply drafts for the NPC "{$npcName}".
-Each draft is one chat message only — no narration labels, no quotes around the whole line, no meta commentary.
-Respond with valid JSON only, no markdown fences:
-{"drafts":["first reply","second reply","third reply"]}
-PROMPT;
-    }
-
-    /**
-     * @param  Collection<int, Message>  $history
-     * @param  Collection<int, RagChunk>  $ragChunks
-     */
-    private function userPrompt(
-        string $npcName,
-        string $prompt,
-        Collection $history,
-        Collection $ragChunks,
-    ): string {
-        $parts = ["NPC: {$npcName}", '', 'Storyteller prompt:', $prompt, ''];
-
-        if ($ragChunks->isNotEmpty()) {
-            $parts[] = 'Relevant past context (semantic search):';
-            foreach ($ragChunks as $chunk) {
-                $parts[] = '- '.$chunk->content;
-            }
-            $parts[] = '';
-        }
-
-        if ($history->isNotEmpty()) {
-            $parts[] = 'Recent chat:';
-            foreach ($history as $message) {
-                $parts[] = $message->displayAuthor().': '.$message->body;
-            }
-            $parts[] = '';
-        }
-
-        $parts[] = "Generate {$this->draftCount()} distinct reply drafts for {$npcName}.";
-
-        return implode("\n", $parts);
-    }
-
-    /**
-     * @return Collection<int, Message>
-     */
-    private function loadHistory(int $sceneId): Collection
-    {
-        return Message::query()
-            ->with('user:id,name')
-            ->where('scene_id', $sceneId)
-            ->orderByDesc('id')
-            ->limit((int) config('copilot.history_limit'))
-            ->get()
-            ->reverse()
-            ->values();
-    }
-
-    private function draftCount(): int
-    {
-        return (int) config('copilot.draft_count');
+        return new CopilotDraftResult(
+            $this->parseDrafts($raw, $draftCount),
+            $context->metadata,
+            (string) config('ollama.chat_model'),
+            ContextBuilder::VERSION,
+            ContextBuilder::PROMPT_VERSION,
+        );
     }
 
     /**

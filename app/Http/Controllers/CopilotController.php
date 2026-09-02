@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\SceneStatus;
 use App\Http\Requests\CopilotDraftsRequest;
 use App\Llm\NpcCopilotService;
+use App\Models\CopilotRequest;
 use App\Models\Scene;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
@@ -29,7 +30,7 @@ class CopilotController extends Controller
         );
 
         try {
-            $drafts = $copilot->drafts(
+            $result = $copilot->drafts(
                 (string) $request->validated('npc_name'),
                 (string) $request->validated('prompt'),
                 $scene->id,
@@ -44,6 +45,21 @@ class CopilotController extends Controller
             return response()->json(['message' => $e->getMessage()], 502);
         }
 
-        return response()->json(['drafts' => $drafts]);
+        $copilotRequest = CopilotRequest::query()->create([
+            'scene_id' => $scene->id,
+            'storyteller_id' => $request->user()->id,
+            'npc_name' => $request->validated('npc_name'),
+            'prompt' => $request->validated('prompt'),
+            'drafts' => $result->drafts,
+            'context_metadata' => $result->contextMetadata,
+            'model' => $result->model,
+            'prompt_version' => $result->promptVersion,
+            'builder_version' => $result->builderVersion,
+        ]);
+
+        return response()->json([
+            'copilot_request_id' => $copilotRequest->id,
+            'drafts' => $result->drafts,
+        ]);
     }
 }

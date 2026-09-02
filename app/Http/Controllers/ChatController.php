@@ -6,10 +6,13 @@ use App\Enums\GameSessionStatus;
 use App\Enums\SceneStatus;
 use App\Http\Requests\StoreMessageRequest;
 use App\Jobs\IndexRagMessageJob;
+use App\Jobs\SummarizeSceneWindowJob;
+use App\Models\CopilotRequest;
 use App\Models\Message;
 use App\Models\Scene;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class ChatController extends Controller
 {
@@ -38,16 +41,57 @@ class ChatController extends Controller
 
     public function store(StoreMessageRequest $request): JsonResponse
     {
-        $npcName = $request->validated('npc_name');
+        $validated = $request->validated();
+        $npcName = $validated['npc_name'] ?? null;
         $npcName = is_string($npcName) && $npcName !== '' ? $npcName : null;
-        $sceneId = $request->validated('scene_id');
+        $sceneId = $validated['scene_id'] ?? null;
         $scene = $this->resolveScene($sceneId === null ? null : (int) $sceneId, true);
 
-        $message = $request->user()->messages()->create([
-            'scene_id' => $scene->id,
-            'body' => $request->validated('body'),
-            'npc_name' => $npcName,
-        ]);
+        $message = DB::transaction(function () use ($request, $validated, $npcName, $scene): Message {
+            $copilotRequestId = $validated['copilot_request_id'] ?? null;
+            $copilotRequest = null;
+
+            if ($copilotRequestId !== null) {
+                $copilotRequest = CopilotRequest::query()
+                    ->lockForUpdate()
+                    ->findOrFail((int) $copilotRequestId);
+
+                abort_if($copilotRequest->message()->exists(), 409, 'Copilot request was already used.');
+                abort_if(
+                    $copilotRequest->storyteller_id !== $request->user()->id,
+                    403,
+                    'Copilot request belongs to another storyteller.',
+                );
+                abort_if(
+                    $copilotRequest->scene_id !== $scene->id
+                    || $copilotRequest->npc_name !== $npcName,
+                    409,
+                    'Copilot request does not match this message.',
+                );
+
+                $draftIndex = (int) $validated['copilot_draft_index'];
+                abort_unless(
+                    array_key_exists($draftIndex, $copilotRequest->drafts),
+                    422,
+                    'Selected Copilot draft does not exist.',
+                );
+            }
+
+            $message = $request->user()->messages()->create([
+                'scene_id' => $scene->id,
+                'body' => $validated['body'],
+                'npc_name' => $npcName,
+                'copilot_request_id' => $copilotRequest?->id,
+            ]);
+
+            if ($copilotRequest !== null) {
+                $copilotRequest->update([
+                    'selected_draft_index' => (int) $validated['copilot_draft_index'],
+                ]);
+            }
+
+            return $message;
+        });
 
         $message->load('user:id,name');
 
@@ -56,6 +100,7 @@ class ChatController extends Controller
         } else {
             IndexRagMessageJob::dispatch($message->id);
         }
+        SummarizeSceneWindowJob::dispatch($scene->id);
 
         return response()->json(['message' => $this->serialize($message)], 201);
     }

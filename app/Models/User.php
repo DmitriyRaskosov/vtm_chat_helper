@@ -35,6 +35,14 @@ class User extends Authenticatable
         return $this->hasMany(GameSession::class, 'created_by');
     }
 
+    /**
+     * @return HasMany<CopilotRequest, $this>
+     */
+    public function copilotRequests(): HasMany
+    {
+        return $this->hasMany(CopilotRequest::class, 'storyteller_id');
+    }
+
     public function isStoryteller(): bool
     {
         return $this->role === UserRole::Storyteller;

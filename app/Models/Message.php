@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'scene_id',
     'body',
     'npc_name',
+    'copilot_request_id',
     'token_estimate',
     'token_estimator_version',
 ])]
@@ -45,6 +46,14 @@ class Message extends Model
     public function scene(): BelongsTo
     {
         return $this->belongsTo(Scene::class);
+    }
+
+    /**
+     * @return BelongsTo<CopilotRequest, $this>
+     */
+    public function copilotRequest(): BelongsTo
+    {
+        return $this->belongsTo(CopilotRequest::class);
     }
 
     protected static function booted(): void

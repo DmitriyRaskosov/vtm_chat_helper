@@ -8,7 +8,7 @@
 
 | Файл / каталог | Назначение |
 |----------------|------------|
-| `composer.json`, `compose.yaml` | PHP 8.4, PostgreSQL+pgvector, Redis, Mailpit, Ollama |
+| `composer.json`, `compose.yaml` | PHP 8.4 API + queue worker, PostgreSQL+pgvector, Redis, Mailpit, Ollama |
 | `.env`, `.env.example` | порты, RAG, Ollama |
 | `sail.cmd` | Sail под Windows |
 | `artisan` | CLI (через `docker compose exec laravel.test`) |
@@ -49,13 +49,20 @@
 | `User.php` | login, role (storyteller \| player) |
 | `GameSession.php` | игровая сессия |
 | `Scene.php` | сцена и её lifecycle |
-| `Message.php` | scene_id, body, npc_name, token estimate |
+| `Message.php` | scene_id, body, npc_name, token estimate, nullable copilot_request_id |
 | `RagChunk.php` | векторный индекс для RAG |
+| `CopilotRequest.php` | prompt, drafts, context metadata и выбранный результат |
+| `ContextSummary.php` | immutable L0/L1/scene_final/session memory |
+| `ContextSummarySource.php` | ordered provenance на messages/child summaries |
+| `SceneContextState.php` | курсоры L0 и L1 |
 
 ### Context/
 
 - `TokenEstimator.php` — версионируемая локальная оценка токенов
 - `MessageWindow.php`, `MessageWindowSelector.php` — целые окна будущей L0-суммаризации
+- `ContextBuilder.php`, `ContextBuild.php` — бюджетированный prompt и provenance включённых источников
+- `SummaryGenerator.php`, `GeneratedSummary.php` — структурированная генерация
+- `SummaryManager.php` — L0/L1/final/session orchestration
 
 ### Rag/
 
@@ -66,11 +73,14 @@
 ### Llm/
 
 - `OllamaChatProvider.php` — `qwen3:8b`
-- `NpcCopilotService.php` — сборка промпта + черновики
+- `NpcCopilotService.php`, `CopilotDraftResult.php` — вызов/парсинг черновиков и результат для аудита
 
 ### Jobs
 
 - `IndexRagMessageJob.php` — индексация после сообщения
+- `IndexRagSummaryJob.php` — retryable индексация summaries
+- `SummarizeSceneWindowJob.php` — фоновая L0/L1 суммаризация
+- `FinalizeSceneContextJob.php` — final scene и session summary
 
 ### Enums
 
@@ -85,6 +95,8 @@
 - `game_sessions`, `scenes` — доменная иерархия чата
 - `messages` — user_id, scene_id, body, npc_name, token estimate
 - `rag_chunks` — embedding `vector(1024)`, HNSW index
+- `copilot_requests` — успешные генерации, drafts, версии и context metadata; `messages.copilot_request_id` — одноразовая связь
+- `context_summaries`, `context_summary_sources`, `scene_context_states` — иерархическая память и provenance
 
 ### factories/
 
@@ -107,9 +119,9 @@
 
 ## Copilot flow
 
-Рассказчик → `POST /api/copilot/drafts` → последние сообщения + RAG (`qwen3-embedding:0.6b`) → Ollama `qwen3:8b` → JSON с черновиками.
+Рассказчик → `POST /api/copilot/drafts` → `ContextBuilder` (raw + RAG, бюджет 12000) → Ollama `qwen3:8b` (`num_ctx=16384`) → сохранённый request + JSON с черновиками.
 
-Рассказчик правит → `POST /api/messages` `{ body, npc_name }` → чат для всех, `author` = имя НПС, RAG-индекс сообщения.
+Рассказчик правит → `POST /api/messages` `{ body, npc_name, copilot_request_id, copilot_draft_index }` → одноразовая связь → чат для всех и RAG-индекс сообщения.
 
 Подробнее: [[Features/Copilot]], [[API/Copilot]].
 

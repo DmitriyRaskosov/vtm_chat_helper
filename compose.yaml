@@ -27,6 +27,20 @@ services:
             - redis
             - mailpit
             - ollama
+    queue:
+        image: 'sail-8.4/app'
+        command: 'php artisan queue:work --sleep=1 --tries=3 --timeout=300'
+        environment:
+            WWWUSER: '${WWWUSER}'
+            LARAVEL_SAIL: 1
+        volumes:
+            - '.:/var/www/html'
+        networks:
+            - sail
+        depends_on:
+            - pgsql
+            - redis
+            - ollama
     pgsql:
         image: 'pgvector/pgvector:pg18'
         ports:
@@ -76,6 +90,8 @@ services:
             - sail
     ollama:
         image: 'ollama/ollama'
+        environment:
+            OLLAMA_CONTEXT_LENGTH: '${OLLAMA_CONTEXT_LENGTH:-16384}'
         volumes:
             - 'sail-ollama:/root/.ollama'
         networks:

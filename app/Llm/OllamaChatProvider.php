@@ -9,15 +9,22 @@ class OllamaChatProvider implements ChatProvider
 {
     /**
      * @param  list<array{role: string, content: string}>  $messages
+     * @param  array<string, int|float|string|bool>  $options
      */
-    public function chat(array $messages): string
+    public function chat(array $messages, array $options = []): string
     {
+        $options = array_replace([
+            'num_ctx' => (int) config('ollama.context_length'),
+            'num_predict' => (int) config('ollama.max_output_tokens'),
+        ], $options);
+
         $response = Http::timeout(180)
             ->baseUrl((string) config('ollama.url'))
             ->post('/api/chat', [
                 'model' => config('ollama.chat_model'),
                 'stream' => false,
                 'messages' => $messages,
+                'options' => $options,
             ]);
 
         $response->throw();

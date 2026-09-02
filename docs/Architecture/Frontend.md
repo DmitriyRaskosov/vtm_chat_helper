@@ -28,9 +28,11 @@ Vue 3 SPA в `frontend/`. Запуск: `cd frontend && npm run dev` (порт 5
 Copilot flow:
 
 1. Поля `npc_name`, ситуационный `prompt`
-2. `POST /api/copilot/drafts` — три черновика; loading и ошибки API
+2. `POST /api/copilot/drafts` — три черновика и `copilot_request_id`; loading и ошибки API
 3. Выбор черновика, правка в textarea
-4. `POST /api/messages` с `{ body, npc_name, scene_id }` — отправка в активную сцену
+4. `POST /api/messages` с `{ body, npc_name, scene_id, copilot_request_id, copilot_draft_index }` — отправка и трассировка выбранного результата
+
+При смене сцены сохранённый ID и черновики сбрасываются. После успешной отправки повторное использование той же генерации в UI невозможно.
 
 Игроки видят сцены, ленту и свой composer; управление сценами и панель copilot не рендерить.
 

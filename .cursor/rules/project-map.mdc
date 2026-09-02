@@ -23,8 +23,9 @@ alwaysApply: true
 | `Http/Middleware/EnsureStoryteller.php` | ST-only routes |
 | `Rag/` | RagIndexer, RagSearcher, EmbeddingProvider |
 | `Llm/` | OllamaChatProvider, NpcCopilotService |
-| `Jobs/IndexRagMessageJob.php` | RAG после сообщения |
-| `Enums/RagSourceType.php` | message, lore (+ npc, relationship — задел) |
+| `Context/` | ContextBuilder, SummaryManager, TokenEstimator, L0/L1 orchestration |
+| `Jobs/` | RAG после сообщения, L0 generation, scene/session finalization |
+| `Enums/RagSourceType.php` | message, summary, lore (+ npc, relationship — задел) |
 
 Конфиг: `config/rag.php`, `config/ollama.php`, `config/copilot.php`.
 
@@ -38,7 +39,7 @@ alwaysApply: true
 
 ## Тесты
 
-`tests/Feature/`: Authentication, Chat, Copilot, RagSearch. `UserFactory::storyteller()`, password `password`. Ollama: `Http::fake` на `config('ollama.url').'/api/chat'`. RAG: `stub` в `phpunit.xml`.
+`tests/Feature/`: Authentication, Chat, Copilot, ContextSummary, RagSearch. `UserFactory::storyteller()`, password `password`. Ollama: `Http::fake`/`ChatProvider` fake. RAG: `stub` в `phpunit.xml`.
 
 ## Out of scope (до этапа 4)
 

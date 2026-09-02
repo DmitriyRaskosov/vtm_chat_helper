@@ -17,8 +17,9 @@ docker compose exec laravel.test php artisan test
 | `tests/Feature/AuthenticationTest.php` | register, login, logout, `/api/user` |
 | `tests/Feature/ChatTest.php` | GET/POST messages, author, mine |
 | `tests/Feature/GameSessionSceneTest.php` | lifecycle сессий/сцен, роли и статусы |
-| `tests/Feature/CopilotTest.php` | drafts, npc_name, 403 для player |
+| `tests/Feature/CopilotTest.php` | drafts, лимит/дедупликация Context Builder, runtime options Ollama, хранение и одноразовая привязка запроса |
 | `tests/Feature/RagSearchTest.php` | индексация, search, lore chunks |
+| `tests/Feature/ContextSummaryTest.php` | L0 thresholds, oversized, failure/cursor, idempotency, L1/final/session provenance и Context Builder |
 
 ## Unit-тесты контекста
 
@@ -26,6 +27,10 @@ docker compose exec laravel.test php artisan test
 - `MessageWindowSelectorTest` — лимиты 15000/50, точная граница и oversized-сообщение.
 
 Selector проверяется без Ollama и никогда не делит одно сообщение между окнами.
+
+Context Builder проверяется через фактический payload fake Ollama и `context_metadata`: вход не превышает бюджет, newest raw history имеет приоритет, RAG/raw дубли удаляются.
+
+Summary-тесты подменяют `ChatProvider` и используют stub embeddings. Проверяется отдельный профиль 24576/3000, отсутствие сдвига курсора при ошибке и неизменность количества summaries при повторном запуске.
 
 ## Ollama в feature-тестах
 

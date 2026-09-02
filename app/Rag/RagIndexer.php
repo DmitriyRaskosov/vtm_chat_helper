@@ -3,6 +3,7 @@
 namespace App\Rag;
 
 use App\Enums\RagSourceType;
+use App\Models\ContextSummary;
 use App\Models\Message;
 use App\Models\RagChunk;
 
@@ -43,6 +44,24 @@ class RagIndexer
             $content,
             $title,
             [],
+        );
+    }
+
+    public function indexSummary(ContextSummary $summary): RagChunk
+    {
+        return $this->upsert(
+            RagSourceType::Summary,
+            (string) $summary->id,
+            0,
+            $summary->content,
+            $summary->level->value,
+            [
+                'level' => $summary->level->value,
+                'scene_id' => $summary->scene_id,
+                'game_session_id' => $summary->game_session_id,
+                'first_message_id' => $summary->first_message_id,
+                'last_message_id' => $summary->last_message_id,
+            ],
         );
     }
 

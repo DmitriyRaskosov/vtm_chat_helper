@@ -42,6 +42,14 @@ class GameSession extends Model
         return $this->hasMany(Scene::class)->orderBy('position');
     }
 
+    /**
+     * @return HasMany<ContextSummary, $this>
+     */
+    public function contextSummaries(): HasMany
+    {
+        return $this->hasMany(ContextSummary::class);
+    }
+
     protected function casts(): array
     {
         return [

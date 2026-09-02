@@ -12,7 +12,7 @@
 |----------|-----|---------|
 | `q` | string | required, max 2000 |
 | `limit` | int | optional, 1–20, default 5 |
-| `types` | array | optional, значения: `message`, `lore` |
+| `types` | array | optional, значения: `message`, `summary`, `lore` |
 
 **Response 200:**
 
@@ -35,6 +35,7 @@
 
 - После каждого `POST /api/messages` — `RagIndexer::indexMessage` (sync или queue, `RAG_INDEX_SYNC`)
 - Metadata message-чанка содержит `user_id`, `scene_id`, `game_session_id` и опциональный `npc_name`
+- Каждый L0/L1/final/session summary индексируется как `summary`; metadata содержит уровень, session/scene и покрытый диапазон message ID
 - Канон в `messages`, производный слой в `rag_chunks` (`source_type`, `source_id`, `embedding`)
 - Lore: `rag:index-lore` artisan / `RagIndexer::indexLore` (copilot в MVP ищет только `message`)
 
@@ -59,6 +60,6 @@ Lore-чанки переиндексируются вручную через `ra
 
 ## Copilot
 
-`NpcCopilotService` ищет по промпту рассказчика, тип `message` (не `lore` в текущем MVP). Фильтрация RAG по сцене будет добавлена вместе с Context Builder; recent history уже scoped по активной сцене.
+`ContextBuilder` отдельно ищет `summary` и `message`; lore в Copilot пока не используется. Scope поиска пока не изменён и остаётся глобальным. Запланирован отдельный этап с явными профилями `active_scene`, `game_session` и `global`, чтобы разные потребители могли выбирать область без неявного смешивания сессий.
 
 См. [[Architecture/Backend]], [[API/Copilot]].

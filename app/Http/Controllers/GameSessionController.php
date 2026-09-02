@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneStatus;
 use App\Http\Requests\StoreGameSessionRequest;
+use App\Jobs\FinalizeSceneContextJob;
 use App\Models\GameSession;
 use App\Models\Scene;
 use Illuminate\Http\JsonResponse;
@@ -26,8 +27,9 @@ class GameSessionController extends Controller
 
     public function store(StoreGameSessionRequest $request): JsonResponse
     {
-        $gameSession = DB::transaction(function () use ($request): GameSession {
+        $result = DB::transaction(function () use ($request): array {
             $now = now();
+            $closedSceneIds = [];
 
             $activeSessionIds = GameSession::query()
                 ->active()
@@ -35,9 +37,15 @@ class GameSessionController extends Controller
                 ->pluck('id');
 
             if ($activeSessionIds->isNotEmpty()) {
+                $closedSceneIds = Scene::query()
+                    ->whereIn('game_session_id', $activeSessionIds)
+                    ->where('status', '!=', SceneStatus::Closed)
+                    ->pluck('id')
+                    ->all();
+
                 Scene::query()
                     ->whereIn('game_session_id', $activeSessionIds)
-                    ->active()
+                    ->where('status', '!=', SceneStatus::Closed)
                     ->update([
                         'status' => SceneStatus::Closed,
                         'ended_at' => $now,
@@ -66,8 +74,18 @@ class GameSessionController extends Controller
                 'started_at' => $now,
             ]);
 
-            return $session->load('scenes');
+            return [
+                'game_session' => $session->load('scenes'),
+                'closed_scene_ids' => $closedSceneIds,
+            ];
         });
+
+        foreach ($result['closed_scene_ids'] as $sceneId) {
+            FinalizeSceneContextJob::dispatch((int) $sceneId);
+        }
+
+        /** @var GameSession $gameSession */
+        $gameSession = $result['game_session'];
 
         return response()->json(['game_session' => $this->serialize($gameSession)], 201);
     }

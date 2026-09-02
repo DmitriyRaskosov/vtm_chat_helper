@@ -47,6 +47,8 @@
 | `body` | string | required, max 4000 |
 | `npc_name` | string | optional, max 64; только [[Project/Roles|рассказчик]], иначе 403 |
 | `scene_id` | integer | optional; по умолчанию активная сцена |
+| `copilot_request_id` | integer | optional; ID успешной генерации, только вместе с `npc_name` и `copilot_draft_index` |
+| `copilot_draft_index` | integer | optional, min 0; индекс выбранного черновика |
 
 **Response 201:** `{ "message": { … } }` — та же структура, что в GET.
 
@@ -57,5 +59,7 @@
 ## Реплика от имени НПС
 
 Рассказчик отправляет `npc_name` + `body`. `user_id` — рассказчик (аудит). В чате `author` = имя НПС, `mine` = false.
+
+Если реплика создана через Copilot, UI также передаёт `copilot_request_id` и `copilot_draft_index`. API под транзакционной блокировкой проверяет совпадение рассказчика, сцены и имени НПС. Чужой запрос возвращает **403**, несовпадение или повторное использование — **409**; текст можно отредактировать перед отправкой.
 
 См. [[Features/Chat]], [[Features/Scenes]], [[Features/Copilot]].

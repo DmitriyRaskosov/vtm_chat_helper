@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 #[Fillable([
     'game_session_id',
@@ -50,6 +51,30 @@ class Scene extends Model
         return $this->hasMany(Message::class);
     }
 
+    /**
+     * @return HasMany<CopilotRequest, $this>
+     */
+    public function copilotRequests(): HasMany
+    {
+        return $this->hasMany(CopilotRequest::class);
+    }
+
+    /**
+     * @return HasMany<ContextSummary, $this>
+     */
+    public function contextSummaries(): HasMany
+    {
+        return $this->hasMany(ContextSummary::class);
+    }
+
+    /**
+     * @return HasOne<SceneContextState, $this>
+     */
+    public function contextState(): HasOne
+    {
+        return $this->hasOne(SceneContextState::class);
+    }
+
     protected function casts(): array
     {
         return [
@@ -57,5 +82,10 @@ class Scene extends Model
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::created(fn (Scene $scene) => $scene->contextState()->create());
     }
 }

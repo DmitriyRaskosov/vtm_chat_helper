@@ -4,10 +4,12 @@ namespace Tests\Feature;
 
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneStatus;
+use App\Jobs\FinalizeSceneContextJob;
 use App\Models\GameSession;
 use App\Models\Scene;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -31,8 +33,15 @@ class GameSessionSceneTest extends TestCase
 
     public function test_storyteller_can_create_a_new_active_session(): void
     {
+        Queue::fake();
         $storyteller = User::factory()->storyteller()->create();
         $oldSession = GameSession::query()->active()->firstOrFail();
+        $oldSession->scenes()->create([
+            'position' => 2,
+            'title' => 'Отложенная сцена',
+            'status' => SceneStatus::Draft,
+        ]);
+        $oldSceneIds = $oldSession->scenes()->pluck('id')->all();
 
         Sanctum::actingAs($storyteller);
 
@@ -50,10 +59,21 @@ class GameSessionSceneTest extends TestCase
             'created_by' => $storyteller->id,
             'status' => GameSessionStatus::Active->value,
         ]);
+        $this->assertSame(
+            0,
+            $oldSession->scenes()->where('status', '!=', SceneStatus::Closed)->count(),
+        );
+        foreach ($oldSceneIds as $oldSceneId) {
+            Queue::assertPushed(
+                FinalizeSceneContextJob::class,
+                fn (FinalizeSceneContextJob $job): bool => $job->sceneId === $oldSceneId,
+            );
+        }
     }
 
     public function test_storyteller_can_create_switch_and_close_scenes(): void
     {
+        Queue::fake();
         $storyteller = User::factory()->storyteller()->create();
         $session = GameSession::query()->active()->with('scenes')->firstOrFail();
         $firstScene = $session->scenes->firstOrFail();
@@ -82,6 +102,11 @@ class GameSessionSceneTest extends TestCase
         $this->patchJson("/api/scenes/{$firstScene->id}/close")
             ->assertOk()
             ->assertJsonPath('scene.status', 'closed');
+
+        Queue::assertPushed(
+            FinalizeSceneContextJob::class,
+            fn (FinalizeSceneContextJob $job): bool => $job->sceneId === $firstScene->id,
+        );
     }
 
     public function test_player_cannot_manage_sessions_or_scenes(): void

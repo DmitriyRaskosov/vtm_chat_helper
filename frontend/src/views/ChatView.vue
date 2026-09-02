@@ -192,6 +192,7 @@ const body = ref('');
 const logEl = ref(null);
 const npcName = ref('');
 const copilotPrompt = ref('');
+const copilotRequestId = ref(null);
 const drafts = ref([]);
 const selectedDraftIndex = ref(null);
 const editedDraft = ref('');
@@ -286,6 +287,7 @@ async function loadGameSession(preferredSceneId = selectedSceneId.value) {
 
 async function switchScene() {
     messages.value = [];
+    resetCopilotDrafts();
     await load();
 }
 
@@ -306,6 +308,7 @@ async function poll() {
 
         if (selectedSceneId.value !== previousSceneId) {
             messages.value = [];
+            resetCopilotDrafts();
             await load();
         } else {
             await load(lastId());
@@ -420,12 +423,17 @@ function selectDraft(index) {
     editedDraft.value = drafts.value[index] ?? '';
 }
 
-async function generateDrafts() {
-    copilotError.value = '';
-    copilotLoading.value = true;
+function resetCopilotDrafts() {
+    copilotRequestId.value = null;
     drafts.value = [];
     selectedDraftIndex.value = null;
     editedDraft.value = '';
+}
+
+async function generateDrafts() {
+    copilotError.value = '';
+    copilotLoading.value = true;
+    resetCopilotDrafts();
 
     try {
         const { data } = await api.post('/copilot/drafts', {
@@ -433,6 +441,7 @@ async function generateDrafts() {
             prompt: copilotPrompt.value.trim(),
             scene_id: selectedSceneId.value,
         });
+        copilotRequestId.value = data.copilot_request_id ?? null;
         drafts.value = data.drafts ?? [];
         if (drafts.value.length > 0) {
             selectDraft(0);
@@ -452,13 +461,23 @@ async function sendAsNpc() {
         return;
     }
 
-    const { data } = await api.post('/messages', {
-        body: text,
-        npc_name: name,
-        scene_id: selectedSceneId.value,
-    });
-    merge([data.message]);
-    await scrollDown();
+    copilotError.value = '';
+
+    try {
+        const { data } = await api.post('/messages', {
+            body: text,
+            npc_name: name,
+            scene_id: selectedSceneId.value,
+            copilot_request_id: copilotRequestId.value,
+            copilot_draft_index: selectedDraftIndex.value,
+        });
+        merge([data.message]);
+        resetCopilotDrafts();
+        await scrollDown();
+    } catch (error) {
+        copilotError.value =
+            error.response?.data?.message ?? 'Не удалось отправить выбранный черновик.';
+    }
 }
 
 async function logout() {

@@ -26,6 +26,16 @@ docker compose exec ollama ollama pull qwen3:8b
 
 После pull зарегистрируйте пользователей заново. В `.env`: `RAG_EMBEDDING_DRIVER=ollama`, `RAG_EMBEDDING_MODEL=qwen3-embedding:0.6b`, `RAG_EMBEDDING_DIMENSIONS=1024` (см. [[Development/Environment]]).
 
+Ollama запускается с `OLLAMA_CONTEXT_LENGTH=16384`; Laravel также передаёт `num_ctx=16384` и `num_predict=3000` для каждого chat-запроса. После изменения compose пересоздайте сервис и проверьте фактическое окно:
+
+```bat
+docker compose up -d --force-recreate ollama
+docker compose exec ollama ollama run qwen3:8b "ping"
+docker compose exec ollama ollama ps
+```
+
+В колонке `CONTEXT` для `qwen3:8b` ожидается `16384`. Большое окно требует больше памяти.
+
 При смене embed-модели или размерности вектора:
 
 ```bat
@@ -35,7 +45,13 @@ docker compose exec laravel.test php artisan rag:reindex-messages
 
 Миграция `resize_rag_chunks_embedding_for_qwen3` очищает `rag_chunks` и меняет размерность колонки; lore-чанки нужно проиндексировать заново через `rag:index-lore`.
 
-`php artisan queue:work` — только если `RAG_INDEX_SYNC=false`.
+Фоновая суммаризация всегда использует очередь `database`. Сервис `queue` запускается вместе с compose и выполняет:
+
+```bat
+docker compose logs -f queue
+```
+
+Для ручного запуска без сервиса: `docker compose exec laravel.test php artisan queue:work --timeout=300`. Summary jobs имеют timeout 300 секунд, до трёх попыток и backoff 30/120 секунд; `DB_QUEUE_RETRY_AFTER=600` должен оставаться больше timeout, чтобы второй worker не подобрал ещё выполняющийся job. При `RAG_INDEX_SYNC=false` тот же worker также выполняет индексацию сообщений. В тестах `QUEUE_CONNECTION=sync`.
 
 ### Windows
 

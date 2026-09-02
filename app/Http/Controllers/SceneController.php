@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneStatus;
 use App\Http\Requests\StoreSceneRequest;
+use App\Jobs\FinalizeSceneContextJob;
 use App\Models\GameSession;
 use App\Models\Scene;
 use Illuminate\Http\JsonResponse;
@@ -91,20 +92,34 @@ class SceneController extends Controller
 
     public function close(Scene $scene): JsonResponse
     {
-        if ($scene->status !== SceneStatus::Closed) {
-            abort_unless(
-                $scene->gameSession->status === GameSessionStatus::Active,
-                409,
-                'Only scenes in the active game session can be closed.',
-            );
+        $wasClosed = $scene->status === SceneStatus::Closed;
+        $scene = DB::transaction(function () use ($scene): Scene {
+            $lockedScene = Scene::query()
+                ->with('gameSession')
+                ->lockForUpdate()
+                ->findOrFail($scene->id);
 
-            $scene->update([
-                'status' => SceneStatus::Closed,
-                'ended_at' => now(),
-            ]);
+            if ($lockedScene->status !== SceneStatus::Closed) {
+                abort_unless(
+                    $lockedScene->gameSession->status === GameSessionStatus::Active,
+                    409,
+                    'Only scenes in the active game session can be closed.',
+                );
+
+                $lockedScene->update([
+                    'status' => SceneStatus::Closed,
+                    'ended_at' => now(),
+                ]);
+            }
+
+            return $lockedScene->refresh();
+        });
+
+        if (! $wasClosed) {
+            FinalizeSceneContextJob::dispatch($scene->id);
         }
 
-        return response()->json(['scene' => $this->serialize($scene->refresh())]);
+        return response()->json(['scene' => $this->serialize($scene)]);
     }
 
     /**
