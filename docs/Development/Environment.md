@@ -22,6 +22,10 @@
 | `COPILOT_HISTORY_LIMIT` | `30` | Сколько последних сообщений в контекст промпта |
 | `COPILOT_RAG_LIMIT` | `5` | Сколько RAG-чанков в контекст |
 | `COPILOT_DRAFT_COUNT` | `3` | Количество черновиков |
+| `COPILOT_TOOLS_ENABLED` | `true` | Tool-call loop Copilot |
+| `COPILOT_TOOLS_MAX_ITERATIONS` | `2` | Максимум раундов tools |
+| `COPILOT_TOOLS_SEARCH_LIMIT` | `5` | Лимит `search_messages` / `search_summaries` |
+| `COPILOT_TOOLS_RANGE_LIMIT` | `20` | Лимит `get_message_range` |
 
 Конфиг: `config/rag.php`, `config/ollama.php`, `config/copilot.php`.
 
@@ -36,7 +40,10 @@
 | `CONTEXT_SUMMARY_RAG_LIMIT` | `5` | Максимум релевантных summary-чанков для Copilot |
 | `CONTEXT_SUMMARY_CONTEXT_LENGTH` | `24576` | `num_ctx` для L0/L1/final/session суммаризации |
 | `CONTEXT_SUMMARY_MAX_OUTPUT_TOKENS` | `3000` | `num_predict` для summary |
-| `CONTEXT_COPILOT_MAX_INPUT_TOKENS` | `12000` | Бюджет system + prompt + raw history + RAG |
+| `CONTEXT_COPILOT_MAX_INPUT_TOKENS` | `12000` | Бюджет system + prompt + raw history + RAG + intent |
+| `CONTEXT_INTENT_REQUEST_LIMIT` | `20` | Сколько последних Copilot prompts входит в rolling intent |
+| `CONTEXT_INTENT_CONTEXT_LENGTH` | `8192` | `num_ctx` для intent summary |
+| `CONTEXT_INTENT_MAX_OUTPUT_TOKENS` | `400` | `num_predict` для intent summary |
 
 Вход 12000 + ответ до 3000 укладываются в окно 16384 с техническим запасом. Конфиг: `config/context.php`, `config/ollama.php`. Алгоритм и правило oversized описаны в [[Architecture/Context]].
 

@@ -23,4 +23,10 @@ return [
     'copilot' => [
         'max_input_tokens' => (int) env('CONTEXT_COPILOT_MAX_INPUT_TOKENS', 12000),
     ],
+
+    'intent' => [
+        'request_limit' => (int) env('CONTEXT_INTENT_REQUEST_LIMIT', 20),
+        'context_length' => (int) env('CONTEXT_INTENT_CONTEXT_LENGTH', 8192),
+        'max_output_tokens' => (int) env('CONTEXT_INTENT_MAX_OUTPUT_TOKENS', 400),
+    ],
 ];

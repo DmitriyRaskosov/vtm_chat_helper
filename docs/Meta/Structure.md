@@ -53,6 +53,7 @@
 | `RagChunk.php` | векторный индекс для RAG |
 | `CopilotRequest.php` | prompt, drafts, context metadata и выбранный результат |
 | `ContextSummary.php` | immutable L0/L1/scene_final/session memory |
+| `StorytellerIntentSummary.php` | rolling meta-память промптов рассказчика |
 | `ContextSummarySource.php` | ordered provenance на messages/child summaries |
 | `SceneContextState.php` | курсоры L0 и L1 |
 
@@ -63,6 +64,12 @@
 - `ContextBuilder.php`, `ContextBuild.php` — бюджетированный prompt и provenance включённых источников
 - `SummaryGenerator.php`, `GeneratedSummary.php` — структурированная генерация
 - `SummaryManager.php` — L0/L1/final/session orchestration
+- `StorytellerIntentGenerator.php`, `StorytellerIntentManager.php` — rolling memory промптов Copilot
+
+### Retrieval/
+
+- `RetrievalOrchestrator.php`, `RetrievalScope.php` — session-scoped tool calls
+- `Tools/SearchMessagesTool.php`, `GetMessageRangeTool.php`, `SearchSummariesTool.php`
 
 ### Rag/
 
@@ -72,7 +79,7 @@
 
 ### Llm/
 
-- `OllamaChatProvider.php` — `qwen3:8b`
+- `OllamaChatProvider.php` — `qwen3:8b`, `chatTurn` и tools
 - `NpcCopilotService.php`, `CopilotDraftResult.php` — вызов/парсинг черновиков и результат для аудита
 
 ### Jobs
@@ -81,6 +88,7 @@
 - `IndexRagSummaryJob.php` — retryable индексация summaries
 - `SummarizeSceneWindowJob.php` — фоновая L0/L1 суммаризация
 - `FinalizeSceneContextJob.php` — final scene и session summary
+- `RefreshStorytellerIntentJob.php` — rolling intent после Copilot
 
 ### Enums
 
@@ -96,6 +104,7 @@
 - `messages` — user_id, scene_id, body, npc_name, token estimate
 - `rag_chunks` — embedding `vector(1024)`, HNSW index
 - `copilot_requests` — успешные генерации, drafts, версии и context metadata; `messages.copilot_request_id` — одноразовая связь
+- `storyteller_intent_summaries` — immutable rolling summaries намерений рассказчика
 - `context_summaries`, `context_summary_sources`, `scene_context_states` — иерархическая память и provenance
 
 ### factories/
@@ -119,7 +128,7 @@
 
 ## Copilot flow
 
-Рассказчик → `POST /api/copilot/drafts` → `ContextBuilder` (raw + RAG, бюджет 12000) → Ollama `qwen3:8b` (`num_ctx=16384`) → сохранённый request + JSON с черновиками.
+Рассказчик → `POST /api/copilot/drafts` → `ContextBuilder` (raw + RAG + intent, бюджет 12000) → Ollama `qwen3:8b` (tools, `num_ctx=16384`) → сохранённый request + JSON с черновиками.
 
 Рассказчик правит → `POST /api/messages` `{ body, npc_name, copilot_request_id, copilot_draft_index }` → одноразовая связь → чат для всех и RAG-индекс сообщения.
 

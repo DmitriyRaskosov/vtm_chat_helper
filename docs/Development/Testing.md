@@ -17,9 +17,11 @@ docker compose exec laravel.test php artisan test
 | `tests/Feature/AuthenticationTest.php` | register, login, logout, `/api/user` |
 | `tests/Feature/ChatTest.php` | GET/POST messages, author, mine |
 | `tests/Feature/GameSessionSceneTest.php` | lifecycle сессий/сцен, роли и статусы |
-| `tests/Feature/CopilotTest.php` | drafts, лимит/дедупликация Context Builder, runtime options Ollama, хранение и одноразовая привязка запроса |
+| `tests/Feature/CopilotTest.php` | drafts, лимит/дедупликация Context Builder, runtime options Ollama, tool-loop, хранение и одноразовая привязка запроса |
 | `tests/Feature/RagSearchTest.php` | индексация, search, lore chunks |
 | `tests/Feature/ContextSummaryTest.php` | L0 thresholds, oversized, failure/cursor, idempotency, L1/final/session provenance и Context Builder |
+| `tests/Feature/RetrievalToolsTest.php` | session scope, лимиты range, изоляция search_messages/summaries |
+| `tests/Feature/StorytellerIntentTest.php` | intent в Copilot, отсутствие в world summary и player chat |
 
 ## Unit-тесты контекста
 

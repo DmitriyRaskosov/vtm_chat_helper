@@ -16,9 +16,9 @@ Laravel JSON API. Маршруты только в `routes/api.php`.
 
 | Компонент | Назначение |
 |-----------|------------|
-| `ChatProvider` | Интерфейс чат-модели |
-| `OllamaChatProvider` | Ollama `/api/chat` для `qwen3:8b`, runtime-лимиты контекста и ответа |
-| `NpcCopilotService` | Вызов LLM и парсинг JSON drafts |
+| `ChatProvider` | Интерфейс чат-модели, включая `chatTurn` для tool calls |
+| `OllamaChatProvider` | Ollama `/api/chat` для `qwen3:8b`, runtime-лимиты и JSON tools |
+| `NpcCopilotService` | Вызов LLM, ограниченный tool-loop и парсинг JSON drafts |
 | `CopilotDraftResult` | Drafts и данные для аудита успешной генерации |
 
 ### `app/Context/`
@@ -28,11 +28,23 @@ Laravel JSON API. Маршруты только в `routes/api.php`.
 | `TokenEstimator` | Версионируемая локальная оценка токенов |
 | `MessageWindowSelector` | Выбор целых сообщений для будущего L0 |
 | `MessageWindow` | Результат выбора: сообщения, токены, oversized |
-| `ContextBuilder` | Бюджетированная сборка prompt из raw history и RAG |
+| `ContextBuilder` | Бюджетированная сборка prompt из raw history, RAG и intent |
 | `ContextBuild` | LLM messages и metadata включённых источников |
 | `SummaryGenerator` | Структурированная генерация summary через `qwen3:8b` |
 | `SummaryManager` | L0/L1/final/session orchestration, курсоры и provenance |
+| `StorytellerIntentGenerator` | Rolling summary промптов рассказчика |
+| `StorytellerIntentManager` | Идемпотентные версии intent memory |
 | `GeneratedSummary` | Narrative и структурированная metadata результата |
+
+### `app/Retrieval/`
+
+| Компонент | Назначение |
+|-----------|------------|
+| `RetrievalOrchestrator` | Вызов tools с лимитами и оценкой токенов |
+| `RetrievalToolRegistry` | `search_messages`, `get_message_range`, `search_summaries` |
+| `RetrievalScope` | Изоляция текущей игровой сессии |
+
+Подробности: [[Architecture/Retrieval]].
 
 ### Jobs
 
@@ -40,6 +52,7 @@ Laravel JSON API. Маршруты только в `routes/api.php`.
 - `IndexRagSummaryJob` — независимая retryable индексация сохранённого summary
 - `SummarizeSceneWindowJob` — проверка и свёртка готовых L0-окон
 - `FinalizeSceneContextJob` — остаточный L0, final scene и session summary после закрытия
+- `RefreshStorytellerIntentJob` — rolling summary намерений рассказчика
 
 ## Модели
 
@@ -48,6 +61,7 @@ Laravel JSON API. Маршруты только в `routes/api.php`.
 - `Message` — канон чата; обязательный `scene_id`, nullable `npc_name`, кеш оценки токенов
 - `RagChunk` — `source_type` (`message`, `summary`, `lore`), `embedding`, metadata
 - `CopilotRequest` — успешный вызов Copilot, drafts, context metadata и связь с выбранным сообщением
+- `StorytellerIntentSummary` — immutable rolling memory промптов рассказчика
 - `ContextSummary` — immutable L0/L1/scene_final/session summary
 - `ContextSummarySource` — ordered provenance на message или child summary
 - `SceneContextState` — L0/L1 cursors сцены

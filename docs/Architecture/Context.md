@@ -6,7 +6,7 @@
 
 1. `messages` — полная сырая история и источник истины.
 2. Context summaries — immutable производная память с полным provenance по сообщениям и дочерним summaries.
-3. Рабочий prompt — бюджетированный набор recent messages, summary RAG и message RAG.
+3. Рабочий prompt — бюджетированный набор recent messages, summary RAG, message RAG и низкоприоритетная память намерений рассказчика.
 
 ## Область контекста
 
@@ -56,11 +56,18 @@ Job фиксирует окно и курсор под блокировкой, �
 1. обязательный system prompt и запрос рассказчика;
 2. самые свежие целые сообщения активной сцены в хронологическом порядке;
 3. релевантные summaries до исчерпания бюджета;
-4. message RAG до исчерпания бюджета.
+4. message RAG до исчерпания бюджета;
+5. rolling summary намерений рассказчика, если ещё есть бюджет.
 
 Сообщение никогда не режется. Message RAG исключается при совпадении с raw ID. Summary исключается, если его диапазон пересекает raw hot tail или уже включённый summary. Текущий глобальный scope RAG намеренно сохранён; отдельный будущий этап введёт явные профили `active_scene`, `game_session` и `global`.
 
-Результат содержит LLM messages и воспроизводимую metadata: версии builder/prompt/оценщика, бюджет и оценку входа, включённые raw message IDs, summary IDs, RAG chunk/source IDs и количество исключённых источников.
+Добор контекста по запросу модели — отдельные scoped tools, см. [[Architecture/Retrieval]].
+
+## Память намерений рассказчика
+
+`storyteller_intent_summaries` — immutable rolling summaries промптов Copilot (`copilot_requests.prompt`), не событий мира. Они не пишутся в `context_summaries`, не индексируются в `rag_chunks` и не отдаются игрокам через chat API. После успешного `POST /api/copilot/drafts` ставится `RefreshStorytellerIntentJob`. В prompt секция идёт последней и помечается как meta.
+
+Результат содержит LLM messages и воспроизводимую metadata: версии builder/prompt/оценщика, бюджет и оценку входа, включённые raw message IDs, summary IDs, intent ID, RAG chunk/source IDs, tool invocations и количество исключённых источников.
 
 ## Окно Ollama
 

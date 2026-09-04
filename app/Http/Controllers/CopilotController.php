@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\SceneStatus;
 use App\Http\Requests\CopilotDraftsRequest;
+use App\Jobs\RefreshStorytellerIntentJob;
 use App\Llm\NpcCopilotService;
 use App\Models\CopilotRequest;
 use App\Models\Scene;
@@ -34,6 +35,7 @@ class CopilotController extends Controller
                 (string) $request->validated('npc_name'),
                 (string) $request->validated('prompt'),
                 $scene->id,
+                (int) $request->user()->id,
             );
         } catch (ConnectionException|RequestException) {
             return response()->json(['message' => 'Ollama is unavailable.'], 503);
@@ -56,6 +58,11 @@ class CopilotController extends Controller
             'prompt_version' => $result->promptVersion,
             'builder_version' => $result->builderVersion,
         ]);
+
+        RefreshStorytellerIntentJob::dispatch(
+            (int) $scene->game_session_id,
+            (int) $request->user()->id,
+        );
 
         return response()->json([
             'copilot_request_id' => $copilotRequest->id,

@@ -28,9 +28,10 @@ sequenceDiagram
     ST->>API: POST /copilot/drafts + scene_id
     API->>API: Context Builder в бюджете 12000 токенов
     API->>RAG: search summaries + messages
-    API->>Ollama: system + prompt + raw + summaries + RAG; num_ctx=16384
-    Ollama-->>API: JSON с 3 репликами
-    API->>API: сохранить copilot_requests + context metadata
+    API->>Ollama: system + prompt + raw + summaries + RAG + intent; tools optional
+    Ollama-->>API: tool calls или JSON с 3 репликами
+    API->>API: scoped RetrievalOrchestrator при tool calls
+    API->>API: сохранить copilot_requests + intent job
     API-->>ST: copilot_request_id + drafts[]
 
     ST->>API: POST /messages + request ID + draft index
@@ -49,7 +50,9 @@ sequenceDiagram
 
 ## Трассировка
 
-Успешные генерации сохраняются отдельно от событий мира. Исходный prompt рассказчика и невыбранные drafts не становятся сообщениями чата и не индексируются в RAG. Итоговое отредактированное сообщение связано с одной генерацией и индексом выбранного draft.
+Успешные генерации сохраняются отдельно от событий мира. Исходный prompt рассказчика и невыбранные drafts не становятся сообщениями чата и не индексируются в RAG. Rolling summary этих промптов живёт в `storyteller_intent_summaries` и не смешивается с L0/L1. Итоговое отредактированное сообщение связано с одной генерацией и индексом выбранного draft.
+
+Добор истории — [[Architecture/Retrieval]].
 
 ## Вне scope (MVP)
 

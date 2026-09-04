@@ -10,6 +10,7 @@ use App\Rag\RagIndexer;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -45,19 +46,24 @@ class CopilotTest extends TestCase
 
         $this->assertSame($storyteller->id, $copilotRequest->storyteller_id);
         $this->assertSame('qwen3:8b', $copilotRequest->model);
-        $this->assertSame('context-builder-v2', $copilotRequest->builder_version);
-        $this->assertSame('npc-drafts-v3', $copilotRequest->prompt_version);
+        $this->assertSame('context-builder-v3', $copilotRequest->builder_version);
+        $this->assertSame('npc-drafts-v4', $copilotRequest->prompt_version);
         $this->assertLessThanOrEqual(
             12000,
             $copilotRequest->context_metadata['input_token_estimate'],
         );
         $this->assertSame(16384, $copilotRequest->context_metadata['ollama_context_length']);
         $this->assertSame(3000, $copilotRequest->context_metadata['ollama_max_output_tokens']);
+        $this->assertSame([], $copilotRequest->context_metadata['tool_invocations']);
+        $this->assertDatabaseCount('storyteller_intent_summaries', 1);
 
-        Http::assertSent(fn (Request $request): bool => $request['options'] === [
-            'num_ctx' => 16384,
-            'num_predict' => 3000,
-        ]);
+        Http::assertSent(function (Request $request): bool {
+            return isset($request['tools'])
+                && $request['options'] === [
+                    'num_ctx' => 16384,
+                    'num_predict' => 3000,
+                ];
+        });
     }
 
     public function test_player_cannot_generate_drafts(): void
@@ -231,6 +237,61 @@ class CopilotTest extends TestCase
         $this->assertSame(1, $metadata['excluded_raw_message_count']);
     }
 
+    public function test_copilot_tool_loop_records_scoped_retrieval(): void
+    {
+        Queue::fake();
+        $storyteller = User::factory()->storyteller()->create();
+        $scene = Scene::query()->active()->firstOrFail();
+        $first = Message::factory()->create([
+            'user_id' => $storyteller->id,
+            'scene_id' => $scene->id,
+            'body' => 'Первая реплика диапазона.',
+        ]);
+        $second = Message::factory()->create([
+            'user_id' => $storyteller->id,
+            'scene_id' => $scene->id,
+            'body' => 'Вторая реплика диапазона.',
+        ]);
+
+        Http::fake([
+            config('ollama.url').'/api/chat' => Http::sequence()
+                ->push([
+                    'message' => [
+                        'content' => '',
+                        'tool_calls' => [[
+                            'function' => [
+                                'name' => 'get_message_range',
+                                'arguments' => [
+                                    'from_id' => $first->id,
+                                    'to_id' => $second->id,
+                                ],
+                            ],
+                        ]],
+                    ],
+                ])
+                ->push([
+                    'message' => [
+                        'content' => json_encode(['drafts' => ['Один.', 'Два.', 'Три.']], JSON_UNESCAPED_UNICODE),
+                    ],
+                ]),
+        ]);
+
+        Sanctum::actingAs($storyteller);
+
+        $this->postJson('/api/copilot/drafts', [
+            'npc_name' => 'Виктория',
+            'prompt' => 'Опереться на предыдущий обмен.',
+            'scene_id' => $scene->id,
+        ])->assertOk();
+
+        $metadata = CopilotRequest::query()->firstOrFail()->context_metadata;
+        $this->assertSame(1, $metadata['tool_iterations']);
+        $this->assertSame('get_message_range', $metadata['tool_invocations'][0]['name']);
+        $this->assertTrue($metadata['tool_invocations'][0]['ok']);
+        $this->assertSame(2, $metadata['tool_invocations'][0]['count']);
+        $this->assertFalse($metadata['tool_invocations'][0]['truncated']);
+    }
+
     public function test_player_cannot_post_message_as_npc(): void
     {
         Sanctum::actingAs(User::factory()->create());
@@ -248,10 +309,22 @@ class CopilotTest extends TestCase
     {
         $payload = json_encode(['drafts' => $drafts], JSON_UNESCAPED_UNICODE);
 
-        Http::fake([
-            config('ollama.url').'/api/chat' => Http::response([
+        Http::fake(function (Request $request) use ($payload) {
+            $system = $request['messages'][0]['content'] ?? '';
+
+            if (is_string($system) && str_contains($system, 'compress a storyteller')) {
+                return Http::response([
+                    'message' => [
+                        'content' => json_encode([
+                            'narrative' => 'Держать напряжение Маскарада и не раскрывать секреты князя.',
+                        ], JSON_UNESCAPED_UNICODE),
+                    ],
+                ]);
+            }
+
+            return Http::response([
                 'message' => ['content' => $payload],
-            ]),
-        ]);
+            ]);
+        });
     }
 }

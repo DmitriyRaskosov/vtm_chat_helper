@@ -7,6 +7,7 @@ use App\Context\SummaryManager;
 use App\Enums\ContextSummaryLevel;
 use App\Enums\ContextSummarySourceType;
 use App\Llm\ChatProvider;
+use App\Llm\ChatTurn;
 use App\Models\ContextSummary;
 use App\Models\Message;
 use App\Models\Scene;
@@ -252,6 +253,11 @@ class RecordingSummaryChatProvider implements ChatProvider
         }
 
         return json_encode(['drafts' => ['Один.', 'Два.', 'Три.']], JSON_THROW_ON_ERROR);
+    }
+
+    public function chatTurn(array $messages, array $options = [], array $tools = []): ChatTurn
+    {
+        return new ChatTurn($this->chat($messages, $options));
     }
 
     public function complete(string $prompt): string

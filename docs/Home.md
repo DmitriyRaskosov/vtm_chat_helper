@@ -20,6 +20,7 @@
 - [[Architecture/Backend]]
 - [[Architecture/Frontend]]
 - [[Architecture/Context]]
+- [[Architecture/Retrieval]]
 
 ## API
 

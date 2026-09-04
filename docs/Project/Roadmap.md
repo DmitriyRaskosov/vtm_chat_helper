@@ -18,8 +18,10 @@
 | 12 | Immutable L0 и фоновая идемпотентная суммаризация | **Готово** |
 | 13 | Summary RAG в Context Builder с дедупликацией | **Готово** |
 | 14 | L1, final scene и versioned session summaries | **Готово** |
+| 15 | Scoped retrieval tools и ограниченный tool-call loop | **Готово** |
+| 16 | Сжатая память намерений рассказчика | **Готово** |
 
-Подробности: [[Features/Copilot]], [[Features/Scenes]], [[Architecture/Context]].
+Подробности: [[Features/Copilot]], [[Features/Scenes]], [[Architecture/Context]], [[Architecture/Retrieval]].
 
 ## Этап 4 (отложен)
 
@@ -37,7 +39,6 @@
 ## Дальше (после этапа 4)
 
 - Явные scope-профили RAG: `active_scene`, `game_session`, `global`
-- Scoped retrieval и LLM tools
 - Карточки НПС вместо ручного ввода имени
 - Файловый лор в system prompt
 - Граф отношений в контексте генерации

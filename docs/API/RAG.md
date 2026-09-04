@@ -60,6 +60,6 @@ Lore-чанки переиндексируются вручную через `ra
 
 ## Copilot
 
-`ContextBuilder` отдельно ищет `summary` и `message`; lore в Copilot пока не используется. Scope поиска пока не изменён и остаётся глобальным. Запланирован отдельный этап с явными профилями `active_scene`, `game_session` и `global`, чтобы разные потребители могли выбирать область без неявного смешивания сессий.
+`ContextBuilder` отдельно ищет `summary` и `message`; lore в Copilot пока не используется. Scope пассивного поиска пока не изменён и остаётся глобальным. Copilot tools (`search_messages`, `search_summaries`) фильтруют по `game_session_id`. Запланирован отдельный этап с явными профилями `active_scene`, `game_session` и `global` для пассивного RAG.
 
 См. [[Architecture/Backend]], [[API/Copilot]].

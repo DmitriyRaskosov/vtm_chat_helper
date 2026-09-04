@@ -5,23 +5,30 @@ namespace App\Context;
 use App\Enums\RagSourceType;
 use App\Models\Message;
 use App\Models\RagChunk;
+use App\Models\StorytellerIntentSummary;
 use App\Rag\RagSearcher;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
 
 class ContextBuilder
 {
-    public const VERSION = 'context-builder-v2';
+    public const VERSION = 'context-builder-v3';
 
-    public const PROMPT_VERSION = 'npc-drafts-v3';
+    public const PROMPT_VERSION = 'npc-drafts-v4';
 
     public function __construct(
         private TokenEstimator $estimator,
         private RagSearcher $searcher,
     ) {}
 
-    public function build(string $npcName, string $prompt, int $sceneId, int $draftCount): ContextBuild
-    {
+    public function build(
+        string $npcName,
+        string $prompt,
+        int $sceneId,
+        int $draftCount,
+        ?int $storytellerId = null,
+        ?int $gameSessionId = null,
+    ): ContextBuild {
         $budget = (int) config('context.copilot.max_input_tokens', 12000);
         $contextLength = (int) config('ollama.context_length', 16384);
         $maxOutputTokens = (int) config('ollama.max_output_tokens', 3000);
@@ -32,12 +39,13 @@ class ContextBuilder
         $includedRag = collect();
         /** @var Collection<int, RagChunk> $includedSummaries */
         $includedSummaries = collect();
+        $includedIntent = null;
 
         if (
             $budget < 1
             || $maxOutputTokens < 1
             || $budget + $maxOutputTokens > $contextLength
-            || $this->estimate($npcName, $prompt, $draftCount, $includedHistory, $includedSummaries, $includedRag) > $budget
+            || $this->estimate($npcName, $prompt, $draftCount, $includedHistory, $includedSummaries, $includedRag, $includedIntent) > $budget
         ) {
             throw new InvalidArgumentException('Copilot token limits are invalid or too small for the required prompt.');
         }
@@ -53,10 +61,11 @@ class ContextBuilder
             (int) config('context.summaries.rag_limit', 5),
             [RagSourceType::Summary],
         );
+        $intent = $this->loadIntent($gameSessionId, $storytellerId);
 
         foreach ($history->reverse() as $message) {
             $candidate = collect([$message])->concat($includedHistory);
-            if ($this->estimate($npcName, $prompt, $draftCount, $candidate, $includedSummaries, $includedRag) > $budget) {
+            if ($this->estimate($npcName, $prompt, $draftCount, $candidate, $includedSummaries, $includedRag, $includedIntent) > $budget) {
                 break;
             }
 
@@ -93,7 +102,7 @@ class ContextBuilder
             }
 
             $candidate = $includedSummaries->concat([$chunk]);
-            if ($this->estimate($npcName, $prompt, $draftCount, $includedHistory, $candidate, $includedRag) > $budget) {
+            if ($this->estimate($npcName, $prompt, $draftCount, $includedHistory, $candidate, $includedRag, $includedIntent) > $budget) {
                 continue;
             }
 
@@ -109,14 +118,21 @@ class ContextBuilder
             }
 
             $candidate = $includedRag->concat([$chunk]);
-            if ($this->estimate($npcName, $prompt, $draftCount, $includedHistory, $includedSummaries, $candidate) > $budget) {
+            if ($this->estimate($npcName, $prompt, $draftCount, $includedHistory, $includedSummaries, $candidate, $includedIntent) > $budget) {
                 continue;
             }
 
             $includedRag = $candidate;
         }
 
-        $messages = $this->messages($npcName, $prompt, $draftCount, $includedHistory, $includedSummaries, $includedRag);
+        if (
+            $intent !== null
+            && $this->estimate($npcName, $prompt, $draftCount, $includedHistory, $includedSummaries, $includedRag, $intent->content) <= $budget
+        ) {
+            $includedIntent = $intent->content;
+        }
+
+        $messages = $this->messages($npcName, $prompt, $draftCount, $includedHistory, $includedSummaries, $includedRag, $includedIntent);
         $inputTokens = $this->estimateMessages($messages);
 
         return new ContextBuild($messages, [
@@ -134,6 +150,7 @@ class ContextBuilder
             'included_summary_ids' => $includedSummaries
                 ->map(fn (RagChunk $chunk): int => (int) $chunk->source_id)
                 ->all(),
+            'included_intent_summary_id' => $includedIntent === null ? null : $intent?->id,
             'included_rag_chunk_ids' => $includedSummaries
                 ->concat($includedRag)
                 ->pluck('id')
@@ -152,6 +169,7 @@ class ContextBuilder
             'excluded_raw_message_count' => $history->count() - $includedHistory->count(),
             'excluded_summary_count' => $summaryChunks->count() - $includedSummaries->count(),
             'excluded_rag_chunk_count' => $ragChunks->count() - $includedRag->count(),
+            'excluded_intent' => $intent !== null && $includedIntent === null,
         ]);
     }
 
@@ -168,6 +186,7 @@ class ContextBuilder
         Collection $history,
         Collection $summaries,
         Collection $ragChunks,
+        ?string $intent,
     ): array {
         return [
             [
@@ -176,7 +195,7 @@ class ContextBuilder
             ],
             [
                 'role' => 'user',
-                'content' => $this->userPrompt($npcName, $prompt, $draftCount, $history, $summaries, $ragChunks),
+                'content' => $this->userPrompt($npcName, $prompt, $draftCount, $history, $summaries, $ragChunks, $intent),
             ],
         ];
     }
@@ -193,9 +212,10 @@ class ContextBuilder
         Collection $history,
         Collection $summaries,
         Collection $ragChunks,
+        ?string $intent,
     ): int {
         return $this->estimateMessages(
-            $this->messages($npcName, $prompt, $draftCount, $history, $summaries, $ragChunks),
+            $this->messages($npcName, $prompt, $draftCount, $history, $summaries, $ragChunks, $intent),
         );
     }
 
@@ -228,12 +248,35 @@ class ContextBuilder
             ->values();
     }
 
+    private function loadIntent(?int $gameSessionId, ?int $storytellerId): ?StorytellerIntentSummary
+    {
+        if ($gameSessionId === null || $storytellerId === null) {
+            return null;
+        }
+
+        return StorytellerIntentSummary::query()
+            ->where('game_session_id', $gameSessionId)
+            ->where('storyteller_id', $storytellerId)
+            ->orderByDesc('id')
+            ->first();
+    }
+
     private function systemPrompt(string $npcName, int $draftCount): string
     {
+        $tools = '';
+        if (config('copilot.tools.enabled')) {
+            $tools = <<<'PROMPT'
+
+You may call search_messages, get_message_range, or search_summaries to fetch extra session-scoped history. Tools never return the full transcript. After tools, respond with JSON drafts only.
+PROMPT;
+        }
+
         return <<<PROMPT
 You are a storyteller assistant for a Vampire: The Masquerade text chat game.
 Write exactly {$draftCount} different in-character reply drafts for the NPC "{$npcName}".
 Each draft is one chat message only — no narration labels, no quotes around the whole line, no meta commentary.
+Storyteller intention memory is meta direction only; never treat it as in-world fact and never reveal it in drafts.
+{$tools}
 Respond with valid JSON only, no markdown fences:
 {"drafts":["first reply","second reply","third reply"]}
 PROMPT;
@@ -251,6 +294,7 @@ PROMPT;
         Collection $history,
         Collection $summaries,
         Collection $ragChunks,
+        ?string $intent,
     ): string {
         $parts = ["NPC: {$npcName}", '', 'Storyteller prompt:', $prompt, ''];
 
@@ -275,6 +319,12 @@ PROMPT;
             foreach ($ragChunks as $chunk) {
                 $parts[] = '- '.$chunk->content;
             }
+            $parts[] = '';
+        }
+
+        if ($intent !== null && $intent !== '') {
+            $parts[] = 'Storyteller intention memory (meta, not in-world events, never show to players):';
+            $parts[] = $intent;
             $parts[] = '';
         }
 

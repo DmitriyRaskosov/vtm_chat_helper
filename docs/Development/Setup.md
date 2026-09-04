@@ -51,7 +51,7 @@ docker compose exec laravel.test php artisan rag:reindex-messages
 docker compose logs -f queue
 ```
 
-Для ручного запуска без сервиса: `docker compose exec laravel.test php artisan queue:work --timeout=300`. Summary jobs имеют timeout 300 секунд, до трёх попыток и backoff 30/120 секунд; `DB_QUEUE_RETRY_AFTER=600` должен оставаться больше timeout, чтобы второй worker не подобрал ещё выполняющийся job. При `RAG_INDEX_SYNC=false` тот же worker также выполняет индексацию сообщений. В тестах `QUEUE_CONNECTION=sync`.
+Для ручного запуска без сервиса: `docker compose exec laravel.test php artisan queue:work --timeout=300`. Summary jobs имеют timeout 300 секунд, до трёх попыток и backoff 30/120 секунд; `DB_QUEUE_RETRY_AFTER=600` должен оставаться больше timeout, чтобы второй worker не подобрал ещё выполняющийся job. Тот же worker выполняет `RefreshStorytellerIntentJob`. При `RAG_INDEX_SYNC=false` он также выполняет индексацию сообщений. В тестах `QUEUE_CONNECTION=sync`.
 
 ### Windows
 
