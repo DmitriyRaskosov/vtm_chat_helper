@@ -19,31 +19,37 @@ alwaysApply: true
 
 | Путь | Назначение |
 |------|------------|
-| `Http/Controllers/` | Chat, Copilot, RagSearch, Auth |
+| `Http/Controllers/` | Chat, Copilot, RagSearch, Auth, GameSession, Scene, SceneContext, SceneParticipant, CharacterSheet |
 | `Http/Middleware/EnsureStoryteller.php` | ST-only routes |
-| `Rag/` | RagIndexer, RagSearcher, EmbeddingProvider |
+| `Rag/` | RagIndexer facade, MessageIndexer, MessageSearcher, EmbeddingProvider, TextChunker |
 | `Llm/` | OllamaChatProvider, NpcCopilotService |
-| `Context/` | ContextBuilder, SummaryManager, TokenEstimator, L0/L1, storyteller intent |
-| `Retrieval/` | scoped tools: search_messages, get_message_range, search_summaries |
-| `Jobs/` | RAG, L0/final, storyteller intent |
-| `Enums/RagSourceType.php` | message, summary, lore (+ npc, relationship — задел) |
+| `Context/` | ContextAssembler + providers, ContextBuilder facade, TokenEstimator |
+| `Scene/` | SceneContextService, SceneParticipantService |
+| `Retrieval/` | scoped tools: search_messages, get_message_range; scope = chronicle + session; HybridRetrievalCoordinator; CteGuard; GraphRAG в assembler, не в tool-loop |
+| `World/` | WorldEntityService, AliasNormalizer; typed characters/locations/factions/items/concepts/events; WorldRelationTypeCatalog, WorldRelationTypeValidator, WorldRelationService, WorldEventService, WorldGraphRag |
+| `Lore/` | LoreEntryService, LoreIndexer, LoreSearcher |
+| `Rulebook/` | RulesetService, RuleDocumentService, RuleIndexer, RuleSearcher |
+| `Memory/` | CharacterMemoryService, CharacterMemorySearcher, MemoryBridgeService, MemoryGraphRag |
+| `Character/` | CharacterStatService, CharacterSheetReader, SheetCatalog, CharacterAccess, CharacterIdentityService, CharacterHealthService, CharacterMeritService, DisciplineService, CharacterStatusService, CharacterBiographyService, CharacterBioIndexer, CharacterBioSearcher, CharacterRelationshipService, CharacterAffiliationService, CharacterLoreKnowledgeService, CharacterRuleKnowledgeService |
+| `Jobs/` | IndexRagMessageJob |
+| `Enums/` | `RetrievalCorpus`; `MemoryEntityRole`; `ChronicleStatus`, `GameSessionStatus`, `SceneStatus`, `SceneParticipantRole`; `WorldEntityType`, `WorldEntityStatus`, `WorldEntityAliasType`; Location/Faction/Item/Concept/`CharacterType` (`player`/`npc`/`ghoul`), `CharacterStatCategory`, `CharacterHealthState`, `CharacterHealthDamage`, `CharacterMeritKind`, `CharacterStatusEffectType`, `CharacterBiographyStatus`, `CharacterBiographySection`, `CharacterAffiliationType`, `CharacterAffiliationStance`, `WorldEventType`, `WorldEventStatus`, `WorldEventVisibility`, `WorldEventParticipantRole`; Lore/Ruleset/Knowledge/Memory enums |
 
-Конфиг: `config/rag.php`, `config/ollama.php`, `config/copilot.php`.
+Конфиг: `config/rag.php`, `config/ollama.php`, `config/copilot.php`, `config/retrieval.php`, `config/character_sheet.php`.
 
 ## Frontend (`frontend/`)
 
-`src/views/`, `src/auth.js`, `src/router.js`, `styles.css`. Vite на хосте: `cd frontend && npm run dev`.
+`src/views/` (ChatView, CharacterListView, CharacterSheetView), `src/auth.js`, `src/router.js`, `styles.css`. Vite на хосте: `cd frontend && npm run dev`.
 
 ## Database
 
-`database/migrations/`, factories. Тестовая DB: `testing` (compose init script).
+Канон схемы: `docs/Architecture/Database.md`. Миграции и factories в `database/`. Тестовая DB: `testing`. Не перечислять таблицы в чате — читать заметку. Живые строки — SQL/tinker, не дамп в ответ.
 
 ## Тесты
 
-`tests/Feature/`: Authentication, Chat, Copilot, ContextSummary, RagSearch, RetrievalTools, StorytellerIntent. `UserFactory::storyteller()`, password `password`. Ollama: `Http::fake`/`ChatProvider` fake. RAG: `stub` в `phpunit.xml`.
+`tests/Feature/`: Authentication, Chat, Character, CharacterSheet, CharacterStat, CharacterDiscipline, CharacterStatus, CharacterBiography, CharacterBioIndex, CharacterRelationship, CharacterAffiliation, WorldEvent, LoreEntry, LoreIndex, RuleDocument, RuleIndex, CharacterKnowledge, CharacterMemoryNode, CharacterMemoryEdge, MemoryBridge, RetrievalCorpus, HybridRetrieval, MemoryGraphRag, WorldGraphRag, WorldRelationType, WorldRelation, ChronicleIsolation, GameSessionScene, SceneContext, SceneParticipant, WorldEntity, TypedWorldEntity, RagSearch, Copilot, ContextAssembler, RetrievalTools, RetrievalGuardrail. `UserFactory::storyteller()`, password `password`. Ollama: `Http::fake`/`ChatProvider` fake. RAG: `stub` в `phpunit.xml`.
 
-## Out of scope (до этапа 4)
+## Out of scope
 
-Таблицы `npcs`/`events`/`relationships`, `world/`, streaming, `laravel/ai`. См. `docs/Project/Roadmap.md`.
+Таблицы `character_users` / `npcs` как отдельный legacy-слой, `world/` UI, редакторы лора/памяти/биографии в SPA, Copilot для гулей, streaming, `laravel/ai`. Цели персонажа сняты. Внутриигровое время (этап 17) снято. См. `docs/Project/Roadmap.md`.
 
 При изменении структуры каталогов — обновить `docs/Meta/Structure.md`.

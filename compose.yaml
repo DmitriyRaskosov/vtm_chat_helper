@@ -24,7 +24,6 @@ services:
             - sail
         depends_on:
             - pgsql
-            - redis
             - mailpit
             - ollama
     queue:
@@ -39,7 +38,6 @@ services:
             - sail
         depends_on:
             - pgsql
-            - redis
             - ollama
     pgsql:
         image: 'pgvector/pgvector:pg18'
@@ -67,6 +65,8 @@ services:
             retries: 3
             timeout: 5s
     redis:
+        profiles:
+            - future
         image: 'redis:alpine'
         ports:
             - '${FORWARD_REDIS_PORT:-6379}:6379'

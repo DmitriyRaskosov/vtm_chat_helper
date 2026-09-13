@@ -10,4 +10,4 @@ alwaysApply: false
 
 Две модели: `qwen3-embedding:0.6b` (embeddings) и `qwen3:8b` (chat drafts) — не путать роли.
 
-Artisan smoke: `rag:embed-ping`, `llm:ping`. Lore: `rag:index-lore` (copilot MVP search — только `message`). Переиндексация после смены embed-модели: `rag:reindex-messages`.
+Artisan smoke: `rag:embed-ping`, `llm:ping`. Сообщения индексируются только в scoped `message_embeddings`; lore, rules, bio и memory используют отдельные корпуса. Глобального lore search и `rag_chunks` нет. Переиндексация сообщений: `rag:reindex-messages`.

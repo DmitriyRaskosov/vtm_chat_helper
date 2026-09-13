@@ -2,28 +2,22 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\RagSourceType;
-use App\Rag\RagSearcher;
+use App\Rag\MessageSearcher;
 use Illuminate\Console\Command;
 use Illuminate\Support\Str;
 
 class RagSearchCommand extends Command
 {
-    protected $signature = 'rag:search {query} {--type=} {--limit=5}';
+    protected $signature = 'rag:search {chronicle_id} {query} {--limit=5}';
 
-    protected $description = 'Search RAG chunks (stub embeddings until Ollama)';
+    protected $description = 'Search the chronicle-scoped message corpus';
 
-    public function handle(RagSearcher $searcher): int
+    public function handle(MessageSearcher $searcher): int
     {
-        $typeOption = $this->option('type');
-        $types = $typeOption
-            ? [RagSourceType::from($typeOption)]
-            : null;
-
         $results = $searcher->search(
+            (int) $this->argument('chronicle_id'),
             (string) $this->argument('query'),
             (int) $this->option('limit'),
-            $types,
         );
 
         if ($results->isEmpty()) {
@@ -32,13 +26,12 @@ class RagSearchCommand extends Command
             return self::SUCCESS;
         }
 
-        foreach ($results as $chunk) {
+        foreach ($results as $result) {
             $this->line(sprintf(
-                '[%s/%s] %.4f %s',
-                $chunk->source_type->value,
-                $chunk->source_id,
-                $chunk->neighbor_distance ?? 0,
-                Str::limit($chunk->content, 80),
+                '[message/%s] %.4f %s',
+                $result->message_id,
+                $result->neighbor_distance ?? 0,
+                Str::limit($result->content, 80),
             ));
         }
 

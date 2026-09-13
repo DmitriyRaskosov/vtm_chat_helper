@@ -63,7 +63,10 @@ class GetMessageRangeTool implements RetrievalTool
 
         $query = Message::query()
             ->with('user:id,name')
-            ->whereHas('scene', fn ($builder) => $builder->where('game_session_id', $scope->gameSessionId))
+            ->whereHas('scene.gameSession', function ($builder) use ($scope) {
+                $builder->whereKey($scope->gameSessionId)
+                    ->where('chronicle_id', $scope->chronicleId);
+            })
             ->where('id', '>=', $fromId)
             ->where('id', '<=', $toId)
             ->when($requestedScene !== null, fn ($builder) => $builder->where('scene_id', $requestedScene))

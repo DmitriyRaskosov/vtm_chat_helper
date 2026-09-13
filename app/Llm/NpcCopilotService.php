@@ -18,8 +18,13 @@ class NpcCopilotService
         private RetrievalOrchestrator $retrieval,
     ) {}
 
-    public function drafts(string $npcName, string $prompt, int $sceneId, int $storytellerId): CopilotDraftResult
-    {
+    public function drafts(
+        string $npcName,
+        string $prompt,
+        int $sceneId,
+        int $storytellerId,
+        ?int $characterId = null,
+    ): CopilotDraftResult {
         $draftCount = (int) config('copilot.draft_count');
         $scene = Scene::query()->findOrFail($sceneId);
         $context = $this->contextBuilder->build(
@@ -29,6 +34,7 @@ class NpcCopilotService
             $draftCount,
             $storytellerId,
             (int) $scene->game_session_id,
+            $characterId,
         );
 
         $messages = $context->messages;

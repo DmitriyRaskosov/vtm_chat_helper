@@ -10,7 +10,6 @@ use App\Rag\StubEmbeddingProvider;
 use App\Retrieval\Tools\GetMessageRangeTool;
 use App\Retrieval\Tools\RetrievalToolRegistry;
 use App\Retrieval\Tools\SearchMessagesTool;
-use App\Retrieval\Tools\SearchSummariesTool;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -30,7 +29,6 @@ class AppServiceProvider extends ServiceProvider
             return new RetrievalToolRegistry([
                 $app->make(SearchMessagesTool::class),
                 $app->make(GetMessageRangeTool::class),
-                $app->make(SearchSummariesTool::class),
             ]);
         });
     }

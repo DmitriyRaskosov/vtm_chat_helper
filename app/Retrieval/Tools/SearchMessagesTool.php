@@ -2,15 +2,14 @@
 
 namespace App\Retrieval\Tools;
 
-use App\Enums\RagSourceType;
-use App\Rag\RagSearcher;
+use App\Rag\MessageSearcher;
 use App\Retrieval\RetrievalScope;
 use App\Retrieval\TextClipper;
 use App\Retrieval\ToolResult;
 
 class SearchMessagesTool implements RetrievalTool
 {
-    public function __construct(private RagSearcher $searcher) {}
+    public function __construct(private MessageSearcher $searcher) {}
 
     public function name(): string
     {
@@ -53,18 +52,19 @@ class SearchMessagesTool implements RetrievalTool
         }
 
         $limit = (int) config('copilot.tools.search_limit', 5);
-        $filters = ['game_session_id' => $scope->gameSessionId];
-        if ($requestedScene !== null) {
-            $filters['scene_id'] = $requestedScene;
-        }
-
-        $chunks = $this->searcher->search($query, $limit, [RagSourceType::Message], $filters);
+        $hits = $this->searcher->search(
+            $scope->chronicleId,
+            $query,
+            $limit,
+            $scope->gameSessionId,
+            $requestedScene,
+        );
         $maxChars = (int) config('copilot.tools.max_item_characters', 400);
 
-        $items = $chunks->map(fn ($chunk): array => [
-            'message_id' => (int) $chunk->source_id,
-            'scene_id' => $chunk->metadata['scene_id'] ?? null,
-            'content' => TextClipper::clip((string) $chunk->content, $maxChars),
+        $items = $hits->map(fn ($hit): array => [
+            'message_id' => (int) $hit->message_id,
+            'scene_id' => $hit->scene_id,
+            'content' => TextClipper::clip((string) $hit->content, $maxChars),
         ])->values()->all();
 
         return new ToolResult(true, $items, false);

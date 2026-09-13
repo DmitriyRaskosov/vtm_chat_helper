@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-#[Fillable(['title', 'status', 'created_by', 'activated_at'])]
+#[Fillable(['chronicle_id', 'title', 'status', 'created_by', 'activated_at'])]
 class GameSession extends Model
 {
     /** @use HasFactory<GameSessionFactory> */
@@ -24,6 +24,14 @@ class GameSession extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', GameSessionStatus::Active);
+    }
+
+    /**
+     * @return BelongsTo<Chronicle, $this>
+     */
+    public function chronicle(): BelongsTo
+    {
+        return $this->belongsTo(Chronicle::class);
     }
 
     /**
@@ -40,14 +48,6 @@ class GameSession extends Model
     public function scenes(): HasMany
     {
         return $this->hasMany(Scene::class)->orderBy('position');
-    }
-
-    /**
-     * @return HasMany<ContextSummary, $this>
-     */
-    public function contextSummaries(): HasMany
-    {
-        return $this->hasMany(ContextSummary::class);
     }
 
     protected function casts(): array

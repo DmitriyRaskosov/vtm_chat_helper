@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'scene_id',
     'storyteller_id',
     'npc_name',
+    'character_id',
     'prompt',
     'drafts',
     'context_metadata',
@@ -43,6 +44,14 @@ class CopilotRequest extends Model
     public function message(): HasOne
     {
         return $this->hasOne(Message::class);
+    }
+
+    /**
+     * @return BelongsTo<Character, $this>
+     */
+    public function character(): BelongsTo
+    {
+        return $this->belongsTo(Character::class);
     }
 
     /**

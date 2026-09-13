@@ -44,6 +44,22 @@ class Scene extends Model
     }
 
     /**
+     * @return HasOne<SceneContext, $this>
+     */
+    public function context(): HasOne
+    {
+        return $this->hasOne(SceneContext::class);
+    }
+
+    /**
+     * @return HasMany<SceneParticipant, $this>
+     */
+    public function participants(): HasMany
+    {
+        return $this->hasMany(SceneParticipant::class);
+    }
+
+    /**
      * @return HasMany<Message, $this>
      */
     public function messages(): HasMany
@@ -59,22 +75,6 @@ class Scene extends Model
         return $this->hasMany(CopilotRequest::class);
     }
 
-    /**
-     * @return HasMany<ContextSummary, $this>
-     */
-    public function contextSummaries(): HasMany
-    {
-        return $this->hasMany(ContextSummary::class);
-    }
-
-    /**
-     * @return HasOne<SceneContextState, $this>
-     */
-    public function contextState(): HasOne
-    {
-        return $this->hasOne(SceneContextState::class);
-    }
-
     protected function casts(): array
     {
         return [
@@ -82,10 +82,5 @@ class Scene extends Model
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
         ];
-    }
-
-    protected static function booted(): void
-    {
-        static::created(fn (Scene $scene) => $scene->contextState()->create());
     }
 }

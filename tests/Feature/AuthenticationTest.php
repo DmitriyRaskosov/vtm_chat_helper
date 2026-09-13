@@ -17,6 +17,13 @@ class AuthenticationTest extends TestCase
         $this->getJson('/api/messages')->assertUnauthorized();
     }
 
+    public function test_unauthenticated_browser_api_request_returns_json_401(): void
+    {
+        $this->get('/api/user', ['Accept' => 'text/html'])
+            ->assertUnauthorized()
+            ->assertJson(['message' => 'Unauthenticated.']);
+    }
+
     public function test_user_can_register_with_any_login(): void
     {
         $response = $this->postJson('/api/register', [

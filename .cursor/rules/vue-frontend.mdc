@@ -12,4 +12,4 @@ HTTP только через `api` из `frontend/src/auth.js` (`baseURL: '/api'
 
 Запуск: `cd frontend && npm run dev` (порт 5173 на хосте).
 
-Канон UI и copilot panel: `docs/Architecture/Frontend.md`, `docs/Features/Copilot.md`.
+Канон UI и copilot panel: `docs/Architecture/Frontend.md`, `docs/Features/Copilot.md`. Листы V20: `docs/Features/Characters.md`.

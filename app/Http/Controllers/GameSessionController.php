@@ -5,17 +5,29 @@ namespace App\Http\Controllers;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneStatus;
 use App\Http\Requests\StoreGameSessionRequest;
-use App\Jobs\FinalizeSceneContextJob;
+use App\Models\Chronicle;
 use App\Models\GameSession;
 use App\Models\Scene;
+use App\Scene\SceneContextService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class GameSessionController extends Controller
 {
-    public function active(): JsonResponse
+    public function __construct(private SceneContextService $contexts) {}
+
+    public function active(Request $request): JsonResponse
     {
+        $validated = $request->validate([
+            'chronicle_id' => ['sometimes', 'integer', 'exists:chronicles,id'],
+        ]);
+        $chronicleId = Chronicle::resolveId(
+            isset($validated['chronicle_id']) ? (int) $validated['chronicle_id'] : null,
+        );
+
         $gameSession = GameSession::query()
+            ->where('chronicle_id', $chronicleId)
             ->active()
             ->with('scenes')
             ->first();
@@ -27,22 +39,20 @@ class GameSessionController extends Controller
 
     public function store(StoreGameSessionRequest $request): JsonResponse
     {
-        $result = DB::transaction(function () use ($request): array {
+        $gameSession = DB::transaction(function () use ($request): GameSession {
             $now = now();
-            $closedSceneIds = [];
+            $requestedChronicleId = $request->validated('chronicle_id');
+            $chronicleId = Chronicle::resolveId(
+                $requestedChronicleId === null ? null : (int) $requestedChronicleId,
+            );
 
             $activeSessionIds = GameSession::query()
+                ->where('chronicle_id', $chronicleId)
                 ->active()
                 ->lockForUpdate()
                 ->pluck('id');
 
             if ($activeSessionIds->isNotEmpty()) {
-                $closedSceneIds = Scene::query()
-                    ->whereIn('game_session_id', $activeSessionIds)
-                    ->where('status', '!=', SceneStatus::Closed)
-                    ->pluck('id')
-                    ->all();
-
                 Scene::query()
                     ->whereIn('game_session_id', $activeSessionIds)
                     ->where('status', '!=', SceneStatus::Closed)
@@ -51,6 +61,13 @@ class GameSessionController extends Controller
                         'ended_at' => $now,
                         'updated_at' => $now,
                     ]);
+
+                $this->contexts->freezeMany(
+                    Scene::query()
+                        ->whereIn('game_session_id', $activeSessionIds)
+                        ->pluck('id')
+                        ->all(),
+                );
 
                 GameSession::query()
                     ->whereIn('id', $activeSessionIds)
@@ -61,6 +78,7 @@ class GameSessionController extends Controller
             }
 
             $session = GameSession::query()->create([
+                'chronicle_id' => $chronicleId,
                 'title' => $request->validated('title'),
                 'status' => GameSessionStatus::Active,
                 'created_by' => $request->user()->id,
@@ -74,18 +92,8 @@ class GameSessionController extends Controller
                 'started_at' => $now,
             ]);
 
-            return [
-                'game_session' => $session->load('scenes'),
-                'closed_scene_ids' => $closedSceneIds,
-            ];
+            return $session->load('scenes');
         });
-
-        foreach ($result['closed_scene_ids'] as $sceneId) {
-            FinalizeSceneContextJob::dispatch((int) $sceneId);
-        }
-
-        /** @var GameSession $gameSession */
-        $gameSession = $result['game_session'];
 
         return response()->json(['game_session' => $this->serialize($gameSession)], 201);
     }
@@ -97,6 +105,7 @@ class GameSessionController extends Controller
     {
         return [
             'id' => $gameSession->id,
+            'chronicle_id' => $gameSession->chronicle_id,
             'title' => $gameSession->title,
             'status' => $gameSession->status->value,
             'active_scene_id' => $gameSession->scenes

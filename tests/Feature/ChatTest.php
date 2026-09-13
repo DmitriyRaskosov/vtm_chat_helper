@@ -134,4 +134,29 @@ class ChatTest extends TestCase
             'body' => 'Слишком поздно.',
         ])->assertConflict();
     }
+
+    public function test_deleting_a_user_anonymizes_messages_instead_of_deleting_them(): void
+    {
+        $author = User::factory()->create(['name' => 'Анна']);
+        $message = Message::factory()->create([
+            'user_id' => $author->id,
+            'body' => 'История хроники останется.',
+        ]);
+
+        $author->delete();
+
+        $this->assertDatabaseHas('messages', [
+            'id' => $message->id,
+            'user_id' => null,
+            'body' => 'История хроники останется.',
+        ]);
+
+        Sanctum::actingAs(User::factory()->create());
+
+        $this->getJson('/api/messages')
+            ->assertOk()
+            ->assertJsonPath('messages.0.body', 'История хроники останется.')
+            ->assertJsonPath('messages.0.author', 'Аноним')
+            ->assertJsonPath('messages.0.mine', false);
+    }
 }

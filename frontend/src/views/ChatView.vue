@@ -1,7 +1,11 @@
 <template>
     <div>
         <div class="top">
-            <h1>Чат</h1>
+            <h1>
+                <RouterLink to="/chat" class="nav-current">Чат</RouterLink>
+                <span class="nav-sep">·</span>
+                <RouterLink to="/characters">Персонажи</RouterLink>
+            </h1>
             <span class="muted">
                 {{ auth.user.value?.name }}
                 <template v-if="auth.user.value?.is_storyteller"> · рассказчик</template>
@@ -68,6 +72,54 @@
                     Закрыть сцену
                 </button>
             </div>
+
+            <div v-if="auth.user.value?.is_storyteller" class="scene-cast">
+                <div>
+                    <span class="muted">На сцене</span>
+                    <ul v-if="currentParticipants.length" class="scene-cast-list">
+                        <li v-for="row in currentParticipants" :key="row.character_id">
+                            {{ row.character_name }}
+                            <span class="muted"> · {{ characterTypeLabel(row.character_type) }}</span>
+                            <button
+                                v-if="canEditParticipants"
+                                type="button"
+                                class="link"
+                                :disabled="participantBusy"
+                                @click="removeFromScene(row.character_id)"
+                            >
+                                убрать
+                            </button>
+                        </li>
+                    </ul>
+                    <p v-else class="muted">Пока никого. Добавьте персонажа из списка ниже.</p>
+                </div>
+                <div v-if="canEditParticipants" class="scene-cast-add">
+                    <label for="scene-add-character">Добавить на сцену</label>
+                    <select
+                        id="scene-add-character"
+                        v-model.number="addCharacterId"
+                        :disabled="participantBusy || !availableToAdd.length"
+                    >
+                        <option :value="null">{{ availableToAdd.length ? 'Выберите персонажа' : 'Все уже на сцене' }}</option>
+                        <option
+                            v-for="row in availableToAdd"
+                            :key="row.id"
+                            :value="row.id"
+                        >
+                            {{ row.canonical_name }} · {{ characterTypeLabel(row.character_type) }}
+                        </option>
+                    </select>
+                    <button
+                        type="button"
+                        :disabled="participantBusy || !addCharacterId"
+                        @click="addToScene"
+                    >
+                        Добавить
+                    </button>
+                    <span v-if="participantFlash" class="saved-flash">{{ participantFlash }}</span>
+                </div>
+                <p v-if="participantError" class="error">{{ participantError }}</p>
+            </div>
         </section>
         <section v-else class="card session-empty">
             <template v-if="auth.user.value?.is_storyteller">
@@ -129,8 +181,16 @@
                 <h2>Панель рассказчика</h2>
                 <p class="muted panel-hint">Черновики реплики НПС: промпт, три варианта, правка и отправка в чат.</p>
 
-                <label for="npc-name">Имя НПС</label>
-                <input id="npc-name" v-model="npcName" type="text" maxlength="64" placeholder="Виктория" />
+                <label for="npc-character">НПС сцены</label>
+                <select id="npc-character" v-model.number="selectedNpcId">
+                    <option :value="null" disabled>Выберите участника</option>
+                    <option v-for="npc in sceneNpcs" :key="npc.character_id" :value="npc.character_id">
+                        {{ npc.character_name }}
+                    </option>
+                </select>
+                <p v-if="!sceneNpcs.length" class="muted">
+                    Copilot видит только НПС, которые сейчас на сцене. Добавьте персонажа блоком «На сцене» выше.
+                </p>
 
                 <label for="copilot-prompt">Ситуация / промпт</label>
                 <textarea
@@ -176,7 +236,7 @@
 
 <script setup>
 import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue';
-import { useRouter } from 'vue-router';
+import { RouterLink, useRouter } from 'vue-router';
 import { api, useAuth } from '../auth';
 
 const router = useRouter();
@@ -190,7 +250,13 @@ const sceneError = ref('');
 const messages = ref([]);
 const body = ref('');
 const logEl = ref(null);
-const npcName = ref('');
+const participants = ref([]);
+const chronicleCharacters = ref([]);
+const addCharacterId = ref(null);
+const participantBusy = ref(false);
+const participantError = ref('');
+const participantFlash = ref('');
+const selectedNpcId = ref(null);
 const copilotPrompt = ref('');
 const copilotRequestId = ref(null);
 const drafts = ref([]);
@@ -206,6 +272,21 @@ const selectedScene = computed(
     () => scenes.value.find((scene) => scene.id === selectedSceneId.value) ?? null,
 );
 const canPost = computed(() => selectedScene.value?.status === 'active');
+const canEditParticipants = computed(() => (
+    auth.user.value?.is_storyteller === true
+    && selectedScene.value != null
+    && selectedScene.value.status !== 'closed'
+));
+const currentParticipants = computed(() =>
+    participants.value.filter((participant) => participant.is_current && participant.character_name),
+);
+const onSceneIds = computed(() => new Set(currentParticipants.value.map((row) => row.character_id)));
+const availableToAdd = computed(() =>
+    chronicleCharacters.value.filter((row) => !onSceneIds.value.has(row.id)),
+);
+const sceneNpcs = computed(() =>
+    currentParticipants.value.filter((participant) => participant.character_type === 'npc'),
+);
 const composerPlaceholder = computed(() => {
     if (!gameSession.value) {
         return 'Нет активной игровой сессии';
@@ -213,11 +294,11 @@ const composerPlaceholder = computed(() => {
 
     return canPost.value ? 'Сообщение…' : 'Сцена доступна только для чтения';
 });
-const canGenerate = computed(() => npcName.value.trim() !== '' && copilotPrompt.value.trim() !== '');
+const canGenerate = computed(() => selectedNpcId.value !== null && copilotPrompt.value.trim() !== '');
 const selectedDraft = computed(() =>
     selectedDraftIndex.value === null ? null : drafts.value[selectedDraftIndex.value] ?? null,
 );
-const canSendNpc = computed(() => npcName.value.trim() !== '' && editedDraft.value.trim() !== '');
+const canSendNpc = computed(() => selectedNpcId.value !== null && editedDraft.value.trim() !== '');
 
 function lastId() {
     return messages.value.at(-1)?.id ?? 0;
@@ -229,6 +310,55 @@ function sceneStatusLabel(status) {
         draft: 'ожидает',
         closed: 'закрыта',
     }[status] ?? status;
+}
+
+function characterTypeLabel(type) {
+    if (type === 'player') {
+        return 'игрок';
+    }
+    if (type === 'ghoul') {
+        return 'гуль';
+    }
+    return 'НПС';
+}
+
+function sceneRoleFor(type) {
+    if (type === 'player') {
+        return 'player';
+    }
+    if (type === 'ghoul') {
+        return 'extra';
+    }
+    return 'npc';
+}
+
+function flattenRoster(rows) {
+    const out = [];
+    for (const row of rows) {
+        out.push({
+            id: row.id,
+            canonical_name: row.canonical_name,
+            character_type: row.character_type,
+        });
+        for (const ghoul of row.ghouls ?? []) {
+            out.push({
+                id: ghoul.id,
+                canonical_name: ghoul.canonical_name,
+                character_type: ghoul.character_type,
+            });
+        }
+    }
+    return out;
+}
+
+let participantFlashTimer;
+
+function flashParticipant(text) {
+    participantFlash.value = text;
+    clearTimeout(participantFlashTimer);
+    participantFlashTimer = setTimeout(() => {
+        participantFlash.value = '';
+    }, 2000);
 }
 
 function merge(incoming) {
@@ -288,7 +418,78 @@ async function loadGameSession(preferredSceneId = selectedSceneId.value) {
 async function switchScene() {
     messages.value = [];
     resetCopilotDrafts();
+    await loadParticipants();
     await load();
+}
+
+async function loadParticipants() {
+    participants.value = [];
+    selectedNpcId.value = null;
+    addCharacterId.value = null;
+    participantError.value = '';
+
+    if (!selectedSceneId.value || !auth.user.value?.is_storyteller) {
+        return;
+    }
+
+    const [participantsRes, charactersRes] = await Promise.all([
+        api.get(`/scenes/${selectedSceneId.value}/participants`),
+        api.get('/characters'),
+    ]);
+    participants.value = participantsRes.data.participants ?? [];
+    chronicleCharacters.value = flattenRoster(charactersRes.data.characters ?? []);
+    selectedNpcId.value = sceneNpcs.value[0]?.character_id ?? null;
+}
+
+async function addToScene() {
+    if (!addCharacterId.value || !selectedSceneId.value) {
+        return;
+    }
+
+    const picked = chronicleCharacters.value.find((row) => row.id === addCharacterId.value);
+    if (!picked) {
+        return;
+    }
+
+    participantBusy.value = true;
+    participantError.value = '';
+
+    try {
+        await api.post(`/scenes/${selectedSceneId.value}/participants`, {
+            character_id: picked.id,
+            role: sceneRoleFor(picked.character_type),
+        });
+        const addedId = picked.id;
+        addCharacterId.value = null;
+        await loadParticipants();
+        if (picked.character_type === 'npc') {
+            selectedNpcId.value = addedId;
+        }
+        flashParticipant('Добавлено');
+    } catch (error) {
+        participantError.value = error.response?.data?.message ?? 'Не удалось добавить персонажа на сцену.';
+    } finally {
+        participantBusy.value = false;
+    }
+}
+
+async function removeFromScene(characterId) {
+    if (!selectedSceneId.value) {
+        return;
+    }
+
+    participantBusy.value = true;
+    participantError.value = '';
+
+    try {
+        await api.patch(`/scenes/${selectedSceneId.value}/participants/${characterId}`);
+        await loadParticipants();
+        flashParticipant('Убрано');
+    } catch (error) {
+        participantError.value = error.response?.data?.message ?? 'Не удалось убрать персонажа со сцены.';
+    } finally {
+        participantBusy.value = false;
+    }
 }
 
 async function poll() {
@@ -309,6 +510,7 @@ async function poll() {
         if (selectedSceneId.value !== previousSceneId) {
             messages.value = [];
             resetCopilotDrafts();
+            await loadParticipants();
             await load();
         } else {
             await load(lastId());
@@ -335,6 +537,7 @@ async function createGameSession() {
         gameSession.value = data.game_session;
         selectedSceneId.value = gameSession.value.active_scene_id;
         messages.value = [];
+        await loadParticipants();
         await load();
     } catch (error) {
         sceneError.value = error.response?.data?.message ?? 'Не удалось создать игровую сессию.';
@@ -360,6 +563,7 @@ async function createScene() {
         newSceneTitle.value = '';
         await loadGameSession(data.scene.id);
         messages.value = [];
+        await loadParticipants();
         await load();
     } catch (error) {
         sceneError.value = error.response?.data?.message ?? 'Не удалось создать сцену.';
@@ -437,7 +641,7 @@ async function generateDrafts() {
 
     try {
         const { data } = await api.post('/copilot/drafts', {
-            npc_name: npcName.value.trim(),
+            character_id: selectedNpcId.value,
             prompt: copilotPrompt.value.trim(),
             scene_id: selectedSceneId.value,
         });
@@ -456,8 +660,7 @@ async function generateDrafts() {
 
 async function sendAsNpc() {
     const text = editedDraft.value.trim();
-    const name = npcName.value.trim();
-    if (!text || !name) {
+    if (!text || selectedNpcId.value === null) {
         return;
     }
 
@@ -466,7 +669,7 @@ async function sendAsNpc() {
     try {
         const { data } = await api.post('/messages', {
             body: text,
-            npc_name: name,
+            character_id: selectedNpcId.value,
             scene_id: selectedSceneId.value,
             copilot_request_id: copilotRequestId.value,
             copilot_draft_index: selectedDraftIndex.value,
@@ -487,11 +690,13 @@ async function logout() {
 
 onMounted(async () => {
     await loadGameSession();
+    await loadParticipants();
     await load();
     timer = setInterval(poll, 3000);
 });
 
 onUnmounted(() => {
     clearInterval(timer);
+    clearTimeout(participantFlashTimer);
 });
 </script>

@@ -3,6 +3,8 @@ import { useAuth } from './auth';
 import LoginView from './views/LoginView.vue';
 import RegisterView from './views/RegisterView.vue';
 import ChatView from './views/ChatView.vue';
+import CharacterListView from './views/CharacterListView.vue';
+import CharacterSheetView from './views/CharacterSheetView.vue';
 
 const router = createRouter({
     history: createWebHistory(),
@@ -11,6 +13,8 @@ const router = createRouter({
         { path: '/login', name: 'login', component: LoginView, meta: { guest: true } },
         { path: '/register', name: 'register', component: RegisterView, meta: { guest: true } },
         { path: '/chat', name: 'chat', component: ChatView, meta: { auth: true } },
+        { path: '/characters', name: 'characters', component: CharacterListView, meta: { auth: true } },
+        { path: '/characters/:id', name: 'character', component: CharacterSheetView, meta: { auth: true } },
     ],
 });
 

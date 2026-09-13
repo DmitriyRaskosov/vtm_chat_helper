@@ -5,14 +5,16 @@ namespace App\Http\Controllers;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneStatus;
 use App\Http\Requests\StoreSceneRequest;
-use App\Jobs\FinalizeSceneContextJob;
 use App\Models\GameSession;
 use App\Models\Scene;
+use App\Scene\SceneContextService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
 
 class SceneController extends Controller
 {
+    public function __construct(private SceneContextService $contexts) {}
+
     public function store(StoreSceneRequest $request, GameSession $gameSession): JsonResponse
     {
         $scene = DB::transaction(function () use ($request, $gameSession): Scene {
@@ -92,7 +94,6 @@ class SceneController extends Controller
 
     public function close(Scene $scene): JsonResponse
     {
-        $wasClosed = $scene->status === SceneStatus::Closed;
         $scene = DB::transaction(function () use ($scene): Scene {
             $lockedScene = Scene::query()
                 ->with('gameSession')
@@ -112,12 +113,10 @@ class SceneController extends Controller
                 ]);
             }
 
+            $this->contexts->freeze($lockedScene);
+
             return $lockedScene->refresh();
         });
-
-        if (! $wasClosed) {
-            FinalizeSceneContextJob::dispatch($scene->id);
-        }
 
         return response()->json(['scene' => $this->serialize($scene)]);
     }

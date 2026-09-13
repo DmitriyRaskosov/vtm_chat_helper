@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'scene_id',
     'body',
     'npc_name',
+    'author_character_id',
     'copilot_request_id',
     'token_estimate',
     'token_estimator_version',
@@ -23,13 +24,23 @@ class Message extends Model
     /** @use HasFactory<MessageFactory> */
     use HasFactory;
 
-    public function displayAuthor(): string
+    public function displayAuthor(?string $characterCanonicalName = null): string
     {
+        if ($this->author_character_id !== null) {
+            $name = $characterCanonicalName ?? WorldEntity::query()
+                ->whereKey($this->author_character_id)
+                ->value('canonical_name');
+
+            if (is_string($name) && $name !== '') {
+                return $name;
+            }
+        }
+
         if ($this->npc_name !== null && $this->npc_name !== '') {
             return $this->npc_name;
         }
 
-        return $this->user->name;
+        return $this->user?->name ?? 'Аноним';
     }
 
     /**
@@ -46,6 +57,14 @@ class Message extends Model
     public function scene(): BelongsTo
     {
         return $this->belongsTo(Scene::class);
+    }
+
+    /**
+     * @return BelongsTo<Character, $this>
+     */
+    public function authorCharacter(): BelongsTo
+    {
+        return $this->belongsTo(Character::class, 'author_character_id');
     }
 
     /**

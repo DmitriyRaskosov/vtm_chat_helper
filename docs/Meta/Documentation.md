@@ -30,15 +30,20 @@ Settings → **Files & Links**:
 | copilot, NpcCopilotService, config/copilot.php | [[API/Copilot]], [[Features/Copilot]] |
 | `app/Rag/**`, rag config, IndexRagMessageJob | [[API/RAG]], [[Architecture/Backend]] |
 | `app/Llm/**`, ollama config | [[Architecture/Backend]], [[Features/Copilot]] |
-| `frontend/**`, ChatView copilot UI | [[Architecture/Frontend]], [[Features/Copilot]] |
+| `frontend/**`, ChatView / листы персонажей | [[Architecture/Frontend]], [[Features/Copilot]], [[Features/Characters]], [[API/Characters]] |
 | compose.yaml, Sail, Ollama | [[Development/Setup]] |
 | `.env.example` | [[Development/Environment]] |
 | phpunit, feature tests | [[Development/Testing]] |
 | roadmap, отложенные фичи | [[Project/Roadmap]] |
 | роли storyteller/player | [[Project/Roles]] |
+| `app/World/**`, typed entities | [[Architecture/World]], [[Architecture/Backend]], [[Architecture/Database]] |
+| `app/Character/**`, CharacterSheetController | [[API/Characters]], [[Features/Characters]], [[Architecture/World]], [[Architecture/Database]] |
+| `app/Lore/**` | [[Architecture/Lore]], [[Architecture/Backend]] |
+| `app/Rulebook/**` | [[Architecture/Rules]], [[Architecture/Backend]] |
+| `app/Memory/**` | [[Architecture/Memory]], [[Architecture/Backend]] |
 | структура каталогов, file map | [[Meta/Structure]] |
 
 ## Cursor
 
 - Narrative docs: `docs/` (Obsidian vault)
-- Coding conventions: `.cursor/rules/*.mdc` (`project-map.mdc`, `docs-obsidian.mdc` — always apply)
+- Coding conventions: `.cursor/rules/*.mdc` (`project-map.mdc`, `docs-obsidian.mdc`, `database.mdc` — always apply). Схема БД не копируется в rules: канон [[Architecture/Database]].

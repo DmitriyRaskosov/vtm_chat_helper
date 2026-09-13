@@ -99,10 +99,43 @@ a { color: var(--accent); }
 @media (max-width: 650px) {
     .scene-heading,
     .scene-management,
+    .scene-cast-add,
     .session-create {
         align-items: stretch;
         flex-direction: column;
     }
+}
+.scene-cast {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--line);
+}
+.scene-cast-list {
+    list-style: none;
+    padding: 0.35rem 0 0;
+    margin: 0;
+}
+.scene-cast-list li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.35rem 0.5rem;
+    margin: 0.25rem 0;
+}
+.scene-cast-add {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: end;
+}
+.scene-cast-add label { margin: 0; flex: 1; min-width: 12rem; }
+.scene-cast-add button { margin: 0; }
+.saved-flash {
+    color: #8fbf7a;
+    font-size: 0.85rem;
+    margin-left: 0.35rem;
 }
 .draft-list {
     display: flex;
@@ -144,6 +177,9 @@ a { color: var(--accent); }
     padding-bottom: 0.75rem;
 }
 .top h1 { margin: 0; font-size: 1.25rem; font-weight: 600; }
+.top h1 a { color: inherit; text-decoration: none; }
+.top h1 a.nav-current { color: var(--accent); }
+.nav-sep { margin: 0 0.4rem; color: var(--muted); font-weight: 400; }
 .muted { color: var(--muted); font-size: 0.9rem; }
 .card {
     background: var(--panel);
@@ -207,3 +243,120 @@ button.link {
 .composer { display: flex; gap: 0.5rem; align-items: flex-end; }
 .composer textarea { margin: 0; flex: 1; }
 .composer button { margin: 0; }
+
+.character-tree { list-style: none; padding: 0; margin: 0; }
+.character-tree ul { list-style: none; padding: 0.25rem 0 0 1.25rem; }
+.character-tree li { margin: 0.35rem 0; }
+.character-create h2,
+.card h2 { margin: 0 0 0.75rem; font-size: 1.05rem; }
+.card h3 { margin: 0 0 0.5rem; font-size: 0.95rem; }
+.character-create-grid,
+.sheet-header,
+.play-bar,
+.sheet-cols {
+    display: grid;
+    gap: 0.75rem 1rem;
+}
+.character-create-grid { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+.sheet-header { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); align-items: end; }
+.play-bar { grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); align-items: end; margin-bottom: 1rem; }
+.play-health { grid-column: 1 / -1; }
+.health-heading {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+}
+.health-damage { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.health-damage button {
+    margin: 0;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+}
+.health-damage button.current {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.health-track {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 0.35rem;
+    margin-top: 0.5rem;
+}
+.health-step {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.3rem;
+    margin: 0;
+    padding: 0.2rem 0;
+    background: transparent;
+    color: inherit;
+    border: 0;
+}
+.health-label {
+    font-size: 0.65rem;
+    color: var(--muted);
+    text-align: center;
+    line-height: 1.15;
+}
+.sheet-cols { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+@media (max-width: 800px) {
+    .sheet-cols { grid-template-columns: 1fr; }
+}
+.trait-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0.2rem 0;
+    font-size: 0.9rem;
+}
+.dots { display: flex; gap: 0.2rem; }
+.dot {
+    width: 0.85rem;
+    height: 0.85rem;
+    margin: 0;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--text);
+    background: transparent;
+}
+.dot.filled { background: var(--text); }
+.health-box {
+    display: block;
+    width: 1.15rem;
+    height: 1.15rem;
+    margin: 0;
+    padding: 0;
+    border-radius: 50%;
+    border: 1px solid var(--text);
+    background: transparent;
+}
+.health-box.bashing { background: var(--text); }
+.health-box.lethal { background: #6a3a28; }
+.health-box.aggravated { background: #8a2020; }
+.merit-list { list-style: none; padding: 0; margin: 0 0 0.5rem; }
+.merit-hint { margin: 0 0 0.75rem; }
+.merit-list li {
+    display: grid;
+    grid-template-columns: 7rem 1fr 5.5rem 3rem auto;
+    gap: 0.4rem;
+    margin: 0.35rem 0;
+    align-items: end;
+}
+.merit-cost { margin: 0; }
+.merit-cost span { display: block; font-size: 0.75rem; margin-bottom: 0.15rem; }
+.merit-sign { font-size: 0.9rem; text-align: right; padding-bottom: 0.45rem; }
+.merit-totals { margin: 0.25rem 0 0.75rem; font-size: 0.9rem; }
+.sheet-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+}
+.sheet-actions button { margin-top: 0; }
+.play-bar input[type="number"],
+.merit-list input[type="number"] { width: 100%; }
+.play-bar button { margin-top: 0; }

@@ -2,7 +2,7 @@
 
 ## Стек в Docker (Sail)
 
-API в Docker: PHP 8.4, PostgreSQL с pgvector, Redis, Mailpit, **Ollama** (порт 11434 **не** на хост — только `http://ollama:11434` из Laravel).
+API в Docker: PHP 8.4, PostgreSQL с pgvector, Mailpit, **Ollama** (порт 11434 **не** на хост — только `http://ollama:11434` из Laravel). Redis в обычный запуск не входит: cache, session и queue идут через PostgreSQL. Контейнер Redis — opt-in (`docker compose --profile future up redis`) и не хранит канон.
 
 ### Первый запуск
 
@@ -36,22 +36,22 @@ docker compose exec ollama ollama ps
 
 В колонке `CONTEXT` для `qwen3:8b` ожидается `16384`. Большое окно требует больше памяти.
 
-При смене embed-модели или размерности вектора:
+При смене embed-модели или размерности вектора подготовьте миграцию всех затронутых отдельных корпусов, затем:
 
 ```bat
 docker compose exec laravel.test php artisan migrate
 docker compose exec laravel.test php artisan rag:reindex-messages
 ```
 
-Миграция `resize_rag_chunks_embedding_for_qwen3` очищает `rag_chunks` и меняет размерность колонки; lore-чанки нужно проиндексировать заново через `rag:index-lore`.
+Для обновления существующей установки до cutover этапа 35 сначала выполните `rag:reindex-messages`, затем миграции: финальная миграция удаляет legacy `rag_chunks`. Лор, правила и биографии перестраиваются специализированными indexer-сервисами.
 
-Фоновая суммаризация всегда использует очередь `database`. Сервис `queue` запускается вместе с compose и выполняет:
+При `RAG_INDEX_SYNC=false` сервис `queue` индексирует сообщения. При значении по умолчанию `true` очередь для Copilot не нужна.
 
 ```bat
 docker compose logs -f queue
 ```
 
-Для ручного запуска без сервиса: `docker compose exec laravel.test php artisan queue:work --timeout=300`. Summary jobs имеют timeout 300 секунд, до трёх попыток и backoff 30/120 секунд; `DB_QUEUE_RETRY_AFTER=600` должен оставаться больше timeout, чтобы второй worker не подобрал ещё выполняющийся job. Тот же worker выполняет `RefreshStorytellerIntentJob`. При `RAG_INDEX_SYNC=false` он также выполняет индексацию сообщений. В тестах `QUEUE_CONNECTION=sync`.
+Для ручного запуска: `docker compose exec laravel.test php artisan queue:work`. В тестах `QUEUE_CONNECTION=sync`.
 
 ### Windows
 
@@ -80,8 +80,11 @@ npm run dev
 |--------|-----|
 | Vue UI | http://localhost:5173 |
 | Laravel API | http://localhost:8080/api |
+| Laravel health | http://localhost:8080/up |
 | Mailpit | http://localhost:8025 |
 | Ollama | только внутри Docker (`http://ollama:11434`) |
+
+Корень `http://localhost:8080/` без `/api` отвечает **404**: у Laravel нет веб-страниц, UI только на Vite.
 
 ## Obsidian
 

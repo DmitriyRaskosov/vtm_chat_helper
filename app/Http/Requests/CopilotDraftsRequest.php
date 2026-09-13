@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Enums\CharacterType;
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class CopilotDraftsRequest extends FormRequest
 {
@@ -17,9 +19,17 @@ class CopilotDraftsRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'npc_name' => ['required', 'string', 'max:64'],
+            'character_id' => [
+                'required',
+                'integer',
+                Rule::exists('characters', 'id')->where(
+                    'character_type',
+                    CharacterType::Npc->value,
+                ),
+            ],
             'prompt' => ['required', 'string', 'max:2000'],
             'scene_id' => ['sometimes', 'integer', 'exists:scenes,id'],
+            'chronicle_id' => ['sometimes', 'integer', 'exists:chronicles,id'],
         ];
     }
 }

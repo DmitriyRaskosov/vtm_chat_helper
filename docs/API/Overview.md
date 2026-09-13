@@ -21,15 +21,31 @@
 | POST | `/api/game-sessions/{id}/scenes` | sanctum | storyteller | [[API/Scenes]] |
 | PATCH | `/api/scenes/{id}/activate` | sanctum | storyteller | [[API/Scenes]] |
 | PATCH | `/api/scenes/{id}/close` | sanctum | storyteller | [[API/Scenes]] |
+| GET | `/api/scenes/{id}/context` | sanctum | storyteller | [[API/Scenes]] |
+| PUT | `/api/scenes/{id}/context` | sanctum | storyteller | [[API/Scenes]] |
+| GET | `/api/scenes/{id}/participants` | sanctum | storyteller | [[API/Scenes]] |
+| POST | `/api/scenes/{id}/participants` | sanctum | storyteller | [[API/Scenes]] |
+| PATCH | `/api/scenes/{id}/participants/{character}` | sanctum | storyteller | [[API/Scenes]] |
 | GET | `/api/messages` | sanctum | any | [[API/Messages]] |
 | POST | `/api/messages` | sanctum | any (+ npc: ST) | [[API/Messages]] |
+| GET | `/api/character-sheet/catalog` | sanctum | any | [[API/Characters]] |
+| GET | `/api/characters` | sanctum | any | [[API/Characters]] |
+| POST | `/api/characters` | sanctum | storyteller | [[API/Characters]] |
+| GET | `/api/characters/{character}` | sanctum | own sheet / ST | [[API/Characters]] |
+| PATCH | `/api/characters/{character}` | sanctum | own sheet / ST | [[API/Characters]] |
+| PUT | `/api/characters/{character}/stats` | sanctum | own sheet / ST | [[API/Characters]] |
+| PATCH | `/api/characters/{character}/status` | sanctum | own sheet / ST | [[API/Characters]] |
+| PUT | `/api/characters/{character}/health` | sanctum | own sheet / ST | [[API/Characters]] |
+| PUT | `/api/characters/{character}/merits` | sanctum | own sheet / ST | [[API/Characters]] |
+| PATCH | `/api/characters/{character}/experience` | sanctum | own sheet / ST | [[API/Characters]] |
+| PUT | `/api/characters/{character}/disciplines` | sanctum | own sheet / ST | [[API/Characters]] |
 | GET | `/api/rag/search` | sanctum | storyteller | [[API/RAG]] |
 | POST | `/api/copilot/drafts` | sanctum | storyteller | [[API/Copilot]] |
 
 ## Ошибки
 
 - Валидация: JSON **422** с полями ошибок
-- Неавторизован: **401**
+- Неавторизован: **401** (в том числе для `api/*` без Bearer; редиректа на `login` нет)
 - Не рассказчик на ST-only маршрутах: **403**
 - Ollama недоступна (copilot): **503**
 - Невалидный ответ модели (copilot): **502**

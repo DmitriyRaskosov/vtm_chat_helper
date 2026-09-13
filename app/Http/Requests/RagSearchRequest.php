@@ -2,9 +2,7 @@
 
 namespace App\Http\Requests;
 
-use App\Enums\RagSourceType;
 use Illuminate\Foundation\Http\FormRequest;
-use Illuminate\Validation\Rule;
 
 class RagSearchRequest extends FormRequest
 {
@@ -21,8 +19,9 @@ class RagSearchRequest extends FormRequest
         return [
             'q' => ['required', 'string', 'max:2000'],
             'limit' => ['sometimes', 'integer', 'min:1', 'max:20'],
-            'types' => ['sometimes', 'array'],
-            'types.*' => ['string', Rule::enum(RagSourceType::class)],
+            'chronicle_id' => ['required', 'integer', 'exists:chronicles,id'],
+            'game_session_id' => ['sometimes', 'integer', 'exists:game_sessions,id'],
+            'scene_id' => ['sometimes', 'integer', 'exists:scenes,id'],
         ];
     }
 }

@@ -2,15 +2,26 @@
 
 namespace Tests\Feature;
 
+use App\Character\CharacterLoreKnowledgeService;
+use App\Enums\CharacterKnowledgeLevel;
+use App\Enums\CharacterMemoryNodeType;
+use App\Enums\LoreEntryStatus;
+use App\Enums\LoreVisibility;
+use App\Enums\WorldEntityType;
+use App\Lore\LoreEntryService;
+use App\Lore\LoreIndexer;
+use App\Memory\CharacterMemoryService;
+use App\Models\Character;
 use App\Models\CopilotRequest;
 use App\Models\Message;
 use App\Models\Scene;
 use App\Models\User;
+use App\Models\WorldEntity;
 use App\Rag\RagIndexer;
+use App\World\WorldEntityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Queue;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -27,15 +38,15 @@ class CopilotTest extends TestCase
         ]);
 
         $storyteller = User::factory()->storyteller()->create();
+        $npc = $this->createNpc();
 
         Sanctum::actingAs($storyteller);
 
         $response = $this->postJson('/api/copilot/drafts', [
-            'npc_name' => 'Виктория',
+            'character_id' => $npc->id,
             'prompt' => 'Ответить на вопрос о Маскараде.',
         ])
             ->assertOk()
-            ->assertJsonPath('copilot_request_id', 1)
             ->assertJsonPath('drafts.0', 'Первый вариант реплики.')
             ->assertJsonPath('drafts.1', 'Второй вариант реплики.')
             ->assertJsonPath('drafts.2', 'Третий вариант реплики.');
@@ -46,8 +57,12 @@ class CopilotTest extends TestCase
 
         $this->assertSame($storyteller->id, $copilotRequest->storyteller_id);
         $this->assertSame('qwen3:8b', $copilotRequest->model);
-        $this->assertSame('context-builder-v3', $copilotRequest->builder_version);
-        $this->assertSame('npc-drafts-v4', $copilotRequest->prompt_version);
+        $this->assertSame('context-assembler-v1', $copilotRequest->builder_version);
+        $this->assertSame('npc-drafts-v6', $copilotRequest->prompt_version);
+        $this->assertArrayHasKey('section_token_counts', $copilotRequest->context_metadata);
+        $this->assertArrayHasKey('sections', $copilotRequest->context_metadata);
+        $this->assertSame($npc->id, $copilotRequest->context_metadata['character_id']);
+        $this->assertNotNull($copilotRequest->context_metadata['chronicle_id']);
         $this->assertLessThanOrEqual(
             12000,
             $copilotRequest->context_metadata['input_token_estimate'],
@@ -55,10 +70,15 @@ class CopilotTest extends TestCase
         $this->assertSame(16384, $copilotRequest->context_metadata['ollama_context_length']);
         $this->assertSame(3000, $copilotRequest->context_metadata['ollama_max_output_tokens']);
         $this->assertSame([], $copilotRequest->context_metadata['tool_invocations']);
-        $this->assertDatabaseCount('storyteller_intent_summaries', 1);
+        $this->assertArrayNotHasKey('included_summary_ids', $copilotRequest->context_metadata);
+        $this->assertArrayNotHasKey('included_intent_summary_id', $copilotRequest->context_metadata);
 
         Http::assertSent(function (Request $request): bool {
-            return isset($request['tools'])
+            $toolNames = collect($request['tools'] ?? [])
+                ->pluck('function.name')
+                ->all();
+
+            return $toolNames === ['search_messages', 'get_message_range']
                 && $request['options'] === [
                     'num_ctx' => 16384,
                     'num_predict' => 3000,
@@ -71,7 +91,7 @@ class CopilotTest extends TestCase
         Sanctum::actingAs(User::factory()->create());
 
         $this->postJson('/api/copilot/drafts', [
-            'npc_name' => 'Виктория',
+            'character_id' => 1,
             'prompt' => 'Тест.',
         ])->assertForbidden();
     }
@@ -79,10 +99,11 @@ class CopilotTest extends TestCase
     public function test_storyteller_can_post_message_as_npc(): void
     {
         Sanctum::actingAs(User::factory()->storyteller()->create(['name' => 'СТ']));
+        $npc = $this->createNpc();
 
         $this->postJson('/api/messages', [
             'body' => 'Добрый вечер, смертные.',
-            'npc_name' => 'Виктория',
+            'character_id' => $npc->id,
         ])
             ->assertCreated()
             ->assertJsonPath('message.author', 'Виктория')
@@ -100,18 +121,19 @@ class CopilotTest extends TestCase
         $this->fakeOllamaDrafts(['Один.', 'Два.', 'Три.']);
         $storyteller = User::factory()->storyteller()->create();
         $scene = Scene::query()->active()->firstOrFail();
+        $npc = $this->createNpc($scene);
 
         Sanctum::actingAs($storyteller);
 
         $copilotRequestId = $this->postJson('/api/copilot/drafts', [
-            'npc_name' => 'Виктория',
+            'character_id' => $npc->id,
             'prompt' => 'Ответить с угрозой.',
             'scene_id' => $scene->id,
         ])->assertOk()->json('copilot_request_id');
 
         $this->postJson('/api/messages', [
             'body' => 'Отредактированный второй вариант.',
-            'npc_name' => 'Виктория',
+            'character_id' => $npc->id,
             'scene_id' => $scene->id,
             'copilot_request_id' => $copilotRequestId,
             'copilot_draft_index' => 1,
@@ -131,17 +153,18 @@ class CopilotTest extends TestCase
     {
         $this->fakeOllamaDrafts(['Один.', 'Два.', 'Три.']);
         $storyteller = User::factory()->storyteller()->create();
+        $npc = $this->createNpc();
 
         Sanctum::actingAs($storyteller);
 
         $copilotRequestId = $this->postJson('/api/copilot/drafts', [
-            'npc_name' => 'Виктория',
+            'character_id' => $npc->id,
             'prompt' => 'Тест.',
         ])->assertOk()->json('copilot_request_id');
 
         $payload = [
             'body' => 'Один.',
-            'npc_name' => 'Виктория',
+            'character_id' => $npc->id,
             'copilot_request_id' => $copilotRequestId,
             'copilot_draft_index' => 0,
         ];
@@ -155,17 +178,18 @@ class CopilotTest extends TestCase
         $this->fakeOllamaDrafts(['Один.', 'Два.', 'Три.']);
         $owner = User::factory()->storyteller()->create();
         $otherStoryteller = User::factory()->storyteller()->create();
+        $npc = $this->createNpc();
 
         Sanctum::actingAs($owner);
         $copilotRequestId = $this->postJson('/api/copilot/drafts', [
-            'npc_name' => 'Виктория',
+            'character_id' => $npc->id,
             'prompt' => 'Тест.',
         ])->assertOk()->json('copilot_request_id');
 
         Sanctum::actingAs($otherStoryteller);
         $this->postJson('/api/messages', [
             'body' => 'Один.',
-            'npc_name' => 'Виктория',
+            'character_id' => $npc->id,
             'copilot_request_id' => $copilotRequestId,
             'copilot_draft_index' => 0,
         ])->assertForbidden();
@@ -175,11 +199,12 @@ class CopilotTest extends TestCase
         ]);
     }
 
-    public function test_context_builder_deduplicates_recent_messages_from_rag(): void
+    public function test_context_builder_uses_recent_scene_messages_without_passive_rag(): void
     {
         $this->fakeOllamaDrafts(['Один.', 'Два.', 'Три.']);
         $storyteller = User::factory()->storyteller()->create();
         $scene = Scene::query()->active()->firstOrFail();
+        $npc = $this->createNpc($scene);
         $message = Message::factory()->create([
             'user_id' => $storyteller->id,
             'scene_id' => $scene->id,
@@ -190,7 +215,7 @@ class CopilotTest extends TestCase
         Sanctum::actingAs($storyteller);
 
         $this->postJson('/api/copilot/drafts', [
-            'npc_name' => 'Виктория',
+            'character_id' => $npc->id,
             'prompt' => 'Что известно о князе?',
             'scene_id' => $scene->id,
         ])->assertOk();
@@ -198,12 +223,15 @@ class CopilotTest extends TestCase
         Http::assertSent(function (Request $request): bool {
             $content = $request['messages'][1]['content'];
 
-            return substr_count($content, 'Уникальная фраза о князе города.') === 1;
+            return substr_count($content, 'Уникальная фраза о князе города.') === 1
+                && ! str_contains($content, 'Relevant past context')
+                && ! str_contains($content, 'Relevant memory summaries')
+                && ! str_contains($content, 'Storyteller intention memory');
         });
 
         $metadata = CopilotRequest::query()->firstOrFail()->context_metadata;
         $this->assertSame([$message->id], $metadata['included_raw_message_ids']);
-        $this->assertSame([], $metadata['included_rag_chunk_ids']);
+        $this->assertArrayNotHasKey('included_rag_chunk_ids', $metadata);
     }
 
     public function test_context_builder_keeps_the_newest_history_within_its_budget(): void
@@ -212,6 +240,7 @@ class CopilotTest extends TestCase
         $this->fakeOllamaDrafts(['Один.', 'Два.', 'Три.']);
         $storyteller = User::factory()->storyteller()->create();
         $scene = Scene::query()->active()->firstOrFail();
+        $npc = $this->createNpc($scene);
         Message::factory()->create([
             'user_id' => $storyteller->id,
             'scene_id' => $scene->id,
@@ -226,7 +255,7 @@ class CopilotTest extends TestCase
         Sanctum::actingAs($storyteller);
 
         $this->postJson('/api/copilot/drafts', [
-            'npc_name' => 'Виктория',
+            'character_id' => $npc->id,
             'prompt' => 'Ответить.',
             'scene_id' => $scene->id,
         ])->assertOk();
@@ -239,9 +268,9 @@ class CopilotTest extends TestCase
 
     public function test_copilot_tool_loop_records_scoped_retrieval(): void
     {
-        Queue::fake();
         $storyteller = User::factory()->storyteller()->create();
         $scene = Scene::query()->active()->firstOrFail();
+        $npc = $this->createNpc($scene);
         $first = Message::factory()->create([
             'user_id' => $storyteller->id,
             'scene_id' => $scene->id,
@@ -279,7 +308,7 @@ class CopilotTest extends TestCase
         Sanctum::actingAs($storyteller);
 
         $this->postJson('/api/copilot/drafts', [
-            'npc_name' => 'Виктория',
+            'character_id' => $npc->id,
             'prompt' => 'Опереться на предыдущий обмен.',
             'scene_id' => $scene->id,
         ])->assertOk();
@@ -292,14 +321,69 @@ class CopilotTest extends TestCase
         $this->assertFalse($metadata['tool_invocations'][0]['truncated']);
     }
 
-    public function test_player_cannot_post_message_as_npc(): void
+    public function test_copilot_records_memory_and_world_graph_provenance_end_to_end(): void
+    {
+        $this->fakeOllamaDrafts(['Один.', 'Два.', 'Три.']);
+        $storyteller = User::factory()->storyteller()->create();
+        $scene = Scene::query()->active()->with('gameSession.chronicle')->firstOrFail();
+        $npcEntity = $this->createNpc($scene);
+        $npc = Character::query()->findOrFail($npcEntity->id);
+        $prompt = 'Виктория помнит тайную встречу в Элизиуме. Под Элизиумом скрыт запечатанный архив.';
+        $memory = $this->app->make(CharacterMemoryService::class)->remember(
+            $npc,
+            'Виктория помнит тайную встречу в Элизиуме.',
+            CharacterMemoryNodeType::Event,
+            aliases: [$prompt],
+        );
+        $lore = $this->app->make(LoreEntryService::class)->publish(
+            $scene->gameSession->chronicle,
+            [
+                'title' => 'Тайна Элизиума',
+                'canonical_text' => 'Под Элизиумом скрыт запечатанный архив.',
+                'status' => LoreEntryStatus::Approved,
+                'visibility' => LoreVisibility::Public,
+            ],
+            'E2E provenance fixture.',
+        );
+        $this->app->make(LoreEntryService::class)->attachEntity($lore, $npcEntity);
+        $this->app->make(LoreIndexer::class)->rebuildApproved($lore);
+        $this->app->make(CharacterLoreKnowledgeService::class)->grant(
+            $npc,
+            $lore,
+            CharacterKnowledgeLevel::Known,
+        );
+
+        Sanctum::actingAs($storyteller);
+        $response = $this->postJson('/api/copilot/drafts', [
+            'character_id' => $npc->id,
+            'prompt' => $prompt,
+            'scene_id' => $scene->id,
+        ])->assertOk();
+
+        $metadata = CopilotRequest::query()
+            ->findOrFail($response->json('copilot_request_id'))
+            ->context_metadata;
+
+        $this->assertTrue($metadata['sections']['memory_graph']['included']);
+        $this->assertContains(
+            $memory->id,
+            $metadata['sections']['memory_graph']['provenance']['node_ids'],
+        );
+        $this->assertTrue($metadata['sections']['world_lore']['included']);
+        $this->assertContains(
+            $lore->id,
+            $metadata['sections']['world_lore']['provenance']['lore_entry_ids'],
+        );
+    }
+
+    public function test_npc_name_input_is_rejected(): void
     {
         Sanctum::actingAs(User::factory()->create());
 
         $this->postJson('/api/messages', [
             'body' => 'Притворяюсь НПС.',
             'npc_name' => 'Виктория',
-        ])->assertForbidden();
+        ])->assertUnprocessable()->assertJsonValidationErrors('npc_name');
     }
 
     /**
@@ -310,21 +394,21 @@ class CopilotTest extends TestCase
         $payload = json_encode(['drafts' => $drafts], JSON_UNESCAPED_UNICODE);
 
         Http::fake(function (Request $request) use ($payload) {
-            $system = $request['messages'][0]['content'] ?? '';
-
-            if (is_string($system) && str_contains($system, 'compress a storyteller')) {
-                return Http::response([
-                    'message' => [
-                        'content' => json_encode([
-                            'narrative' => 'Держать напряжение Маскарада и не раскрывать секреты князя.',
-                        ], JSON_UNESCAPED_UNICODE),
-                    ],
-                ]);
-            }
-
             return Http::response([
                 'message' => ['content' => $payload],
             ]);
         });
+    }
+
+    private function createNpc(?Scene $scene = null): WorldEntity
+    {
+        $scene ??= Scene::query()->active()->firstOrFail();
+        $scene->loadMissing('gameSession.chronicle');
+
+        return $this->app->make(WorldEntityService::class)->create(
+            $scene->gameSession->chronicle,
+            WorldEntityType::Character,
+            'Виктория',
+        );
     }
 }

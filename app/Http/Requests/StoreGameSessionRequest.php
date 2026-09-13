@@ -18,6 +18,7 @@ class StoreGameSessionRequest extends FormRequest
     {
         return [
             'title' => ['required', 'string', 'max:120'],
+            'chronicle_id' => ['sometimes', 'integer', 'exists:chronicles,id'],
         ];
     }
 }

@@ -16,14 +16,20 @@ alwaysApply: true
 | `routes/api.php`, auth controllers | `docs/API/Auth.md`, `docs/API/Overview.md` |
 | messages, ChatController | `docs/API/Messages.md`, `docs/Features/Chat.md` |
 | copilot, NpcCopilotService, config/copilot.php | `docs/API/Copilot.md`, `docs/Features/Copilot.md` |
+| `app/Context/**`, config/context.php | `docs/Architecture/Context.md`, `docs/API/Copilot.md` |
 | `app/Rag/**`, rag config, IndexRagMessageJob | `docs/API/RAG.md`, `docs/Architecture/Backend.md` |
 | `app/Llm/**`, ollama config | `docs/Architecture/Backend.md`, `docs/Features/Copilot.md` |
-| `frontend/**`, ChatView copilot UI | `docs/Architecture/Frontend.md`, `docs/Features/Copilot.md` |
+| `frontend/**`, ChatView / Character*View | `docs/Architecture/Frontend.md`, `docs/Features/Copilot.md`, `docs/Features/Characters.md`, `docs/API/Characters.md` |
 | compose.yaml, Sail, Ollama | `docs/Development/Setup.md` |
 | `.env.example` | `docs/Development/Environment.md` |
 | phpunit, feature tests conventions | `docs/Development/Testing.md` |
 | roadmap, отложенные фичи | `docs/Project/Roadmap.md` |
 | роли storyteller/player | `docs/Project/Roles.md` |
+| `app/World/**`, typed entities, `characters` | `docs/Architecture/World.md`, `docs/Architecture/Backend.md`, `docs/Architecture/Database.md` |
+| `app/Character/**`, CharacterSheetController | `docs/API/Characters.md`, `docs/Features/Characters.md`, `docs/Architecture/World.md`, `docs/Architecture/Database.md` |
+| `app/Lore/**` | `docs/Architecture/Lore.md`, `docs/Architecture/Backend.md` |
+| `app/Rulebook/**` | `docs/Architecture/Rules.md`, `docs/Architecture/Backend.md` |
+| `app/Memory/**` | `docs/Architecture/Memory.md`, `docs/Architecture/Backend.md` |
 | структура каталогов, новые слои | `docs/Meta/Structure.md` |
 
 ## Что обновлять в заметке

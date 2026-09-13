@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -25,6 +26,25 @@ class User extends Authenticatable
     public function messages(): HasMany
     {
         return $this->hasMany(Message::class);
+    }
+
+    /**
+     * One user owns at most one player character, globally. Ghouls belong
+     * to that character via `domitor_character_id`, not to the user.
+     *
+     * @return HasOne<Character, $this>
+     */
+    public function character(): HasOne
+    {
+        return $this->hasOne(Character::class);
+    }
+
+    /**
+     * @return HasMany<Chronicle, $this>
+     */
+    public function createdChronicles(): HasMany
+    {
+        return $this->hasMany(Chronicle::class, 'created_by');
     }
 
     /**

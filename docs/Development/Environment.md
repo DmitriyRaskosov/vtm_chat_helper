@@ -20,32 +20,41 @@
 | Переменная | По умолчанию | Описание |
 |------------|--------------|----------|
 | `COPILOT_HISTORY_LIMIT` | `30` | Сколько последних сообщений в контекст промпта |
-| `COPILOT_RAG_LIMIT` | `5` | Сколько RAG-чанков в контекст |
 | `COPILOT_DRAFT_COUNT` | `3` | Количество черновиков |
 | `COPILOT_TOOLS_ENABLED` | `true` | Tool-call loop Copilot |
 | `COPILOT_TOOLS_MAX_ITERATIONS` | `2` | Максимум раундов tools |
-| `COPILOT_TOOLS_SEARCH_LIMIT` | `5` | Лимит `search_messages` / `search_summaries` |
+| `COPILOT_TOOLS_SEARCH_LIMIT` | `5` | Лимит `search_messages` |
 | `COPILOT_TOOLS_RANGE_LIMIT` | `20` | Лимит `get_message_range` |
 
 Конфиг: `config/rag.php`, `config/ollama.php`, `config/copilot.php`.
+
+## Retrieval
+
+| Переменная | По умолчанию | Описание |
+|------------|--------------|----------|
+| `RETRIEVAL_STATEMENT_TIMEOUT_MS` | `2000` | `SET LOCAL statement_timeout` для GraphRAG CTE |
+
+Конфиг: `config/retrieval.php`. См. [[Architecture/Retrieval]].
 
 ## Context
 
 | Переменная | По умолчанию | Описание |
 |------------|--------------|----------|
 | `CONTEXT_CHARACTERS_PER_TOKEN` | `3` | Unicode-символов на один оценочный токен |
-| `CONTEXT_L0_MAX_TOKENS` | `15000` | Максимум оценочных токенов в будущем L0-окне |
-| `CONTEXT_L0_MAX_MESSAGES` | `50` | Максимум целых сообщений в L0-окне |
-| `CONTEXT_L1_SUMMARY_COUNT` | `5` | Число последовательных L0 в одном L1 |
-| `CONTEXT_SUMMARY_RAG_LIMIT` | `5` | Максимум релевантных summary-чанков для Copilot |
-| `CONTEXT_SUMMARY_CONTEXT_LENGTH` | `24576` | `num_ctx` для L0/L1/final/session суммаризации |
-| `CONTEXT_SUMMARY_MAX_OUTPUT_TOKENS` | `3000` | `num_predict` для summary |
-| `CONTEXT_COPILOT_MAX_INPUT_TOKENS` | `12000` | Бюджет system + prompt + raw history + RAG + intent |
-| `CONTEXT_INTENT_REQUEST_LIMIT` | `20` | Сколько последних Copilot prompts входит в rolling intent |
-| `CONTEXT_INTENT_CONTEXT_LENGTH` | `8192` | `num_ctx` для intent summary |
-| `CONTEXT_INTENT_MAX_OUTPUT_TOKENS` | `400` | `num_predict` для intent summary |
+| `CONTEXT_COPILOT_MAX_INPUT_TOKENS` | `12000` | Бюджет system + все секции assembler |
 
-Вход 12000 + ответ до 3000 укладываются в окно 16384 с техническим запасом. Конфиг: `config/context.php`, `config/ollama.php`. Алгоритм и правило oversized описаны в [[Architecture/Context]].
+Вход 12000 + ответ до 3000 укладываются в окно 16384 с техническим запасом. Per-section min/max — только `config/context.php` (`assembler.sections`), без отдельных env. Конфиг: `config/context.php`, `config/ollama.php`. См. [[Architecture/Context]].
+
+## Хранение сессий, кеша и очереди
+
+| Переменная | По умолчанию | Описание |
+|------------|--------------|----------|
+| `SESSION_DRIVER` | `database` | Сессии Laravel в PostgreSQL, не в Redis |
+| `CACHE_STORE` | `database` | Кеш в PostgreSQL, не в Redis |
+| `QUEUE_CONNECTION` | `database` | Очередь в таблице `jobs`; `RAG_INDEX_SYNC=true` обычно делает worker необязательным |
+| `DB_QUEUE_RETRY_AFTER` | `600` | Повторная выдача database job |
+
+Переменные `REDIS_*` в `.env.example` оставлены как задел. Обычный `docker compose up` Redis не поднимает. Канон мира и чата в Redis не хранится.
 
 ## Прочие
 
@@ -53,4 +62,3 @@
 |------------|----------|
 | `APP_PORT` | `8080` — порт Laravel API |
 | `FRONTEND_URL` | `http://localhost:5173` |
-| `DB_QUEUE_RETRY_AFTER` | `600` — повторная выдача database job; должна быть больше summary timeout 300 секунд |

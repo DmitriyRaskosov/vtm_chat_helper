@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\RagSourceType;
 use App\Models\GameSession;
 use App\Models\Message;
 use App\Models\Scene;
@@ -104,38 +103,9 @@ class RetrievalToolsTest extends TestCase
         $this->assertNotContains($foreign->id, array_column($result['result']->items, 'message_id'));
     }
 
-    public function test_search_summaries_is_session_scoped(): void
+    public function test_unknown_summary_tool_is_rejected(): void
     {
         $activeScene = Scene::query()->active()->firstOrFail();
-        $indexer = $this->app->make(RagIndexer::class);
-        $localSummary = $indexer->upsert(
-            RagSourceType::Summary,
-            '101',
-            0,
-            'Договор в текущей сессии.',
-            'l0',
-            [
-                'level' => 'l0',
-                'scene_id' => $activeScene->id,
-                'game_session_id' => $activeScene->game_session_id,
-                'first_message_id' => 1,
-                'last_message_id' => 2,
-            ],
-        );
-        $indexer->upsert(
-            RagSourceType::Summary,
-            '202',
-            0,
-            'Договор в чужой сессии.',
-            'l0',
-            [
-                'level' => 'l0',
-                'scene_id' => 999,
-                'game_session_id' => 999,
-                'first_message_id' => 8,
-                'last_message_id' => 9,
-            ],
-        );
 
         $result = $this->app->make(RetrievalOrchestrator::class)->invoke(
             'search_summaries',
@@ -143,9 +113,7 @@ class RetrievalToolsTest extends TestCase
             RetrievalScope::fromScene($activeScene),
         );
 
-        $ids = array_column($result['result']->items, 'summary_id');
-        $this->assertContains((int) $localSummary->source_id, $ids);
-        $this->assertNotContains(202, $ids);
-        $this->assertLessThanOrEqual(5, count($result['result']->items));
+        $this->assertFalse($result['result']->ok);
+        $this->assertSame([], $result['result']->items);
     }
 }

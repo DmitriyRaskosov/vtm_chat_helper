@@ -20,10 +20,10 @@
 
 ## RAG
 
-Сообщения чата индексируются в `rag_chunks` (вектор + HNSW). `GET /api/rag/search` — только рассказчик. Copilot при генерации подмешивает RAG + последние сообщения. См. [[API/RAG]], [[Architecture/Backend]].
+Сообщения чата индексируются в scoped `message_embeddings` (vector + FTS). `GET /api/rag/search` требует `chronicle_id` и доступен только рассказчику. Остальные корпуса и два GraphRAG-контура собираются Context Assembler. См. [[API/RAG]], [[Architecture/Backend]].
 
 ## Copilot (рассказчик)
 
-`POST /api/copilot/drafts` → 3 черновика реплики НПС (имя вводится вручную, без таблицы `npcs`). Отправка в чат: `POST /api/messages` с `npc_name` + `body`. UI — боковая панель в `ChatView.vue`. См. [[Features/Copilot]].
+`POST /api/copilot/drafts` → 3 черновика реплики НПС по обязательному `character_id`. Отправка в чат: `POST /api/messages` с `character_id` + `body`; `npc_name` сохраняется backend как snapshot. UI — боковая панель в `ChatView.vue`. См. [[Features/Copilot]].
 
-Этап 4 (мир: лор-файлы, НПС в БД, граф, события) — **отложен**. См. [[Project/Roadmap]].
+Основной архитектурный план из 35 этапов завершён. См. [[Project/Roadmap]].

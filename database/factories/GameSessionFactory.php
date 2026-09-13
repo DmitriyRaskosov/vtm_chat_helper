@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\GameSessionStatus;
+use App\Models\Chronicle;
 use App\Models\GameSession;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -14,6 +15,7 @@ class GameSessionFactory extends Factory
     public function definition(): array
     {
         return [
+            'chronicle_id' => Chronicle::factory(),
             'title' => fake()->words(3, true),
             'status' => GameSessionStatus::Archived,
             'created_by' => null,

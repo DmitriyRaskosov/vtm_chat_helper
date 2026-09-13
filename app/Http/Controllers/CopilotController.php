@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Enums\SceneStatus;
 use App\Http\Requests\CopilotDraftsRequest;
-use App\Jobs\RefreshStorytellerIntentJob;
 use App\Llm\NpcCopilotService;
+use App\Models\Character;
+use App\Models\Chronicle;
 use App\Models\CopilotRequest;
 use App\Models\Scene;
+use App\Models\WorldEntity;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
@@ -17,11 +19,23 @@ class CopilotController extends Controller
 {
     public function drafts(CopilotDraftsRequest $request, NpcCopilotService $copilot): JsonResponse
     {
-        $sceneId = $request->validated('scene_id');
+        $sceneId = $request->validated('scene_id') ?? null;
+        $chronicleId = $request->validated('chronicle_id') ?? null;
+
+        if ($sceneId === null) {
+            $chronicleId = Chronicle::resolveId($chronicleId === null ? null : (int) $chronicleId);
+        }
+
         $scene = Scene::query()
             ->when($sceneId !== null, fn ($query) => $query->whereKey((int) $sceneId))
             ->when($sceneId === null, fn ($query) => $query->active())
-            ->whereHas('gameSession', fn ($query) => $query->active())
+            ->whereHas('gameSession', function ($query) use ($chronicleId) {
+                $query->active();
+
+                if ($chronicleId !== null) {
+                    $query->where('chronicle_id', (int) $chronicleId);
+                }
+            })
             ->first();
 
         abort_if(
@@ -30,12 +44,16 @@ class CopilotController extends Controller
             'Copilot requires an active scene.',
         );
 
+        $scene->loadMissing('gameSession');
+        [$characterId, $npcName] = $this->resolveNpcIdentity($request, $scene);
+
         try {
             $result = $copilot->drafts(
-                (string) $request->validated('npc_name'),
+                $npcName,
                 (string) $request->validated('prompt'),
                 $scene->id,
                 (int) $request->user()->id,
+                $characterId,
             );
         } catch (ConnectionException|RequestException) {
             return response()->json(['message' => 'Ollama is unavailable.'], 503);
@@ -50,7 +68,8 @@ class CopilotController extends Controller
         $copilotRequest = CopilotRequest::query()->create([
             'scene_id' => $scene->id,
             'storyteller_id' => $request->user()->id,
-            'npc_name' => $request->validated('npc_name'),
+            'npc_name' => $npcName,
+            'character_id' => $characterId,
             'prompt' => $request->validated('prompt'),
             'drafts' => $result->drafts,
             'context_metadata' => $result->contextMetadata,
@@ -59,14 +78,28 @@ class CopilotController extends Controller
             'builder_version' => $result->builderVersion,
         ]);
 
-        RefreshStorytellerIntentJob::dispatch(
-            (int) $scene->game_session_id,
-            (int) $request->user()->id,
-        );
-
         return response()->json([
             'copilot_request_id' => $copilotRequest->id,
             'drafts' => $result->drafts,
         ]);
+    }
+
+    /**
+     * @return array{0: int, 1: string}
+     */
+    private function resolveNpcIdentity(CopilotDraftsRequest $request, Scene $scene): array
+    {
+        $characterId = (int) $request->validated('character_id');
+        $character = Character::query()->findOrFail((int) $characterId);
+        abort_if(
+            (int) $character->chronicle_id !== (int) $scene->gameSession->chronicle_id,
+            409,
+            'Character does not belong to this chronicle.',
+        );
+
+        $npcName = WorldEntity::query()->whereKey($character->id)->value('canonical_name');
+        abort_if(! is_string($npcName) || $npcName === '', 422, 'NPC name is required.');
+
+        return [$character->id, $npcName];
     }
 }
