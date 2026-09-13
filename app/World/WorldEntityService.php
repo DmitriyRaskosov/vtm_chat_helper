@@ -9,6 +9,7 @@ use App\Enums\FactionType;
 use App\Enums\ItemStatus;
 use App\Enums\ItemType;
 use App\Enums\LocationType;
+use App\Enums\LoreAccessLevel;
 use App\Enums\WorldEntityAliasType;
 use App\Enums\WorldEntityStatus;
 use App\Enums\WorldEntityType;
@@ -88,6 +89,56 @@ class WorldEntityService
         });
     }
 
+    /**
+     * @param  list<int>  $loreClearanceLevels
+     */
+    public function update(
+        WorldEntity $entity,
+        string $canonicalName,
+        ?string $shortDescription = null,
+        ?string $subtype = null,
+    ): WorldEntity {
+        $type = $entity->entity_type instanceof WorldEntityType
+            ? $entity->entity_type
+            : WorldEntityType::from((string) $entity->entity_type);
+
+        if (! in_array($type, [
+            WorldEntityType::Faction,
+            WorldEntityType::Location,
+            WorldEntityType::Item,
+            WorldEntityType::Concept,
+        ], true)) {
+            throw new InvalidArgumentException('Only directory entities can be edited.');
+        }
+
+        if ($entity->status !== WorldEntityStatus::Active) {
+            throw new InvalidArgumentException('Archived entities cannot be edited.');
+        }
+
+        return DB::transaction(function () use ($entity, $canonicalName, $shortDescription, $subtype, $type): WorldEntity {
+            $name = trim($canonicalName);
+            if ($name === '') {
+                throw new InvalidArgumentException('A name is required.');
+            }
+
+            if ($name !== $entity->canonical_name) {
+                $this->renameEntity($entity, $name);
+            }
+
+            if ($shortDescription !== null) {
+                $description = trim($shortDescription);
+                $entity->short_description = $description === '' ? null : $description;
+                $entity->save();
+            }
+
+            if ($subtype !== null && trim($subtype) !== '') {
+                $this->updateSubtype($entity, $type, trim($subtype));
+            }
+
+            return $entity->refresh()->load(['aliases', 'location', 'faction', 'item', 'concept']);
+        });
+    }
+
     public function archive(WorldEntity $entity): WorldEntity
     {
         return DB::transaction(function () use ($entity): WorldEntity {
@@ -102,6 +153,45 @@ class WorldEntityService
 
             return $entity->refresh();
         });
+    }
+
+    public function restore(WorldEntity $entity): WorldEntity
+    {
+        return DB::transaction(function () use ($entity): WorldEntity {
+            $entity->update([
+                'status' => WorldEntityStatus::Active,
+                'archived_at' => null,
+            ]);
+
+            if ($entity->entity_type === WorldEntityType::Character) {
+                Character::query()->whereKey($entity->id)->update(['is_active' => true]);
+            }
+
+            return $entity->refresh();
+        });
+    }
+
+    public function assertClanFaction(Chronicle $chronicle, WorldEntity $clan): void
+    {
+        $this->assertSameChronicle($chronicle, $clan);
+
+        $type = $clan->entity_type instanceof WorldEntityType
+            ? $clan->entity_type
+            : WorldEntityType::from((string) $clan->entity_type);
+
+        if ($type !== WorldEntityType::Faction) {
+            throw new InvalidArgumentException('A character clan must be a faction in the same chronicle.');
+        }
+
+        $clan->loadMissing('faction');
+
+        if ($clan->faction?->faction_type !== FactionType::Clan) {
+            throw new InvalidArgumentException('A character clan must be a clan faction in the same chronicle.');
+        }
+
+        if ($clan->status !== WorldEntityStatus::Active) {
+            throw new InvalidArgumentException('A character clan must be an active faction.');
+        }
     }
 
     public function findByAlias(Chronicle $chronicle, string $alias): ?WorldEntity
@@ -285,11 +375,7 @@ class WorldEntityService
 
         if ($clanId !== null) {
             $clan = WorldEntity::query()->findOrFail($clanId);
-            $this->assertSameChronicle($entity->chronicle, $clan);
-
-            if ($clan->entity_type !== WorldEntityType::Faction) {
-                throw new InvalidArgumentException('A character clan must be a faction in the same chronicle.');
-            }
+            $this->assertClanFaction($entity->chronicle, $clan);
         }
 
         $sireId = isset($typed['sire_character_id']) ? (int) $typed['sire_character_id'] : null;
@@ -345,6 +431,7 @@ class WorldEntityService
             'nature' => $typed['nature'] ?? null,
             'demeanor' => $typed['demeanor'] ?? null,
             'concept' => $typed['concept'] ?? null,
+            'lore_clearance_levels' => $typed['lore_clearance_levels'] ?? [LoreAccessLevel::L0->rank()],
             'is_active' => array_key_exists('is_active', $typed) ? (bool) $typed['is_active'] : true,
         ]);
     }
@@ -412,6 +499,50 @@ class WorldEntityService
         }
 
         return $candidate;
+    }
+
+    private function renameEntity(WorldEntity $entity, string $name): void
+    {
+        $normalized = AliasNormalizer::normalize($name);
+
+        $taken = WorldEntityAlias::query()
+            ->where('chronicle_id', $entity->chronicle_id)
+            ->where('normalized_alias', $normalized)
+            ->where('entity_id', '!=', $entity->id)
+            ->exists();
+
+        if ($taken) {
+            throw new InvalidArgumentException('This name is already used in the chronicle.');
+        }
+
+        $entity->update(['canonical_name' => $name]);
+
+        $canonical = $entity->canonicalAlias()->first();
+        if ($canonical !== null) {
+            $canonical->update([
+                'alias' => $name,
+                'normalized_alias' => $normalized,
+            ]);
+        }
+    }
+
+    private function updateSubtype(WorldEntity $entity, WorldEntityType $type, string $subtype): void
+    {
+        match ($type) {
+            WorldEntityType::Faction => $entity->faction()->update([
+                'faction_type' => FactionType::from($subtype),
+            ]),
+            WorldEntityType::Location => $entity->location()->update([
+                'location_type' => LocationType::from($subtype),
+            ]),
+            WorldEntityType::Item => $entity->item()->update([
+                'item_type' => ItemType::from($subtype),
+            ]),
+            WorldEntityType::Concept => $entity->concept()->update([
+                'concept_type' => ConceptType::from($subtype),
+            ]),
+            default => throw new InvalidArgumentException('Subtype cannot be changed for this entity type.'),
+        };
     }
 
     private function storeAlias(

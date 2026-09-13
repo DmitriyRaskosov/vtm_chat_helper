@@ -22,8 +22,9 @@ class LoreSearcher
     ) {}
 
     /**
-     * Chronicle-scoped hybrid search. Pass `$knownLoreEntryIds` to apply an
-     * NPC knowledge grant filter; `null` means no knowledge restriction.
+     * Chronicle-scoped hybrid search. Pass `$knownLoreEntryIds` to whitelist
+     * entries (NPC search passes the visible set: clearance + grants − denials).
+     * `null` means no knowledge restriction.
      *
      * @param  list<int>|null  $knownLoreEntryIds
      * @return Collection<int, LoreChunk>
@@ -83,8 +84,8 @@ class LoreSearcher
     }
 
     /**
-     * NPC-facing search: only explicitly granted lore, including storyteller_only
-     * entries the character was granted. Public visibility is not automatic knowledge.
+     * NPC-facing search: clearance >= classification, plus grant exceptions,
+     * minus denials. Visibility does not grant or withhold NPC knowledge.
      *
      * @return Collection<int, LoreChunk>
      */
@@ -99,7 +100,7 @@ class LoreSearcher
             $query,
             $limit,
             includeStorytellerOnly: true,
-            knownLoreEntryIds: $this->knowledge->knownLoreEntryIds($character),
+            knownLoreEntryIds: $this->knowledge->visibleLoreEntryIds($character),
             maxDistance: $maxDistance,
         );
     }

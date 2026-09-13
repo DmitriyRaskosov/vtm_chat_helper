@@ -9,11 +9,13 @@ use App\Models\Chronicle;
 use App\Models\Scene;
 use App\Models\SceneParticipant;
 use App\Models\User;
+use App\Models\WorldEntity;
 use App\Scene\SceneFrozenException;
 use App\Scene\SceneParticipantService;
 use App\World\MixedChronicleException;
 use App\World\WorldEntityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use InvalidArgumentException;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -49,6 +51,27 @@ class SceneParticipantTest extends TestCase
         $this->assertFalse($reentered->visible);
         $this->assertSame(2, SceneParticipant::query()->where('scene_id', $scene->id)->count());
         $this->assertSame(1, SceneParticipant::query()->where('scene_id', $scene->id)->where('is_current', true)->count());
+    }
+
+    public function test_archived_character_cannot_enter_a_scene(): void
+    {
+        $scene = Scene::query()->active()->with('gameSession.chronicle')->firstOrFail();
+        $entities = $this->app->make(WorldEntityService::class);
+        $npc = Character::query()->findOrFail(
+            $entities->create(
+                $scene->gameSession->chronicle,
+                WorldEntityType::Character,
+                'Архив',
+            )->id,
+        );
+        $entities->archive(WorldEntity::query()->findOrFail($npc->id));
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->app->make(SceneParticipantService::class)->enter(
+            $scene,
+            $npc->refresh(),
+            SceneParticipantRole::Npc,
+        );
     }
 
     public function test_character_from_another_chronicle_cannot_enter(): void

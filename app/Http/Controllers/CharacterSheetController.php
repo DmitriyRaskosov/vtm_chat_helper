@@ -3,34 +3,42 @@
 namespace App\Http\Controllers;
 
 use App\Character\CharacterAccess;
+use App\Character\CharacterBiographyService;
+use App\Character\CharacterBioIndexer;
 use App\Character\CharacterHealthService;
 use App\Character\CharacterIdentityService;
 use App\Character\CharacterMeritService;
+use App\Character\CharacterPlaceService;
 use App\Character\CharacterSheetReader;
 use App\Character\CharacterStatService;
 use App\Character\CharacterStatusRevisionException;
 use App\Character\CharacterStatusService;
 use App\Character\DisciplineService;
 use App\Character\SheetCatalog;
+use App\Enums\CharacterBiographyStatus;
 use App\Enums\CharacterStatCategory;
 use App\Enums\CharacterType;
 use App\Enums\WorldEntityType;
 use App\Http\Requests\StoreCharacterRequest;
+use App\Http\Requests\UpdateCharacterBiographyRequest;
 use App\Http\Requests\UpdateCharacterDisciplinesRequest;
 use App\Http\Requests\UpdateCharacterExperienceRequest;
 use App\Http\Requests\UpdateCharacterHealthRequest;
 use App\Http\Requests\UpdateCharacterIdentityRequest;
 use App\Http\Requests\UpdateCharacterMeritsRequest;
+use App\Http\Requests\UpdateCharacterPlaceRequest;
 use App\Http\Requests\UpdateCharacterStatsRequest;
 use App\Http\Requests\UpdateCharacterStatusRequest;
 use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\Discipline;
 use App\Models\WorldEntity;
+use App\Scene\SceneParticipantService;
 use App\World\MixedChronicleException;
 use App\World\WorldEntityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -46,6 +54,10 @@ class CharacterSheetController extends Controller
         private CharacterHealthService $health,
         private CharacterMeritService $merits,
         private DisciplineService $disciplines,
+        private CharacterBiographyService $biographies,
+        private CharacterPlaceService $place,
+        private CharacterBioIndexer $bioIndexer,
+        private SceneParticipantService $participants,
     ) {}
 
     public function catalog(): JsonResponse
@@ -110,7 +122,12 @@ class CharacterSheetController extends Controller
             return $this->listItem($character, $names, $ghouls);
         })->values();
 
-        return response()->json(['characters' => $payload]);
+        return response()->json([
+            'characters' => $payload,
+            'archived' => $user?->isStoryteller()
+                ? $this->archivedList($chronicleId)
+                : [],
+        ]);
     }
 
     public function store(StoreCharacterRequest $request): JsonResponse
@@ -277,6 +294,7 @@ class CharacterSheetController extends Controller
                     $level = (int) $row['level'];
                     if ($level === 0) {
                         $this->disciplines->clearCharacterDiscipline($character, $discipline);
+
                         continue;
                     }
 
@@ -285,6 +303,76 @@ class CharacterSheetController extends Controller
             });
         } catch (InvalidArgumentException $e) {
             abort(422, $e->getMessage());
+        }
+
+        return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
+    }
+
+    public function updateBiography(UpdateCharacterBiographyRequest $request, Character $character): JsonResponse
+    {
+        CharacterAccess::abortUnlessManagesSheet($request->user(), $character);
+
+        $fields = [
+            ...$request->validated(),
+            'status' => CharacterBiographyStatus::Approved,
+        ];
+
+        try {
+            $this->biographies->publish(
+                $character,
+                $fields,
+                'Правка с листа',
+                $request->user(),
+            );
+        } catch (InvalidArgumentException $e) {
+            if ($e->getMessage() !== 'Biography is unchanged.') {
+                abort(422, $e->getMessage());
+            }
+        }
+
+        $this->bioIndexer->rebuildForCharacter($character->refresh());
+
+        return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
+    }
+
+    public function updatePlace(UpdateCharacterPlaceRequest $request, Character $character): JsonResponse
+    {
+        CharacterAccess::abortUnlessManagesSheet($request->user(), $character);
+
+        try {
+            $this->place->apply($character, $request->validated());
+        } catch (InvalidArgumentException $e) {
+            abort(422, $e->getMessage());
+        } catch (MixedChronicleException $e) {
+            abort(409, $e->getMessage());
+        }
+
+        return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
+    }
+
+    public function archive(Character $character): JsonResponse
+    {
+        $this->hideCharacter($character);
+
+        if ($character->character_type !== CharacterType::Ghoul) {
+            foreach ($character->ghouls as $ghoul) {
+                if ($ghoul->is_active) {
+                    $this->hideCharacter($ghoul);
+                }
+            }
+        }
+
+        return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
+    }
+
+    public function restore(Character $character): JsonResponse
+    {
+        $this->restoreCharacter($character);
+
+        if ($character->character_type !== CharacterType::Ghoul) {
+            foreach ($character->ghouls()->where('is_active', false)->get() as $ghoul) {
+                $this->restoreCharacter($ghoul);
+            }
         }
 
         return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
@@ -308,6 +396,7 @@ class CharacterSheetController extends Controller
                     ->where('category', $category)
                     ->where('stat_key', $key)
                     ->delete();
+
                 continue;
             }
 
@@ -335,8 +424,8 @@ class CharacterSheetController extends Controller
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, Character>  $ghouls
-     * @param  \Illuminate\Support\Collection<int|string, string>  $names
+     * @param  Collection<int, Character>  $ghouls
+     * @param  Collection<int|string, string>  $names
      * @return array<string, mixed>
      */
     private function listItem(Character $character, $names, $ghouls): array
@@ -352,5 +441,40 @@ class CharacterSheetController extends Controller
                 'character_type' => $ghoul->character_type->value,
             ])->values()->all(),
         ];
+    }
+
+    /**
+     * @return list<array<string, mixed>>
+     */
+    private function archivedList(int $chronicleId): array
+    {
+        $characters = Character::query()
+            ->where('chronicle_id', $chronicleId)
+            ->where('is_active', false)
+            ->orderBy('id')
+            ->get();
+        $names = WorldEntity::query()
+            ->whereIn('id', $characters->pluck('id'))
+            ->pluck('canonical_name', 'id');
+
+        return $characters->map(fn (Character $character): array => [
+            'id' => (int) $character->id,
+            'canonical_name' => (string) ($names[$character->id] ?? $names[(string) $character->id] ?? ''),
+            'character_type' => $character->character_type->value,
+            'user_id' => $character->user_id === null ? null : (int) $character->user_id,
+        ])->values()->all();
+    }
+
+    private function hideCharacter(Character $character): void
+    {
+        $entity = WorldEntity::query()->findOrFail($character->id);
+        $this->entities->archive($entity);
+        $this->participants->leaveMutableScenes($character->refresh());
+    }
+
+    private function restoreCharacter(Character $character): void
+    {
+        $entity = WorldEntity::query()->findOrFail($character->id);
+        $this->entities->restore($entity);
     }
 }

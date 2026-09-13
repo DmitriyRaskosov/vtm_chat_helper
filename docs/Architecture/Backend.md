@@ -19,7 +19,7 @@ Laravel JSON API. Маршруты только в `routes/api.php`.
 |-----------|------------|
 | `ChatProvider` | Интерфейс чат-модели, включая `chatTurn` для tool calls |
 | `OllamaChatProvider` | Ollama `/api/chat` для `qwen3:8b`, runtime-лимиты и JSON tools |
-| `NpcCopilotService` | Вызов LLM, ограниченный tool-loop и парсинг JSON drafts |
+| `NpcCopilotService` | Два вызова LLM: топики, затем tool-loop и парсинг JSON drafts |
 | `CopilotDraftResult` | Drafts и данные для аудита успешной генерации |
 
 ### `app/Context/`
@@ -27,8 +27,8 @@ Laravel JSON API. Маршруты только в `routes/api.php`.
 | Компонент | Назначение |
 |-----------|------------|
 | `TokenEstimator` | Версионируемая локальная оценка токенов |
-| `ContextAssembler` | Композиция providers: identity, scene, status, history, relations, bio, GraphRAG, rules |
-| `ContextBuilder` | Фасад Copilot → assembler (`context-assembler-v1`) |
+| `ContextAssembler` | Два прохода: топики без графа; реплика с GraphRAG по топикам |
+| `ContextBuilder` | Фасад Copilot → assembler (`context-assembler-v2`) |
 | `ContextBuild` | LLM messages и metadata включённых источников |
 
 ### `app/Scene/`
@@ -54,11 +54,10 @@ Laravel JSON API. Маршруты только в `routes/api.php`.
 
 | Компонент | Назначение |
 |-----------|------------|
-| `WorldEntityService` | атомарное создание identity, typed-строки и алиасов |
+| `WorldEntityService` | identity + typed-строка + алиасы; archive/restore вместо DELETE; клан только `faction_type=clan` |
 | `AliasNormalizer` | нормализация имён и slug |
-| `CannotDeleteWorldEntityException` / `MixedChronicleException` | архивирование вместо DELETE; chronicle scope |
 | `WorldRelationTypeCatalog` / `WorldRelationTypeValidator` | семантика типов рёбер; направление и типы узлов |
-| `WorldRelationService` | направленный граф, запрет self-loop/дублей, neighbors с учётом symmetric |
+| `WorldRelationService` | направленный граф, запрет self-loop/дублей (включая обратный symmetric), `replaceAmong`, neighbors |
 | `WorldEventService` | participants, sources, occurred_at/caused/witnessed/participated_in |
 | `WorldGraphRag` | bounded CTE по `world_relations`; knowledge filter; statement timeout |
 
@@ -68,8 +67,8 @@ Laravel JSON API. Маршруты только в `routes/api.php`.
 
 | Компонент | Назначение |
 |-----------|------------|
-| `LoreEntryService` | канон лора + immutable-версии; archive вместо DELETE; не `rag_chunks` |
-| `LoreIndexer` / `LoreSearcher` | корпус `lore_chunks`; обязательный `chronicle_id` |
+| `LoreEntryService` | канон лора + immutable-версии; archive/restore; syncEntities; не `rag_chunks` |
+| `LoreIndexer` / `LoreSearcher` | корпус `lore_chunks`; обязательный `chronicle_id`; NPC — допуск + исключения |
 
 ### `app/Rulebook/`
 
@@ -97,6 +96,7 @@ Laravel JSON API. Маршруты только в `routes/api.php`.
 | `CharacterSheetReader` / `CharacterSheet` | полный лист, HTTP-агрегат и урезанный набор для prompt |
 | `SheetCatalog` / `CharacterAccess` | ключи V20 и права листа/речи |
 | `CharacterIdentityService` | rename, typed-поля, experience |
+| `CharacterPlaceService` | секта / клан / гавань / допуск к лору листа |
 | `CharacterHealthService` | 7 клеток; sync `health_state` без bump revision |
 | `CharacterMeritService` | замена merits/flaws |
 | `DisciplineService` | каталог дисциплин/сил и изученное персонажем |
@@ -104,8 +104,8 @@ Laravel JSON API. Маршруты только в `routes/api.php`.
 | `CharacterBiographyService` | канон биографии + immutable-версии; индекс не трогает |
 | `CharacterBioIndexer` / `CharacterBioSearcher` | отдельный корпус `character_bio_chunks`; фильтр `character_id`; vector+FTS |
 | `CharacterRelationshipService` | направленное character→character расширение графа без метрик |
-| `CharacterAffiliationService` | affiliation + журнал, optimistic revision; цель не character/event |
-| `CharacterLoreKnowledgeService` / `CharacterRuleKnowledgeService` | grants знания; public ≠ known |
+| `CharacterAffiliationService` | affiliation + журнал, optimistic revision; setSect/setHaven; цель не character/event |
+| `CharacterLoreKnowledgeService` / `CharacterRuleKnowledgeService` | лор: допуск + grant/deny; правила: grants |
 
 ### Jobs
 

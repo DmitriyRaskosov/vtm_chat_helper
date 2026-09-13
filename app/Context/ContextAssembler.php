@@ -23,9 +23,11 @@ use InvalidArgumentException;
 
 class ContextAssembler
 {
-    public const VERSION = 'context-assembler-v1';
+    public const VERSION = 'context-assembler-v2';
 
-    public const PROMPT_VERSION = 'npc-drafts-v6';
+    public const PROMPT_VERSION = 'npc-drafts-v7';
+
+    public const TOPICS_PROMPT_VERSION = 'npc-topics-v1';
 
     /**
      * @var list<string>
@@ -93,9 +95,9 @@ class ContextAssembler
 
     public function assemble(ContextRequest $request): ContextBuild
     {
-        $budget = (int) config('context.copilot.max_input_tokens', 12000);
+        $budget = $request->maxInputTokens();
         $contextLength = (int) config('ollama.context_length', 16384);
-        $maxOutputTokens = (int) config('ollama.max_output_tokens', 3000);
+        $maxOutputTokens = $request->maxOutputTokens();
         $assembly = $this->resolve($request);
         $timings = [];
 
@@ -137,36 +139,38 @@ class ContextAssembler
             'scene_id' => (int) $assembly->scene->id,
         ]);
 
-        $leftover = $budget - $this->estimateMessages($this->toLlmMessages($sections));
+        if ($request->pass !== ContextPass::Topics) {
+            $leftover = $budget - $this->estimateMessages($this->toLlmMessages($sections));
 
-        foreach (self::OPTIONAL as $key) {
-            if ($leftover < 1) {
-                $sections[$key] = ContextSection::omitted($key, ['reason' => 'budget']);
+            foreach (self::OPTIONAL as $key) {
+                if ($leftover < 1) {
+                    $sections[$key] = ContextSection::omitted($key, ['reason' => 'budget']);
 
-                continue;
-            }
+                    continue;
+                }
 
-            $section = $this->assembleTimed($key, $assembly, min($leftover, $this->sectionMax($key)), $timings);
-            if (! $section->included) {
+                $section = $this->assembleTimed($key, $assembly, min($leftover, $this->sectionMax($key)), $timings);
+                if (! $section->included) {
+                    $sections[$key] = $section;
+
+                    continue;
+                }
+
+                $trial = $sections;
+                $trial[$key] = $section;
+                $estimate = $this->estimateMessages($this->toLlmMessages($trial));
+                if ($estimate > $budget) {
+                    $sections[$key] = ContextSection::omitted($key, [
+                        ...$section->provenance,
+                        'reason' => 'budget',
+                    ]);
+
+                    continue;
+                }
+
                 $sections[$key] = $section;
-
-                continue;
+                $leftover = $budget - $estimate;
             }
-
-            $trial = $sections;
-            $trial[$key] = $section;
-            $estimate = $this->estimateMessages($this->toLlmMessages($trial));
-            if ($estimate > $budget) {
-                $sections[$key] = ContextSection::omitted($key, [
-                    ...$section->provenance,
-                    'reason' => 'budget',
-                ]);
-
-                continue;
-            }
-
-            $sections[$key] = $section;
-            $leftover = $budget - $estimate;
         }
 
         $messages = $this->toLlmMessages($sections);
@@ -212,16 +216,22 @@ class ContextAssembler
      */
     private function requiredWithoutHistory(ContextAssembly $assembly, array &$timings): array
     {
-        $keys = ['system', 'npc_identity', 'scene', 'status', 'storyteller_prompt', 'closing'];
+        $keys = $assembly->request->pass === ContextPass::Topics
+            ? ['system', 'npc_identity', 'scene', 'storyteller_prompt', 'closing']
+            : ['system', 'npc_identity', 'scene', 'status', 'storyteller_prompt', 'closing'];
         $sections = [];
         foreach ($keys as $key) {
             $sections[$key] = $this->assembleTimed($key, $assembly, $this->sectionMax($key), $timings);
         }
+        if (! isset($sections['status'])) {
+            $sections['status'] = ContextSection::omitted('status', ['reason' => 'not_in_pass']);
+        }
         $sections['recent_messages'] = ContextSection::omitted('recent_messages', [
             'message_ids' => [],
         ]);
+        $optionalReason = $assembly->request->pass === ContextPass::Topics ? 'not_in_pass' : 'pending';
         foreach (self::OPTIONAL as $key) {
-            $sections[$key] = ContextSection::omitted($key, ['reason' => 'pending']);
+            $sections[$key] = ContextSection::omitted($key, ['reason' => $optionalReason]);
         }
 
         return $sections;
@@ -318,13 +328,19 @@ class ContextAssembler
         $biographyVersion = $sections['biography']->provenance['biography_version'] ?? null;
         $contextRevision = $sections['scene']->provenance['context_revision'] ?? null;
 
+        $historyLimit = $assembly->request->historyLimit();
+
         return [
             'builder_version' => self::VERSION,
-            'prompt_version' => self::PROMPT_VERSION,
+            'prompt_version' => $assembly->request->pass === ContextPass::Topics
+                ? self::TOPICS_PROMPT_VERSION
+                : self::PROMPT_VERSION,
+            'pass' => $assembly->request->pass->value,
+            'search_topics' => $assembly->request->searchTopics,
             'input_token_budget' => $budget,
             'input_token_estimate' => $this->estimateMessages($this->toLlmMessages($sections)),
             'token_estimator_version' => $this->estimator->version(),
-            'history_limit' => (int) config('copilot.history_limit'),
+            'history_limit' => $historyLimit,
             'draft_count' => $assembly->request->draftCount,
             'ollama_context_length' => $contextLength,
             'ollama_max_output_tokens' => $maxOutputTokens,
@@ -343,7 +359,7 @@ class ContextAssembler
                 'context_revision' => $contextRevision,
             ],
             'filters' => [
-                'history_limit' => (int) config('copilot.history_limit'),
+                'history_limit' => $historyLimit,
                 'memory_graphrag' => config('retrieval.memory_graphrag'),
                 'world_graphrag' => config('retrieval.world_graphrag'),
             ],

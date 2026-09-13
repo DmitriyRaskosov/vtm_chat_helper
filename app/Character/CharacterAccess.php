@@ -23,6 +23,10 @@ final class CharacterAccess
             return false;
         }
 
+        if (! $character->is_active) {
+            return false;
+        }
+
         if ($character->character_type === CharacterType::Npc) {
             return $user->isStoryteller();
         }

@@ -222,7 +222,7 @@ class MemoryBridgeService
         }
 
         $known = $forNpc
-            ? $this->knowledge->knownLoreEntryIds($node->character)
+            ? $this->knowledge->visibleLoreEntryIds($node->character)
             : null;
 
         if ($known !== null && $known === []) {

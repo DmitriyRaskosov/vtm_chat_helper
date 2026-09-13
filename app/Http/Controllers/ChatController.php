@@ -142,6 +142,7 @@ class ChatController extends Controller
             409,
             'Character does not belong to this chronicle.',
         );
+        abort_if(! $character->is_active, 409, 'Character is archived.');
 
         if ($this->isNpcLikeSpeech($character, $user)) {
             $snapshot = WorldEntity::query()

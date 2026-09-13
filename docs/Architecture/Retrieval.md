@@ -1,6 +1,6 @@
 # Retrieval tools
 
-Copilot может добрать **старую историю сессии** через внутренние PHP tools. Lore/NPC/relationship tools в registry не входят. Memory/World GraphRAG собирает [[Architecture/Context|Context Assembler]] **до** LLM; в Ollama tool-loop они не входят. Hybrid coordinator Copilot не использует.
+Copilot может добрать **старую историю сессии** через внутренние PHP tools. Lore/NPC/relationship tools в registry не входят. Memory/World GraphRAG собирает [[Architecture/Context|Context Assembler]] **на проходе реплики**, после вызова топиков; в Ollama tool-loop они не входят. Hybrid coordinator Copilot не использует.
 
 ## Tools
 
@@ -30,13 +30,13 @@ Copilot может добрать **старую историю сессии** �
 Два отдельных CTE-контура, depth ≤2, cycle guard, hard limits и `statement_timeout` (`config/retrieval.php`, `RETRIEVAL_STATEMENT_TIMEOUT_MS`):
 
 - `MemoryGraphRag` — только `character_memory_edges` выбранного персонажа
-- `WorldGraphRag` — `world_relations` хроники; seed из NPC/сцены/алиасов/лора/мостов памяти; knowledge filter после каждого перехода
+- `WorldGraphRag` — `world_relations` хроники; seed из NPC/сцены/алиасов/лора/мостов памяти; фильтр допуска лора после каждого перехода
 
-Подробности: [[Architecture/Memory]], [[Architecture/World]], [[Project/Architecture Migration]].
+Подробности: [[Architecture/Memory]], [[Architecture/World]], [[Archive/Architecture Migration]].
 
 ## Loop
 
-`NpcCopilotService` передаёт Ollama JSON tools (`qwen3:8b` / Ollama `/api/chat`). Цикл ограничен `COPILOT_TOOLS_MAX_ITERATIONS` (2) и суммарной оценкой результатов `COPILOT_TOOLS_MAX_LOOP_TOKENS` (2000). Вызовы пишутся в `copilot_requests.context_metadata.tool_invocations`.
+`NpcCopilotService` сначала вызывает Ollama без tools за JSON топиков, затем на проходе реплики передаёт JSON tools (`qwen3:8b` / Ollama `/api/chat`). Цикл tools ограничен `COPILOT_TOOLS_MAX_ITERATIONS` (2) и суммарной оценкой результатов `COPILOT_TOOLS_MAX_LOOP_TOKENS` (2000). Вызовы пишутся в `copilot_requests.context_metadata.tool_invocations`.
 
 `COPILOT_TOOLS_ENABLED=false` отключает tools и оставляет однократную генерацию drafts.
 

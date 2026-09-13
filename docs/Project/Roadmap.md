@@ -2,10 +2,13 @@
 
 Основной архитектурный план чата, Copilot и базы хроники завершён.
 
-Подробный план из 35 этапов, критерии приёмки и актуальный прогресс хранятся в [[Project/Architecture Migration]].
+Живой пошаговый план — [[Project/Extractor]] (LLM-кандидаты в граф; код не начат). Прицел «этап 3 LLM-черновик» им заменён.
+
+Подробный план из 35 этапов и критерии приёмки — в архиве [[Archive/Architecture Migration]].
 
 ## Текущее состояние
 
+- **В работе (план, код позже):** экстрактор графа — очередь кандидатов из лора/био, затем сцены; локальная Ollama, канон только после accept. [[Project/Extractor]].
 - **Готово:** игровые сессии и сцены, Vue-чат, token budget, Context Assembler, аудит `copilot_requests`, `search_messages`, `get_message_range`.
 - **Снято:** L0/L1/final summaries, intent memory, `search_summaries`, глобальный пассивный message-RAG.
 - **Этап 0:** безопасная исходная точка подтверждена 2026-09-11 (`php artisan test` 36 passed, `npm run build` зелёный; L0/intent таблиц и summary-чанков нет).
@@ -45,7 +48,11 @@
 - **Этап 34:** индексы retrieval, CTE statement timeout, unique index job, логи секций/GraphRAG (2026-09-11).
 - **Этап 35:** `character_id` cutover, только отдельные scoped-корпуса, удаление `rag_chunks`/legacy lore/source config, E2E provenance двух GraphRAG и финальная документация (2026-09-11). Основной план завершён.
 - **После плана:** гули — `character_type=ghoul` с `domitor_character_id`; 1 пользователь = 1 PC (2026-09-12).
-- **После плана:** HTTP + Vue лист V20 (stats, 7 клеток здоровья, merits/flaws, XP, compact гуль); Copilot для гулей нет; редакторы биографии/мира/лора/памяти — backlog без пустых экранов (2026-09-12). [[API/Characters]], [[Features/Characters]], [[Architecture/Database]].
+- **После плана:** HTTP + Vue лист V20 (stats, 7 клеток здоровья, merits/flaws, XP, compact гуль); Copilot для гулей нет; биография на листе и archive/restore персонажа (2026-09-13).
+- **После плана:** ST-справочник мира (`/world`), политика фракций, «Место в мире» на листе (секта/клан/гавань) (2026-09-13). [[API/World]], [[Features/World]], [[API/Characters]].
+- **После плана:** статьи лора, гриф и допуск NPC (исключения вместо нормы «кто знает») (2026-09-13). Редактор памяти — backlog. [[API/Lore]], [[Architecture/Lore]].
+- **Готово (2026-09-13):** UI справочника (редактирование entities), уровни лора 0–5, набор допуска на листе, ситуационные статьи, фильтр «о ком». [[API/World]], [[API/Lore]], [[Features/World]].
+- **После плана:** Copilot в два вызова — топики (вход 8000) → поиск по допуску → реплика (вход 12000) (2026-09-13). [[API/Copilot]], [[Architecture/Context]].
 
 ## 1. Игровые сессии и сцены: backend — готово
 
@@ -104,4 +111,4 @@
 
 ## Дальнейшая архитектура
 
-Состав таблиц, порядок миграций, два GraphRAG-контура, канонические биографии/лор/правила, память персонажей, мировой граф и новый Context Assembler определены только в [[Project/Architecture Migration]]. Эта заметка больше не содержит конкурирующего сокращённого плана.
+Состав таблиц, порядок миграций, два GraphRAG-контура, канонические биографии/лор/правила, память персонажей, мировой граф и Context Assembler — в [[Architecture/Database]], [[Architecture/Backend]] и архиве [[Archive/Architecture Migration]].

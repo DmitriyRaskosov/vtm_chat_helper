@@ -8,6 +8,7 @@ use App\Enums\CharacterAffiliationStance;
 use App\Enums\CharacterAffiliationType;
 use App\Enums\CharacterKnowledgeLevel;
 use App\Enums\CharacterMemoryNodeType;
+use App\Enums\LoreAccessLevel;
 use App\Enums\LoreEntryStatus;
 use App\Enums\LoreVisibility;
 use App\Enums\WorldEntityType;
@@ -118,6 +119,7 @@ class WorldGraphRagTest extends TestCase
             'canonical_text' => 'Внутренний круг служит Шабашу.',
             'status' => LoreEntryStatus::Approved,
             'visibility' => LoreVisibility::StorytellerOnly,
+            'classification' => LoreAccessLevel::L5,
         ], 'v1');
         $this->app->make(LoreEntryService::class)->attachEntity($secretLore, $graph['camarilla']);
         $this->app->make(LoreIndexer::class)->rebuildApproved($secretLore);

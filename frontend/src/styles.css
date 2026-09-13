@@ -247,6 +247,20 @@ button.link {
 .character-tree { list-style: none; padding: 0; margin: 0; }
 .character-tree ul { list-style: none; padding: 0.25rem 0 0 1.25rem; }
 .character-tree li { margin: 0.35rem 0; }
+.character-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0.25rem 0.5rem;
+}
+.character-row button.link { font-size: 0.85rem; }
+.bio-full { min-height: 10rem; }
+.bio-play { margin-top: 0.75rem; }
+.bio-play summary {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
 .character-create h2,
 .card h2 { margin: 0 0 0.75rem; font-size: 1.05rem; }
 .card h3 { margin: 0 0 0.5rem; font-size: 0.95rem; }
@@ -357,6 +371,49 @@ button.link {
     gap: 0.5rem 0.75rem;
 }
 .sheet-actions button { margin-top: 0; }
+.place-create {
+    display: grid;
+    gap: 0.5rem 1rem;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    margin-top: 0.75rem;
+}
+.place-create-row {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    margin-top: 0.35rem;
+}
+.place-create-row input { margin: 0; }
+.place-create-row button { margin: 0; white-space: nowrap; }
+.world-desc { grid-column: 1 / -1; }
+.world-politics { margin-top: 0.75rem; }
+.world-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+    margin-bottom: 1rem;
+}
+.world-tabs button { margin: 0; }
+.world-tabs button.current {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+.lore-checks {
+    max-height: 12rem;
+    overflow: auto;
+    border: 1px solid var(--line);
+    background: #141210;
+    padding: 0.5rem 0.7rem;
+    margin: 0.35rem 0 0.75rem;
+}
+.check-row {
+    display: flex;
+    align-items: baseline;
+    gap: 0.45rem;
+    margin: 0.25rem 0;
+    font-size: 0.9rem;
+}
+.check-row input { width: auto; }
 .play-bar input[type="number"],
 .merit-list input[type="number"] { width: 100%; }
 .play-bar button { margin-top: 0; }

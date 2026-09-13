@@ -5,6 +5,7 @@ import RegisterView from './views/RegisterView.vue';
 import ChatView from './views/ChatView.vue';
 import CharacterListView from './views/CharacterListView.vue';
 import CharacterSheetView from './views/CharacterSheetView.vue';
+import WorldView from './views/WorldView.vue';
 
 const router = createRouter({
     history: createWebHistory(),
@@ -15,6 +16,7 @@ const router = createRouter({
         { path: '/chat', name: 'chat', component: ChatView, meta: { auth: true } },
         { path: '/characters', name: 'characters', component: CharacterListView, meta: { auth: true } },
         { path: '/characters/:id', name: 'character', component: CharacterSheetView, meta: { auth: true } },
+        { path: '/world', name: 'world', component: WorldView, meta: { auth: true, storyteller: true } },
     ],
 });
 
@@ -34,6 +36,10 @@ router.beforeEach(async (to) => {
     }
 
     if (to.meta.guest && auth.token.value) {
+        return { name: 'chat' };
+    }
+
+    if (to.meta.storyteller && !auth.user.value?.is_storyteller) {
         return { name: 'chat' };
     }
 

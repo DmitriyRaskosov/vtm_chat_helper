@@ -13,6 +13,8 @@ use App\Enums\CharacterKnowledgeLevel;
 use App\Enums\CharacterMemoryNodeType;
 use App\Enums\CharacterStatCategory;
 use App\Enums\CharacterType;
+use App\Enums\FactionType;
+use App\Enums\LoreAccessLevel;
 use App\Enums\LoreEntryStatus;
 use App\Enums\LoreVisibility;
 use App\Enums\RuleDocumentStatus;
@@ -60,8 +62,9 @@ class ContextAssemblerTest extends TestCase
         );
 
         $user = $build->messages[1]['content'];
-        $this->assertSame('context-assembler-v1', $build->metadata['builder_version']);
-        $this->assertSame('npc-drafts-v6', $build->metadata['prompt_version']);
+        $this->assertSame('context-assembler-v2', $build->metadata['builder_version']);
+        $this->assertSame('npc-drafts-v7', $build->metadata['prompt_version']);
+        $this->assertSame('reply', $build->metadata['pass']);
         $this->assertNull($build->metadata['character_id']);
         $this->assertSame((int) $scene->gameSession->chronicle_id, $build->metadata['chronicle_id']);
         $this->assertSame([$message->id], $build->metadata['included_raw_message_ids']);
@@ -76,6 +79,7 @@ class ContextAssemblerTest extends TestCase
         $this->assertStringContainsString('NPC: Виктория', $user);
         $this->assertStringContainsString('## Scene', $user);
         $this->assertStringContainsString('Уникальная фраза о князе города.', $user);
+        $this->assertStringContainsString('## Scene speech', $user);
         $this->assertStringNotContainsString('## Personal memory', $user);
         $this->assertStringNotContainsString('## World', $user);
         $this->assertStringNotContainsString('## Rules', $user);
@@ -91,7 +95,12 @@ class ContextAssemblerTest extends TestCase
         $scene = Scene::query()->active()->with('gameSession.chronicle')->firstOrFail();
         $chronicle = $scene->gameSession->chronicle;
         $entities = $this->app->make(WorldEntityService::class);
-        $clan = $entities->create($chronicle, WorldEntityType::Faction, 'Вентру');
+        $clan = $entities->create(
+            $chronicle,
+            WorldEntityType::Faction,
+            'Вентру',
+            typed: ['faction_type' => FactionType::Clan],
+        );
         $npc = Character::query()->findOrFail(
             $entities->create($chronicle, WorldEntityType::Character, 'Виктория-'.uniqid(), typed: [
                 'character_type' => CharacterType::Npc,
@@ -159,7 +168,66 @@ class ContextAssemblerTest extends TestCase
         $this->assertStringContainsString('Камарилья', $user);
         $this->assertStringContainsString('loyalty 4', $user);
         $this->assertStringContainsString('Каноническое резюме неофита Камарильи.', $user);
+        $this->assertStringContainsString('[sheet]', $user);
+        $this->assertStringContainsString('[canon]', $user);
         $this->assertContains($camarilla->id, $build->metadata['sections']['direct_relations']['provenance']['entity_ids']);
+    }
+
+    public function test_topic_pass_omits_canon_layers_and_uses_its_own_budget(): void
+    {
+        $scene = Scene::query()->active()->with('gameSession.chronicle')->firstOrFail();
+        $storyteller = User::factory()->storyteller()->create();
+        $npc = $this->npc($scene);
+        CharacterBiography::factory()->create([
+            'character_id' => $npc->id,
+            'summary' => 'Каноническое резюме не должно попасть в топики.',
+        ]);
+        $this->app->make(CharacterMemoryService::class)->remember(
+            $npc,
+            'Личная память не должна попасть в топики.',
+            CharacterMemoryNodeType::Event,
+        );
+        Message::factory()->create([
+            'user_id' => $storyteller->id,
+            'scene_id' => $scene->id,
+            'body' => 'Речь сцены для топиков.',
+        ]);
+
+        $build = $this->builder()->buildTopics(
+            'Виктория',
+            'Что известно о князе?',
+            $scene->id,
+            3,
+            $storyteller->id,
+            (int) $scene->game_session_id,
+            $npc->id,
+        );
+
+        $user = $build->messages[1]['content'];
+        $this->assertSame('npc-topics-v1', $build->metadata['prompt_version']);
+        $this->assertSame('topics', $build->metadata['pass']);
+        $this->assertSame(8000, $build->metadata['input_token_budget']);
+        $this->assertSame(384, $build->metadata['ollama_max_output_tokens']);
+        $this->assertSame(8, $build->metadata['history_limit']);
+        $this->assertLessThanOrEqual(8000, $build->metadata['input_token_estimate']);
+        $this->assertFalse($build->metadata['sections']['status']['included']);
+        $this->assertSame('not_in_pass', $build->metadata['sections']['biography']['provenance']['reason']);
+        $this->assertSame('not_in_pass', $build->metadata['sections']['memory_graph']['provenance']['reason']);
+        $this->assertSame('not_in_pass', $build->metadata['sections']['world_lore']['provenance']['reason']);
+        $this->assertSame('not_in_pass', $build->metadata['sections']['rules']['provenance']['reason']);
+        $this->assertSame('not_in_pass', $build->metadata['sections']['direct_relations']['provenance']['reason']);
+        $this->assertStringContainsString('NPC: Виктория', $user);
+        $this->assertStringContainsString('## Scene speech', $user);
+        $this->assertStringContainsString('[speech] ', $user);
+        $this->assertStringContainsString('Речь сцены для топиков.', $user);
+        $this->assertStringContainsString('Extract search topics for Виктория.', $user);
+        $this->assertStringNotContainsString('Каноническое резюме не должно попасть в топики.', $user);
+        $this->assertStringNotContainsString('Личная память не должна попасть в топики.', $user);
+        $this->assertStringNotContainsString('## Biography', $user);
+        $this->assertStringNotContainsString('## World', $user);
+        $this->assertStringNotContainsString('## Personal memory', $user);
+        $this->assertStringNotContainsString('## Rules', $user);
+        $this->assertEmpty($build->metadata['sections']['npc_identity']['provenance']['stat_ids']);
     }
 
     public function test_ungranted_lore_stays_out_of_the_prompt_until_granted(): void
@@ -172,6 +240,7 @@ class ContextAssemblerTest extends TestCase
             'canonical_text' => $secret,
             'status' => LoreEntryStatus::Approved,
             'visibility' => LoreVisibility::Public,
+            'classification' => LoreAccessLevel::L5,
         ], 'v1');
         $this->app->make(LoreEntryService::class)->attachEntity(
             $entry,
@@ -238,6 +307,7 @@ class ContextAssemblerTest extends TestCase
         $this->assertContains($node->id, $build->metadata['sections']['memory_graph']['provenance']['node_ids']);
         $this->assertContains($node->id, $build->metadata['sections']['memory_graph']['provenance']['false_belief_ids']);
         $this->assertStringContainsString('[false belief]', $build->messages[1]['content']);
+        $this->assertStringContainsString('[memory]', $build->messages[1]['content']);
         $this->assertStringContainsString($text, $build->messages[1]['content']);
     }
 
@@ -271,7 +341,7 @@ class ContextAssemblerTest extends TestCase
         );
 
         $this->assertTrue($build->metadata['sections']['rules']['included']);
-        $this->assertStringContainsString('Доминирование подчиняет волю жертвы.', $build->messages[1]['content']);
+        $this->assertStringContainsString('[rules] Доминирование подчиняет волю жертвы.', $build->messages[1]['content']);
         $this->assertContains(
             $document->id,
             $build->metadata['sections']['rules']['provenance']['rule_document_ids'],

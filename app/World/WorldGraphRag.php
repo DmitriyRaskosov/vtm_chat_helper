@@ -350,7 +350,7 @@ class WorldGraphRag
             ])
             ->all();
 
-        $knownLoreIds = $asNpc !== null ? $this->loreKnowledge->knownLoreEntryIds($asNpc) : null;
+        $knownLoreIds = $asNpc !== null ? $this->loreKnowledge->visibleLoreEntryIds($asNpc) : null;
         $attachedLoreIds = LoreEntryEntity::query()
             ->where('chronicle_id', $chronicle->id)
             ->whereIn('entity_id', $keptIds)

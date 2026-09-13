@@ -2,6 +2,7 @@
 
 namespace App\Lore;
 
+use App\Enums\LoreAccessLevel;
 use App\Enums\LoreEntryKind;
 use App\Enums\LoreEntryStatus;
 use App\Enums\LoreVisibility;
@@ -37,7 +38,7 @@ class LoreEntryService
         }
 
         foreach (array_keys($fields) as $field) {
-            if (! in_array($field, ['title', 'kind', 'canonical_text', 'status', 'visibility', 'legacy_source_id'], true)) {
+            if (! in_array($field, ['title', 'kind', 'canonical_text', 'status', 'visibility', 'classification', 'situational', 'legacy_source_id'], true)) {
                 throw new InvalidArgumentException("Unknown lore field [{$field}].");
             }
         }
@@ -81,6 +82,8 @@ class LoreEntryService
                 'canonical_text' => $merged['canonical_text'],
                 'status' => $status,
                 'visibility' => $merged['visibility'],
+                'classification' => $merged['classification'],
+                'situational' => $merged['situational'],
                 'current_version' => $nextVersion,
                 'legacy_source_id' => $merged['legacy_source_id'],
                 'approved_at' => $status === LoreEntryStatus::Approved ? now() : null,
@@ -107,6 +110,8 @@ class LoreEntryService
                 'canonical_text' => $payload['canonical_text'],
                 'status' => $payload['status'],
                 'visibility' => $payload['visibility'],
+                'classification' => $payload['classification'],
+                'situational' => $payload['situational'],
                 'change_reason' => $changeReason,
                 'created_by' => $author?->id,
             ]);
@@ -160,6 +165,56 @@ class LoreEntryService
         });
     }
 
+    public function restore(LoreEntry $entry): LoreEntry
+    {
+        return DB::transaction(function () use ($entry): LoreEntry {
+            $entry = LoreEntry::query()
+                ->where('id', $entry->id)
+                ->lockForUpdate()
+                ->firstOrFail();
+
+            if ($entry->status !== LoreEntryStatus::Archived) {
+                return $entry;
+            }
+
+            $entry->status = LoreEntryStatus::Approved;
+            $entry->approved_at = $entry->approved_at ?? now();
+            $entry->save();
+
+            return $entry->refresh();
+        });
+    }
+
+    /**
+     * @param  list<int>  $entityIds
+     */
+    public function syncEntities(LoreEntry $entry, array $entityIds): void
+    {
+        $ids = array_values(array_unique(array_map('intval', $entityIds)));
+
+        DB::transaction(function () use ($entry, $ids): void {
+            $entities = WorldEntity::query()->whereIn('id', $ids)->get()->keyBy('id');
+
+            foreach ($ids as $id) {
+                $entity = $entities->get($id);
+                if ($entity === null) {
+                    throw new InvalidArgumentException('Unknown world entity.');
+                }
+
+                $this->attachEntity($entry, $entity);
+            }
+
+            LoreEntryEntity::query()
+                ->where('lore_entry_id', $entry->id)
+                ->when(
+                    $ids !== [],
+                    fn ($query) => $query->whereNotIn('entity_id', $ids),
+                    fn ($query) => $query,
+                )
+                ->delete();
+        });
+    }
+
     public function attachEntity(LoreEntry $entry, WorldEntity $entity, ?string $role = null): LoreEntryEntity
     {
         if ((int) $entry->chronicle_id !== (int) $entity->chronicle_id) {
@@ -202,6 +257,8 @@ class LoreEntryService
      *     canonical_text: string,
      *     status: LoreEntryStatus,
      *     visibility: LoreVisibility,
+     *     classification: LoreAccessLevel,
+     *     situational: bool,
      *     legacy_source_id: ?string
      * }
      */
@@ -213,6 +270,8 @@ class LoreEntryService
             'canonical_text' => $entry?->canonical_text ?? '',
             'status' => $entry?->status ?? LoreEntryStatus::Draft,
             'visibility' => $entry?->visibility ?? LoreVisibility::Public,
+            'classification' => $entry?->classification ?? LoreAccessLevel::L0,
+            'situational' => (bool) ($entry?->situational ?? false),
             'legacy_source_id' => $entry?->legacy_source_id,
         ];
 
@@ -242,6 +301,16 @@ class LoreEntryService
                 : LoreVisibility::from((string) $fields['visibility']);
         }
 
+        if (array_key_exists('classification', $fields)) {
+            $merged['classification'] = $fields['classification'] instanceof LoreAccessLevel
+                ? $fields['classification']
+                : LoreAccessLevel::from((string) $fields['classification']);
+        }
+
+        if (array_key_exists('situational', $fields)) {
+            $merged['situational'] = (bool) $fields['situational'];
+        }
+
         if (array_key_exists('legacy_source_id', $fields)) {
             $legacy = $fields['legacy_source_id'];
             $legacy = $legacy === null ? null : trim((string) $legacy);
@@ -258,6 +327,8 @@ class LoreEntryService
      *     canonical_text: string,
      *     status: LoreEntryStatus,
      *     visibility: LoreVisibility,
+     *     classification: LoreAccessLevel,
+     *     situational: bool,
      *     legacy_source_id: ?string
      * }  $merged
      */
@@ -268,6 +339,8 @@ class LoreEntryService
             && $entry->canonical_text === $merged['canonical_text']
             && $entry->status === $merged['status']
             && $entry->visibility === $merged['visibility']
+            && $entry->classification === $merged['classification']
+            && (bool) $entry->situational === $merged['situational']
             && $entry->legacy_source_id === $merged['legacy_source_id'];
     }
 }

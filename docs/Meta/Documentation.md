@@ -30,7 +30,7 @@ Settings → **Files & Links**:
 | copilot, NpcCopilotService, config/copilot.php | [[API/Copilot]], [[Features/Copilot]] |
 | `app/Rag/**`, rag config, IndexRagMessageJob | [[API/RAG]], [[Architecture/Backend]] |
 | `app/Llm/**`, ollama config | [[Architecture/Backend]], [[Features/Copilot]] |
-| `frontend/**`, ChatView / листы персонажей | [[Architecture/Frontend]], [[Features/Copilot]], [[Features/Characters]], [[API/Characters]] |
+| `frontend/**`, ChatView / листы персонажей / WorldView | [[Architecture/Frontend]], [[Features/Copilot]], [[Features/Characters]], [[Features/World]], [[API/Characters]], [[API/World]], [[API/Lore]] |
 | compose.yaml, Sail, Ollama | [[Development/Setup]] |
 | `.env.example` | [[Development/Environment]] |
 | phpunit, feature tests | [[Development/Testing]] |
@@ -38,10 +38,14 @@ Settings → **Files & Links**:
 | роли storyteller/player | [[Project/Roles]] |
 | `app/World/**`, typed entities | [[Architecture/World]], [[Architecture/Backend]], [[Architecture/Database]] |
 | `app/Character/**`, CharacterSheetController | [[API/Characters]], [[Features/Characters]], [[Architecture/World]], [[Architecture/Database]] |
-| `app/Lore/**` | [[Architecture/Lore]], [[Architecture/Backend]] |
+| `app/Lore/**` | [[Architecture/Lore]], [[API/Lore]], [[Architecture/Backend]] |
 | `app/Rulebook/**` | [[Architecture/Rules]], [[Architecture/Backend]] |
 | `app/Memory/**` | [[Architecture/Memory]], [[Architecture/Backend]] |
 | структура каталогов, file map | [[Meta/Structure]] |
+
+## Архивация планов
+
+Живой пошаговый план: [[Project/Extractor]]. Завершённый или заменённый план из `docs/Project/` переносится в `docs/Archive/`; на старом пути — короткая заглушка со ссылкой на архив (образец: [[Project/Architecture Migration]] → [[Archive/Architecture Migration]]). Живые заметки (`Roadmap`, `Overview`, `Roles`) не архивируются. Подробности — правило `.cursor/rules/docs-plan-archive.mdc`.
 
 ## Cursor
 

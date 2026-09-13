@@ -28,4 +28,4 @@
 
 ## Статус
 
-Основной план из 35 этапов завершён 2026-09-11. См. [[Project/Roadmap]] и [[Project/Architecture Migration]].
+Основной план из 35 этапов завершён 2026-09-11. Живой план — [[Project/Extractor]]. См. [[Project/Roadmap]] и архив [[Archive/Architecture Migration]].

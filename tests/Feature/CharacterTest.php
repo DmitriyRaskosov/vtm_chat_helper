@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\CharacterType;
+use App\Enums\FactionType;
 use App\Enums\WorldEntityType;
 use App\Models\Chronicle;
 use App\Models\CopilotRequest;
@@ -36,7 +37,12 @@ class CharacterTest extends TestCase
         $chronicle = Chronicle::factory()->create();
         $service = $this->app->make(WorldEntityService::class);
         $playerUser = User::factory()->create();
-        $clan = $service->create($chronicle, WorldEntityType::Faction, 'Вентру');
+        $clan = $service->create(
+            $chronicle,
+            WorldEntityType::Faction,
+            'Вентру',
+            typed: ['faction_type' => FactionType::Clan],
+        );
         $sire = $service->create($chronicle, WorldEntityType::Character, 'Сир');
 
         $npc = $service->create(
@@ -330,6 +336,7 @@ class CharacterTest extends TestCase
             Chronicle::factory()->create(),
             WorldEntityType::Faction,
             'Вентру',
+            typed: ['faction_type' => FactionType::Clan],
         );
 
         $this->expectException(MixedChronicleException::class);
@@ -355,6 +362,27 @@ class CharacterTest extends TestCase
             WorldEntityType::Character,
             'Виктория',
             typed: ['clan_entity_id' => $location->id],
+        );
+    }
+
+    public function test_clan_must_be_a_clan_faction(): void
+    {
+        $service = $this->app->make(WorldEntityService::class);
+        $chronicle = Chronicle::factory()->create();
+        $camarilla = $service->create(
+            $chronicle,
+            WorldEntityType::Faction,
+            'Камарилья',
+            typed: ['faction_type' => FactionType::Sect],
+        );
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $service->create(
+            $chronicle,
+            WorldEntityType::Character,
+            'Виктория',
+            typed: ['clan_entity_id' => $camarilla->id],
         );
     }
 

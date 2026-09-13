@@ -57,9 +57,21 @@ class CopilotTest extends TestCase
 
         $this->assertSame($storyteller->id, $copilotRequest->storyteller_id);
         $this->assertSame('qwen3:8b', $copilotRequest->model);
-        $this->assertSame('context-assembler-v1', $copilotRequest->builder_version);
-        $this->assertSame('npc-drafts-v6', $copilotRequest->prompt_version);
-        $this->assertArrayHasKey('section_token_counts', $copilotRequest->context_metadata);
+        $this->assertSame('context-assembler-v2', $copilotRequest->builder_version);
+        $this->assertSame('npc-drafts-v7', $copilotRequest->prompt_version);
+        $this->assertSame('reply', $copilotRequest->context_metadata['pass']);
+        $this->assertNotEmpty($copilotRequest->context_metadata['topics']);
+        $this->assertSame(8000, $copilotRequest->context_metadata['topic_pass']['input_token_budget']);
+        $this->assertLessThanOrEqual(
+            8000,
+            $copilotRequest->context_metadata['topic_pass']['input_token_estimate'],
+        );
+        $this->assertSame(8, $copilotRequest->context_metadata['topic_pass']['history_limit']);
+        $this->assertSame(384, $copilotRequest->context_metadata['topic_pass']['ollama_max_output_tokens']);
+        $this->assertSame(
+            $copilotRequest->context_metadata['topics'],
+            $copilotRequest->context_metadata['search_topics'],
+        );
         $this->assertArrayHasKey('sections', $copilotRequest->context_metadata);
         $this->assertSame($npc->id, $copilotRequest->context_metadata['character_id']);
         $this->assertNotNull($copilotRequest->context_metadata['chronicle_id']);
@@ -73,6 +85,15 @@ class CopilotTest extends TestCase
         $this->assertArrayNotHasKey('included_summary_ids', $copilotRequest->context_metadata);
         $this->assertArrayNotHasKey('included_intent_summary_id', $copilotRequest->context_metadata);
 
+        Http::assertSentCount(2);
+        Http::assertSent(function (Request $request): bool {
+            return ($request['tools'] ?? []) === []
+                && (int) ($request['options']['num_predict'] ?? 0) === 384
+                && (float) ($request['options']['temperature'] ?? 0) === 0.2
+                && ! str_contains((string) ($request['messages'][1]['content'] ?? ''), '## Biography')
+                && ! str_contains((string) ($request['messages'][1]['content'] ?? ''), '## World')
+                && ! str_contains((string) ($request['messages'][1]['content'] ?? ''), '## Personal memory');
+        });
         Http::assertSent(function (Request $request): bool {
             $toolNames = collect($request['tools'] ?? [])
                 ->pluck('function.name')
@@ -224,6 +245,8 @@ class CopilotTest extends TestCase
             $content = $request['messages'][1]['content'];
 
             return substr_count($content, 'Уникальная фраза о князе города.') === 1
+                && str_contains($content, '## Scene speech')
+                && str_contains($content, '[speech]')
                 && ! str_contains($content, 'Relevant past context')
                 && ! str_contains($content, 'Relevant memory summaries')
                 && ! str_contains($content, 'Storyteller intention memory');
@@ -286,6 +309,11 @@ class CopilotTest extends TestCase
             config('ollama.url').'/api/chat' => Http::sequence()
                 ->push([
                     'message' => [
+                        'content' => json_encode(['topics' => ['предыдущий обмен']], JSON_UNESCAPED_UNICODE),
+                    ],
+                ])
+                ->push([
+                    'message' => [
                         'content' => '',
                         'tool_calls' => [[
                             'function' => [
@@ -314,6 +342,7 @@ class CopilotTest extends TestCase
         ])->assertOk();
 
         $metadata = CopilotRequest::query()->firstOrFail()->context_metadata;
+        $this->assertSame(['предыдущий обмен'], $metadata['topics']);
         $this->assertSame(1, $metadata['tool_iterations']);
         $this->assertSame('get_message_range', $metadata['tool_invocations'][0]['name']);
         $this->assertTrue($metadata['tool_invocations'][0]['ok']);
@@ -374,6 +403,7 @@ class CopilotTest extends TestCase
             $lore->id,
             $metadata['sections']['world_lore']['provenance']['lore_entry_ids'],
         );
+        $this->assertContains($prompt, $metadata['topics']);
     }
 
     public function test_npc_name_input_is_rejected(): void
@@ -394,10 +424,36 @@ class CopilotTest extends TestCase
         $payload = json_encode(['drafts' => $drafts], JSON_UNESCAPED_UNICODE);
 
         Http::fake(function (Request $request) use ($payload) {
+            $predict = (int) ($request['options']['num_predict'] ?? 3000);
+            if ($predict <= 512) {
+                return Http::response([
+                    'message' => [
+                        'content' => json_encode(
+                            ['topics' => $this->topicsFromOllamaRequest($request)],
+                            JSON_UNESCAPED_UNICODE,
+                        ),
+                    ],
+                ]);
+            }
+
             return Http::response([
                 'message' => ['content' => $payload],
             ]);
         });
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function topicsFromOllamaRequest(Request $request): array
+    {
+        $content = $request['messages'][1]['content'] ?? '';
+        $prompt = '';
+        if (is_string($content) && preg_match('/## Storyteller prompt\n(.+?)(?:\n\n## |\n\nExtract |\z)/s', $content, $matches)) {
+            $prompt = trim($matches[1]);
+        }
+
+        return $prompt !== '' ? [$prompt] : ['conversation'];
     }
 
     private function createNpc(?Scene $scene = null): WorldEntity

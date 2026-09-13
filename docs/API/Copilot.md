@@ -39,12 +39,15 @@
 
 ## Контекст и промпт
 
-- `ContextAssembler` (`context-assembler-v1`, prompt `npc-drafts-v6`) собирает system + слои канона до вызова LLM. `ContextBuilder` — фасад.
-- Identity, scene (включая `scene_contexts` / current participants), status, prompt, recent messages, 1-hop relations, каноническая биография, затем leftover-бюджет на Memory/World GraphRAG и rules (только grants).
-- Общий входной бюджет — `CONTEXT_COPILOT_MAX_INPUT_TOKENS` (12000). Обязательные секции нельзя вытеснить GraphRAG. Сообщение не режется.
-- Пассивного message-RAG нет. Старую историю сессии модель добирает tools (`search_messages`, `get_message_range`); GraphRAG в tool-loop не входит. См. [[Architecture/Retrieval]].
+Два запроса к Ollama подряд; HTTP-ответ по-прежнему `{ copilot_request_id, drafts }`.
 
-Контекст: `COPILOT_HISTORY_LIMIT`. Модель: `qwen3:8b` через `OllamaChatProvider`: `num_ctx=16384`, `num_predict=3000`. Tools — тот же `/api/chat` с JSON `tools`.
+- `NpcCopilotService`: топики (`npc-topics-v1`, вход ≤8000) → поиск GraphRAG/правил по топикам и допуску лора → реплика (`npc-drafts-v7`, вход ≤12000). `ContextAssembler` (`context-assembler-v2`). `ContextBuilder` — фасад (`buildTopics` / `buildReply`).
+- Топики: компактная identity этого NPC, сцена, промпт ST, короткий хвост (`COPILOT_TOPIC_HISTORY_LIMIT` = 8). Без био, лора, графа, правил. `num_predict` 384, `temperature` 0.2, без tools.
+- Реплика: identity, scene (включая `scene_contexts` / current participants), status, prompt, recent messages, 1-hop relations, каноническая биография, leftover на Memory/World GraphRAG и rules (grants). Разметка `[speech]` / `[canon]` / `[memory]` / `[sheet]` / `[rules]`.
+- Бюджет реплики — `CONTEXT_COPILOT_MAX_INPUT_TOKENS` (12000), ключ не менялся. Бюджет топиков — `CONTEXT_TOPIC_MAX_INPUT_TOKENS` (8000). Обязательные секции нельзя вытеснить GraphRAG. Сообщение не режется. Промпт ST при нехватке не выкидывать.
+- Пассивного message-RAG нет. Старую историю сессии модель добирает tools (`search_messages`, `get_message_range`) только на проходе реплики; GraphRAG в tool-loop не входит. См. [[Architecture/Retrieval]].
+
+Хвост реплики: `COPILOT_HISTORY_LIMIT`. Модель: `qwen3:8b` через `OllamaChatProvider`: `num_ctx=16384` на оба вызова; реплика `num_predict=3000`. Tools — тот же `/api/chat` с JSON `tools`.
 
 Состав слоёв, форма блоков и provenance — [[Architecture/Context]].
 

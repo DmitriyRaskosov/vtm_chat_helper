@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Character\CharacterBiographyService;
 use App\Character\CharacterBioIndexer;
 use App\Enums\CharacterMemoryNodeType;
+use App\Enums\LoreAccessLevel;
 use App\Enums\LoreEntryStatus;
 use App\Enums\RetrievalCorpus;
 use App\Enums\WorldEntityType;
@@ -151,7 +152,7 @@ class HybridRetrievalTest extends TestCase
         ));
     }
 
-    public function test_npc_lore_without_a_grant_is_not_returned(): void
+    public function test_secret_lore_without_clearance_or_grant_is_not_returned(): void
     {
         $chronicle = Chronicle::factory()->create();
         $character = $this->npcIn($chronicle);
@@ -159,6 +160,7 @@ class HybridRetrievalTest extends TestCase
             'title' => 'Маскарад',
             'canonical_text' => 'Каиниты не раскрывают свою природу смертным.',
             'status' => LoreEntryStatus::Approved,
+            'classification' => LoreAccessLevel::L5,
         ], 'v1');
         $this->app->make(LoreIndexer::class)->rebuildApproved($entry);
 

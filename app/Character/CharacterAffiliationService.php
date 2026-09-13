@@ -4,6 +4,8 @@ namespace App\Character;
 
 use App\Enums\CharacterAffiliationStance;
 use App\Enums\CharacterAffiliationType;
+use App\Enums\FactionType;
+use App\Enums\WorldEntityStatus;
 use App\Enums\WorldEntityType;
 use App\Models\Character;
 use App\Models\CharacterAffiliation;
@@ -12,9 +14,11 @@ use App\Models\Message;
 use App\Models\Scene;
 use App\Models\User;
 use App\Models\WorldEntity;
+use App\Models\WorldRelation;
 use App\Models\WorldRelationType;
 use App\World\MixedChronicleException;
 use App\World\WorldRelationService;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -191,6 +195,164 @@ class CharacterAffiliationService
 
             return $current->refresh();
         });
+    }
+
+    public function end(CharacterAffiliation $affiliation, mixed $endedAt = null): CharacterAffiliation
+    {
+        $this->relations->end(WorldRelation::query()->findOrFail($affiliation->id), $endedAt);
+
+        return $affiliation->refresh();
+    }
+
+    public function setSect(Character $character, ?WorldEntity $sect): ?CharacterAffiliation
+    {
+        if ($sect !== null) {
+            $this->assertSect($character, $sect);
+        }
+
+        return $this->replaceSlot(
+            $character,
+            CharacterAffiliationType::Member,
+            fn (CharacterAffiliation $row): bool => $row->target?->faction?->faction_type === FactionType::Sect,
+            $sect,
+            CharacterAffiliationStance::Allied,
+            'member_of',
+        );
+    }
+
+    public function setHaven(Character $character, ?WorldEntity $haven): ?CharacterAffiliation
+    {
+        if ($haven !== null) {
+            $this->assertHaven($character, $haven);
+        }
+
+        return $this->replaceSlot(
+            $character,
+            CharacterAffiliationType::Resident,
+            fn (CharacterAffiliation $row): bool => $row->target?->entity_type === WorldEntityType::Location,
+            $haven,
+            CharacterAffiliationStance::Neutral,
+            'located_at',
+        );
+    }
+
+    public function activeSect(Character $character): ?CharacterAffiliation
+    {
+        return $this->activeOfType($character, CharacterAffiliationType::Member)
+            ->first(fn (CharacterAffiliation $row): bool => $row->target?->faction?->faction_type === FactionType::Sect);
+    }
+
+    public function activeHaven(Character $character): ?CharacterAffiliation
+    {
+        return $this->activeOfType($character, CharacterAffiliationType::Resident)
+            ->first(fn (CharacterAffiliation $row): bool => $row->target?->entity_type === WorldEntityType::Location);
+    }
+
+    /**
+     * @return Collection<int, CharacterAffiliation>
+     */
+    public function activeOfType(Character $character, CharacterAffiliationType $type): Collection
+    {
+        return CharacterAffiliation::query()
+            ->where('character_id', $character->id)
+            ->where('affiliation_type', $type)
+            ->whereIn('id', WorldRelation::query()->active()->select('id'))
+            ->with(['target.faction'])
+            ->orderBy('id')
+            ->get();
+    }
+
+    /**
+     * @param  callable(CharacterAffiliation): bool  $matchesSlot
+     */
+    private function replaceSlot(
+        Character $character,
+        CharacterAffiliationType $affiliationType,
+        callable $matchesSlot,
+        ?WorldEntity $target,
+        CharacterAffiliationStance $stance,
+        string $relationKey,
+    ): ?CharacterAffiliation {
+        return DB::transaction(function () use (
+            $character,
+            $affiliationType,
+            $matchesSlot,
+            $target,
+            $stance,
+            $relationKey,
+        ): ?CharacterAffiliation {
+            WorldRelation::query()
+                ->where('source_entity_id', $character->id)
+                ->active()
+                ->lockForUpdate()
+                ->get();
+
+            $current = $this->activeOfType($character, $affiliationType)->filter($matchesSlot);
+
+            if ($target === null) {
+                foreach ($current as $row) {
+                    $this->end($row);
+                }
+
+                return null;
+            }
+
+            $keep = $current->first(
+                fn (CharacterAffiliation $row): bool => (int) $row->target_entity_id === (int) $target->id,
+            );
+
+            foreach ($current as $row) {
+                if ($keep !== null && (int) $row->id === (int) $keep->id) {
+                    continue;
+                }
+
+                $this->end($row);
+            }
+
+            if ($keep !== null) {
+                return $keep;
+            }
+
+            return $this->attach(
+                $character,
+                $target,
+                $affiliationType,
+                $stance,
+                WorldRelationType::query()->where('key', $relationKey)->firstOrFail(),
+            );
+        });
+    }
+
+    private function assertSect(Character $character, WorldEntity $sect): void
+    {
+        $this->assertAllowedTarget($character, $sect);
+
+        if ($sect->entity_type !== WorldEntityType::Faction) {
+            throw new InvalidArgumentException('A character sect must be a faction.');
+        }
+
+        $sect->loadMissing('faction');
+
+        if ($sect->faction?->faction_type !== FactionType::Sect) {
+            throw new InvalidArgumentException('A character sect must be a sect faction.');
+        }
+
+        if ($sect->status !== WorldEntityStatus::Active) {
+            throw new InvalidArgumentException('A character sect must be an active faction.');
+        }
+    }
+
+    private function assertHaven(Character $character, WorldEntity $haven): void
+    {
+        $this->assertAllowedTarget($character, $haven);
+
+        if ($haven->entity_type !== WorldEntityType::Location) {
+            throw new InvalidArgumentException('A character haven must be a location.');
+        }
+
+        if ($haven->status !== WorldEntityStatus::Active) {
+            throw new InvalidArgumentException('A character haven must be an active location.');
+        }
     }
 
     private function assertAllowedTarget(Character $character, WorldEntity $target): void

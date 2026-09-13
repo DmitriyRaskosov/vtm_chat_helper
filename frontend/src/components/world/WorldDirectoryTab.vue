@@ -1,0 +1,104 @@
+<template>
+    <section class="card">
+            <h2>Справочник</h2>
+            <p class="muted">Фракции, места, предметы и идеи хроники. Персонажи остаются на отдельном экране.</p>
+            <div class="sheet-actions">
+                <button v-if="editing" type="button" class="secondary" @click="emit('new')">Новая</button>
+            </div>
+            <div class="character-create-grid">
+                <label>
+                    Имя
+                    <input v-model="form.canonical_name" type="text" maxlength="120" />
+                </label>
+                <label>
+                    Тип
+                    <select v-model="form.entity_type" :disabled="editing">
+                        <option v-for="row in entityTypes" :key="row.value" :value="row.value">{{ row.label }}</option>
+                    </select>
+                </label>
+                <label>
+                    Подтип
+                    <select v-model="form.subtype">
+                        <option v-for="row in subtypesFor(form.entity_type)" :key="row.value" :value="row.value">
+                            {{ row.label }}
+                        </option>
+                    </select>
+                </label>
+                <label class="world-desc">
+                    Кратко
+                    <input v-model="form.short_description" type="text" maxlength="4000" />
+                </label>
+            </div>
+            <button
+                type="button"
+                :disabled="saving || !form.canonical_name.trim()"
+                @click="emit(editing ? 'save' : 'create')"
+            >
+                {{ editing ? 'Сохранить' : 'Создать' }}
+            </button>
+        </section>
+
+        <section v-for="group in directoryGroups" :key="group.type" class="card">
+            <h2>{{ group.title }}</h2>
+            <p v-if="!group.rows.length" class="muted">Пока нет.</p>
+            <ul v-else class="character-tree">
+                <li v-for="row in group.rows" :key="row.id">
+                    <div class="character-row">
+                        <button
+                            class="link"
+                            type="button"
+                            :class="{ 'nav-current': form.id === row.id }"
+                            @click="emit('edit', row)"
+                        >
+                            {{ row.canonical_name }}
+                        </button>
+                        <span class="muted"> · {{ subtypeLabel(row) }}</span>
+                        <span v-if="row.short_description" class="muted"> — {{ row.short_description }}</span>
+                        <button class="link" type="button" @click="emit('archive', row.id)">Скрыть</button>
+                    </div>
+                </li>
+            </ul>
+        </section>
+
+        <section class="card">
+            <h2>Скрытые</h2>
+            <p v-if="!archived.length" class="muted">Скрытых сущностей нет.</p>
+            <ul v-else class="character-tree">
+                <li v-for="row in archived" :key="row.id">
+                    <div class="character-row">
+                        <strong>{{ row.canonical_name }}</strong>
+                        <span class="muted"> · {{ typeLabel(row.entity_type) }} · {{ subtypeLabel(row) }}</span>
+                        <button class="link" type="button" @click="emit('restore', row.id)">Вернуть</button>
+                    </div>
+                </li>
+            </ul>
+        </section>
+
+        <WorldPoliticsSection
+            :politics="politics"
+            :factions="factions"
+            :relations="relations"
+            :saving-politics="savingPolitics"
+            @add="emit('add-politics')"
+            @end="emit('end-politics', $event)"
+        />
+</template>
+
+<script setup>
+import { entityTypes, subtypeLabel, subtypesFor, typeLabel } from '../../composables/useWorldEntities';
+import WorldPoliticsSection from './WorldPoliticsSection.vue';
+
+defineProps({
+    form: { type: Object, required: true },
+    editing: { type: Boolean, required: true },
+    directoryGroups: { type: Array, required: true },
+    archived: { type: Array, required: true },
+    saving: { type: Boolean, required: true },
+    factions: { type: Array, required: true },
+    politics: { type: Object, required: true },
+    relations: { type: Array, required: true },
+    savingPolitics: { type: Boolean, required: true },
+});
+
+const emit = defineEmits(['create', 'save', 'new', 'edit', 'archive', 'restore', 'add-politics', 'end-politics']);
+</script>

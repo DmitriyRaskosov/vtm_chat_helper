@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\CharacterMemoryNodeType;
+use App\Enums\LoreAccessLevel;
 use App\Enums\LoreEntryStatus;
 use App\Enums\LoreVisibility;
 use App\Enums\MemoryEntityRole;
@@ -138,6 +139,7 @@ class MemoryBridgeTest extends TestCase
             'canonical_text' => 'Сир Виктории служит Шабашу.',
             'status' => LoreEntryStatus::Approved,
             'visibility' => LoreVisibility::StorytellerOnly,
+            'classification' => LoreAccessLevel::L5,
         ], 'v1');
         $event = WorldEvent::query()->findOrFail(
             $this->app->make(WorldEntityService::class)->create(

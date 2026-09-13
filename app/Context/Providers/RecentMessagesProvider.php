@@ -36,7 +36,7 @@ class RecentMessagesProvider implements ContextProvider
             ->with('user:id,name')
             ->where('scene_id', $assembly->scene->id)
             ->orderByDesc('id')
-            ->limit((int) config('copilot.history_limit'))
+            ->limit($assembly->request->historyLimit())
             ->get()
             ->reverse()
             ->values();
@@ -67,10 +67,10 @@ class RecentMessagesProvider implements ContextProvider
             $authorId = $message->author_character_id;
             $canonical = is_numeric($authorId) ? ($names[(int) $authorId] ?? null) : null;
             $author = $message->displayAuthor(is_string($canonical) ? $canonical : null);
-            $lines[] = $author.': '.$message->body;
+            $lines[] = '[speech] '.$author.': '.$message->body;
         }
 
-        [$content, $truncated] = $this->trimmer->prefix('## Recent chat', $lines, $tokenBudget);
+        [$content, $truncated] = $this->trimmer->prefix('## Scene speech', $lines, $tokenBudget);
 
         return ContextSection::fromContent($this->key(), $content, $this->estimator, [
             'message_ids' => $ids,

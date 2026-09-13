@@ -39,6 +39,23 @@
 | PUT | `/api/characters/{character}/merits` | sanctum | own sheet / ST | [[API/Characters]] |
 | PATCH | `/api/characters/{character}/experience` | sanctum | own sheet / ST | [[API/Characters]] |
 | PUT | `/api/characters/{character}/disciplines` | sanctum | own sheet / ST | [[API/Characters]] |
+| PUT | `/api/characters/{character}/biography` | sanctum | own sheet / ST | [[API/Characters]] |
+| PUT | `/api/characters/{character}/place` | sanctum | storyteller | [[API/Characters]] |
+| POST | `/api/characters/{character}/archive` | sanctum | storyteller | [[API/Characters]] |
+| POST | `/api/characters/{character}/restore` | sanctum | storyteller | [[API/Characters]] |
+| GET | `/api/world/entities` | sanctum | storyteller | [[API/World]] |
+| POST | `/api/world/entities` | sanctum | storyteller | [[API/World]] |
+| POST | `/api/world/entities/{entity}/archive` | sanctum | storyteller | [[API/World]] |
+| POST | `/api/world/entities/{entity}/restore` | sanctum | storyteller | [[API/World]] |
+| GET | `/api/world/faction-relations` | sanctum | storyteller | [[API/World]] |
+| POST | `/api/world/faction-relations` | sanctum | storyteller | [[API/World]] |
+| POST | `/api/world/faction-relations/{relation}/end` | sanctum | storyteller | [[API/World]] |
+| GET | `/api/lore` | sanctum | storyteller | [[API/Lore]] |
+| POST | `/api/lore` | sanctum | storyteller | [[API/Lore]] |
+| GET | `/api/lore/{loreEntry}` | sanctum | storyteller | [[API/Lore]] |
+| PUT | `/api/lore/{loreEntry}` | sanctum | storyteller | [[API/Lore]] |
+| POST | `/api/lore/{loreEntry}/archive` | sanctum | storyteller | [[API/Lore]] |
+| POST | `/api/lore/{loreEntry}/restore` | sanctum | storyteller | [[API/Lore]] |
 | GET | `/api/rag/search` | sanctum | storyteller | [[API/RAG]] |
 | POST | `/api/copilot/drafts` | sanctum | storyteller | [[API/Copilot]] |
 

@@ -8,6 +8,8 @@ use App\Enums\WorldEntityType;
 use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\Discipline;
+use App\Models\Scene;
+use App\Models\SceneParticipant;
 use App\Models\User;
 use App\World\WorldEntityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -60,10 +62,11 @@ class CharacterSheetTest extends TestCase
 
         $this->assertSame($pc['id'], $ghoul['domitor_character_id']);
 
-        $list = $this->getJson('/api/characters')->assertOk()->json('characters');
-        $this->assertCount(1, $list);
-        $this->assertSame('Анна', $list[0]['canonical_name']);
-        $this->assertSame('Иван', $list[0]['ghouls'][0]['canonical_name']);
+        $list = $this->getJson('/api/characters')->assertOk()->json();
+        $this->assertCount(1, $list['characters']);
+        $this->assertSame('Анна', $list['characters'][0]['canonical_name']);
+        $this->assertSame('Иван', $list['characters'][0]['ghouls'][0]['canonical_name']);
+        $this->assertSame([], $list['archived']);
     }
 
     public function test_player_sees_own_sheet_and_cannot_see_npc(): void
@@ -222,5 +225,124 @@ class CharacterSheetTest extends TestCase
                 'value' => 5,
             ]],
         ])->assertForbidden();
+    }
+
+    public function test_storyteller_and_owner_can_publish_biography_and_rebuild_index(): void
+    {
+        $storyteller = User::factory()->storyteller()->create();
+        $player = User::factory()->create();
+        $chronicle = Chronicle::query()->orderBy('id')->firstOrFail();
+        $service = $this->app->make(WorldEntityService::class);
+        $pc = $service->create(
+            $chronicle,
+            WorldEntityType::Character,
+            'Анна',
+            typed: [
+                'character_type' => CharacterType::Player,
+                'user_id' => $player->id,
+            ],
+        );
+        $npc = $service->create($chronicle, WorldEntityType::Character, 'Виктория');
+
+        Sanctum::actingAs($storyteller);
+        $this->putJson('/api/characters/'.$npc->id.'/biography', [
+            'summary' => 'Виктория служит Камарилье.',
+            'full_text' => 'Она хранит Маскарад.',
+            'principles' => 'Не раскрывать природу смертным.',
+        ])
+            ->assertOk()
+            ->assertJsonPath('character.biography.summary', 'Виктория служит Камарилье.')
+            ->assertJsonPath('character.biography.full_text', 'Она хранит Маскарад.')
+            ->assertJsonPath('character.biography.principles', 'Не раскрывать природу смертным.')
+            ->assertJsonPath('character.biography.current_version', 1)
+            ->assertJsonPath('character.biography.status', 'approved');
+
+        $this->assertDatabaseHas('character_biography_versions', [
+            'character_id' => $npc->id,
+            'version' => 1,
+            'change_reason' => 'Правка с листа',
+        ]);
+        $this->assertDatabaseHas('character_bio_chunks', [
+            'character_id' => $npc->id,
+            'content' => 'Виктория служит Камарилье.',
+        ]);
+
+        $this->putJson('/api/characters/'.$npc->id.'/biography', [
+            'summary' => 'Виктория служит Камарилье.',
+            'full_text' => 'Она хранит Маскарад.',
+            'principles' => 'Не раскрывать природу смертным.',
+        ])->assertOk()->assertJsonPath('character.biography.current_version', 1);
+
+        Sanctum::actingAs($player);
+        $this->putJson('/api/characters/'.$pc->id.'/biography', [
+            'summary' => 'Анна ищет Грибобаса.',
+        ])->assertOk()->assertJsonPath('character.biography.summary', 'Анна ищет Грибобаса.');
+
+        $this->putJson('/api/characters/'.$npc->id.'/biography', [
+            'summary' => 'Чужой канон.',
+        ])->assertForbidden();
+
+        $this->putJson('/api/characters/'.$pc->id.'/biography', [
+            'principles' => 'Только принципы.',
+        ])->assertUnprocessable();
+    }
+
+    public function test_storyteller_archives_and_restores_character_with_ghouls(): void
+    {
+        $storyteller = User::factory()->storyteller()->create();
+        $player = User::factory()->create();
+        Sanctum::actingAs($storyteller);
+
+        $pc = $this->postJson('/api/characters', [
+            'canonical_name' => 'Анна',
+            'character_type' => CharacterType::Player->value,
+            'user_id' => $player->id,
+        ])->assertCreated()->json('character');
+
+        $ghoul = $this->postJson('/api/characters', [
+            'canonical_name' => 'Иван',
+            'character_type' => CharacterType::Ghoul->value,
+            'domitor_character_id' => $pc['id'],
+        ])->assertCreated()->json('character');
+
+        $scene = Scene::query()->active()->firstOrFail();
+        $this->postJson('/api/scenes/'.$scene->id.'/participants', [
+            'character_id' => $pc['id'],
+            'role' => 'player',
+        ])->assertCreated();
+
+        $this->postJson('/api/characters/'.$pc['id'].'/archive')->assertOk()
+            ->assertJsonPath('character.is_active', false);
+
+        $this->assertFalse((bool) Character::query()->findOrFail($pc['id'])->is_active);
+        $this->assertFalse((bool) Character::query()->findOrFail($ghoul['id'])->is_active);
+        $this->assertFalse(
+            SceneParticipant::query()
+                ->where('character_id', $pc['id'])
+                ->where('is_current', true)
+                ->exists(),
+        );
+
+        $list = $this->getJson('/api/characters')->assertOk()->json();
+        $this->assertSame([], $list['characters']);
+        $this->assertCount(2, $list['archived']);
+
+        $this->postJson('/api/scenes/'.$scene->id.'/participants', [
+            'character_id' => $pc['id'],
+            'role' => 'player',
+        ])->assertUnprocessable();
+
+        Sanctum::actingAs($player);
+        $this->postJson('/api/characters/'.$pc['id'].'/archive')->assertForbidden();
+        $this->getJson('/api/characters')->assertOk()->assertJsonPath('archived', []);
+
+        Sanctum::actingAs($storyteller);
+        $this->postJson('/api/characters/'.$pc['id'].'/restore')->assertOk()
+            ->assertJsonPath('character.is_active', true);
+
+        $restored = $this->getJson('/api/characters')->assertOk()->json();
+        $this->assertCount(1, $restored['characters']);
+        $this->assertSame('Иван', $restored['characters'][0]['ghouls'][0]['canonical_name']);
+        $this->assertSame([], $restored['archived']);
     }
 }

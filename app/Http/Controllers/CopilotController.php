@@ -96,6 +96,7 @@ class CopilotController extends Controller
             409,
             'Character does not belong to this chronicle.',
         );
+        abort_if(! $character->is_active, 409, 'Character is archived.');
 
         $npcName = WorldEntity::query()->whereKey($character->id)->value('canonical_name');
         abort_if(! is_string($npcName) || $npcName === '', 422, 'NPC name is required.');

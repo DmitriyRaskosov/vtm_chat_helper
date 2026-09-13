@@ -190,7 +190,7 @@ class HybridRetrievalCoordinator
                 (string) $chunk->content,
                 $this->scores($chunk->neighbor_distance, $index),
                 $request->asNpc
-                    ? 'lore_chunks filtered by character_lore_knowledge'
+                    ? 'lore_chunks filtered by lore clearance'
                     : 'lore_chunks scoped to chronicle',
                 array_filter([
                     'chronicle_id' => $request->chronicleId,

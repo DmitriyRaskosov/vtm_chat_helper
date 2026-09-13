@@ -6,10 +6,10 @@ alwaysApply: false
 
 # Vue frontend
 
-Код UI только в `frontend/`. Новые экраны — SFC в `frontend/src/views`, маршруты в `frontend/src/router.js`.
+Код UI только в `frontend/`. Экраны-оболочки — SFC в `frontend/src/views`, блоки — `frontend/src/components/`, API-state — `frontend/src/composables/`. Маршруты в `frontend/src/router.js`. UI-only старт: `docs/Agent/`.
 
 HTTP только через `api` из `frontend/src/auth.js` (`baseURL: '/api'`). Токен в `localStorage`. Не ходить на Laravel web-URL и не подключать Blade.
 
 Запуск: `cd frontend && npm run dev` (порт 5173 на хосте).
 
-Канон UI и copilot panel: `docs/Architecture/Frontend.md`, `docs/Features/Copilot.md`. Листы V20: `docs/Features/Characters.md`.
+Канон UI и copilot panel: `docs/Architecture/Frontend.md`, `docs/Features/Copilot.md`. Листы V20: `docs/Features/Characters.md`. Справочник мира: `docs/Features/World.md`.

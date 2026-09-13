@@ -2,7 +2,7 @@
 
 Корневой канон мира — `world_entities` внутри хроники. Имя не является идентификатором: граф, лор, события и память ссылаются на стабильный ID.
 
-CRUD UI нет. Typed `world_events` есть; внутриигровая шкала времени снята (этап 17).
+ST-справочник фракций/мест/предметов/идей, политика фракций и статьи лора — HTTP + `/world`. Typed `world_events` есть; внутриигровая шкала времени снята (этап 17). Редактор памяти в SPA нет.
 
 ## Идентичность
 
@@ -20,7 +20,7 @@ CRUD UI нет. Typed `world_events` есть; внутриигровая шка
 
 | Таблица | Поля |
 |---------|------|
-| `characters` | `character_type` (`player`/`npc`/`ghoul`), nullable unique `user_id` (только PC), `clan_entity_id`, `sire_character_id`, `domitor_character_id` (обязателен у гуля), generation/ages, nature/demeanor/concept, `is_active` |
+| `characters` | `character_type` (`player`/`npc`/`ghoul`), nullable unique `user_id` (только PC), `clan_entity_id`, `sire_character_id`, `domitor_character_id` (обязателен у гуля), generation/ages, nature/demeanor/concept, `lore_clearance_levels` (smallint[]), `is_active` |
 | `locations` | `parent_location_id`, `location_type`, `details` (jsonb) |
 | `factions` | `parent_faction_id`, `faction_type`, `status` |
 | `items` | `owner_entity_id` nullable → любая `world_entities` той же хроники, `item_type`, `status` |
@@ -29,7 +29,7 @@ CRUD UI нет. Typed `world_events` есть; внутриигровая шка
 
 `character_users` нет: один пользователь = один PC (`characters.user_id` unique). NPC и гули: `user_id` пуст. Гуль принадлежит вампиру через `domitor_character_id` (player или NPC той же хроники), не через аккаунт игрока. Сир (`sire_character_id`) — Объятья, не домитор.
 
-HTTP CRUD персонажей нет. Игрок может отправить реплику от своего PC и от гулей этого PC ([[API/Messages]]).
+HTTP создание персонажей — [[API/Characters]]. Игрок может отправить реплику от своего PC и от гулей этого PC ([[API/Messages]]).
 
 Обратный `belongsTo` с typed-строки на `world_entities` по тому же `id` не объявляется: Eloquent зацикливает пару `HasOne`/`belongsTo` на shared PK. Связь читается как `WorldEntity::character()` / `location()` / `faction()` / `item()` / `concept()` / `event()`.
 
@@ -39,13 +39,15 @@ HTTP CRUD персонажей нет. Игрок может отправить 
 
 - `create(..., typed: [])` — slug, canonical alias, aka, subtype (включая `characters`)
 - `archive` — `status=archived`, без физического DELETE; у персонажа ещё `characters.is_active=false`
+- `restore` — `status=active`, `archived_at` сбрасывается; у персонажа `is_active=true`
+- `assertClanFaction` — клан персонажа только активная фракция `faction_type=clan`
 - `findByAlias` / `assertSameChronicle` — chronicle scope
 
 Физическое удаление запрещено: Eloquent `delete()` бросает `CannotDeleteWorldEntityException`, триггер PostgreSQL отклоняет `DELETE`.
 
 Нормализация имён: `App\World\AliasNormalizer`.
 
-Тесты: `tests/Feature/WorldEntityTest.php`, `tests/Feature/TypedWorldEntityTest.php`, `tests/Feature/CharacterTest.php`, `tests/Feature/CharacterSheetTest.php`, `tests/Feature/CharacterStatTest.php`, `tests/Feature/CharacterBiographyTest.php`, `tests/Feature/CharacterBioIndexTest.php`, `tests/Feature/WorldRelationTypeTest.php`, `tests/Feature/WorldRelationTest.php`, `tests/Feature/CharacterRelationshipTest.php`, `tests/Feature/CharacterAffiliationTest.php`, `tests/Feature/WorldEventTest.php`, `tests/Feature/LoreEntryTest.php`, `tests/Feature/WorldGraphRagTest.php`, `tests/Unit/World/AliasNormalizerTest.php`.
+Тесты: `tests/Feature/WorldEntityTest.php`, `tests/Feature/TypedWorldEntityTest.php`, `tests/Feature/CharacterTest.php`, `tests/Feature/CharacterSheetTest.php`, `tests/Feature/CharacterStatTest.php`, `tests/Feature/CharacterBiographyTest.php`, `tests/Feature/CharacterBioIndexTest.php`, `tests/Feature/WorldRelationTypeTest.php`, `tests/Feature/WorldRelationTest.php`, `tests/Feature/CharacterRelationshipTest.php`, `tests/Feature/CharacterAffiliationTest.php`, `tests/Feature/WorldDirectoryTest.php`, `tests/Feature/WorldEventTest.php`, `tests/Feature/LoreEntryTest.php`, `tests/Feature/WorldGraphRagTest.php`, `tests/Unit/World/AliasNormalizerTest.php`.
 
 ## Лист персонажа
 
@@ -57,7 +59,7 @@ HTTP CRUD персонажей нет. Игрок может отправить 
 
 Текущее состояние — one-to-one `character_status` (PK = character_id) плюс эффекты и журнал. `CharacterStatusService::apply` пишет current row и историю в одной транзакции с optimistic `revision`. Sheet HTTP пишет `blood_pool` / `temporary_willpower` через тот же сервис; hunger с листа V20 не отдаётся. Здоровье листа — `character_health_boxes` (`CharacterHealthService`); merits/flaws — `character_merits_flaws`; XP — `characters.experience`. Контракт: [[API/Characters]].
 
-Каноническая биография — one-to-one `character_biographies` плюс immutable `character_biography_versions`. `CharacterBiographyService::publish` пишет current row и snapshot версии в одной транзакции; поисковый индекс не является каноном. Таблицы `character_goals` нет. SPA-редактора биографии нет: лист показывает read-only stub. Редакторы мира, лора и памяти тоже backlog.
+Каноническая биография — one-to-one `character_biographies` плюс immutable `character_biography_versions`. `CharacterBiographyService::publish` пишет current row и snapshot версии в одной транзакции; поисковый индекс не является каноном. Таблицы `character_goals` нет. Лист публикует биографию через `PUT /api/characters/{id}/biography` и сразу пересобирает `character_bio_chunks`. Место в мире — `PUT /api/characters/{id}/place` (ST): секта и гавань через `CharacterAffiliationService::setSect` / `setHaven`, клан через identity, допуск к лору — `characters.lore_clearance_levels`. Справочник мира (включая `PUT` entities) — [[API/World]], [[Features/World]]. Статьи лора — [[API/Lore]]. Редактор памяти — backlog.
 
 Производный индекс — `character_bio_chunks` (отдельный HNSW, не `rag_chunks`). `CharacterBioIndexer` индексирует только сохранённую версию; `CharacterBioSearcher` всегда фильтрует по `character_id`.
 
@@ -69,13 +71,15 @@ HTTP CRUD персонажей нет. Игрок может отправить 
 
 ## Граф
 
-`world_relations` — направленные рёбра внутри хроники. Симметрия типа учитывается query layer (`WorldRelationService::neighbors`), обратная строка не создаётся. Self-loop, межхроникальные рёбра и активные дубли запрещены.
+`world_relations` — направленные рёбра внутри хроники. Симметрия типа учитывается query layer (`WorldRelationService::neighbors` и запрет обратного дубля), обратная строка не создаётся. Self-loop, межхроникальные рёбра и активные дубли запрещены. `replaceAmong` меняет взаимоисключающие ключи для одной пары (политика фракций).
 
 `character_relationships` — typed extension ребра character→character без метрик и без журнала (набор шкал не зафиксирован). A→B ≠ B→A.
 
-`character_affiliations` — typed extension character→faction/location/item/concept с stance, метриками 0–5 и журналом `character_affiliation_changes`.
+`character_affiliations` — typed extension character→faction/location/item/concept с stance, метриками 0–5 и журналом `character_affiliation_changes`. Секта листа — единственный активный `member` к `faction_type=sect` (`member_of`); гавань — единственный активный `resident` к location (`located_at`). Котерия этим слотом не заменяется.
 
 События — typed `world_events` плюс participants/sources. Место, причина, свидетели и участие — рёбра `occurred_at` / `caused` / `witnessed` / `participated_in`. Таблицы `chronicle_timeline` нет.
+
+Политика сект — симметричные `hostile_to` / `allied_with` между фракциями (одна строка на пару, вражда и союз взаимоисключающие). Не матрица НПС.
 
 Лор ссылается на мир через `lore_entry_entities`. Память стыкуется только явными мостами `memory_node_*` (`MemoryBridgeService`); текст воспоминания не становится каноном.
 

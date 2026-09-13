@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\WorldEntityAliasType;
 use App\Enums\WorldEntityStatus;
 use App\Enums\WorldEntityType;
+use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\WorldEntity;
 use App\Models\WorldEntityAlias;
@@ -133,11 +134,16 @@ class WorldEntityTest extends TestCase
         $service = $this->app->make(WorldEntityService::class);
         $entity = $service->create($chronicle, WorldEntityType::Character, 'Виктория');
 
-        $this->assertTrue((bool) \App\Models\Character::query()->findOrFail($entity->id)->is_active);
+        $this->assertTrue((bool) Character::query()->findOrFail($entity->id)->is_active);
 
         $service->archive($entity->fresh());
 
-        $this->assertFalse((bool) \App\Models\Character::query()->findOrFail($entity->id)->is_active);
+        $this->assertFalse((bool) Character::query()->findOrFail($entity->id)->is_active);
         $this->assertSame(WorldEntityStatus::Archived, $entity->fresh()->status);
+
+        $restored = $service->restore($entity->fresh());
+        $this->assertSame(WorldEntityStatus::Active, $restored->status);
+        $this->assertNull($restored->archived_at);
+        $this->assertTrue((bool) Character::query()->findOrFail($entity->id)->is_active);
     }
 }

@@ -33,6 +33,7 @@ class CharacterFactory extends Factory
             'nature' => null,
             'demeanor' => null,
             'concept' => null,
+            'lore_clearance_levels' => [0],
             'is_active' => true,
             'experience' => 0,
         ];

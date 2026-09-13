@@ -16,5 +16,6 @@ const isWide = computed(() => (
     (isStoryteller.value && route.name === 'chat')
     || route.name === 'characters'
     || route.name === 'character'
+    || route.name === 'world'
 ));
 </script>

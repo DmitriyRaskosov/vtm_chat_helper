@@ -8,4 +8,4 @@
 
 HTTP CRUD нет.
 
-См. [[Architecture/Backend]], [[Project/Architecture Migration]].
+См. [[Architecture/Backend]], [[Archive/Architecture Migration]].

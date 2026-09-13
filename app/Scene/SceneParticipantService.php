@@ -27,6 +27,10 @@ class SceneParticipantService
             throw new MixedChronicleException;
         }
 
+        if (! $character->is_active) {
+            throw new InvalidArgumentException('An archived character cannot enter a scene.');
+        }
+
         return DB::transaction(function () use ($scene, $character, $role, $visible): SceneParticipant {
             $lockedScene = Scene::query()->lockForUpdate()->findOrFail($scene->id);
             $this->contexts->assertMutable($lockedScene);
@@ -77,6 +81,27 @@ class SceneParticipantService
 
             return $current->refresh();
         });
+    }
+
+    public function leaveMutableScenes(Character $character): void
+    {
+        $rows = SceneParticipant::query()
+            ->where('character_id', $character->id)
+            ->where('is_current', true)
+            ->get();
+
+        foreach ($rows as $row) {
+            $scene = Scene::query()->find($row->scene_id);
+            if ($scene === null) {
+                continue;
+            }
+
+            try {
+                $this->leave($scene, $character);
+            } catch (SceneFrozenException|InvalidArgumentException) {
+                continue;
+            }
+        }
     }
 
     /**

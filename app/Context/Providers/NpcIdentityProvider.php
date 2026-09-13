@@ -61,19 +61,21 @@ class NpcIdentityProvider implements ContextProvider
                 $lines[] = "Concept: {$character->concept}";
             }
 
-            $sheet = $this->sheet->relevant($character);
-            foreach ($sheet->stats as $stat) {
-                $statIds[] = (int) $stat->id;
-                $lines[] = $this->formatStat($stat);
-            }
-
-            $character->loadMissing('disciplines.discipline');
-            foreach ($character->disciplines as $row) {
-                if (! $row instanceof CharacterDiscipline || $row->discipline === null) {
-                    continue;
+            if (! $assembly->request->compactIdentity) {
+                $sheet = $this->sheet->relevant($character);
+                foreach ($sheet->stats as $stat) {
+                    $statIds[] = (int) $stat->id;
+                    $lines[] = $this->formatStat($stat);
                 }
-                $disciplineIds[] = (int) $row->id;
-                $lines[] = 'Discipline: '.$row->discipline->display_name.' '.$row->level;
+
+                $character->loadMissing('disciplines.discipline');
+                foreach ($character->disciplines as $row) {
+                    if (! $row instanceof CharacterDiscipline || $row->discipline === null) {
+                        continue;
+                    }
+                    $disciplineIds[] = (int) $row->id;
+                    $lines[] = 'Discipline: '.$row->discipline->display_name.' '.$row->level;
+                }
             }
         }
 
@@ -84,6 +86,7 @@ class NpcIdentityProvider implements ContextProvider
             'entity_id' => $entityId,
             'stat_ids' => $statIds,
             'discipline_ids' => $disciplineIds,
+            'compact' => $assembly->request->compactIdentity,
         ], $truncated ? 'stats_tail' : null);
     }
 

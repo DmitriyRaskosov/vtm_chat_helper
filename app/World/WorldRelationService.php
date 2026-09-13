@@ -38,10 +38,21 @@ class WorldRelationService
         return DB::transaction(function () use ($source, $target, $type, $weight, $note, $provenance, $startedAt): WorldRelation {
             $duplicate = WorldRelation::query()
                 ->where('chronicle_id', $source->chronicle_id)
-                ->where('source_entity_id', $source->id)
-                ->where('target_entity_id', $target->id)
                 ->where('relation_type_id', $type->id)
                 ->whereNull('ended_at')
+                ->where(function ($query) use ($source, $target, $type): void {
+                    $query->where(function ($inner) use ($source, $target): void {
+                        $inner->where('source_entity_id', $source->id)
+                            ->where('target_entity_id', $target->id);
+                    });
+
+                    if ($type->symmetric) {
+                        $query->orWhere(function ($inner) use ($source, $target): void {
+                            $inner->where('source_entity_id', $target->id)
+                                ->where('target_entity_id', $source->id);
+                        });
+                    }
+                })
                 ->lockForUpdate()
                 ->exists();
 
@@ -62,6 +73,62 @@ class WorldRelationService
                 'ended_at' => null,
                 'provenance' => $provenance ?? [],
             ])->refresh();
+        });
+    }
+
+    /**
+     * One active edge among mutually exclusive types for an unordered pair.
+     *
+     * @param  list<string>  $exclusiveKeys
+     */
+    public function replaceAmong(
+        WorldEntity $source,
+        WorldEntity $target,
+        WorldRelationType $type,
+        array $exclusiveKeys,
+        ?string $note = null,
+    ): WorldRelation {
+        return DB::transaction(function () use ($source, $target, $type, $exclusiveKeys, $note): WorldRelation {
+            $typeIds = WorldRelationType::query()->whereIn('key', $exclusiveKeys)->pluck('id');
+            $existing = WorldRelation::query()
+                ->active()
+                ->where('chronicle_id', $source->chronicle_id)
+                ->whereIn('relation_type_id', $typeIds)
+                ->where(function ($query) use ($source, $target): void {
+                    $query->where(function ($inner) use ($source, $target): void {
+                        $inner->where('source_entity_id', $source->id)
+                            ->where('target_entity_id', $target->id);
+                    })->orWhere(function ($inner) use ($source, $target): void {
+                        $inner->where('source_entity_id', $target->id)
+                            ->where('target_entity_id', $source->id);
+                    });
+                })
+                ->lockForUpdate()
+                ->get();
+
+            $keep = $existing->first(
+                fn (WorldRelation $edge): bool => (int) $edge->relation_type_id === (int) $type->id,
+            );
+
+            foreach ($existing as $edge) {
+                if ($keep !== null && (int) $edge->id === (int) $keep->id) {
+                    continue;
+                }
+
+                $this->end($edge);
+            }
+
+            if ($keep !== null) {
+                if ($note !== null) {
+                    $trimmed = trim($note);
+                    $keep->note = $trimmed === '' ? null : $trimmed;
+                    $keep->save();
+                }
+
+                return $keep->refresh();
+            }
+
+            return $this->relate($source, $target, $type, note: $note);
         });
     }
 

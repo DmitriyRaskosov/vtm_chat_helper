@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\LoreAccessLevel;
 use App\Enums\LoreEntryKind;
 use App\Enums\LoreEntryStatus;
 use App\Enums\LoreVisibility;
@@ -21,6 +22,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'canonical_text',
     'status',
     'visibility',
+    'classification',
+    'situational',
     'current_version',
     'legacy_source_id',
     'created_by',
@@ -96,6 +99,8 @@ class LoreEntry extends Model
             'kind' => LoreEntryKind::class,
             'status' => LoreEntryStatus::class,
             'visibility' => LoreVisibility::class,
+            'classification' => LoreAccessLevel::class,
+            'situational' => 'boolean',
             'current_version' => 'integer',
             'created_by' => 'integer',
             'approved_at' => 'datetime',

@@ -22,10 +22,10 @@ class CopilotDraftsRequest extends FormRequest
             'character_id' => [
                 'required',
                 'integer',
-                Rule::exists('characters', 'id')->where(
-                    'character_type',
-                    CharacterType::Npc->value,
-                ),
+                Rule::exists('characters', 'id')->where(function ($query): void {
+                    $query->where('character_type', CharacterType::Npc->value)
+                        ->where('is_active', true);
+                }),
             ],
             'prompt' => ['required', 'string', 'max:2000'],
             'scene_id' => ['sometimes', 'integer', 'exists:scenes,id'],

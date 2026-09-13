@@ -25,22 +25,24 @@ docker compose exec laravel.test php artisan test
 | `tests/Feature/WorldEntityTest.php` | атомарное создание identity/алиасов, изоляция хроник, архив вместо DELETE |
 | `tests/Feature/TypedWorldEntityTest.php` | shared PK, entity_type constraint, parent/owner той же хроники |
 | `tests/Feature/CharacterTest.php` | PC/NPC/гули, `character_id` cutover, snapshot/rename-safe author и Copilot, нет `character_users` |
-| `tests/Feature/CharacterSheetTest.php` | catalog V20, создание/список, права игрока, round-trip stats/status/health/merits/XP/disciplines |
+| `tests/Feature/CharacterSheetTest.php` | catalog V20, создание/список, права игрока, round-trip stats/status/health/merits/XP/disciplines, биография HTTP, archive/restore |
+| `tests/Feature/WorldDirectoryTest.php` | ST-справочник мира, политика фракций, place HTTP |
 | `tests/Feature/CharacterStatTest.php` | реляционный лист, unique key, SQL по category/value, read model |
 | `tests/Feature/CharacterDisciplineTest.php` | каталог дисциплин/сил, уровень, совместимость, SQL-поиск |
 | `tests/Feature/CharacterStatusTest.php` | current status, эффекты, журнал, optimistic revision, location chronicle |
 | `tests/Feature/CharacterBiographyTest.php` | канон биографии, версии, immutability; нет `character_goals` |
 | `tests/Feature/CharacterBioIndexTest.php` | отдельный HNSW биографии, rebuild, фильтр `character_id`, не `rag_chunks` |
 | `tests/Feature/WorldRelationTypeTest.php` | каталог типов связей, validator направления |
-| `tests/Feature/WorldRelationTest.php` | направленный граф, symmetric query, self-loop/дубли |
+| `tests/Feature/WorldRelationTest.php` | направленный граф, symmetric query, self-loop/дубли включая обратный symmetric |
 | `tests/Feature/CharacterRelationshipTest.php` | A→B ≠ B→A; нет метрик и `relationship_changes` |
-| `tests/Feature/CharacterAffiliationTest.php` | faction/location/item/concept, журнал, revision, не character/event |
+| `tests/Feature/CharacterAffiliationTest.php` | faction/location/item/concept, журнал, revision, setSect/setHaven, не character/event |
 | `tests/Feature/WorldEventTest.php` | typed event, participants/sources, граф occurred_at/caused; нет timeline |
-| `tests/Feature/LoreEntryTest.php` | канон лора, версии, связи с миром, archive; не `rag_chunks` |
+| `tests/Feature/LoreEntryTest.php` | канон лора, версии, связи с миром, archive/restore; не `rag_chunks` |
+| `tests/Feature/LoreDirectoryTest.php` | ST HTTP статей, гриф, исключения, стол без галочек, индекс, archive |
 | `tests/Feature/LoreIndexTest.php` | chronicle-scoped lore search, visibility, rebuild |
 | `tests/Feature/RuleDocumentTest.php` | ruleset/edition, overrides, pivots, archive |
 | `tests/Feature/RuleIndexTest.php` | отдельный корпус правил, override хроники |
-| `tests/Feature/CharacterKnowledgeTest.php` | grants; public ≠ known; bio без grant |
+| `tests/Feature/CharacterKnowledgeTest.php` | допуск/гриф лора; grant/deny; bio без grant; sync/revoke; правила по grant |
 | `tests/Feature/CharacterMemoryNodeTest.php` | false-belief, alias search, нет auto из messages |
 | `tests/Feature/CharacterMemoryEdgeTest.php` | self-loop/дубли, authored vs traversal |
 | `tests/Feature/MemoryBridgeTest.php` | мосты к канону, mixed chronicle, knowledge filter |
@@ -48,8 +50,8 @@ docker compose exec laravel.test php artisan test
 | `tests/Feature/HybridRetrievalTest.php` | coordinator, дедуп, NPC lore grants |
 | `tests/Feature/MemoryGraphRagTest.php` | depth, циклы, слабые рёбра, изоляция, bound |
 | `tests/Feature/WorldGraphRagTest.php` | character→faction→location/event, leakage |
-| `tests/Feature/CopilotTest.php` | drafts, лимит assembler, tool-loop, одноразовая привязка, HTTP E2E provenance Memory/World GraphRAG |
-| `tests/Feature/ContextAssemblerTest.php` | секции, provenance, knowledge filter, GraphRAG не вытесняет newest messages |
+| `tests/Feature/CopilotTest.php` | два вызова Ollama (топики + реплика), лимит assembler, tool-loop, одноразовая привязка, HTTP E2E provenance Memory/World GraphRAG |
+| `tests/Feature/ContextAssemblerTest.php` | секции reply/topics, provenance, knowledge filter, GraphRAG не вытесняет newest messages |
 | `tests/Feature/RagSearchTest.php` | message index, обязательный chronicle scope, embedding failure |
 | `tests/Feature/RetrievalToolsTest.php` | session scope, лимиты range, отказ неизвестного `search_summaries` |
 | `tests/Feature/RetrievalGuardrailTest.php` | наличие индексов, CTE LIMIT/scope/timeout |
@@ -59,18 +61,25 @@ docker compose exec laravel.test php artisan test
 - `TokenEstimatorTest` — Unicode-оценка и валидация коэффициента.
 - `AliasNormalizerTest` — нормализация алиасов и slug.
 
-Context Assembler проверяется через `ContextAssemblerTest` и payload fake Ollama в `CopilotTest`: вход не превышает бюджет, newest raw history имеет приоритет, обязательные секции не вытесняются GraphRAG, ungranted lore в prompt не попадает.
+Context Assembler проверяется через `ContextAssemblerTest` и payload fake Ollama в `CopilotTest`: вход реплики не превышает 12000, топики — 8000, newest raw history имеет приоритет, обязательные секции не вытесняются GraphRAG, лор выше допуска NPC в prompt не попадает.
 
 ## Ollama в feature-тестах
 
-Не вызывать реальный Ollama. Для copilot — `Http::fake` на `config('ollama.url').'/api/chat'`:
+Не вызывать реальный Ollama. Для copilot — `Http::fake` на `config('ollama.url').'/api/chat'`. Первый запрос — JSON топиков (`num_predict` ≤ 512), следующие — drafts (и tool calls на проходе реплики):
 
 ```php
-Http::fake([
-    config('ollama.url').'/api/chat' => Http::response([
+Http::fake(function (Request $request) {
+    $predict = (int) ($request['options']['num_predict'] ?? 3000);
+    if ($predict <= 512) {
+        return Http::response([
+            'message' => ['content' => json_encode(['topics' => ['Элизиум']])],
+        ]);
+    }
+
+    return Http::response([
         'message' => ['content' => json_encode(['drafts' => ['...']])],
-    ]),
-]);
+    ]);
+});
 ```
 
 ## Sanctum в тестах

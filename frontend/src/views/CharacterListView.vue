@@ -1,18 +1,6 @@
 <template>
     <div>
-        <div class="top">
-            <h1>
-                <RouterLink to="/chat">Чат</RouterLink>
-                <span class="nav-sep">·</span>
-                <RouterLink to="/characters" class="nav-current">Персонажи</RouterLink>
-            </h1>
-            <span class="muted">
-                {{ auth.user.value?.name }}
-                <template v-if="auth.user.value?.is_storyteller"> · рассказчик</template>
-                ·
-                <button class="link" type="button" @click="logout">Выйти</button>
-            </span>
-        </div>
+        <AppNav current="characters" />
 
         <p v-if="error" class="error">{{ error }}</p>
 
@@ -55,14 +43,48 @@
             <p v-if="!characters.length" class="muted">Пока нет персонажей.</p>
             <ul class="character-tree">
                 <li v-for="row in characters" :key="row.id">
-                    <RouterLink :to="`/characters/${row.id}`">{{ row.canonical_name }}</RouterLink>
-                    <span class="muted"> · {{ typeLabel(row.character_type) }}</span>
+                    <div class="character-row">
+                        <RouterLink :to="`/characters/${row.id}`">{{ row.canonical_name }}</RouterLink>
+                        <span class="muted"> · {{ typeLabel(row.character_type) }}</span>
+                        <button
+                            v-if="auth.user.value?.is_storyteller"
+                            class="link"
+                            type="button"
+                            @click="hideCharacter(row.id)"
+                        >
+                            Скрыть
+                        </button>
+                    </div>
                     <ul v-if="row.ghouls?.length">
                         <li v-for="ghoul in row.ghouls" :key="ghoul.id">
-                            <RouterLink :to="`/characters/${ghoul.id}`">{{ ghoul.canonical_name }}</RouterLink>
-                            <span class="muted"> · гуль</span>
+                            <div class="character-row">
+                                <RouterLink :to="`/characters/${ghoul.id}`">{{ ghoul.canonical_name }}</RouterLink>
+                                <span class="muted"> · гуль</span>
+                                <button
+                                    v-if="auth.user.value?.is_storyteller"
+                                    class="link"
+                                    type="button"
+                                    @click="hideCharacter(ghoul.id)"
+                                >
+                                    Скрыть
+                                </button>
+                            </div>
                         </li>
                     </ul>
+                </li>
+            </ul>
+        </section>
+
+        <section v-if="auth.user.value?.is_storyteller" class="card">
+            <h2>Скрытые</h2>
+            <p v-if="!archived.length" class="muted">Скрытых персонажей нет.</p>
+            <ul v-else class="character-tree">
+                <li v-for="row in archived" :key="row.id">
+                    <div class="character-row">
+                        <RouterLink :to="`/characters/${row.id}`">{{ row.canonical_name }}</RouterLink>
+                        <span class="muted"> · {{ typeLabel(row.character_type) }}</span>
+                        <button class="link" type="button" @click="restoreCharacter(row.id)">Вернуть</button>
+                    </div>
                 </li>
             </ul>
         </section>
@@ -73,10 +95,12 @@
 import { computed, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { api, useAuth } from '../auth';
+import AppNav from '../components/layout/AppNav.vue';
 
 const auth = useAuth();
 const router = useRouter();
 const characters = ref([]);
+const archived = ref([]);
 const error = ref('');
 const saving = ref(false);
 const form = reactive({
@@ -105,6 +129,7 @@ async function load() {
     try {
         const { data } = await api.get('/characters');
         characters.value = data.characters ?? [];
+        archived.value = data.archived ?? [];
     } catch (e) {
         error.value = e.response?.data?.message ?? 'Не удалось загрузить персонажей.';
     }
@@ -133,9 +158,24 @@ async function createCharacter() {
     }
 }
 
-async function logout() {
-    await auth.logout();
-    await router.push('/login');
+async function hideCharacter(id) {
+    error.value = '';
+    try {
+        await api.post(`/characters/${id}/archive`);
+        await load();
+    } catch (e) {
+        error.value = e.response?.data?.message ?? 'Не удалось скрыть персонажа.';
+    }
+}
+
+async function restoreCharacter(id) {
+    error.value = '';
+    try {
+        await api.post(`/characters/${id}/restore`);
+        await load();
+    } catch (e) {
+        error.value = e.response?.data?.message ?? 'Не удалось вернуть персонажа.';
+    }
 }
 
 onMounted(load);

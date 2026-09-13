@@ -7,10 +7,13 @@ use App\Http\Controllers\CharacterSheetController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CopilotController;
 use App\Http\Controllers\GameSessionController;
+use App\Http\Controllers\LoreEntryController;
 use App\Http\Controllers\RagSearchController;
 use App\Http\Controllers\SceneContextController;
 use App\Http\Controllers\SceneController;
 use App\Http\Controllers\SceneParticipantController;
+use App\Http\Controllers\WorldEntityController;
+use App\Http\Controllers\WorldFactionRelationController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [RegisterController::class, 'store']);
@@ -32,12 +35,30 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/characters/{character}/merits', [CharacterSheetController::class, 'updateMerits']);
     Route::patch('/characters/{character}/experience', [CharacterSheetController::class, 'updateExperience']);
     Route::put('/characters/{character}/disciplines', [CharacterSheetController::class, 'updateDisciplines']);
+    Route::put('/characters/{character}/biography', [CharacterSheetController::class, 'updateBiography']);
     Route::get('/rag/search', RagSearchController::class)->middleware('storyteller');
     Route::post('/copilot/drafts', [CopilotController::class, 'drafts'])->middleware('storyteller');
 
     Route::middleware('storyteller')->group(function () {
         Route::post('/game-sessions', [GameSessionController::class, 'store']);
         Route::post('/characters', [CharacterSheetController::class, 'store']);
+        Route::post('/characters/{character}/archive', [CharacterSheetController::class, 'archive']);
+        Route::post('/characters/{character}/restore', [CharacterSheetController::class, 'restore']);
+        Route::put('/characters/{character}/place', [CharacterSheetController::class, 'updatePlace']);
+        Route::get('/world/entities', [WorldEntityController::class, 'index']);
+        Route::post('/world/entities', [WorldEntityController::class, 'store']);
+        Route::put('/world/entities/{worldEntity}', [WorldEntityController::class, 'update']);
+        Route::post('/world/entities/{worldEntity}/archive', [WorldEntityController::class, 'archive']);
+        Route::post('/world/entities/{worldEntity}/restore', [WorldEntityController::class, 'restore']);
+        Route::get('/world/faction-relations', [WorldFactionRelationController::class, 'index']);
+        Route::post('/world/faction-relations', [WorldFactionRelationController::class, 'store']);
+        Route::post('/world/faction-relations/{worldRelation}/end', [WorldFactionRelationController::class, 'end']);
+        Route::get('/lore', [LoreEntryController::class, 'index']);
+        Route::post('/lore', [LoreEntryController::class, 'store']);
+        Route::get('/lore/{loreEntry}', [LoreEntryController::class, 'show']);
+        Route::put('/lore/{loreEntry}', [LoreEntryController::class, 'update']);
+        Route::post('/lore/{loreEntry}/archive', [LoreEntryController::class, 'archive']);
+        Route::post('/lore/{loreEntry}/restore', [LoreEntryController::class, 'restore']);
         Route::post('/game-sessions/{gameSession}/scenes', [SceneController::class, 'store']);
         Route::patch('/scenes/{scene}/activate', [SceneController::class, 'activate']);
         Route::patch('/scenes/{scene}/close', [SceneController::class, 'close']);

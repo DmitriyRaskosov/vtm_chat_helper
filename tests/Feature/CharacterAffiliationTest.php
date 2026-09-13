@@ -6,6 +6,7 @@ use App\Character\CharacterAffiliationRevisionException;
 use App\Character\CharacterAffiliationService;
 use App\Enums\CharacterAffiliationStance;
 use App\Enums\CharacterAffiliationType;
+use App\Enums\FactionType;
 use App\Enums\WorldEntityType;
 use App\Models\Character;
 use App\Models\CharacterAffiliation;
@@ -184,5 +185,71 @@ class CharacterAffiliationTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         $this->app->make(CharacterAffiliationService::class)
             ->apply($affiliation, ['trust' => 6], expectedRevision: 1);
+    }
+
+    public function test_set_sect_replaces_membership_and_keeps_coterie(): void
+    {
+        $chronicle = Chronicle::factory()->create();
+        $entities = $this->app->make(WorldEntityService::class);
+        $affiliations = $this->app->make(CharacterAffiliationService::class);
+        $character = Character::query()->findOrFail(
+            $entities->create($chronicle, WorldEntityType::Character, 'Виктория')->id,
+        );
+        $camarilla = $entities->create(
+            $chronicle,
+            WorldEntityType::Faction,
+            'Камарилья',
+            typed: ['faction_type' => FactionType::Sect],
+        );
+        $anarchs = $entities->create(
+            $chronicle,
+            WorldEntityType::Faction,
+            'Анархи',
+            typed: ['faction_type' => FactionType::Sect],
+        );
+        $coterie = $entities->create(
+            $chronicle,
+            WorldEntityType::Faction,
+            'Котерия Праги',
+            typed: ['faction_type' => FactionType::Coterie],
+        );
+
+        $coterieRow = $affiliations->attach(
+            $character,
+            $coterie,
+            CharacterAffiliationType::Member,
+            CharacterAffiliationStance::Allied,
+        );
+        $first = $affiliations->setSect($character, $camarilla);
+        $second = $affiliations->setSect($character, $anarchs);
+
+        $this->assertNotSame($first->id, $second->id);
+        $this->assertNotNull(WorldRelation::query()->findOrFail($first->id)->ended_at);
+        $this->assertTrue(WorldRelation::query()->findOrFail($second->id)->isActive());
+        $this->assertTrue(WorldRelation::query()->findOrFail($coterieRow->id)->isActive());
+        $this->assertSame($anarchs->id, $affiliations->activeSect($character)?->target_entity_id);
+
+        $this->assertNull($affiliations->setSect($character, null));
+        $this->assertNull($affiliations->activeSect($character));
+        $this->assertTrue(WorldRelation::query()->findOrFail($coterieRow->id)->isActive());
+    }
+
+    public function test_set_haven_is_unique_resident_location(): void
+    {
+        $chronicle = Chronicle::factory()->create();
+        $entities = $this->app->make(WorldEntityService::class);
+        $affiliations = $this->app->make(CharacterAffiliationService::class);
+        $character = Character::query()->findOrFail(
+            $entities->create($chronicle, WorldEntityType::Character, 'Виктория')->id,
+        );
+        $elisium = $entities->create($chronicle, WorldEntityType::Location, 'Элизиум');
+        $haven = $entities->create($chronicle, WorldEntityType::Location, 'Гавань');
+
+        $first = $affiliations->setHaven($character, $elisium);
+        $second = $affiliations->setHaven($character, $haven);
+
+        $this->assertNotNull(WorldRelation::query()->findOrFail($first->id)->ended_at);
+        $this->assertSame($haven->id, $affiliations->activeHaven($character)?->target_entity_id);
+        $this->assertSame('located_at', WorldRelation::query()->findOrFail($second->id)->type->key);
     }
 }

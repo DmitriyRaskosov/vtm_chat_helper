@@ -3,6 +3,7 @@
 namespace App\Context\Providers;
 
 use App\Context\ContextAssembly;
+use App\Context\ContextPass;
 use App\Context\ContextSection;
 use App\Context\TokenEstimator;
 
@@ -19,11 +20,14 @@ class ClosingInstructionProvider implements ContextProvider
     {
         $npcName = $assembly->request->npcName;
         $draftCount = $assembly->request->draftCount;
-        $content = "Generate {$draftCount} distinct reply drafts for {$npcName}.";
+        $content = $assembly->request->pass === ContextPass::Topics
+            ? "Extract search topics for {$npcName}."
+            : "Generate {$draftCount} distinct reply drafts for {$npcName}.";
 
         return ContextSection::fromContent($this->key(), $content, $this->estimator, [
             'npc_name' => $npcName,
             'draft_count' => $draftCount,
+            'pass' => $assembly->request->pass->value,
         ]);
     }
 }

@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Casts\PostgresIntegerArray;
 use App\Enums\CharacterType;
 use App\Enums\WorldEntityType;
 use Database\Factories\CharacterFactory;
@@ -27,6 +28,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'nature',
     'demeanor',
     'concept',
+    'lore_clearance_levels',
     'is_active',
     'experience',
 ])]
@@ -261,6 +263,7 @@ class Character extends Model
             'id' => 'integer',
             'entity_type' => WorldEntityType::class,
             'character_type' => CharacterType::class,
+            'lore_clearance_levels' => PostgresIntegerArray::class,
             'domitor_character_id' => 'integer',
             'generation' => 'integer',
             'apparent_age' => 'integer',

@@ -3,6 +3,7 @@
 namespace Database\Factories;
 
 use App\Enums\CharacterKnowledgeLevel;
+use App\Enums\LoreKnowledgeAccess;
 use App\Models\Character;
 use App\Models\CharacterLoreKnowledge;
 use App\Models\LoreEntry;
@@ -24,6 +25,7 @@ class CharacterLoreKnowledgeFactory extends Factory
                 ->findOrFail($attributes['character_id'])
                 ->chronicle_id,
             'knowledge_level' => CharacterKnowledgeLevel::Known,
+            'access' => LoreKnowledgeAccess::Grant,
             'confidence' => 3,
             'learned_at' => now(),
             'source_world_event_id' => null,

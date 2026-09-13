@@ -49,7 +49,7 @@ class BiographyProvider implements ContextProvider
             if (! is_string($value) || trim($value) === '') {
                 continue;
             }
-            $lines[] = $label.': '.trim($value);
+            $lines[] = '[sheet] '.$label.': '.trim($value);
         }
 
         if ($lines === []) {

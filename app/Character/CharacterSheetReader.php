@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 class CharacterSheetReader
 {
+    public function __construct(private CharacterAffiliationService $affiliations) {}
+
     public function full(Character $character): CharacterSheet
     {
         return $this->relevant($character);
@@ -108,6 +110,8 @@ class CharacterSheetReader
             : WorldEntity::query()->whereIn('id', $ghoulIds)->pluck('canonical_name', 'id');
 
         $biography = $character->biography;
+        $sect = $this->affiliations->activeSect($character);
+        $haven = $this->affiliations->activeHaven($character);
 
         return [
             'id' => (int) $character->id,
@@ -117,6 +121,14 @@ class CharacterSheetReader
             'user_id' => $character->user_id === null ? null : (int) $character->user_id,
             'clan_entity_id' => $character->clan_entity_id === null ? null : (int) $character->clan_entity_id,
             'clan_name' => $character->clan?->canonical_name,
+            'sect_entity_id' => $sect === null ? null : (int) $sect->target_entity_id,
+            'sect_name' => $sect?->target?->canonical_name,
+            'haven_entity_id' => $haven === null ? null : (int) $haven->target_entity_id,
+            'haven_name' => $haven?->target?->canonical_name,
+            'lore_clearance_levels' => array_values(array_map(
+                'intval',
+                is_array($character->lore_clearance_levels) ? $character->lore_clearance_levels : [0],
+            )),
             'sire_character_id' => $character->sire_character_id === null ? null : (int) $character->sire_character_id,
             'sire_name' => $character->sire === null
                 ? null
@@ -161,6 +173,12 @@ class CharacterSheetReader
             ])->values()->all(),
             'biography' => $biography === null ? null : [
                 'summary' => $biography->summary,
+                'full_text' => $biography->full_text,
+                'principles' => $biography->principles,
+                'motivation' => $biography->motivation,
+                'fears' => $biography->fears,
+                'desires' => $biography->desires,
+                'behavioral_rules' => $biography->behavioral_rules,
                 'current_version' => (int) $biography->current_version,
                 'status' => $biography->status->value,
             ],

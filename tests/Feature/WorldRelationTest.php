@@ -160,6 +160,21 @@ class WorldRelationTest extends TestCase
         $this->assertSame(1, WorldRelation::query()->active()->count());
     }
 
+    public function test_symmetric_reverse_duplicate_is_rejected(): void
+    {
+        $chronicle = Chronicle::factory()->create();
+        $service = $this->app->make(WorldEntityService::class);
+        $relations = $this->app->make(WorldRelationService::class);
+        $camarilla = $service->create($chronicle, WorldEntityType::Faction, 'Камарилья');
+        $sabbat = $service->create($chronicle, WorldEntityType::Faction, 'Саббат');
+        $hostile = $this->type('hostile_to');
+
+        $relations->relate($camarilla, $sabbat, $hostile);
+
+        $this->expectException(WorldRelationException::class);
+        $relations->relate($sabbat, $camarilla, $hostile);
+    }
+
     public function test_database_rejects_self_loop(): void
     {
         $chronicle = Chronicle::factory()->create();

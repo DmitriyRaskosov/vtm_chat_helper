@@ -31,7 +31,7 @@ class MemoryGraphProvider implements ContextProvider
         }
 
         $filters = config('retrieval.memory_graphrag');
-        $bundle = $this->graph->expand($character, $assembly->request->prompt);
+        $bundle = $this->graph->expand($character, $assembly->request->retrievalQuery());
         $nodes = $bundle->nodes;
         if ($nodes === []) {
             return ContextSection::omitted($this->key(), [
@@ -54,7 +54,7 @@ class MemoryGraphProvider implements ContextProvider
             $flag = ! empty($node->provenance['is_false_belief']) ? '[false belief] ' : '';
             $type = $node->provenance['node_type'] ?? 'memory';
             $seed = $node->seed ? ', seed' : '';
-            $line = "{$flag}{$node->text} ({$type}, depth {$node->depth}{$seed})";
+            $line = "[memory] {$flag}{$node->text} ({$type}, depth {$node->depth}{$seed})";
             $trial = [...$lines, $line];
             $candidate = trim("## Personal memory\n".implode("\n", $trial));
             if ($this->estimator->estimate($candidate) > $tokenBudget) {
@@ -76,7 +76,7 @@ class MemoryGraphProvider implements ContextProvider
             if (! isset($includedSet[$edge->sourceNodeId], $includedSet[$edge->targetNodeId])) {
                 continue;
             }
-            $edgeLine = '#'.$edge->sourceNodeId.' '.$edge->type->value.' #'.$edge->targetNodeId
+            $edgeLine = '[memory] #'.$edge->sourceNodeId.' '.$edge->type->value.' #'.$edge->targetNodeId
                 .' (w '.number_format($edge->authoredWeight, 2).')';
             $trial = [...$lines, $edgeLine];
             $candidate = trim("## Personal memory\n".implode("\n", $trial));

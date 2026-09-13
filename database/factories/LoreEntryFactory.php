@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\LoreAccessLevel;
 use App\Enums\LoreEntryKind;
 use App\Enums\LoreEntryStatus;
 use App\Enums\LoreVisibility;
@@ -23,6 +24,8 @@ class LoreEntryFactory extends Factory
             'canonical_text' => 'Каиниты не раскрывают свою природу смертным.',
             'status' => LoreEntryStatus::Draft,
             'visibility' => LoreVisibility::Public,
+            'classification' => LoreAccessLevel::L0,
+            'situational' => false,
             'current_version' => 1,
             'legacy_source_id' => null,
             'created_by' => null,

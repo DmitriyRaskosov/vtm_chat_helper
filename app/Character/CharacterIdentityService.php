@@ -105,11 +105,7 @@ class CharacterIdentityService
     {
         if (isset($typed['clan_entity_id'])) {
             $clan = WorldEntity::query()->findOrFail((int) $typed['clan_entity_id']);
-            $this->entities->assertSameChronicle($character->chronicle, $clan);
-
-            if ($clan->entity_type->value !== 'faction') {
-                throw new InvalidArgumentException('A character clan must be a faction in the same chronicle.');
-            }
+            $this->entities->assertClanFaction($character->chronicle, $clan);
         }
 
         if (isset($typed['sire_character_id'])) {

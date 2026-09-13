@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\CharacterKnowledgeLevel;
+use App\Enums\LoreKnowledgeAccess;
 use Database\Factories\CharacterLoreKnowledgeFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,6 +15,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'lore_entry_id',
     'chronicle_id',
     'knowledge_level',
+    'access',
     'confidence',
     'learned_at',
     'source_world_event_id',
@@ -67,6 +69,7 @@ class CharacterLoreKnowledge extends Model
             'lore_entry_id' => 'integer',
             'chronicle_id' => 'integer',
             'knowledge_level' => CharacterKnowledgeLevel::class,
+            'access' => LoreKnowledgeAccess::class,
             'confidence' => 'integer',
             'learned_at' => 'datetime',
             'source_world_event_id' => 'integer',

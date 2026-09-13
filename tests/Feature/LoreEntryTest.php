@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\LoreAccessLevel;
 use App\Enums\LoreEntryKind;
 use App\Enums\LoreEntryStatus;
 use App\Enums\LoreVisibility;
@@ -204,5 +205,50 @@ class LoreEntryTest extends TestCase
 
         $this->expectException(QueryException::class);
         DB::table('lore_entries')->where('id', $archived->id)->delete();
+    }
+
+    public function test_restore_returns_archived_lore_to_approved(): void
+    {
+        $chronicle = Chronicle::factory()->create();
+        $service = $this->app->make(LoreEntryService::class);
+        $entry = $service->publish($chronicle, [
+            'title' => 'Маскарад',
+            'canonical_text' => 'Канон.',
+            'status' => LoreEntryStatus::Approved,
+        ], 'v1');
+
+        $service->archive($entry);
+        $restored = $service->restore($entry->fresh());
+
+        $this->assertSame(LoreEntryStatus::Approved, $restored->status);
+        $this->assertSame('Канон.', $restored->canonical_text);
+    }
+
+    public function test_classification_change_creates_a_new_version(): void
+    {
+        $chronicle = Chronicle::factory()->create();
+        $service = $this->app->make(LoreEntryService::class);
+        $entry = $service->publish($chronicle, [
+            'title' => 'Маскарад',
+            'canonical_text' => 'Канон.',
+            'status' => LoreEntryStatus::Approved,
+        ], 'v1');
+
+        $this->assertSame(LoreAccessLevel::L0, $entry->classification);
+
+        $entry = $service->publish(
+            $chronicle,
+            ['classification' => LoreAccessLevel::L2],
+            'Подняли гриф.',
+            $entry,
+        );
+
+        $this->assertSame(2, $entry->current_version);
+        $this->assertSame(LoreAccessLevel::L2, $entry->classification);
+        $this->assertDatabaseHas('lore_entry_versions', [
+            'lore_entry_id' => $entry->id,
+            'version' => 2,
+            'classification' => LoreAccessLevel::L2->value,
+        ]);
     }
 }

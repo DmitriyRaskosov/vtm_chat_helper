@@ -14,7 +14,7 @@
 4. Жмёт **Отправить в чат** → сообщение в активной сцене с `author` = имя НПС
 
 Игроки панель не видят. Обычная отправка от своего имени не меняется.
-Copilot доступен только для активной сцены. В prompt попадают последние сообщения этой сцены дословно и, при `character_id`, канонические слои персонажа/мира в бюджете; более старые реплики сессии — только если модель вызовет tools. GraphRAG в tools не входит. Подробнее в [[Architecture/Context]].
+Copilot доступен только для активной сцены. Сначала модель выписывает поисковые топики по промпту ST и короткому хвосту сцены **этого** NPC; затем assembler ищет лор/память/правила по топикам и допуску; затем три черновика реплики. Более старые реплики сессии — только если модель вызовет tools на втором вызове. GraphRAG в tools не входит. Подробнее в [[Architecture/Context]].
 
 ## Поток данных
 
@@ -25,8 +25,12 @@ sequenceDiagram
     participant Ollama as Ollama_qwen3
 
     ST->>API: POST /copilot/drafts + scene_id
-    API->>API: Context Assembler в бюджете 12000 токенов
-    API->>Ollama: system + слои канона; tools optional
+    API->>API: Context Assembler топиков в бюджете 8000
+    API->>Ollama: промпт ST + хвост сцены, без лора и графа
+    Ollama-->>API: JSON topics
+    API->>API: GraphRAG и правила по топикам и допуску
+    API->>API: Context Assembler реплики в бюджете 12000
+    API->>Ollama: слои канона; tools optional
     Ollama-->>API: tool calls или JSON с 3 репликами
     API->>API: scoped RetrievalOrchestrator при tool calls
     API->>API: сохранить copilot_requests

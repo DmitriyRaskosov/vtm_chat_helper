@@ -1,55 +1,45 @@
 ---
-description: Карта репозитория — где что лежит, тесты, out of scope
+description: Карта репозитория — hub и out of scope
 alwaysApply: true
 ---
 
 # Project map
 
-Полная карта: `docs/Meta/Structure.md`. Narrative: `docs/Home.md`.
+**Hub:** `docs/Home.md` · **Карта файлов:** `docs/Meta/Structure.md` · **Схема БД:** `docs/Architecture/Database.md` · **API:** `docs/API/Overview.md`
 
-## Корень
+## Стек (кратко)
 
-`compose.yaml`, `sail.cmd`, `.env.example` — Sail (PHP 8.4, pgvector, Redis, Mailpit, Ollama). Artisan: `docker compose exec laravel.test php artisan …`
+Laravel 13 JSON API (Sail, `docker compose exec laravel.test php artisan …`) + Vue 3 SPA в `frontend/` (Vite :5173). Только `routes/api.php`, без Blade/`web.php`. Auth: Sanctum Bearer. ST-only: middleware `storyteller`.
 
-## HTTP
+## Слои `app/` (точка входа)
 
-Только `routes/api.php` + `bootstrap/app.php` (alias middleware `storyteller`). Без `web.php`, Blade, Inertia.
-
-## Backend (`app/`)
-
-| Путь | Назначение |
-|------|------------|
-| `Http/Controllers/` | Chat, Copilot, RagSearch, Auth, GameSession, Scene, SceneContext, SceneParticipant, CharacterSheet |
-| `Http/Middleware/EnsureStoryteller.php` | ST-only routes |
-| `Rag/` | RagIndexer facade, MessageIndexer, MessageSearcher, EmbeddingProvider, TextChunker |
-| `Llm/` | OllamaChatProvider, NpcCopilotService |
-| `Context/` | ContextAssembler + providers, ContextBuilder facade, TokenEstimator |
-| `Scene/` | SceneContextService, SceneParticipantService |
-| `Retrieval/` | scoped tools: search_messages, get_message_range; scope = chronicle + session; HybridRetrievalCoordinator; CteGuard; GraphRAG в assembler, не в tool-loop |
-| `World/` | WorldEntityService, AliasNormalizer; typed characters/locations/factions/items/concepts/events; WorldRelationTypeCatalog, WorldRelationTypeValidator, WorldRelationService, WorldEventService, WorldGraphRag |
-| `Lore/` | LoreEntryService, LoreIndexer, LoreSearcher |
-| `Rulebook/` | RulesetService, RuleDocumentService, RuleIndexer, RuleSearcher |
-| `Memory/` | CharacterMemoryService, CharacterMemorySearcher, MemoryBridgeService, MemoryGraphRag |
-| `Character/` | CharacterStatService, CharacterSheetReader, SheetCatalog, CharacterAccess, CharacterIdentityService, CharacterHealthService, CharacterMeritService, DisciplineService, CharacterStatusService, CharacterBiographyService, CharacterBioIndexer, CharacterBioSearcher, CharacterRelationshipService, CharacterAffiliationService, CharacterLoreKnowledgeService, CharacterRuleKnowledgeService |
-| `Jobs/` | IndexRagMessageJob |
-| `Enums/` | `RetrievalCorpus`; `MemoryEntityRole`; `ChronicleStatus`, `GameSessionStatus`, `SceneStatus`, `SceneParticipantRole`; `WorldEntityType`, `WorldEntityStatus`, `WorldEntityAliasType`; Location/Faction/Item/Concept/`CharacterType` (`player`/`npc`/`ghoul`), `CharacterStatCategory`, `CharacterHealthState`, `CharacterHealthDamage`, `CharacterMeritKind`, `CharacterStatusEffectType`, `CharacterBiographyStatus`, `CharacterBiographySection`, `CharacterAffiliationType`, `CharacterAffiliationStance`, `WorldEventType`, `WorldEventStatus`, `WorldEventVisibility`, `WorldEventParticipantRole`; Lore/Ruleset/Knowledge/Memory enums |
+| Каталог | Назначение |
+|---------|------------|
+| `Http/Controllers/` | HTTP; маршруты в `routes/api.php` |
+| `Character/` | лист V20, биография, affiliations, lore clearance + exceptions |
+| `World/` | entities, relations, events, WorldGraphRag |
+| `Lore/` | статьи лора, индекс |
+| `Rulebook/` | правила, индекс |
+| `Memory/` | узлы/рёбра памяти, MemoryGraphRag |
+| `Context/` | ContextAssembler (топики 8000 → реплика 12000) |
+| `Retrieval/` | tools `search_messages`, `get_message_range`; hybrid coordinator |
+| `Scene/` | context + participants |
+| `Llm/`, `Rag/` | Ollama copilot, embeddings |
 
 Конфиг: `config/rag.php`, `config/ollama.php`, `config/copilot.php`, `config/retrieval.php`, `config/character_sheet.php`.
 
-## Frontend (`frontend/`)
+## Frontend
 
-`src/views/` (ChatView, CharacterListView, CharacterSheetView), `src/auth.js`, `src/router.js`, `styles.css`. Vite на хосте: `cd frontend && npm run dev`.
-
-## Database
-
-Канон схемы: `docs/Architecture/Database.md`. Миграции и factories в `database/`. Тестовая DB: `testing`. Не перечислять таблицы в чате — читать заметку. Живые строки — SQL/tinker, не дамп в ответ.
+`frontend/src/views/` — оболочки маршрутов (`AppNav`, табы, `error`). Блоки: `components/{layout,chat,world,sheet}/`. State/API: `composables/`. UI-only: `docs/Agent/` (`ui-chat.md`, `ui-character-sheet.md`, `ui-world.md`, `ui-character-list.md`). Роутер: `router.js`.
 
 ## Тесты
 
-`tests/Feature/`: Authentication, Chat, Character, CharacterSheet, CharacterStat, CharacterDiscipline, CharacterStatus, CharacterBiography, CharacterBioIndex, CharacterRelationship, CharacterAffiliation, WorldEvent, LoreEntry, LoreIndex, RuleDocument, RuleIndex, CharacterKnowledge, CharacterMemoryNode, CharacterMemoryEdge, MemoryBridge, RetrievalCorpus, HybridRetrieval, MemoryGraphRag, WorldGraphRag, WorldRelationType, WorldRelation, ChronicleIsolation, GameSessionScene, SceneContext, SceneParticipant, WorldEntity, TypedWorldEntity, RagSearch, Copilot, ContextAssembler, RetrievalTools, RetrievalGuardrail. `UserFactory::storyteller()`, password `password`. Ollama: `Http::fake`/`ChatProvider` fake. RAG: `stub` в `phpunit.xml`.
+`tests/Feature/` — feature-тесты домена. `UserFactory::storyteller()`, пароль `password`. Ollama: `Http::fake`. RAG: `stub` в `phpunit.xml`. Список файлов — `docs/Development/Testing.md`.
 
 ## Out of scope
 
-Таблицы `character_users` / `npcs` как отдельный legacy-слой, `world/` UI, редакторы лора/памяти/биографии в SPA, Copilot для гулей, streaming, `laravel/ai`. Цели персонажа сняты. Внутриигровое время (этап 17) снято. См. `docs/Project/Roadmap.md`.
+Редактор памяти в SPA, Copilot для гулей, streaming, `laravel/ai`. Legacy `character_users`/`npcs`. См. `docs/Project/Roadmap.md`.
 
-При изменении структуры каталогов — обновить `docs/Meta/Structure.md`.
+## Агентам
+
+Старт по задаче: корневой `AGENTS.md`. При смене структуры каталогов — обновить `docs/Meta/Structure.md`.

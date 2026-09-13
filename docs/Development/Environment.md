@@ -19,7 +19,10 @@
 
 | Переменная | По умолчанию | Описание |
 |------------|--------------|----------|
-| `COPILOT_HISTORY_LIMIT` | `30` | Сколько последних сообщений в контекст промпта |
+| `COPILOT_HISTORY_LIMIT` | `30` | Сколько последних сообщений в контекст **реплики** |
+| `COPILOT_TOPIC_HISTORY_LIMIT` | `8` | Короткий хвост сцены для вызова топиков |
+| `COPILOT_TOPIC_MAX_OUTPUT_TOKENS` | `384` | `num_predict` вызова топиков |
+| `COPILOT_TOPIC_TEMPERATURE` | `0.2` | Температура вызова топиков |
 | `COPILOT_DRAFT_COUNT` | `3` | Количество черновиков |
 | `COPILOT_TOOLS_ENABLED` | `true` | Tool-call loop Copilot |
 | `COPILOT_TOOLS_MAX_ITERATIONS` | `2` | Максимум раундов tools |
@@ -41,9 +44,10 @@
 | Переменная | По умолчанию | Описание |
 |------------|--------------|----------|
 | `CONTEXT_CHARACTERS_PER_TOKEN` | `3` | Unicode-символов на один оценочный токен |
-| `CONTEXT_COPILOT_MAX_INPUT_TOKENS` | `12000` | Бюджет system + все секции assembler |
+| `CONTEXT_COPILOT_MAX_INPUT_TOKENS` | `12000` | Бюджет system + секции **реплики** (ключ не менять) |
+| `CONTEXT_TOPIC_MAX_INPUT_TOKENS` | `8000` | Бюджет вызова топиков |
 
-Вход 12000 + ответ до 3000 укладываются в окно 16384 с техническим запасом. Per-section min/max — только `config/context.php` (`assembler.sections`), без отдельных env. Конфиг: `config/context.php`, `config/ollama.php`. См. [[Architecture/Context]].
+Два отдельных запроса к Ollama: 8000+384 и 12000+3000 по отдельности в окне 16384. Не складывать входы. Per-section min/max — только `config/context.php` (`assembler.sections`), без отдельных env. Конфиг: `config/context.php`, `config/ollama.php`, `config/copilot.php`. См. [[Architecture/Context]].
 
 ## Хранение сессий, кеша и очереди
 

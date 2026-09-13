@@ -53,7 +53,7 @@ class RulesProvider implements ContextProvider
             $chunks = $chunks->concat(
                 $this->searcher->searchForCharacter(
                     $character,
-                    $assembly->request->prompt,
+                    $assembly->request->retrievalQuery(),
                     $rulesetId,
                 ),
             );
@@ -81,7 +81,7 @@ class RulesProvider implements ContextProvider
             $reference = is_string($chunk->source_reference) && $chunk->source_reference !== ''
                 ? ' ('.$chunk->source_reference.')'
                 : '';
-            $lines[] = $chunk->content.$reference;
+            $lines[] = '[rules] '.$chunk->content.$reference;
         }
 
         [$content, $truncated] = $this->trimmer->prefix('## Rules', $lines, $tokenBudget);

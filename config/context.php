@@ -9,6 +9,10 @@ return [
         'max_input_tokens' => (int) env('CONTEXT_COPILOT_MAX_INPUT_TOKENS', 12000),
     ],
 
+    'topic' => [
+        'max_input_tokens' => (int) env('CONTEXT_TOPIC_MAX_INPUT_TOKENS', 8000),
+    ],
+
     'assembler' => [
         'sections' => [
             'system' => [

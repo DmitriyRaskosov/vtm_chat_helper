@@ -110,8 +110,8 @@ erDiagram
   lore_entries ||--o{ lore_entry_versions : snapshots
   lore_entries ||--o{ lore_entry_entities : mentions
   world_entities ||--o{ lore_entry_entities : mentioned
-  characters ||--o{ character_lore_knowledge : grants
-  lore_entries ||--o{ character_lore_knowledge : known
+  characters ||--o{ character_lore_knowledge : exceptions
+  lore_entries ||--o{ character_lore_knowledge : grant_or_deny
   rulesets ||--o{ rule_documents : contains
   rule_documents ||--o{ rule_document_versions : snapshots
   chronicles ||--o{ chronicle_rule_overrides : house_rules
@@ -119,7 +119,7 @@ erDiagram
   rule_documents ||--o{ character_rule_knowledge : known
 ```
 
-Public visibility лора ≠ знание NPC. Нужна строка grant. Собственная биография доступна без grant.
+NPC видит статью, если `classification` ∈ `lore_clearance_levels` (smallint[]), плюс grant, минус deny; `situational` — только grant. `visibility` лора ≠ знание NPC. Собственная биография доступна без уровня статьи.
 
 ## Память персонажа
 
@@ -148,9 +148,8 @@ erDiagram
 
 ## UI и backlog
 
-HTTP-лист V20: [[API/Characters]], [[Features/Characters]]. Blood Per Turn нет: кровь — число `character_status.blood_pool`.
+HTTP-лист V20: [[API/Characters]], [[Features/Characters]]. Blood Per Turn нет: кровь — число `character_status.blood_pool`. Справочник мира: [[API/World]], [[Features/World]]. Лор: [[API/Lore]].
 
 Ещё нет экранов (таблицы уже есть, пустые маршруты не добавлять):
 
-- редактор канонической биографии (на листе только read-only stub);
-- CRUD мира / лора / памяти в SPA.
+- CRUD памяти в SPA.

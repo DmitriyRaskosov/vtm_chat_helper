@@ -95,6 +95,8 @@ class DirectRelationsProvider implements ContextProvider
             ]);
         }
 
+        $lines = array_map(fn (string $line): string => '[canon] '.$line, $lines);
+
         [$content, $truncated] = $this->trimmer->prefix('## Direct relations', $lines, $tokenBudget);
 
         return ContextSection::fromContent($this->key(), $content, $this->estimator, [

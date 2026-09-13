@@ -31,7 +31,7 @@ class WorldLoreProvider implements ContextProvider
         }
 
         $filters = config('retrieval.world_graphrag');
-        $bundle = $this->graph->expandForNpc($character, $assembly->request->prompt, $assembly->scene);
+        $bundle = $this->graph->expandForNpc($character, $assembly->request->retrievalQuery(), $assembly->scene);
         $selfId = (int) $character->id;
 
         $lines = [];
@@ -45,7 +45,7 @@ class WorldLoreProvider implements ContextProvider
             $description = is_string($entity->shortDescription) && $entity->shortDescription !== ''
                 ? ': '.$entity->shortDescription
                 : '';
-            $lines[] = $entity->canonicalName.' ('.$entity->entityType.', depth '.$entity->depth.$seed.')'.$description;
+            $lines[] = '[canon] '.$entity->canonicalName.' ('.$entity->entityType.', depth '.$entity->depth.$seed.')'.$description;
         }
 
         $relationIds = [];
@@ -65,13 +65,13 @@ class WorldLoreProvider implements ContextProvider
             $source = $names[$relation->sourceEntityId] ?? '#'.$relation->sourceEntityId;
             $target = $names[$relation->targetEntityId] ?? '#'.$relation->targetEntityId;
             $note = is_string($relation->note) && $relation->note !== '' ? '; '.$relation->note : '';
-            $lines[] = $source.' '.$relation->typeKey.' '.$target.' (w '.number_format($relation->weight, 2).')'.$note;
+            $lines[] = '[canon] '.$source.' '.$relation->typeKey.' '.$target.' (w '.number_format($relation->weight, 2).')'.$note;
         }
 
         $eventIds = [];
         foreach ($bundle->events as $event) {
             $eventIds[] = (int) $event['id'];
-            $lines[] = 'Event: '.$event['title'].' ('.$event['event_type'].', importance '.$event['importance'].')';
+            $lines[] = '[canon] Event: '.$event['title'].' ('.$event['event_type'].', importance '.$event['importance'].')';
         }
 
         $affiliationIds = [];
@@ -79,7 +79,7 @@ class WorldLoreProvider implements ContextProvider
             $affiliationIds[] = (int) $affiliation['id'];
             $who = $names[(int) $affiliation['character_id']] ?? '#'.$affiliation['character_id'];
             $target = $names[(int) $affiliation['target_entity_id']] ?? '#'.$affiliation['target_entity_id'];
-            $lines[] = $who.' affiliated with '.$target
+            $lines[] = '[canon] '.$who.' affiliated with '.$target
                 .' ('.$affiliation['affiliation_type'].', loyalty '.$affiliation['loyalty'].')';
         }
 
@@ -88,7 +88,7 @@ class WorldLoreProvider implements ContextProvider
         foreach ($bundle->loreChunks as $chunk) {
             $loreChunkIds[] = (int) $chunk['id'];
             $loreEntryIds[] = (int) $chunk['lore_entry_id'];
-            $lines[] = 'Known lore: '.$chunk['content'];
+            $lines[] = '[canon] Known lore: '.$chunk['content'];
         }
 
         if ($lines === []) {

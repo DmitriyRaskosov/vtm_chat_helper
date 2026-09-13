@@ -1,0 +1,26 @@
+# Dependencies & build
+vendor/
+node_modules/
+frontend/node_modules/
+frontend/dist/
+public/build/
+public/hot/
+
+# Runtime & cache
+storage/logs/
+storage/framework/
+storage/pail/
+.phpunit.cache/
+.phpunit.result.cache
+
+# IDE / local
+.idea/
+.vscode/
+.zed/
+.phpactor.json
+
+# Obsidian local state (vault content stays indexed)
+docs/.obsidian/
+
+# Archived narrative - historical plan, not for agent context
+docs/Archive/

@@ -17,11 +17,19 @@
 
 ## frontend/ — Vue 3 SPA
 
+Views — оболочки маршрутов. Разметка блоков и API — `components/` и `composables/`. UI-briefs: `docs/Agent/`.
+
 | Путь | Назначение |
 |------|------------|
-| `src/views/ChatView.vue` | чат + панель рассказчика (copilot) |
+| `src/views/ChatView.vue` | оболочка чата: poll, смена сцены |
 | `src/views/CharacterListView.vue` | список листов, создание персонажа |
-| `src/views/CharacterSheetView.vue` | лист V20 + compact гуль |
+| `src/views/CharacterSheetView.vue` | оболочка листа V20 + compact гуль |
+| `src/views/WorldView.vue` | оболочка мира: табы, `loadBase()` |
+| `src/components/layout/AppNav.vue` | шапка `Чат · Персонажи · Мир` |
+| `src/components/chat/` | SceneToolbar, ChatLog, ChatComposer, StorytellerCopilotPanel |
+| `src/components/world/` | WorldDirectoryTab, WorldPoliticsSection, WorldLoreTab |
+| `src/components/sheet/` | TraitDots, SheetPlayBar, секции листа, SheetPlaceSection |
+| `src/composables/` | useSceneSession, useChatMessages, useWorld*, useCharacterSheet |
 | `src/auth.js` | axios + Sanctum token |
 | `vite.config.js` | прокси `/api` → localhost:8080 |
 
@@ -40,7 +48,10 @@
 | `SceneParticipantController.php` | list/enter/leave участников |
 | `CopilotController.php` | POST `/api/copilot/drafts` (storyteller) |
 | `RagSearchController.php` | GET `/api/rag/search` (storyteller) |
-| `CharacterSheetController.php` | catalog, CRUD листа V20 |
+| `CharacterSheetController.php` | catalog, CRUD листа V20, place |
+| `WorldEntityController.php` | ST-справочник faction/location/item/concept |
+| `WorldFactionRelationController.php` | политика фракций |
+| `LoreEntryController.php` | ST-статьи лора, гриф и исключения |
 | `Auth/*` | register, login, logout, `/api/user` |
 
 ### Http/Middleware
@@ -85,7 +96,7 @@
 ### Context/
 
 - `TokenEstimator.php` — версионируемая локальная оценка токенов
-- `ContextAssembler.php`, `ContextRequest.php`, `ContextAssembly.php`, `ContextSection.php`, `LineTrimmer.php` — композиция слоёв prompt
+- `ContextAssembler.php`, `ContextRequest.php`, `ContextPass.php`, `ContextAssembly.php`, `ContextSection.php`, `LineTrimmer.php` — два прохода prompt (топики / реплика)
 - `Context/Providers/*` — system, identity, scene, status, prompt, recent messages, relations, bio, memory graph, world/lore, rules, closing
 - `ContextBuilder.php`, `ContextBuild.php` — фасад Copilot и результат (LLM messages + provenance)
 
@@ -107,13 +118,13 @@
 - `WorldEntityService.php` — атомарное создание identity, typed-строки (включая character) и алиасов
 - `AliasNormalizer.php` — нормализация имён и slug
 - `WorldRelationTypeCatalog.php`, `WorldRelationTypeValidator.php` — каталог типов связей и проверка направления
-- `WorldRelationService.php` — запись рёбер и neighbors
+- `WorldRelationService.php` — запись рёбер, neighbors, replaceAmong
 - `WorldEventService.php` — participants, sources и связи события
 - `WorldGraphRag.php` — bounded CTE мира
 
 ### Lore/
 
-- `LoreEntryService.php` — канон лора и immutable-версии
+- `LoreEntryService.php` — канон лора, версии, archive/restore, syncEntities
 - `LoreIndexer.php`, `LoreSearcher.php` — корпус `lore_chunks`
 
 ### Rulebook/
@@ -133,14 +144,14 @@
 - `CharacterStatService.php` — запись характеристик и специализаций
 - `CharacterSheetReader.php`, `CharacterSheet.php` — полный лист, агрегат HTTP и урезанный набор для prompt
 - `SheetCatalog.php`, `CharacterAccess.php` — каталог V20 и права листа/речи
-- `CharacterIdentityService.php`, `CharacterHealthService.php`, `CharacterMeritService.php` — шапка/XP, клетки здоровья, merits/flaws
+- `CharacterIdentityService.php`, `CharacterHealthService.php`, `CharacterMeritService.php`, `CharacterPlaceService.php` — шапка/XP, клетки здоровья, merits/flaws, место в мире
+- `CharacterAffiliationService.php` — affiliations, журнал, setSect/setHaven
 - `DisciplineService.php` — каталог дисциплин/сил и изученное персонажем
 - `CharacterStatusService.php` — current status, эффекты, журнал, optimistic revision
 - `CharacterBiographyService.php` — канон биографии и immutable-версии
 - `CharacterBioIndexer.php`, `CharacterBioSearcher.php` — отдельный корпус биографии
 - `CharacterRelationshipService.php` — направленные отношения персонажей без метрик
-- `CharacterAffiliationService.php` — affiliations и журнал
-- `CharacterLoreKnowledgeService.php`, `CharacterRuleKnowledgeService.php` — grants знания
+- `CharacterLoreKnowledgeService.php`, `CharacterRuleKnowledgeService.php` — grants знания; sync/revoke лора
 
 ### Rag/
 
@@ -186,7 +197,7 @@
 - `world_event_participants`, `world_event_sources` — участники и provenance события; `chronicle_timeline` нет
 - `lore_entries`, `lore_entry_versions`, `lore_entry_entities`, `lore_chunks` — канон лора и индекс
 - `rulesets`, `rule_documents`, `rule_document_versions`, `chronicle_rule_overrides`, `game_rule_chunks` — правила
-- `character_lore_knowledge`, `character_rule_knowledge` — grants
+- `character_lore_knowledge`, `character_rule_knowledge` — исключения лора (grant/deny) и grants правил
 - `character_memory_nodes`, `character_memory_edges` — память; без timeline
 - `memory_node_entities`, `memory_node_messages`, `memory_node_events`, `memory_node_lore_entries`, `memory_node_scenes` — мосты памяти
 - `message_embeddings` — отдельный scoped-корпус сообщений
@@ -229,7 +240,7 @@
 
 ## Copilot flow
 
-Рассказчик → `POST /api/copilot/drafts` → `ContextAssembler` (слои канона, бюджет 12000) → Ollama `qwen3:8b` (tools только для истории сессии, `num_ctx=16384`) → сохранённый request + JSON с черновиками.
+Рассказчик → `POST /api/copilot/drafts` → топики (вход 8000) → GraphRAG по топикам и допуску → реплика (вход 12000, tools истории) → Ollama `qwen3:8b` (`num_ctx=16384`) → сохранённый request + JSON с черновиками.
 
 Рассказчик правит → `POST /api/messages` `{ body, character_id, copilot_request_id, copilot_draft_index }` → одноразовая связь → чат для всех и индекс сообщения.
 
