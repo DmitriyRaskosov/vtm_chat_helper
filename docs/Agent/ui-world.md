@@ -25,9 +25,9 @@ State справочника и лора живёт в view (composables выз�
 - `GET/POST /api/world/entities`, `PUT /api/world/entities/{id}`, archive/restore — GET отдаёт `aliases` (aka)
 - `GET/POST /api/world/faction-relations`, `.../end`
 - `POST|PUT /api/lore` — `title`, `canonical_text`, `kind`, `visibility` (всегда `public` из UI), `classification` (`0`–`5`), `situational`, `entity_ids`, `granted_character_ids`, `denied_character_ids`
-- `GET /api/extract/status`, `POST /api/extract`, `PATCH /api/extract/{run}/candidates/{index}` (правка pending mention: имя, kind, subtype, aliases, alias_of), `POST /api/extract/{run}/candidates/{index}/accept|discard` — см. [[API/Extract]]
+- `GET /api/extract/status`, `POST /api/extract`, `PATCH /api/extract/{run}/candidates/{index}`, `POST /api/extract/{run}/candidates/{index}/accept|discard` — см. [[API/Extract]]
 
-У pending mention на вкладке лора: имя, тип, подтип, ещё имена (aka), select «это имя уже существующего…» из `entities` справочника. Сначала «Сохранить правку», затем Принять / Отбросить. Accept с `alias_of_entity_id` — aka (`merged`) плюс extra aliases на тот же узел, не новый узел.
+На вкладке **Разбор**: pending mention — имя, тип, подтип, aka, alias_of; «Сохранить правку», затем Принять / Отбросить. Accept с `alias_of_entity_id` — aka (`merged`) на существующий узел.
 
 Grant снимает deny и наоборот (`onExceptionToggle`).
 
