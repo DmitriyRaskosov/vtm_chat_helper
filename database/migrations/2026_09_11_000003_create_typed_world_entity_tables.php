@@ -18,7 +18,6 @@ return new class extends Migration
             $table->unsignedBigInteger('chronicle_id');
             $table->string('entity_type', 20)->default('location');
             $table->unsignedBigInteger('parent_location_id')->nullable();
-            $table->string('location_type', 20);
             $table->jsonb('details')->nullable();
             $table->timestamps();
 
@@ -31,7 +30,6 @@ return new class extends Migration
             $table->unsignedBigInteger('chronicle_id');
             $table->string('entity_type', 20)->default('faction');
             $table->unsignedBigInteger('parent_faction_id')->nullable();
-            $table->string('faction_type', 20);
             $table->string('status', 20)->default('active');
             $table->timestamps();
 
@@ -39,12 +37,58 @@ return new class extends Migration
             $table->unique(['id', 'entity_type'], 'factions_id_type_unique');
         });
 
+        Schema::create('clans', function (Blueprint $table) {
+            $table->unsignedBigInteger('id')->primary();
+            $table->unsignedBigInteger('chronicle_id');
+            $table->string('entity_type', 20)->default('clan');
+            $table->unsignedBigInteger('sect_faction_id')->nullable();
+            $table->string('status', 20)->default('active');
+            $table->timestamps();
+
+            $table->unique(['id', 'chronicle_id'], 'clans_id_chronicle_unique');
+            $table->unique(['id', 'entity_type'], 'clans_id_type_unique');
+        });
+
+        Schema::create('coteries', function (Blueprint $table) {
+            $table->unsignedBigInteger('id')->primary();
+            $table->unsignedBigInteger('chronicle_id');
+            $table->string('entity_type', 20)->default('coterie');
+            $table->unsignedBigInteger('sect_faction_id')->nullable();
+            $table->string('status', 20)->default('active');
+            $table->timestamps();
+
+            $table->unique(['id', 'chronicle_id'], 'coteries_id_chronicle_unique');
+            $table->unique(['id', 'entity_type'], 'coteries_id_type_unique');
+        });
+
+        Schema::create('circles', function (Blueprint $table) {
+            $table->unsignedBigInteger('id')->primary();
+            $table->unsignedBigInteger('chronicle_id');
+            $table->string('entity_type', 20)->default('circle');
+            $table->unsignedBigInteger('sect_faction_id')->nullable();
+            $table->string('status', 20)->default('active');
+            $table->timestamps();
+
+            $table->unique(['id', 'chronicle_id'], 'circles_id_chronicle_unique');
+            $table->unique(['id', 'entity_type'], 'circles_id_type_unique');
+        });
+
+        Schema::create('others', function (Blueprint $table) {
+            $table->unsignedBigInteger('id')->primary();
+            $table->unsignedBigInteger('chronicle_id');
+            $table->string('entity_type', 20)->default('other');
+            $table->string('status', 20)->default('active');
+            $table->timestamps();
+
+            $table->unique(['id', 'chronicle_id'], 'others_id_chronicle_unique');
+            $table->unique(['id', 'entity_type'], 'others_id_type_unique');
+        });
+
         Schema::create('items', function (Blueprint $table) {
             $table->unsignedBigInteger('id')->primary();
             $table->unsignedBigInteger('chronicle_id');
             $table->string('entity_type', 20)->default('item');
             $table->unsignedBigInteger('owner_entity_id')->nullable();
-            $table->string('item_type', 20);
             $table->string('status', 20)->default('intact');
             $table->timestamps();
 
@@ -56,7 +100,6 @@ return new class extends Migration
             $table->unsignedBigInteger('id')->primary();
             $table->unsignedBigInteger('chronicle_id');
             $table->string('entity_type', 20)->default('concept');
-            $table->string('concept_type', 20);
             $table->text('definition')->nullable();
             $table->timestamps();
 
@@ -66,13 +109,16 @@ return new class extends Migration
 
         DB::statement("ALTER TABLE locations ADD CONSTRAINT locations_entity_type_check CHECK (entity_type = 'location')");
         DB::statement("ALTER TABLE factions ADD CONSTRAINT factions_entity_type_check CHECK (entity_type = 'faction')");
+        DB::statement("ALTER TABLE clans ADD CONSTRAINT clans_entity_type_check CHECK (entity_type = 'clan')");
+        DB::statement("ALTER TABLE coteries ADD CONSTRAINT coteries_entity_type_check CHECK (entity_type = 'coterie')");
+        DB::statement("ALTER TABLE circles ADD CONSTRAINT circles_entity_type_check CHECK (entity_type = 'circle')");
+        DB::statement("ALTER TABLE others ADD CONSTRAINT others_entity_type_check CHECK (entity_type = 'other')");
         DB::statement("ALTER TABLE items ADD CONSTRAINT items_entity_type_check CHECK (entity_type = 'item')");
         DB::statement("ALTER TABLE concepts ADD CONSTRAINT concepts_entity_type_check CHECK (entity_type = 'concept')");
 
-        $this->typedIdentityForeign('locations');
-        $this->typedIdentityForeign('factions');
-        $this->typedIdentityForeign('items');
-        $this->typedIdentityForeign('concepts');
+        foreach (['locations', 'factions', 'clans', 'coteries', 'circles', 'others', 'items', 'concepts'] as $table) {
+            $this->typedIdentityForeign($table);
+        }
 
         Schema::table('locations', function (Blueprint $table) {
             $table->foreign(['parent_location_id', 'chronicle_id'], 'locations_parent_chronicle_foreign')
@@ -88,6 +134,15 @@ return new class extends Migration
                 ->restrictOnDelete();
         });
 
+        foreach (['clans', 'coteries', 'circles'] as $table) {
+            Schema::table($table, function (Blueprint $blueprint) use ($table) {
+                $blueprint->foreign(['sect_faction_id', 'chronicle_id'], $table.'_sect_chronicle_foreign')
+                    ->references(['id', 'chronicle_id'])
+                    ->on('factions')
+                    ->restrictOnDelete();
+            });
+        }
+
         Schema::table('items', function (Blueprint $table) {
             $table->foreign(['owner_entity_id', 'chronicle_id'], 'items_owner_chronicle_foreign')
                 ->references(['id', 'chronicle_id'])
@@ -100,6 +155,10 @@ return new class extends Migration
     {
         Schema::dropIfExists('concepts');
         Schema::dropIfExists('items');
+        Schema::dropIfExists('others');
+        Schema::dropIfExists('circles');
+        Schema::dropIfExists('coteries');
+        Schema::dropIfExists('clans');
         Schema::dropIfExists('factions');
         Schema::dropIfExists('locations');
 

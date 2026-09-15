@@ -5,10 +5,10 @@ import {
     extractionCandidateLabel,
     extractionDirectoryKinds,
 } from './useWorldLore';
-import { defaultSubtype, subtypesFor } from './useWorldEntities';
+import { hasSectFactionField } from './useWorldEntities';
 import { sceneEventCandidateLabel } from './useSceneExtraction';
 
-export function useExtractionInbox({ error, directoryEntityOptions }) {
+export function useExtractionInbox({ error, directoryEntityOptions, factions }) {
     const runs = ref([]);
     const selectedRunId = ref(null);
     const loading = ref(false);
@@ -16,6 +16,7 @@ export function useExtractionInbox({ error, directoryEntityOptions }) {
     const managingCandidate = ref(false);
     const patchingMentionIndex = ref(null);
     const mentionDrafts = reactive({});
+    const candidateErrors = reactive({});
 
     const selectedRun = computed(() => runs.value.find((row) => row.id === selectedRunId.value) ?? null);
 
@@ -27,6 +28,9 @@ export function useExtractionInbox({ error, directoryEntityOptions }) {
     ));
     const pendingRelations = computed(() => (
         selectedRun.value?.candidates?.relations?.filter((row) => row.status === 'pending') ?? []
+    ));
+    const discardedRelations = computed(() => (
+        selectedRun.value?.candidates?.relations?.filter((row) => row.status === 'discarded') ?? []
     ));
     const pendingMemories = computed(() => (
         selectedRun.value?.candidates?.memories?.filter((row) => row.status === 'pending') ?? []
@@ -44,7 +48,7 @@ export function useExtractionInbox({ error, directoryEntityOptions }) {
             mentionDrafts[key] = {
                 name: row.name ?? '',
                 kind: row.kind ?? 'faction',
-                subtype: row.subtype ?? defaultSubtype(row.kind ?? 'faction'),
+                sect_faction_id: row.sect_faction_id ? String(row.sect_faction_id) : '',
                 alias_of_entity_id: row.alias_of_entity_id ? String(row.alias_of_entity_id) : '',
                 aliases: [...(row.aliases ?? [])],
                 aliasDraft: '',
@@ -55,6 +59,23 @@ export function useExtractionInbox({ error, directoryEntityOptions }) {
 
     function resetMentionDrafts() {
         Object.keys(mentionDrafts).forEach((key) => delete mentionDrafts[key]);
+        Object.keys(candidateErrors).forEach((key) => delete candidateErrors[key]);
+    }
+
+    function candidateErrorKey(type, index) {
+        return `${type}:${index}`;
+    }
+
+    function setCandidateError(type, index, message) {
+        candidateErrors[candidateErrorKey(type, index)] = message;
+    }
+
+    function clearCandidateError(type, index) {
+        delete candidateErrors[candidateErrorKey(type, index)];
+    }
+
+    function getCandidateError(type, index) {
+        return candidateErrors[candidateErrorKey(type, index)] ?? '';
     }
 
     async function loadInbox() {
@@ -125,20 +146,65 @@ export function useExtractionInbox({ error, directoryEntityOptions }) {
         }
     }
 
+    function buildMentionPatch(index) {
+        const draft = mentionDraftFor({ index });
+        const payload = {
+            candidate_type: 'mention',
+            name: draft.name.trim(),
+            kind: draft.kind,
+            aliases: [...draft.aliases],
+            alias_of_entity_id: draft.alias_of_entity_id ? Number(draft.alias_of_entity_id) : null,
+        };
+        if (hasSectFactionField(draft.kind)) {
+            payload.sect_faction_id = draft.sect_faction_id ? Number(draft.sect_faction_id) : null;
+        }
+        return payload;
+    }
+
+    async function patchMention(index) {
+        if (!selectedRun.value || managingCandidate.value || patchingMentionIndex.value !== null) {
+            return;
+        }
+        patchingMentionIndex.value = index;
+        clearCandidateError('mention', index);
+        try {
+            const { data } = await api.patch(
+                `/extract/${selectedRun.value.id}/candidates/${index}`,
+                buildMentionPatch(index),
+            );
+            replaceRun(data.run);
+            delete mentionDrafts[String(index)];
+        } catch (e) {
+            setCandidateError('mention', index, e.response?.data?.message ?? 'Не удалось сохранить правку.');
+        } finally {
+            patchingMentionIndex.value = null;
+        }
+    }
+
     async function acceptCandidate(type, index) {
         if (!selectedRun.value || managingCandidate.value) {
             return;
         }
         managingCandidate.value = true;
-        error.value = '';
+        clearCandidateError(type, index);
         try {
+            if (type === 'mention') {
+                await api.patch(
+                    `/extract/${selectedRun.value.id}/candidates/${index}`,
+                    buildMentionPatch(index),
+                );
+            }
             const { data } = await api.post(
                 `/extract/${selectedRun.value.id}/candidates/${index}/accept`,
                 { candidate_type: type },
             );
             replaceRun(data.run);
+            delete mentionDrafts[String(index)];
+            if (data.run.status !== 'needs_review') {
+                await loadInbox();
+            }
         } catch (e) {
-            error.value = e.response?.data?.message ?? 'Не удалось принять кандидата.';
+            setCandidateError(type, index, e.response?.data?.message ?? 'Не удалось принять кандидата.');
         } finally {
             managingCandidate.value = false;
         }
@@ -149,46 +215,20 @@ export function useExtractionInbox({ error, directoryEntityOptions }) {
             return;
         }
         managingCandidate.value = true;
-        error.value = '';
+        clearCandidateError(type, index);
         try {
             const { data } = await api.post(
                 `/extract/${selectedRun.value.id}/candidates/${index}/discard`,
                 { candidate_type: type },
             );
             replaceRun(data.run);
+            if (data.run.status !== 'needs_review') {
+                await loadInbox();
+            }
         } catch (e) {
-            error.value = e.response?.data?.message ?? 'Не удалось отбросить кандидата.';
+            setCandidateError(type, index, e.response?.data?.message ?? 'Не удалось отбросить кандидата.');
         } finally {
             managingCandidate.value = false;
-        }
-    }
-
-    async function patchMention(index) {
-        if (!selectedRun.value || managingCandidate.value || patchingMentionIndex.value !== null) {
-            return;
-        }
-        const draft = mentionDraftFor({ index });
-        patchingMentionIndex.value = index;
-        error.value = '';
-        try {
-            const payload = {
-                candidate_type: 'mention',
-                name: draft.name.trim(),
-                kind: draft.kind,
-                subtype: draft.subtype,
-                aliases: [...draft.aliases],
-                alias_of_entity_id: draft.alias_of_entity_id ? Number(draft.alias_of_entity_id) : null,
-            };
-            const { data } = await api.patch(
-                `/extract/${selectedRun.value.id}/candidates/${index}`,
-                payload,
-            );
-            replaceRun(data.run);
-            delete mentionDrafts[String(index)];
-        } catch (e) {
-            error.value = e.response?.data?.message ?? 'Не удалось сохранить правку.';
-        } finally {
-            patchingMentionIndex.value = null;
         }
     }
 
@@ -213,16 +253,17 @@ export function useExtractionInbox({ error, directoryEntityOptions }) {
         pendingEvents,
         pendingMentions,
         pendingRelations,
+        discardedRelations,
         pendingMemories,
         hasPendingCandidates,
         extractionCandidateLabel,
         extractionDirectoryKinds,
         extractionMemoryLabel,
-        subtypesFor,
-        defaultSubtype,
         sceneEventCandidateLabel,
         mentionDraftFor,
         directoryEntityOptions,
+        factions,
+        getCandidateError,
         loadInbox,
         selectRun,
         openRunById,

@@ -6,7 +6,6 @@ use App\Character\CharacterAffiliationRevisionException;
 use App\Character\CharacterAffiliationService;
 use App\Enums\CharacterAffiliationStance;
 use App\Enums\CharacterAffiliationType;
-use App\Enums\FactionType;
 use App\Enums\WorldEntityType;
 use App\Models\Character;
 use App\Models\CharacterAffiliation;
@@ -147,7 +146,7 @@ class CharacterAffiliationTest extends TestCase
             );
             $this->fail('Expected rejection of a character target.');
         } catch (InvalidArgumentException $e) {
-            $this->assertStringContainsString('faction, location, item, or concept', $e->getMessage());
+            $this->assertStringContainsString('directory entity', $e->getMessage());
         }
 
         $this->expectException(InvalidArgumentException::class);
@@ -195,24 +194,9 @@ class CharacterAffiliationTest extends TestCase
         $character = Character::query()->findOrFail(
             $entities->create($chronicle, WorldEntityType::Character, 'Виктория')->id,
         );
-        $camarilla = $entities->create(
-            $chronicle,
-            WorldEntityType::Faction,
-            'Камарилья',
-            typed: ['faction_type' => FactionType::Sect],
-        );
-        $anarchs = $entities->create(
-            $chronicle,
-            WorldEntityType::Faction,
-            'Анархи',
-            typed: ['faction_type' => FactionType::Sect],
-        );
-        $coterie = $entities->create(
-            $chronicle,
-            WorldEntityType::Faction,
-            'Котерия Праги',
-            typed: ['faction_type' => FactionType::Coterie],
-        );
+        $camarilla = $entities->create($chronicle, WorldEntityType::Faction, 'Камарилья');
+        $anarchs = $entities->create($chronicle, WorldEntityType::Faction, 'Анархи');
+        $coterie = $entities->create($chronicle, WorldEntityType::Coterie, 'Котерия Праги');
 
         $coterieRow = $affiliations->attach(
             $character,
@@ -234,7 +218,7 @@ class CharacterAffiliationTest extends TestCase
         $this->assertTrue(WorldRelation::query()->findOrFail($coterieRow->id)->isActive());
     }
 
-    public function test_set_sect_rejects_circle_faction(): void
+    public function test_set_sect_rejects_circle(): void
     {
         $chronicle = Chronicle::factory()->create();
         $entities = $this->app->make(WorldEntityService::class);
@@ -242,12 +226,7 @@ class CharacterAffiliationTest extends TestCase
         $character = Character::query()->findOrFail(
             $entities->create($chronicle, WorldEntityType::Character, 'Виктория')->id,
         );
-        $circle = $entities->create(
-            $chronicle,
-            WorldEntityType::Faction,
-            'Круг Примогенов',
-            typed: ['faction_type' => FactionType::Circle],
-        );
+        $circle = $entities->create($chronicle, WorldEntityType::Circle, 'Круг Примогенов');
 
         $this->expectException(InvalidArgumentException::class);
         $affiliations->setSect($character, $circle);

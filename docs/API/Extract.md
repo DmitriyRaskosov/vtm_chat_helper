@@ -58,7 +58,7 @@
 
 **Auth:** sanctum + storyteller
 
-Inbox рассказчика: прогоны **лора, биографии и сцен** со статусом `needs_review` или `failed`. Failed — чтобы переразобрать сломанное окно; бейдж «Разбор» считает оба.
+Inbox рассказчика: прогоны **лора, биографии и сцен** со статусом `needs_review` или `failed`. Когда pending-кандидатов не осталось, run → `reviewed` и из inbox исчезает. Повторный POST «Разобрать» для того же лора/био supersede-ит старые `needs_review` того же `source_id`. Failed — чтобы переразобрать сломанное окно; бейдж «Разбор» считает оба.
 
 Query: optional `chronicle_id`, `status` (один статус вместо дефолта), `count_only=true` (только `{ "count": N }`).
 
@@ -85,8 +85,8 @@ Query: optional `chronicle_id`, `status` (один статус вместо д�
 | Поле | Правила |
 |------|---------|
 | `name` | непустая строка |
-| `kind` | `faction` \| `location` \| `item` \| `concept` |
-| `subtype` | подтип справочника для текущего `kind` (`sect`/`clan`/`coterie`/`circle`/`other` у фракции; иначе enum места/предмета/идеи); `null` или `""` снять |
+| `kind` | `faction` \| `clan` \| `coterie` \| `circle` \| `other` \| `location` \| `item` \| `concept` |
+| `sect_faction_id` | только для `kind` clan/coterie/circle; активная `faction` той же хроники, или `null` снять |
 | `aliases` | массив строк — дополнительные aka (не канон); пустой массив очищает список на кандидате |
 | `alias_of_entity_id` | активная сущность той же хроники («это имя уже существующего узла»), или `null` снять привязку |
 
@@ -106,8 +106,8 @@ Query: optional `chronicle_id`, `status` (один статус вместо д�
 
 **Поведение:**
 
-- **Лор / сцена — mention:** directory `new_entity` → `WorldEntityService::create` с `subtype` (без него фракция — `other`) и `aliases` (aka); `alias_of_entity_id` → `WorldEntityService::addAka` для имени mention и каждого extra alias, статус `merged` (вторая сущность не создаётся); совпадение с алиасом → `accepted` без `create`; `character`/`event` new_entity → **422** на лоре и сцене (событие только через `event`). Коллизия `(chronicle_id, normalized_alias)` при aka → **422**.
-- **Лор / сцена — relation:** `WorldRelationService::relate`; дубликат → `merged`; концы — matched или accepted в том же прогоне (включая accepted event по title).
+- **Лор / сцена — mention:** directory `new_entity` → `WorldEntityService::create` с optional `sect_faction_id` и `aliases` (aka); `alias_of_entity_id` → `addAka` для extra aliases (имя mention не дублируется, если совпадает с каноном target), статус `merged`; совпадение с алиасом → `accepted` без `create`; `character`/`event` new_entity → **422**. Коллизия alias → **422**.
+- **Лор / сцена — relation:** `WorldRelationService::relate`; дубликат → `merged`; концы — matched, accepted или merged mention в том же прогоне; невалидные endpoints → `discarded` + `discard_reason` на матчинге.
 - **Био — memory:** `CharacterMemoryService::remember`.
 - **Сцена — event:** `WorldEntityService::create(Event)` → participants (matched) → sources (`scene` + `message_id` из среза) → `WorldEventService::approve`; `status: accepted`, `created_entity_id`, `world_event_id`.
 - **Сцена — memory accept:** **422**.

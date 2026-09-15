@@ -4,7 +4,6 @@ namespace App\Character;
 
 use App\Enums\CharacterAffiliationStance;
 use App\Enums\CharacterAffiliationType;
-use App\Enums\FactionType;
 use App\Enums\WorldEntityStatus;
 use App\Enums\WorldEntityType;
 use App\Models\Character;
@@ -33,6 +32,10 @@ class CharacterAffiliationService
      */
     private const TARGET_TYPES = [
         WorldEntityType::Faction,
+        WorldEntityType::Clan,
+        WorldEntityType::Coterie,
+        WorldEntityType::Circle,
+        WorldEntityType::Other,
         WorldEntityType::Location,
         WorldEntityType::Item,
         WorldEntityType::Concept,
@@ -213,7 +216,7 @@ class CharacterAffiliationService
         return $this->replaceSlot(
             $character,
             CharacterAffiliationType::Member,
-            fn (CharacterAffiliation $row): bool => $row->target?->faction?->faction_type === FactionType::Sect,
+            fn (CharacterAffiliation $row): bool => $this->isSectSlot($row),
             $sect,
             CharacterAffiliationStance::Allied,
             'member_of',
@@ -239,7 +242,7 @@ class CharacterAffiliationService
     public function activeSect(Character $character): ?CharacterAffiliation
     {
         return $this->activeOfType($character, CharacterAffiliationType::Member)
-            ->first(fn (CharacterAffiliation $row): bool => $row->target?->faction?->faction_type === FactionType::Sect);
+            ->first(fn (CharacterAffiliation $row): bool => $this->isSectSlot($row));
     }
 
     public function activeHaven(Character $character): ?CharacterAffiliation
@@ -331,12 +334,6 @@ class CharacterAffiliationService
             throw new InvalidArgumentException('A character sect must be a faction.');
         }
 
-        $sect->loadMissing('faction');
-
-        if ($sect->faction?->faction_type !== FactionType::Sect) {
-            throw new InvalidArgumentException('A character sect must be a sect faction.');
-        }
-
         if ($sect->status !== WorldEntityStatus::Active) {
             throw new InvalidArgumentException('A character sect must be an active faction.');
         }
@@ -367,7 +364,7 @@ class CharacterAffiliationService
 
         if (! in_array($type, self::TARGET_TYPES, true)) {
             throw new InvalidArgumentException(
-                "Affiliation target must be a faction, location, item, or concept, not [{$type->value}].",
+                "Affiliation target must be a directory entity, not [{$type->value}].",
             );
         }
     }
@@ -432,5 +429,16 @@ class CharacterAffiliationService
         $text = trim($value);
 
         return $text === '' ? null : $text;
+    }
+
+    private function isSectSlot(CharacterAffiliation $row): bool
+    {
+        if ($row->target?->entity_type !== WorldEntityType::Faction) {
+            return false;
+        }
+
+        $relation = WorldRelation::query()->with('type')->find($row->id);
+
+        return $relation?->type?->key === 'member_of';
     }
 }

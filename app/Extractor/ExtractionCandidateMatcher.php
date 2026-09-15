@@ -8,8 +8,12 @@ use App\Enums\ExtractionSourceType;
 use App\Enums\WorldEventParticipantRole;
 use App\Enums\WorldEntityType;
 use App\Models\Chronicle;
+use App\Models\WorldEntity;
 use App\Models\WorldRelationType;
+use App\World\AliasNormalizer;
 use App\World\WorldEntityService;
+use App\World\WorldRelationTypeException;
+use App\World\WorldRelationTypeValidator;
 
 class ExtractionCandidateMatcher
 {
@@ -22,10 +26,8 @@ class ExtractionCandidateMatcher
      *     events: list<array<string, mixed>>,
      *     memories: list<array<string, mixed>>
      * }  $parsed
-     * @return array<string, mixed>
-     */
-    /**
      * @param  list<int>  $sceneMessageIds
+     * @return array<string, mixed>
      */
     public function match(
         array $parsed,
@@ -65,10 +67,11 @@ class ExtractionCandidateMatcher
             }
         }
 
-        foreach ($parsed['mentions'] as $index => $mention) {
-            if ($sourceType === ExtractionSourceType::Biography) {
-                continue;
-            }
+        $parsedMentions = $sourceType === ExtractionSourceType::Biography
+            ? []
+            : $this->dedupeParsedMentions($parsed['mentions']);
+
+        foreach ($parsedMentions as $index => $mention) {
             $matched = $this->entities->findByAlias($chronicle, $mention['name']);
             $candidate = [
                 'index' => $index,
@@ -127,7 +130,11 @@ class ExtractionCandidateMatcher
                 $candidate['target_matched_entity_id'] = (int) $targetMatch->id;
             }
 
-            $relations[] = $candidate;
+            $relations[] = $this->validateRelationCandidate($candidate, $sourceMatch, $targetMatch);
+        }
+
+        if ($sourceType !== ExtractionSourceType::Biography) {
+            $mentions = $this->synthesizeMentionsFromRelations($mentions, $relations, $chronicle);
         }
 
         foreach ($parsed['events'] as $index => $event) {
@@ -229,6 +236,95 @@ class ExtractionCandidateMatcher
         ];
     }
 
+    /**
+     * @param  list<array{name: string, kind: string}>  $mentions
+     * @return list<array{name: string, kind: string}>
+     */
+    private function dedupeParsedMentions(array $mentions): array
+    {
+        $seen = [];
+        $result = [];
+
+        foreach ($mentions as $mention) {
+            $name = trim((string) ($mention['name'] ?? ''));
+            $kind = trim((string) ($mention['kind'] ?? ''));
+            if ($name === '' || $kind === '') {
+                continue;
+            }
+
+            $normalized = AliasNormalizer::normalize($name);
+            if (isset($seen[$normalized])) {
+                continue;
+            }
+
+            $seen[$normalized] = true;
+            $result[] = ['name' => $name, 'kind' => $kind];
+        }
+
+        return $result;
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $mentions
+     * @param  list<array<string, mixed>>  $relations
+     * @return list<array<string, mixed>>
+     */
+    private function synthesizeMentionsFromRelations(
+        array $mentions,
+        array $relations,
+        Chronicle $chronicle,
+    ): array {
+        $knownNames = [];
+
+        foreach ($mentions as $mention) {
+            $knownNames[AliasNormalizer::normalize((string) ($mention['name'] ?? ''))] = true;
+        }
+
+        $nextIndex = 0;
+        foreach ($mentions as $mention) {
+            $nextIndex = max($nextIndex, (int) ($mention['index'] ?? 0) + 1);
+        }
+
+        $pendingNames = [];
+
+        foreach ($relations as $relation) {
+            foreach (['source', 'target'] as $side) {
+                $name = trim((string) ($relation[$side] ?? ''));
+                if ($name === '') {
+                    continue;
+                }
+
+                $normalized = AliasNormalizer::normalize($name);
+                if (isset($knownNames[$normalized]) || isset($pendingNames[$normalized])) {
+                    continue;
+                }
+
+                if ($this->entities->findByAlias($chronicle, $name) !== null) {
+                    $knownNames[$normalized] = true;
+
+                    continue;
+                }
+
+                $pendingNames[$normalized] = $name;
+            }
+        }
+
+        foreach ($pendingNames as $name) {
+            $mentions[] = [
+                'index' => $nextIndex,
+                'name' => $name,
+                'kind' => WorldEntityType::Other->value,
+                'status' => ExtractionCandidateStatus::Pending->value,
+                'candidate_type' => 'new_entity',
+                'synthesized_from_relations' => true,
+            ];
+            $nextIndex++;
+            $knownNames[AliasNormalizer::normalize($name)] = true;
+        }
+
+        return $mentions;
+    }
+
     private function normalizeMemoryType(string $type): string
     {
         $type = strtolower(trim($type));
@@ -261,6 +357,46 @@ class ExtractionCandidateMatcher
      * @param  array<string, mixed>  $candidate
      * @return array<string, mixed>
      */
+    /**
+     * @param  array<string, mixed>  $candidate
+     * @return array<string, mixed>
+     */
+    public function validateRelationCandidate(
+        array $candidate,
+        ?WorldEntity $source,
+        ?WorldEntity $target,
+    ): array {
+        if (($candidate['status'] ?? '') !== ExtractionCandidateStatus::Pending->value) {
+            return $candidate;
+        }
+
+        if ($source === null || $target === null) {
+            return $candidate;
+        }
+
+        $type = WorldRelationType::query()
+            ->where('key', (string) ($candidate['key'] ?? ''))
+            ->where('enabled', true)
+            ->first();
+
+        if ($type === null) {
+            $candidate['status'] = ExtractionCandidateStatus::Discarded->value;
+            $candidate['discard_reason'] = 'invalid_key';
+
+            return $candidate;
+        }
+
+        try {
+            app(WorldRelationTypeValidator::class)->assertCompatible($type, $source, $target);
+        } catch (WorldRelationTypeException $e) {
+            $candidate['status'] = ExtractionCandidateStatus::Discarded->value;
+            $candidate['discard_reason'] = $e->getMessage();
+            $candidate['endpoints_resolved'] = true;
+        }
+
+        return $candidate;
+    }
+
     public function rematchMention(array $candidate, Chronicle $chronicle): array
     {
         if (array_key_exists('alias_of_entity_id', $candidate) && $candidate['alias_of_entity_id'] !== null) {

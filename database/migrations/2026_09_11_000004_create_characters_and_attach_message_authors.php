@@ -51,7 +51,7 @@ SQL);
                 ->restrictOnDelete();
             $table->foreign(['clan_entity_id', 'chronicle_id'], 'characters_clan_chronicle_foreign')
                 ->references(['id', 'chronicle_id'])
-                ->on('world_entities')
+                ->on('clans')
                 ->restrictOnDelete();
             $table->foreign(['sire_character_id', 'chronicle_id'], 'characters_sire_chronicle_foreign')
                 ->references(['id', 'chronicle_id'])

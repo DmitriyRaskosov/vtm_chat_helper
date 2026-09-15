@@ -313,7 +313,7 @@ class ExtractorSceneTest extends TestCase
         $firstRun = ExtractionRun::query()->findOrFail($firstRunId);
         $this->assertSame($messages[0]->id, $firstRun->from_message_id);
         $this->assertSame($messages[29]->id, $firstRun->to_message_id);
-        $this->assertSame(ExtractionRunStatus::NeedsReview, $firstRun->status);
+        $this->assertSame(ExtractionRunStatus::Reviewed, $firstRun->status);
 
         $secondRunId = $this->postJson('/api/extract', ['scene_id' => $scene->id])
             ->assertCreated()

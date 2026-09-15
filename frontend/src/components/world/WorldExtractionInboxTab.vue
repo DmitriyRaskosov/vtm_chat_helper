@@ -51,10 +51,9 @@
                 </button>
             </div>
 
-            <section v-if="hasPendingCandidates || selectedRun.candidates?.discarded?.length" class="extraction-panel">
+            <section v-if="hasPendingCandidates || discardedRelations.length" class="extraction-panel">
                 <h3>{{ panelTitle(selectedRun) }}</h3>
-                <p v-if="!hasPendingCandidates" class="muted">Все кандидаты обработаны.</p>
-                <ul v-else class="character-tree">
+                <ul class="character-tree">
                     <li v-for="row in pendingMemories" :key="'memory-'+row.index">
                         <div class="character-row">
                             <span>{{ extractionMemoryLabel(row) }}</span>
@@ -75,6 +74,9 @@
                                 Отбросить
                             </button>
                         </div>
+                        <p v-if="getCandidateError('memory', row.index)" class="error">
+                            {{ getCandidateError('memory', row.index) }}
+                        </p>
                     </li>
                     <li v-for="row in pendingEvents" :key="'event-'+row.index">
                         <div class="character-row">
@@ -96,6 +98,9 @@
                                 Отбросить
                             </button>
                         </div>
+                        <p v-if="getCandidateError('event', row.index)" class="error">
+                            {{ getCandidateError('event', row.index) }}
+                        </p>
                     </li>
                     <li v-for="row in pendingMentions" :key="'mention-'+row.index" class="extraction-mention-edit">
                         <div class="character-create-grid extraction-mention-fields">
@@ -105,10 +110,7 @@
                             </label>
                             <label>
                                 Тип
-                                <select
-                                    v-model="mentionDraftFor(row).kind"
-                                    @change="mentionDraftFor(row).subtype = defaultSubtype(mentionDraftFor(row).kind)"
-                                >
+                                <select v-model="mentionDraftFor(row).kind">
                                     <option
                                         v-for="kind in extractionDirectoryKinds"
                                         :key="kind.value"
@@ -118,15 +120,16 @@
                                     </option>
                                 </select>
                             </label>
-                            <label>
-                                Подтип
-                                <select v-model="mentionDraftFor(row).subtype">
+                            <label v-if="hasSectFactionField(mentionDraftFor(row).kind)">
+                                Секта / фракция
+                                <select v-model="mentionDraftFor(row).sect_faction_id">
+                                    <option value="">— не указана —</option>
                                     <option
-                                        v-for="item in subtypesFor(mentionDraftFor(row).kind)"
-                                        :key="item.value"
-                                        :value="item.value"
+                                        v-for="faction in factions"
+                                        :key="'sect-'+faction.id"
+                                        :value="String(faction.id)"
                                     >
-                                        {{ item.label }}
+                                        {{ faction.canonical_name }}
                                     </option>
                                 </select>
                             </label>
@@ -203,6 +206,9 @@
                                 Отбросить
                             </button>
                         </div>
+                        <p v-if="getCandidateError('mention', row.index)" class="error">
+                            {{ getCandidateError('mention', row.index) }}
+                        </p>
                     </li>
                     <li v-for="row in pendingRelations" :key="'relation-'+row.index">
                         <div class="character-row">
@@ -213,7 +219,7 @@
                             <button
                                 class="link"
                                 type="button"
-                                :disabled="managingCandidate || !row.endpoints_resolved"
+                                :disabled="managingCandidate || !row.endpoints_resolved || Boolean(row.discard_reason)"
                                 @click="emit('accept', 'relation', row.index)"
                             >
                                 Принять
@@ -227,17 +233,30 @@
                                 Отбросить
                             </button>
                         </div>
+                        <p v-if="row.discard_reason" class="error">{{ row.discard_reason }}</p>
+                        <p v-else-if="getCandidateError('relation', row.index)" class="error">
+                            {{ getCandidateError('relation', row.index) }}
+                        </p>
+                    </li>
+                    <li v-for="row in discardedRelations" :key="'discarded-relation-'+row.index">
+                        <div class="character-row">
+                            <span class="muted">{{ extractionCandidateLabel(row, 'relation') }}</span>
+                            <span class="muted"> · отброшено</span>
+                        </div>
+                        <p v-if="row.discard_reason" class="error">{{ row.discard_reason }}</p>
                     </li>
                 </ul>
             </section>
+            <p v-else-if="selectedRun.status === 'reviewed'" class="muted">Разбор завершён.</p>
         </section>
     </div>
 </template>
 
 <script setup>
+import { hasSectFactionField } from '../../composables/useWorldEntities';
 import { inboxRunLabel, inboxRunMeta } from '../../composables/useWorldLore';
 
-defineProps({
+const props = defineProps({
     runs: { type: Array, required: true },
     selectedRunId: { type: Number, default: null },
     selectedRun: { type: Object, default: null },
@@ -248,16 +267,17 @@ defineProps({
     pendingEvents: { type: Array, required: true },
     pendingMentions: { type: Array, required: true },
     pendingRelations: { type: Array, required: true },
+    discardedRelations: { type: Array, required: true },
     pendingMemories: { type: Array, required: true },
     hasPendingCandidates: { type: Boolean, required: true },
     extractionCandidateLabel: { type: Function, required: true },
     extractionDirectoryKinds: { type: Array, required: true },
     extractionMemoryLabel: { type: Function, required: true },
-    subtypesFor: { type: Function, required: true },
-    defaultSubtype: { type: Function, required: true },
     sceneEventCandidateLabel: { type: Function, required: true },
     mentionDraftFor: { type: Function, required: true },
     directoryEntityOptions: { type: Array, required: true },
+    factions: { type: Array, required: true },
+    getCandidateError: { type: Function, required: true },
 });
 
 const emit = defineEmits(['select', 'reparse', 'accept', 'discard', 'patch-mention', 'add-mention-alias']);

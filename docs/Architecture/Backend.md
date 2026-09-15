@@ -70,7 +70,7 @@ HTTP: [[API/Extract]]. План: [[Project/Extractor]].
 
 | Компонент | Назначение |
 |-----------|------------|
-| `WorldEntityService` | identity + typed-строка + алиасы; archive/restore вместо DELETE; клан только `faction_type=clan` |
+| `WorldEntityService` | identity + typed-строка + алиасы; archive/restore вместо DELETE; клан только `entity_type=clan`; sect sync `member_of` |
 | `AliasNormalizer` | нормализация имён и slug |
 | `WorldRelationTypeCatalog` / `WorldRelationTypeValidator` | семантика типов рёбер; направление и типы узлов |
 | `WorldRelationService` | направленный граф, запрет self-loop/дублей (включая обратный symmetric), `replaceAmong`, neighbors |

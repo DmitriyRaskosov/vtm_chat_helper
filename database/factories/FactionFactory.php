@@ -3,7 +3,6 @@
 namespace Database\Factories;
 
 use App\Enums\FactionStatus;
-use App\Enums\FactionType;
 use App\Enums\WorldEntityType;
 use App\Models\Faction;
 use App\Models\WorldEntity;
@@ -23,7 +22,6 @@ class FactionFactory extends Factory
                 ->chronicle_id,
             'entity_type' => WorldEntityType::Faction,
             'parent_faction_id' => null,
-            'faction_type' => FactionType::Other,
             'status' => FactionStatus::Active,
         ];
     }

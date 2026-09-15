@@ -255,8 +255,8 @@ class ExtractController extends Controller
             $patch['alias_of_entity_id'] = $validated['alias_of_entity_id'];
         }
 
-        if (array_key_exists('subtype', $validated)) {
-            $patch['subtype'] = $validated['subtype'];
+        if (array_key_exists('sect_faction_id', $validated)) {
+            $patch['sect_faction_id'] = $validated['sect_faction_id'];
         }
 
         if (array_key_exists('aliases', $validated)) {

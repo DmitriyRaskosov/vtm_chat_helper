@@ -3,12 +3,8 @@
 namespace App\World;
 
 use App\Enums\CharacterType;
-use App\Enums\ConceptType;
 use App\Enums\FactionStatus;
-use App\Enums\FactionType;
 use App\Enums\ItemStatus;
-use App\Enums\ItemType;
-use App\Enums\LocationType;
 use App\Enums\LoreAccessLevel;
 use App\Enums\WorldEntityAliasType;
 use App\Enums\WorldEntityStatus;
@@ -18,22 +14,44 @@ use App\Enums\WorldEventType;
 use App\Enums\WorldEventVisibility;
 use App\Models\Character;
 use App\Models\Chronicle;
+use App\Models\Circle;
+use App\Models\Clan;
 use App\Models\Concept;
+use App\Models\Coterie;
 use App\Models\Faction;
 use App\Models\Item;
 use App\Models\Location;
+use App\Models\Other;
 use App\Models\Scene;
 use App\Models\WorldEntity;
 use App\Models\WorldEntityAlias;
 use App\Models\WorldEvent;
+use App\Models\WorldRelation;
+use App\Models\WorldRelationType;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class WorldEntityService
 {
+    private const SECT_SYNC_PROVENANCE_KEY = 'auto_synced_sect_faction';
+
     /**
-     * Create a typed world identity, subtype row, and aliases in one transaction.
-     *
+     * @var list<WorldEntityType>
+     */
+    public const DIRECTORY_TYPES = [
+        WorldEntityType::Faction,
+        WorldEntityType::Clan,
+        WorldEntityType::Coterie,
+        WorldEntityType::Circle,
+        WorldEntityType::Other,
+        WorldEntityType::Location,
+        WorldEntityType::Item,
+        WorldEntityType::Concept,
+    ];
+
+    public function __construct(private WorldRelationService $relations) {}
+
+    /**
      * @param  list<string>  $aliases
      * @param  array<string, mixed>  $typed
      */
@@ -83,15 +101,17 @@ class WorldEntityService
                 $this->storeAlias($entity, $alias, WorldEntityAliasType::Aka, $language);
             }
 
-            $this->createTypedRecord($entity, $typed);
+            $this->createTypedRecord($entity, array_merge($this->defaultTypedPayload($type), $typed));
 
-            return $entity->load(['aliases', 'location', 'faction', 'item', 'concept', 'character', 'event']);
+            if (isset($typed['sect_faction_id']) || array_key_exists('sect_faction_id', $typed)) {
+                $sectId = $typed['sect_faction_id'] !== null ? (int) $typed['sect_faction_id'] : null;
+                $this->syncSectFactionMemberOf($entity->refresh(), $sectId);
+            }
+
+            return $entity->load($this->directoryRelations());
         });
     }
 
-    /**
-     * @param  list<int>  $loreClearanceLevels
-     */
     /**
      * @param  list<string>|null  $aliases  null — не трогать aka; [] — снять все aka
      */
@@ -99,21 +119,17 @@ class WorldEntityService
         WorldEntity $entity,
         string $canonicalName,
         ?string $shortDescription = null,
-        ?string $subtype = null,
         ?array $aliases = null,
         bool $updateParentFaction = false,
         ?int $parentFactionId = null,
+        bool $updateSectFaction = false,
+        ?int $sectFactionId = null,
     ): WorldEntity {
         $type = $entity->entity_type instanceof WorldEntityType
             ? $entity->entity_type
             : WorldEntityType::from((string) $entity->entity_type);
 
-        if (! in_array($type, [
-            WorldEntityType::Faction,
-            WorldEntityType::Location,
-            WorldEntityType::Item,
-            WorldEntityType::Concept,
-        ], true)) {
+        if (! in_array($type, self::DIRECTORY_TYPES, true)) {
             throw new InvalidArgumentException('Only directory entities can be edited.');
         }
 
@@ -121,7 +137,17 @@ class WorldEntityService
             throw new InvalidArgumentException('Archived entities cannot be edited.');
         }
 
-        return DB::transaction(function () use ($entity, $canonicalName, $shortDescription, $subtype, $aliases, $type, $updateParentFaction, $parentFactionId): WorldEntity {
+        return DB::transaction(function () use (
+            $entity,
+            $canonicalName,
+            $shortDescription,
+            $aliases,
+            $type,
+            $updateParentFaction,
+            $parentFactionId,
+            $updateSectFaction,
+            $sectFactionId,
+        ): WorldEntity {
             $name = trim($canonicalName);
             if ($name === '') {
                 throw new InvalidArgumentException('A name is required.');
@@ -137,10 +163,6 @@ class WorldEntityService
                 $entity->save();
             }
 
-            if ($subtype !== null && trim($subtype) !== '') {
-                $this->updateSubtype($entity, $type, trim($subtype));
-            }
-
             if ($aliases !== null) {
                 $this->syncAka($entity, $aliases);
             }
@@ -149,7 +171,11 @@ class WorldEntityService
                 $this->updateParentFaction($entity, $parentFactionId);
             }
 
-            return $entity->refresh()->load(['aliases', 'location', 'faction', 'item', 'concept']);
+            if ($updateSectFaction) {
+                $this->updateSectFaction($entity, $sectFactionId);
+            }
+
+            return $entity->refresh()->load($this->directoryRelations());
         });
     }
 
@@ -185,7 +211,7 @@ class WorldEntityService
         });
     }
 
-    public function assertClanFaction(Chronicle $chronicle, WorldEntity $clan): void
+    public function assertClan(Chronicle $chronicle, WorldEntity $clan): void
     {
         $this->assertSameChronicle($chronicle, $clan);
 
@@ -193,18 +219,12 @@ class WorldEntityService
             ? $clan->entity_type
             : WorldEntityType::from((string) $clan->entity_type);
 
-        if ($type !== WorldEntityType::Faction) {
-            throw new InvalidArgumentException('A character clan must be a faction in the same chronicle.');
-        }
-
-        $clan->loadMissing('faction');
-
-        if ($clan->faction?->faction_type !== FactionType::Clan) {
-            throw new InvalidArgumentException('A character clan must be a clan faction in the same chronicle.');
+        if ($type !== WorldEntityType::Clan) {
+            throw new InvalidArgumentException('A character clan must be a clan in the same chronicle.');
         }
 
         if ($clan->status !== WorldEntityStatus::Active) {
-            throw new InvalidArgumentException('A character clan must be an active faction.');
+            throw new InvalidArgumentException('A character clan must be an active clan.');
         }
     }
 
@@ -301,41 +321,19 @@ class WorldEntityService
         }
     }
 
-    public function isValidDirectorySubtype(WorldEntityType $type, string $subtype): bool
-    {
-        $subtype = trim($subtype);
-        if ($subtype === '') {
-            return false;
-        }
-
-        return match ($type) {
-            WorldEntityType::Faction => FactionType::tryFrom($subtype) !== null,
-            WorldEntityType::Location => LocationType::tryFrom($subtype) !== null,
-            WorldEntityType::Item => ItemType::tryFrom($subtype) !== null,
-            WorldEntityType::Concept => ConceptType::tryFrom($subtype) !== null,
-            default => false,
-        };
-    }
-
     /**
      * @return array<string, mixed>
      */
-    public function directoryTyped(WorldEntityType $type, ?string $subtype): array
+    public function defaultTypedPayload(WorldEntityType $type): array
     {
-        if ($subtype === null || trim($subtype) === '') {
-            return [];
-        }
-
-        $value = trim($subtype);
-        if (! $this->isValidDirectorySubtype($type, $value)) {
-            throw new InvalidArgumentException('Invalid subtype for this entity type.');
-        }
-
         return match ($type) {
-            WorldEntityType::Faction => ['faction_type' => $value],
-            WorldEntityType::Location => ['location_type' => $value],
-            WorldEntityType::Item => ['item_type' => $value],
-            WorldEntityType::Concept => ['concept_type' => $value],
+            WorldEntityType::Faction => ['status' => FactionStatus::Active],
+            WorldEntityType::Clan, WorldEntityType::Coterie, WorldEntityType::Circle => [
+                'status' => FactionStatus::Active,
+                'sect_faction_id' => null,
+            ],
+            WorldEntityType::Other => ['status' => FactionStatus::Active],
+            WorldEntityType::Item => ['status' => ItemStatus::Intact],
             default => [],
         };
     }
@@ -350,6 +348,26 @@ class WorldEntityService
     }
 
     /**
+     * @return list<string>
+     */
+    private function directoryRelations(): array
+    {
+        return [
+            'aliases',
+            'location',
+            'faction',
+            'clan',
+            'coterie',
+            'circle',
+            'other',
+            'item',
+            'concept',
+            'character',
+            'event',
+        ];
+    }
+
+    /**
      * @param  array<string, mixed>  $typed
      */
     private function createTypedRecord(WorldEntity $entity, array $typed): void
@@ -357,10 +375,15 @@ class WorldEntityService
         match ($entity->entity_type) {
             WorldEntityType::Location => $this->insertLocation($entity, $typed),
             WorldEntityType::Faction => $this->insertFaction($entity, $typed),
+            WorldEntityType::Clan => $this->insertClan($entity, $typed),
+            WorldEntityType::Coterie => $this->insertCoterie($entity, $typed),
+            WorldEntityType::Circle => $this->insertCircle($entity, $typed),
+            WorldEntityType::Other => $this->insertOther($entity, $typed),
             WorldEntityType::Item => $this->insertItem($entity, $typed),
             WorldEntityType::Concept => $this->insertConcept($entity, $typed),
             WorldEntityType::Character => $this->insertCharacter($entity, $typed),
             WorldEntityType::Event => $this->insertWorldEvent($entity, $typed),
+            default => throw new InvalidArgumentException('Unsupported entity type.'),
         };
     }
 
@@ -383,7 +406,6 @@ class WorldEntityService
             );
         }
 
-        $locationType = $typed['location_type'] ?? LocationType::Site;
         $details = $typed['details'] ?? null;
 
         Location::query()->create([
@@ -391,9 +413,6 @@ class WorldEntityService
             'chronicle_id' => $entity->chronicle_id,
             'entity_type' => WorldEntityType::Location,
             'parent_location_id' => $parentId,
-            'location_type' => $locationType instanceof LocationType
-                ? $locationType
-                : LocationType::from((string) $locationType),
             'details' => is_array($details) ? $details : null,
         ]);
     }
@@ -417,7 +436,6 @@ class WorldEntityService
             );
         }
 
-        $factionType = $typed['faction_type'] ?? FactionType::Other;
         $status = $typed['status'] ?? FactionStatus::Active;
 
         Faction::query()->create([
@@ -425,9 +443,78 @@ class WorldEntityService
             'chronicle_id' => $entity->chronicle_id,
             'entity_type' => WorldEntityType::Faction,
             'parent_faction_id' => $parentId,
-            'faction_type' => $factionType instanceof FactionType
-                ? $factionType
-                : FactionType::from((string) $factionType),
+            'status' => $status instanceof FactionStatus
+                ? $status
+                : FactionStatus::from((string) $status),
+        ]);
+    }
+
+    /**
+     * @param  array<string, mixed>  $typed
+     */
+    private function insertSectAffiliatedGroup(WorldEntity $entity, array $typed, WorldEntityType $type): void
+    {
+        $sectId = isset($typed['sect_faction_id']) ? (int) $typed['sect_faction_id'] : null;
+
+        if ($sectId !== null) {
+            $sect = WorldEntity::query()->findOrFail($sectId);
+            $this->assertSectFaction($entity->chronicle, $sect);
+        }
+
+        $status = $typed['status'] ?? FactionStatus::Active;
+        $payload = [
+            'id' => $entity->id,
+            'chronicle_id' => $entity->chronicle_id,
+            'entity_type' => $type,
+            'sect_faction_id' => $sectId,
+            'status' => $status instanceof FactionStatus
+                ? $status
+                : FactionStatus::from((string) $status),
+        ];
+
+        match ($type) {
+            WorldEntityType::Clan => Clan::query()->create($payload),
+            WorldEntityType::Coterie => Coterie::query()->create($payload),
+            WorldEntityType::Circle => Circle::query()->create($payload),
+            default => throw new InvalidArgumentException('Unsupported sect-affiliated type.'),
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $typed
+     */
+    private function insertClan(WorldEntity $entity, array $typed): void
+    {
+        $this->insertSectAffiliatedGroup($entity, $typed, WorldEntityType::Clan);
+    }
+
+    /**
+     * @param  array<string, mixed>  $typed
+     */
+    private function insertCoterie(WorldEntity $entity, array $typed): void
+    {
+        $this->insertSectAffiliatedGroup($entity, $typed, WorldEntityType::Coterie);
+    }
+
+    /**
+     * @param  array<string, mixed>  $typed
+     */
+    private function insertCircle(WorldEntity $entity, array $typed): void
+    {
+        $this->insertSectAffiliatedGroup($entity, $typed, WorldEntityType::Circle);
+    }
+
+    /**
+     * @param  array<string, mixed>  $typed
+     */
+    private function insertOther(WorldEntity $entity, array $typed): void
+    {
+        $status = $typed['status'] ?? FactionStatus::Active;
+
+        Other::query()->create([
+            'id' => $entity->id,
+            'chronicle_id' => $entity->chronicle_id,
+            'entity_type' => WorldEntityType::Other,
             'status' => $status instanceof FactionStatus
                 ? $status
                 : FactionStatus::from((string) $status),
@@ -446,7 +533,6 @@ class WorldEntityService
             $this->assertSameChronicle($entity->chronicle, $owner);
         }
 
-        $itemType = $typed['item_type'] ?? ItemType::Mundane;
         $status = $typed['status'] ?? ItemStatus::Intact;
 
         Item::query()->create([
@@ -454,9 +540,6 @@ class WorldEntityService
             'chronicle_id' => $entity->chronicle_id,
             'entity_type' => WorldEntityType::Item,
             'owner_entity_id' => $ownerId,
-            'item_type' => $itemType instanceof ItemType
-                ? $itemType
-                : ItemType::from((string) $itemType),
             'status' => $status instanceof ItemStatus
                 ? $status
                 : ItemStatus::from((string) $status),
@@ -468,15 +551,10 @@ class WorldEntityService
      */
     private function insertConcept(WorldEntity $entity, array $typed): void
     {
-        $conceptType = $typed['concept_type'] ?? ConceptType::Other;
-
         Concept::query()->create([
             'id' => $entity->id,
             'chronicle_id' => $entity->chronicle_id,
             'entity_type' => WorldEntityType::Concept,
-            'concept_type' => $conceptType instanceof ConceptType
-                ? $conceptType
-                : ConceptType::from((string) $conceptType),
             'definition' => $typed['definition'] ?? $entity->short_description,
         ]);
     }
@@ -508,7 +586,7 @@ class WorldEntityService
 
         if ($clanId !== null) {
             $clan = WorldEntity::query()->findOrFail($clanId);
-            $this->assertClanFaction($entity->chronicle, $clan);
+            $this->assertClan($entity->chronicle, $clan);
         }
 
         $sireId = isset($typed['sire_character_id']) ? (int) $typed['sire_character_id'] : null;
@@ -686,23 +764,91 @@ class WorldEntityService
         ]);
     }
 
-    private function updateSubtype(WorldEntity $entity, WorldEntityType $type, string $subtype): void
+    private function updateSectFaction(WorldEntity $entity, ?int $sectFactionId): void
     {
+        $type = $entity->entity_type instanceof WorldEntityType
+            ? $entity->entity_type
+            : WorldEntityType::from((string) $entity->entity_type);
+
+        if (! in_array($type, [WorldEntityType::Clan, WorldEntityType::Coterie, WorldEntityType::Circle], true)) {
+            throw new InvalidArgumentException('Only clans, coteries, and circles can have a sect faction.');
+        }
+
+        if ($sectFactionId !== null) {
+            $sect = WorldEntity::query()->findOrFail($sectFactionId);
+            $this->assertSectFaction($entity->chronicle, $sect);
+        }
+
         match ($type) {
-            WorldEntityType::Faction => $entity->faction()->update([
-                'faction_type' => FactionType::from($subtype),
-            ]),
-            WorldEntityType::Location => $entity->location()->update([
-                'location_type' => LocationType::from($subtype),
-            ]),
-            WorldEntityType::Item => $entity->item()->update([
-                'item_type' => ItemType::from($subtype),
-            ]),
-            WorldEntityType::Concept => $entity->concept()->update([
-                'concept_type' => ConceptType::from($subtype),
-            ]),
-            default => throw new InvalidArgumentException('Subtype cannot be changed for this entity type.'),
+            WorldEntityType::Clan => $entity->clan()->update(['sect_faction_id' => $sectFactionId]),
+            WorldEntityType::Coterie => $entity->coterie()->update(['sect_faction_id' => $sectFactionId]),
+            WorldEntityType::Circle => $entity->circle()->update(['sect_faction_id' => $sectFactionId]),
+            default => null,
         };
+
+        $this->syncSectFactionMemberOf($entity->refresh(), $sectFactionId);
+    }
+
+    private function syncSectFactionMemberOf(WorldEntity $entity, ?int $sectFactionId): void
+    {
+        $type = $entity->entity_type instanceof WorldEntityType
+            ? $entity->entity_type
+            : WorldEntityType::from((string) $entity->entity_type);
+
+        if (! in_array($type, [WorldEntityType::Clan, WorldEntityType::Coterie, WorldEntityType::Circle], true)) {
+            return;
+        }
+
+        $memberOf = WorldRelationType::query()->where('key', 'member_of')->firstOrFail();
+
+        $autoSynced = WorldRelation::query()
+            ->where('source_entity_id', $entity->id)
+            ->where('relation_type_id', $memberOf->id)
+            ->active()
+            ->get()
+            ->filter(fn (WorldRelation $relation): bool => ($relation->provenance[self::SECT_SYNC_PROVENANCE_KEY] ?? false) === true);
+
+        foreach ($autoSynced as $relation) {
+            if ($sectFactionId === null || (int) $relation->target_entity_id !== $sectFactionId) {
+                $this->relations->end($relation);
+            }
+        }
+
+        if ($sectFactionId === null) {
+            return;
+        }
+
+        $alreadyActive = WorldRelation::query()
+            ->where('source_entity_id', $entity->id)
+            ->where('target_entity_id', $sectFactionId)
+            ->where('relation_type_id', $memberOf->id)
+            ->active()
+            ->exists();
+
+        if ($alreadyActive) {
+            return;
+        }
+
+        $sect = WorldEntity::query()->findOrFail($sectFactionId);
+        $this->relations->relate(
+            $entity,
+            $sect,
+            $memberOf,
+            provenance: [self::SECT_SYNC_PROVENANCE_KEY => true],
+        );
+    }
+
+    private function assertSectFaction(Chronicle $chronicle, WorldEntity $faction): void
+    {
+        $this->assertSameChronicle($chronicle, $faction);
+
+        if ($faction->entity_type !== WorldEntityType::Faction) {
+            throw new InvalidArgumentException('Sect must be a faction.');
+        }
+
+        if ($faction->status !== WorldEntityStatus::Active) {
+            throw new InvalidArgumentException('Sect must be an active faction.');
+        }
     }
 
     private function storeAlias(

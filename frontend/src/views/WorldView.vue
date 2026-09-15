@@ -25,7 +25,7 @@
                 type="button"
                 class="secondary"
                 :class="{ current: tab === 'inbox' }"
-                @click="openInboxTab"
+                @click="openInboxTab()"
             >
                 Разбор
                 <span v-if="inboxCount > 0" class="inbox-tab-count">{{ inboxCount }}</span>
@@ -91,15 +91,16 @@
             :extraction-candidate-label="inboxExtractionCandidateLabel"
             :extraction-directory-kinds="inboxExtractionDirectoryKinds"
             :extraction-memory-label="inboxExtractionMemoryLabel"
-            :subtypes-for="inboxSubtypesFor"
-            :default-subtype="inboxDefaultSubtype"
+            :discarded-relations="inboxDiscardedRelations"
             :scene-event-candidate-label="inboxSceneEventCandidateLabel"
             :mention-draft-for="inboxMentionDraftFor"
             :directory-entity-options="directoryEntityOptions"
+            :factions="factions"
+            :get-candidate-error="inboxGetCandidateError"
             @select="onSelectInboxRun"
             @reparse="reparseSelected"
-            @accept="inboxAcceptCandidate"
-            @discard="inboxDiscardCandidate"
+            @accept="onInboxAcceptCandidate"
+            @discard="onInboxDiscardCandidate"
             @patch-mention="inboxPatchMention"
             @add-mention-alias="inboxAddMentionAlias"
         />
@@ -200,10 +201,10 @@ const {
     extractionCandidateLabel: inboxExtractionCandidateLabel,
     extractionDirectoryKinds: inboxExtractionDirectoryKinds,
     extractionMemoryLabel: inboxExtractionMemoryLabel,
-    subtypesFor: inboxSubtypesFor,
-    defaultSubtype: inboxDefaultSubtype,
+    discardedRelations: inboxDiscardedRelations,
     sceneEventCandidateLabel: inboxSceneEventCandidateLabel,
     mentionDraftFor: inboxMentionDraftFor,
+    getCandidateError: inboxGetCandidateError,
     loadInbox,
     selectRun,
     openRunById,
@@ -212,7 +213,7 @@ const {
     discardCandidate: inboxDiscardCandidate,
     patchMention: inboxPatchMention,
     addMentionAlias: inboxAddMentionAlias,
-} = useExtractionInbox({ error, directoryEntityOptions });
+} = useExtractionInbox({ error, directoryEntityOptions, factions });
 
 async function loadInboxCount() {
     try {
@@ -245,8 +246,9 @@ async function openLoreTab() {
 
 async function openInboxTab(runId = null) {
     tab.value = 'inbox';
-    if (runId) {
-        await openRunById(runId);
+    const id = typeof runId === 'number' && Number.isFinite(runId) ? runId : null;
+    if (id) {
+        await openRunById(id);
     } else {
         await loadInbox();
     }
@@ -264,6 +266,16 @@ async function onLoreExtract() {
 async function onSelectInboxRun(runId) {
     await selectRun(runId);
     router.replace({ query: { tab: 'inbox', run: String(runId) } });
+}
+
+async function onInboxAcceptCandidate(type, index) {
+    await inboxAcceptCandidate(type, index);
+    await loadInboxCount();
+}
+
+async function onInboxDiscardCandidate(type, index) {
+    await inboxDiscardCandidate(type, index);
+    await loadInboxCount();
 }
 
 watch(() => route.query.tab, async (value) => {

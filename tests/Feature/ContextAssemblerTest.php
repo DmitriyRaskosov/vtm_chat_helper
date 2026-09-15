@@ -13,7 +13,6 @@ use App\Enums\CharacterKnowledgeLevel;
 use App\Enums\CharacterMemoryNodeType;
 use App\Enums\CharacterStatCategory;
 use App\Enums\CharacterType;
-use App\Enums\FactionType;
 use App\Enums\LoreAccessLevel;
 use App\Enums\LoreEntryStatus;
 use App\Enums\LoreVisibility;
@@ -97,9 +96,8 @@ class ContextAssemblerTest extends TestCase
         $entities = $this->app->make(WorldEntityService::class);
         $clan = $entities->create(
             $chronicle,
-            WorldEntityType::Faction,
+            WorldEntityType::Clan,
             'Вентру',
-            typed: ['faction_type' => FactionType::Clan],
         );
         $npc = Character::query()->findOrFail(
             $entities->create($chronicle, WorldEntityType::Character, 'Виктория-'.uniqid(), typed: [

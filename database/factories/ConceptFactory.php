@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Enums\ConceptType;
 use App\Enums\WorldEntityType;
 use App\Models\Concept;
 use App\Models\WorldEntity;
@@ -21,7 +20,6 @@ class ConceptFactory extends Factory
                 ->findOrFail($attributes['id'])
                 ->chronicle_id,
             'entity_type' => WorldEntityType::Concept,
-            'concept_type' => ConceptType::Other,
             'definition' => null,
         ];
     }

@@ -8,19 +8,19 @@ ST-only справочник мира и политика фракций. Пер
 
 ## GET /api/world/entities
 
-Активные `faction` / `location` / `item` / `concept` и отдельно `archived`. Персонажи и события не входят.
+Активные directory-типы (`faction`, `clan`, `coterie`, `circle`, `other`, `location`, `item`, `concept`) и отдельно `archived`. Персонажи и события не входят.
 
-Элемент: `id`, `entity_type`, `canonical_name`, `short_description`, `subtype` (`faction_type` / `location_type` / `item_type` / `concept_type`), `aliases` (только aka, без канонического имени), `parent_faction_id` (только у `faction`, иначе `null`), `status`.
+Элемент: `id`, `entity_type`, `canonical_name`, `short_description`, `aliases` (только aka), `parent_faction_id` (только у `faction`, иначе `null`), `sect_faction_id` (только у `clan`/`coterie`/`circle`, иначе `null`), `status`.
 
 ## POST /api/world/entities
 
-**201.** Body: `canonical_name`, `entity_type` (`faction`/`location`/`item`/`concept`), optional `subtype`, `aliases` (список aka), `parent_faction_id` (только фракция; `null` — без родителя), `short_description`, `chronicle_id`.
+**201.** Body: `canonical_name`, `entity_type` (`faction`/`clan`/`coterie`/`circle`/`other`/`location`/`item`/`concept`), `aliases` (список aka), `parent_faction_id` (только фракция; `null` — без родителя), `sect_faction_id` (только clan/coterie/circle; `null` — без секты), `short_description`, `chronicle_id`.
 
-Дефолты subtype: фракция `other`, место `site`, предмет `mundane`, идея `other`. Фракции: `sect` / `clan` / `coterie` / `circle` / `other` (`guild` нет, **422**). `circle` — советы, круги влияния; не секта листа, не клан. Иерархия — `parent_faction_id` (та же хроника, не self). Дубликат имени/алиаса — **422**. `character`/`event` — **422**. Не-фракция с `parent_faction_id` — **422**.
+Секты (Камарилья, Шабаш, Анархи) — обычные `entity_type=faction`. При сохранении `sect_faction_id` у clan/coterie/circle сервер upsert'ит auto-synced `member_of` к sect-faction; при `null` снимает только auto-synced `member_of`.
 
 ## PUT /api/world/entities/{entity}
 
-**200.** Только активные `faction` / `location` / `item` / `concept` той же хроники. Body: `canonical_name` (required); optional `short_description`, `subtype`, `aliases` (заменяет набор aka, канон не трогает; отсутствие поля — aka не менять), `parent_faction_id` (только фракция; `null` снимает родителя; отсутствие поля — не менять). `entity_type` в body запрещён (**422**). Archived / character / event — **422**. Дубликат имени/алиаса — **422**. Имя обновляет канонический alias через `WorldEntityService::update`. Self-parent — **422**.
+**200.** Только активные directory-сущности той же хроники. Body: `canonical_name` (required); optional `short_description`, `aliases` (заменяет набор aka), `parent_faction_id` (только фракция; `null` снимает родителя), `sect_faction_id` (только clan/coterie/circle; `null` снимает секту и auto-synced `member_of`). `entity_type` в body запрещён (**422**). Archived / character / event — **422**. Дубликат имени/алиаса — **422**. Self-parent — **422**.
 
 ## POST /api/world/entities/{entity}/archive
 

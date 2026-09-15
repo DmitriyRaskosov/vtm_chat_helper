@@ -64,7 +64,7 @@ ST: все активные вампиры/NPC хроники, гули влож
 
 **Auth:** sanctum, доступ к листу.
 
-Identity: `canonical_name`, `nature`, `demeanor`, `concept`, `generation`, `clan_entity_id`, `sire_character_id`. `clan_entity_id` — только активная фракция с `faction_type=clan`. Переименование пишет канонический alias. Unique `(chronicle_id, normalized_alias)`.
+Identity: `canonical_name`, `nature`, `demeanor`, `concept`, `generation`, `clan_entity_id`, `sire_character_id`. `clan_entity_id` — только активный `entity_type=clan`. Переименование пишет канонический alias. Unique `(chronicle_id, normalized_alias)`.
 
 ## PUT /api/characters/{character}/stats
 
@@ -100,7 +100,7 @@ Identity: `canonical_name`, `nature`, `demeanor`, `concept`, `generation`, `clan
 
 **Auth:** sanctum + `storyteller`. **200.**
 
-Место в мире: `sect_entity_id`, `clan_entity_id`, `haven_entity_id` (все `present`, nullable), optional `lore_clearance_levels` — уникальные int `0`–`5`, сортируются при записи; пустой массив — **422**. Секта — активная фракция `faction_type=sect` (affiliation `member` + `member_of`); предыдущая секта завершается, котерия не трогается. Клан — `characters.clan_entity_id`, только `faction_type=clan`. Гавань — активная location (affiliation `resident` + `located_at`). NPC видит статью, если её `classification` входит в `lore_clearance_levels`, плюс grant, минус deny; `situational` — только grant. Игрок читает имена и допуск в GET листа, писать не может.
+Место в мире: `sect_entity_id`, `clan_entity_id`, `haven_entity_id` (все `present`, nullable), optional `lore_clearance_levels` — уникальные int `0`–`5`, сортируются при записи; пустой массив — **422**. Секта — любая активная `faction` (affiliation `member` + `member_of`); предыдущая секта завершается, котерия не трогается. Клан — `characters.clan_entity_id`, только `entity_type=clan`. Гавань — активная location (affiliation `resident` + `located_at`). NPC видит статью, если её `classification` входит в `lore_clearance_levels`, плюс grant, минус deny; `situational` — только grant. Игрок читает имена и допуск в GET листа, писать не может.
 
 ## POST /api/characters/{character}/archive
 

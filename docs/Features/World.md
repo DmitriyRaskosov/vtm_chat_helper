@@ -20,7 +20,7 @@
 
 ## Место в мире
 
-На листе персонажа, под биографией. Редактор только у рассказчика: секта (`faction_type=sect`, affiliation `member` + `member_of`), клан (`characters.clan_entity_id`, только `faction_type=clan`), гавань (location, affiliation `resident` + `located_at`). `circle` в селекторе секты нет. Игрок видит имена read-only.
+На листе персонажа, под биографией. Редактор только у рассказчика: секта (любая активная `faction`, affiliation `member` + `member_of`), клан (`characters.clan_entity_id` → `entity_type=clan`), гавань (location, affiliation `resident` + `located_at`). Игрок видит имена read-only.
 
 Справочник фракций: подтипы `sect`, `clan`, `coterie`, `circle`, `other`. UI корень `faction` — «Группа». `circle` — круги влияния, советы (Примоген, внутренний круг Камарильи); вложенность через `parent_faction_id`.
 

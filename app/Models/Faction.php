@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\FactionStatus;
-use App\Enums\FactionType;
 use App\Enums\WorldEntityType;
 use Database\Factories\FactionFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -17,7 +16,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
     'chronicle_id',
     'entity_type',
     'parent_faction_id',
-    'faction_type',
     'status',
 ])]
 class Faction extends Model
@@ -56,7 +54,6 @@ class Faction extends Model
         return [
             'id' => 'integer',
             'entity_type' => WorldEntityType::class,
-            'faction_type' => FactionType::class,
             'status' => FactionStatus::class,
         ];
     }

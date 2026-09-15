@@ -25,7 +25,20 @@ final class WorldRelationTypeCatalog
     {
         return [
             self::row('knows', 'Knows', [WorldEntityType::Character], WorldEntityType::cases(), false, false),
-            self::row('member_of', 'Member of', [WorldEntityType::Character], [WorldEntityType::Faction], false, false),
+            self::row(
+                'member_of',
+                'Member of',
+                [
+                    WorldEntityType::Character,
+                    WorldEntityType::Clan,
+                    WorldEntityType::Coterie,
+                    WorldEntityType::Circle,
+                    WorldEntityType::Faction,
+                ],
+                [WorldEntityType::Faction],
+                false,
+                false,
+            ),
             self::row(
                 'located_at',
                 'Located at',
@@ -88,7 +101,16 @@ final class WorldRelationTypeCatalog
                 'affiliated_with',
                 'Affiliated with',
                 [WorldEntityType::Character],
-                [WorldEntityType::Faction, WorldEntityType::Location, WorldEntityType::Item, WorldEntityType::Concept],
+                [
+                    WorldEntityType::Faction,
+                    WorldEntityType::Clan,
+                    WorldEntityType::Coterie,
+                    WorldEntityType::Circle,
+                    WorldEntityType::Other,
+                    WorldEntityType::Location,
+                    WorldEntityType::Item,
+                    WorldEntityType::Concept,
+                ],
                 false,
                 false,
             ),

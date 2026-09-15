@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\ItemStatus;
-use App\Enums\ItemType;
 use App\Enums\WorldEntityType;
 use Database\Factories\ItemFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -16,7 +15,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'chronicle_id',
     'entity_type',
     'owner_entity_id',
-    'item_type',
     'status',
 ])]
 class Item extends Model
@@ -47,7 +45,6 @@ class Item extends Model
         return [
             'id' => 'integer',
             'entity_type' => WorldEntityType::class,
-            'item_type' => ItemType::class,
             'status' => ItemStatus::class,
         ];
     }

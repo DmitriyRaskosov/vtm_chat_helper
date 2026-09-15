@@ -4,7 +4,7 @@
         <template v-if="isStoryteller">
             <div class="character-create-grid">
                 <label>
-                    Секта
+                    Секта / фракция
                     <select v-model="place.sect_entity_id">
                         <option value="">—</option>
                         <option
@@ -71,7 +71,7 @@
             </div>
             <div class="place-create">
                 <div>
-                    <button class="link" type="button" @click="creating.sect = !creating.sect">Создать секту…</button>
+                    <button class="link" type="button" @click="creating.sect = !creating.sect">Создать секту / фракцию…</button>
                     <div v-if="creating.sect" class="place-create-row">
                         <input v-model="createNames.sect" type="text" maxlength="120" placeholder="Камарилья" />
                         <button type="button" class="secondary" @click="emit('create-entity', 'sect')">Добавить</button>
@@ -98,7 +98,7 @@
             </div>
         </template>
         <p v-else class="muted">
-            Секта: {{ sheet.sect_name || '—' }}
+            Секта / фракция: {{ sheet.sect_name || '—' }}
             · Клан: {{ sheet.clan_name || '—' }}
             · Гавань: {{ sheet.haven_name || '—' }}
             · Допуск к лору: {{ loreClearanceLevelsLabel(sheet.lore_clearance_levels) }}

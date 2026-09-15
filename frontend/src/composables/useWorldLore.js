@@ -3,7 +3,11 @@ import { api } from '../auth';
 import { typeLabel } from './useWorldEntities';
 
 export const extractionKindLabels = {
-    faction: 'группа',
+    faction: 'секта / фракция',
+    clan: 'клан',
+    coterie: 'котерия',
+    circle: 'круг',
+    other: 'прочее',
     location: 'место',
     item: 'предмет',
     concept: 'идея',
@@ -12,7 +16,11 @@ export const extractionKindLabels = {
 };
 
 export const extractionDirectoryKinds = [
-    { value: 'faction', label: 'группа' },
+    { value: 'faction', label: 'секта / фракция' },
+    { value: 'clan', label: 'клан' },
+    { value: 'coterie', label: 'котерия' },
+    { value: 'circle', label: 'круг' },
+    { value: 'other', label: 'прочее' },
     { value: 'location', label: 'место' },
     { value: 'item', label: 'предмет' },
     { value: 'concept', label: 'идея' },
@@ -21,7 +29,7 @@ export const extractionDirectoryKinds = [
 export const loreKinds = [
     { value: 'history', label: 'История' },
     { value: 'place', label: 'Место' },
-    { value: 'faction', label: 'Фракция' },
+    { value: 'faction', label: 'Секта / фракция' },
     { value: 'person', label: 'Персона' },
     { value: 'ritual', label: 'Ритуал' },
     { value: 'item', label: 'Предмет' },
@@ -40,7 +48,7 @@ export const loreAccessLevels = [
 export const aboutFilterChips = [
     { value: 'all', label: 'все' },
     { value: 'characters', label: 'НПС и гули' },
-    { value: 'faction', label: 'группы' },
+    { value: 'faction', label: 'секты / фракции' },
     { value: 'location', label: 'места' },
     { value: 'item', label: 'предметы' },
     { value: 'concept', label: 'идеи' },

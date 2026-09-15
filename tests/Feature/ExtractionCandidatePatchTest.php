@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Character\CharacterBiographyService;
-use App\Enums\FactionType;
 use App\Enums\LoreEntryStatus;
 use App\Enums\LoreVisibility;
 use App\Enums\WorldEntityType;
@@ -511,7 +510,7 @@ class ExtractionCandidatePatchTest extends TestCase
         $this->assertDatabaseCount('world_relations', 1);
     }
 
-    public function test_patch_mention_subtype_is_written_on_accept(): void
+    public function test_patch_mention_kind_is_written_on_accept(): void
     {
         $this->fakeOllamaExtraction([
             'mentions' => [
@@ -534,20 +533,20 @@ class ExtractionCandidatePatchTest extends TestCase
 
         $this->patchJson("/api/extract/{$runId}/candidates/0", [
             'candidate_type' => 'mention',
-            'kind' => 'faction',
-            'subtype' => 'clan',
+            'kind' => 'clan',
         ])->assertOk()
-            ->assertJsonPath('run.candidates.mentions.0.subtype', 'clan');
+            ->assertJsonPath('run.candidates.mentions.0.kind', 'clan');
 
         $createdId = $this->postJson("/api/extract/{$runId}/candidates/0/accept", [
             'candidate_type' => 'mention',
         ])->assertOk()->json('run.candidates.mentions.0.created_entity_id');
 
-        $entity = WorldEntity::query()->with('faction')->findOrFail($createdId);
-        $this->assertSame(FactionType::Clan, $entity->faction?->faction_type);
+        $entity = WorldEntity::query()->with('clan')->findOrFail($createdId);
+        $this->assertSame(WorldEntityType::Clan, $entity->entity_type);
+        $this->assertNotNull($entity->clan);
     }
 
-    public function test_patch_mention_circle_subtype_is_written_on_accept(): void
+    public function test_patch_mention_circle_kind_is_written_on_accept(): void
     {
         $this->fakeOllamaExtraction([
             'mentions' => [
@@ -570,20 +569,20 @@ class ExtractionCandidatePatchTest extends TestCase
 
         $this->patchJson("/api/extract/{$runId}/candidates/0", [
             'candidate_type' => 'mention',
-            'kind' => 'faction',
-            'subtype' => 'circle',
+            'kind' => 'circle',
         ])->assertOk()
-            ->assertJsonPath('run.candidates.mentions.0.subtype', 'circle');
+            ->assertJsonPath('run.candidates.mentions.0.kind', 'circle');
 
         $createdId = $this->postJson("/api/extract/{$runId}/candidates/0/accept", [
             'candidate_type' => 'mention',
         ])->assertOk()->json('run.candidates.mentions.0.created_entity_id');
 
-        $entity = WorldEntity::query()->with('faction')->findOrFail($createdId);
-        $this->assertSame(FactionType::Circle, $entity->faction?->faction_type);
+        $entity = WorldEntity::query()->with('circle')->findOrFail($createdId);
+        $this->assertSame(WorldEntityType::Circle, $entity->entity_type);
+        $this->assertNotNull($entity->circle);
     }
 
-    public function test_patch_mention_rejects_subtype_that_does_not_match_kind(): void
+    public function test_patch_mention_ignores_sect_faction_for_non_sect_affiliated_kind(): void
     {
         $this->fakeOllamaExtraction([
             'mentions' => [
@@ -596,6 +595,11 @@ class ExtractionCandidatePatchTest extends TestCase
 
         $storyteller = User::factory()->storyteller()->create();
         $chronicle = Chronicle::query()->firstOrFail();
+        $sect = $this->app->make(WorldEntityService::class)->create(
+            $chronicle,
+            WorldEntityType::Faction,
+            'Камарилья',
+        );
         $lore = $this->createLoreEntry($chronicle, 'Элизиум.');
 
         Sanctum::actingAs($storyteller);
@@ -606,8 +610,9 @@ class ExtractionCandidatePatchTest extends TestCase
 
         $this->patchJson("/api/extract/{$runId}/candidates/0", [
             'candidate_type' => 'mention',
-            'subtype' => 'clan',
-        ])->assertUnprocessable();
+            'sect_faction_id' => $sect->id,
+        ])->assertOk()
+            ->assertJsonMissingPath('run.candidates.mentions.0.sect_faction_id');
     }
 
     public function test_accept_mention_writes_extra_aliases_on_new_entity(): void
@@ -668,9 +673,8 @@ class ExtractionCandidatePatchTest extends TestCase
         $chronicle = Chronicle::query()->firstOrFail();
         $clan = $this->app->make(WorldEntityService::class)->create(
             $chronicle,
-            WorldEntityType::Faction,
+            WorldEntityType::Clan,
             'Гангрел',
-            typed: ['faction_type' => FactionType::Clan],
         );
         $lore = $this->createLoreEntry($chronicle, 'Гангрелы ушли.');
 

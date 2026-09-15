@@ -6,7 +6,7 @@ ST-справочник фракций/мест/предметов/идей, п�
 
 ## Идентичность
 
-`world_entities`: `chronicle_id`, `entity_type` (`character`, `faction`, `location`, `item`, `concept`, `event`), `canonical_name`, `slug`, `short_description`, `status`, `archived_at`.
+`world_entities`: `chronicle_id`, `entity_type` (`character`, `faction`, `clan`, `coterie`, `circle`, `other`, `location`, `item`, `concept`, `event`), `canonical_name`, `slug`, `short_description`, `status`, `archived_at`.
 
 Индексы: `(chronicle_id, entity_type)`, уникальные `(chronicle_id, slug)` и `(id, entity_type)`.
 
@@ -16,15 +16,17 @@ ST-справочник фракций/мест/предметов/идей, п�
 
 ## Типизированные таблицы (shared PK)
 
-`characters`, `locations`, `factions`, `items`, `concepts`, `world_events`: PK = `world_entities.id`. FK `(id, entity_type)` совпадает с типом identity. CHECK фиксирует `entity_type` таблицы. `chronicle_id` дублируется, чтобы parent/owner/clan/sire не могли ссылаться на другую хронику.
+`characters`, `locations`, `factions`, `clans`, `coteries`, `circles`, `others`, `items`, `concepts`, `world_events`: PK = `world_entities.id`. FK `(id, entity_type)` совпадает с типом identity. CHECK фиксирует `entity_type` таблицы. `chronicle_id` дублируется, чтобы parent/owner/clan/sire не могли ссылаться на другую хронику.
 
 | Таблица | Поля |
 |---------|------|
-| `characters` | `character_type` (`player`/`npc`/`ghoul`), nullable unique `user_id` (только PC), `clan_entity_id`, `sire_character_id`, `domitor_character_id` (обязателен у гуля), generation/ages, nature/demeanor/concept, `lore_clearance_levels` (smallint[]), `is_active` |
-| `locations` | `parent_location_id`, `location_type`, `details` (jsonb) |
-| `factions` | `parent_faction_id`, `faction_type`, `status` |
-| `items` | `owner_entity_id` nullable → любая `world_entities` той же хроники, `item_type`, `status` |
-| `concepts` | `concept_type`, `definition` |
+| `characters` | `character_type` (`player`/`npc`/`ghoul`), nullable unique `user_id` (только PC), `clan_entity_id` → `clans`, `sire_character_id`, `domitor_character_id` (обязателен у гуля), generation/ages, nature/demeanor/concept, `lore_clearance_levels` (smallint[]), `is_active` |
+| `locations` | `parent_location_id`, `details` (jsonb) |
+| `factions` | `parent_faction_id`, `status` |
+| `clans` / `coteries` / `circles` | `sect_faction_id` nullable → `factions`, `status` |
+| `others` | `status` |
+| `items` | `owner_entity_id` nullable → любая `world_entities` той же хроники, `status` |
+| `concepts` | `definition` |
 | `world_events` | nullable `scene_id`, title, description, `event_type`, status, importance, visibility, approval; без `timeline_id` |
 
 `character_users` нет: один пользователь = один PC (`characters.user_id` unique). NPC и гули: `user_id` пуст. Гуль принадлежит вампиру через `domitor_character_id` (player или NPC той же хроники), не через аккаунт игрока. Сир (`sire_character_id`) — Объятья, не домитор.
@@ -37,10 +39,11 @@ HTTP создание персонажей — [[API/Characters]]. Игрок м
 
 `App\World\WorldEntityService` в одной транзакции создаёт identity, typed-строку и алиасы.
 
-- `create(..., typed: [])` — slug, canonical alias, aka, subtype (включая `characters`)
+- `create(..., typed: [])` — slug, canonical alias, aka, typed-строка (включая `characters`)
 - `archive` — `status=archived`, без физического DELETE; у персонажа ещё `characters.is_active=false`
 - `restore` — `status=active`, `archived_at` сбрасывается; у персонажа `is_active=true`
-- `assertClanFaction` — клан персонажа только активная фракция `faction_type=clan`
+- `assertClan` — клан персонажа только активный `entity_type=clan`
+- `sect_faction_id` у clan/coterie/circle → auto-synced `member_of` к sect-faction
 - `findByAlias` / `assertSameChronicle` — chronicle scope
 - `addAka` / `syncAka` — дополнительные имена (`aka`); канон только через rename
 
@@ -76,7 +79,9 @@ HTTP создание персонажей — [[API/Characters]]. Игрок м
 
 `character_relationships` — typed extension ребра character→character без метрик и без журнала (набор шкал не зафиксирован). A→B ≠ B→A.
 
-`character_affiliations` — typed extension character→faction/location/item/concept с stance, метриками 0–5 и журналом `character_affiliation_changes`. Секта листа — единственный активный `member` к `faction_type=sect` (`member_of`); гавань — единственный активный `resident` к location (`located_at`). Котерия и `faction_type=circle` этим слотом не заменяются. Подтипы фракций: `sect`, `clan`, `coterie`, `circle`, `other`.
+`character_affiliations` — typed extension character→directory entity с stance, метриками 0–5 и журналом `character_affiliation_changes`. Секта листа — единственный активный `member` к любой активной `faction` (`member_of`); гавань — единственный активный `resident` к location (`located_at`). Котерия — отдельный affiliation, слот секты не заменяет.
+
+`member_of`: sources `character`/`clan`/`coterie`/`circle`/`faction` → target `faction`.
 
 События — typed `world_events` плюс participants/sources. Место, причина, свидетели и участие — рёбра `occurred_at` / `caused` / `witnessed` / `participated_in`. Таблицы `chronicle_timeline` нет.
 

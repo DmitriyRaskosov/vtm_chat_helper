@@ -92,6 +92,38 @@ class WorldEntity extends Model
     }
 
     /**
+     * @return HasOne<Clan, $this>
+     */
+    public function clan(): HasOne
+    {
+        return $this->hasOne(Clan::class, 'id', 'id');
+    }
+
+    /**
+     * @return HasOne<Coterie, $this>
+     */
+    public function coterie(): HasOne
+    {
+        return $this->hasOne(Coterie::class, 'id', 'id');
+    }
+
+    /**
+     * @return HasOne<Circle, $this>
+     */
+    public function circle(): HasOne
+    {
+        return $this->hasOne(Circle::class, 'id', 'id');
+    }
+
+    /**
+     * @return HasOne<Other, $this>
+     */
+    public function other(): HasOne
+    {
+        return $this->hasOne(Other::class, 'id', 'id');
+    }
+
+    /**
      * @return HasOne<Item, $this>
      */
     public function item(): HasOne

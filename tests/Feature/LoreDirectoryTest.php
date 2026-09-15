@@ -39,7 +39,6 @@ class LoreDirectoryTest extends TestCase
         $camarilla = $this->postJson('/api/world/entities', [
             'canonical_name' => 'Камарилья',
             'entity_type' => 'faction',
-            'subtype' => 'sect',
         ])->assertCreated()->json('entity');
 
         $created = $this->postJson('/api/lore', [
@@ -209,7 +208,6 @@ class LoreDirectoryTest extends TestCase
         $camarilla = $this->postJson('/api/world/entities', [
             'canonical_name' => 'Камарилья',
             'entity_type' => 'faction',
-            'subtype' => 'sect',
         ])->assertCreated()->json('entity');
 
         $created = $this->postJson('/api/lore', [

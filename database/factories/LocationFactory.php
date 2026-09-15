@@ -2,7 +2,6 @@
 
 namespace Database\Factories;
 
-use App\Enums\LocationType;
 use App\Enums\WorldEntityType;
 use App\Models\Location;
 use App\Models\WorldEntity;
@@ -22,7 +21,6 @@ class LocationFactory extends Factory
                 ->chronicle_id,
             'entity_type' => WorldEntityType::Location,
             'parent_location_id' => null,
-            'location_type' => LocationType::Site,
             'details' => null,
         ];
     }

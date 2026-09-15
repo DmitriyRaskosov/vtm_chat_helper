@@ -22,6 +22,10 @@ erDiagram
   world_entities ||--o| characters : "shared PK"
   world_entities ||--o| locations : "shared PK"
   world_entities ||--o| factions : "shared PK"
+  world_entities ||--o| clans : "shared PK"
+  world_entities ||--o| coteries : "shared PK"
+  world_entities ||--o| circles : "shared PK"
+  world_entities ||--o| others : "shared PK"
   world_entities ||--o| items : "shared PK"
   world_entities ||--o| concepts : "shared PK"
   world_entities ||--o| world_events : "shared PK"
@@ -55,7 +59,10 @@ erDiagram
   characters ||--o{ character_merits_flaws : merits
   characters ||--o| character_biographies : canon
   characters ||--o{ character_biography_versions : snapshots
-  characters }o--o| factions : clan_entity_id
+  characters }o--o| clans : clan_entity_id
+  clans }o--o| factions : sect_faction_id
+  coteries }o--o| factions : sect_faction_id
+  circles }o--o| factions : sect_faction_id
   characters }o--o| characters : sire
 ```
 

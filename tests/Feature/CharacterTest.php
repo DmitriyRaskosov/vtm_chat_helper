@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use App\Enums\CharacterType;
-use App\Enums\FactionType;
 use App\Enums\WorldEntityType;
 use App\Models\Chronicle;
 use App\Models\CopilotRequest;
@@ -39,9 +38,8 @@ class CharacterTest extends TestCase
         $playerUser = User::factory()->create();
         $clan = $service->create(
             $chronicle,
-            WorldEntityType::Faction,
+            WorldEntityType::Clan,
             'Вентру',
-            typed: ['faction_type' => FactionType::Clan],
         );
         $sire = $service->create($chronicle, WorldEntityType::Character, 'Сир');
 
@@ -334,9 +332,8 @@ class CharacterTest extends TestCase
         $service = $this->app->make(WorldEntityService::class);
         $clan = $service->create(
             Chronicle::factory()->create(),
-            WorldEntityType::Faction,
+            WorldEntityType::Clan,
             'Вентру',
-            typed: ['faction_type' => FactionType::Clan],
         );
 
         $this->expectException(MixedChronicleException::class);
@@ -349,32 +346,11 @@ class CharacterTest extends TestCase
         );
     }
 
-    public function test_clan_must_be_a_faction(): void
+    public function test_clan_must_be_a_clan(): void
     {
         $service = $this->app->make(WorldEntityService::class);
         $chronicle = Chronicle::factory()->create();
-        $location = $service->create($chronicle, WorldEntityType::Location, 'Прага');
-
-        $this->expectException(InvalidArgumentException::class);
-
-        $service->create(
-            $chronicle,
-            WorldEntityType::Character,
-            'Виктория',
-            typed: ['clan_entity_id' => $location->id],
-        );
-    }
-
-    public function test_clan_must_be_a_clan_faction(): void
-    {
-        $service = $this->app->make(WorldEntityService::class);
-        $chronicle = Chronicle::factory()->create();
-        $camarilla = $service->create(
-            $chronicle,
-            WorldEntityType::Faction,
-            'Камарилья',
-            typed: ['faction_type' => FactionType::Sect],
-        );
+        $camarilla = $service->create($chronicle, WorldEntityType::Faction, 'Камарилья');
 
         $this->expectException(InvalidArgumentException::class);
 

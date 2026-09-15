@@ -105,7 +105,7 @@ class CharacterIdentityService
     {
         if (isset($typed['clan_entity_id'])) {
             $clan = WorldEntity::query()->findOrFail((int) $typed['clan_entity_id']);
-            $this->entities->assertClanFaction($character->chronicle, $clan);
+            $this->entities->assertClan($character->chronicle, $clan);
         }
 
         if (isset($typed['sire_character_id'])) {

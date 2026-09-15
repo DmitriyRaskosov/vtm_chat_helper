@@ -16,7 +16,7 @@ State справочника и лора живёт в view (composables выз�
 | Вкладка лора, grant/deny, экстрактор | `frontend/src/composables/useWorldLore.js`, `frontend/src/components/world/WorldLoreTab.vue` |
 | Шапка | `frontend/src/components/layout/AppNav.vue` |
 
-Форма справочника: тип + подтип. Тип «Группа» (API `faction`). Подтипы: секта / клан / котерия / круг / другое (дефолт — другое). У группы — select «Входит в группу» (`parent_faction_id`, не aka). Список «Ещё имена» — aka. Без подтипа «Гильдия». Место / предмет / идея без изменений.
+Форма справочника: тип (`faction` / `clan` / `coterie` / `circle` / `other` / `location` / `item` / `concept`). UI для `faction` — «Секта / фракция». У фракции — select «Родительская секта / фракция» (`parent_faction_id`). У клана/котерии/круга — select «Секта / фракция» (`sect_faction_id`). Список «Ещё имена» — aka.
 
 Вкладка **Разбор** (`?tab=inbox`): inbox всех прогонов (`GET /api/extract/inbox`) — `needs_review` и `failed` для **лора, био и сцен**. Список с подписью источника; у сцен — диапазон id. Открыть run → PATCH mention + accept/discard (граф / память / события). Reparse — только для сцен (`POST /api/extract/{run}/reparse`). На вкладках **Лор** и **Био** — только кнопка «Разобрать»; после POST переход сюда (`?tab=inbox&run={id}`). Файлы: `WorldExtractionInboxTab.vue`, `useExtractionInbox.js`.
 
@@ -27,7 +27,7 @@ State справочника и лора живёт в view (composables выз�
 - `POST|PUT /api/lore` — `title`, `canonical_text`, `kind`, `visibility` (всегда `public` из UI), `classification` (`0`–`5`), `situational`, `entity_ids`, `granted_character_ids`, `denied_character_ids`
 - `GET /api/extract/status`, `POST /api/extract`, `PATCH /api/extract/{run}/candidates/{index}`, `POST /api/extract/{run}/candidates/{index}/accept|discard` — см. [[API/Extract]]
 
-На вкладке **Разбор**: pending mention — имя, тип, подтип, aka, alias_of; «Сохранить правку», затем Принять / Отбросить. Accept с `alias_of_entity_id` — aka (`merged`) на существующий узел.
+На вкладке **Разбор**: pending mention — имя, тип (directory kinds), optional секта для clan/coterie/circle; aka, alias_of. **Принять** = PATCH draft + accept одной кнопкой; inline errors у accept/discard. Невалидные relations — disabled accept + `discard_reason`. Matcher дедуплирует mentions и синтезирует missing endpoint из relations. Завершённый run — «Разбор завершён», не в списке inbox.
 
 Grant снимает deny и наоборот (`onExceptionToggle`).
 

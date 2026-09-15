@@ -2,43 +2,26 @@
 
 namespace App\Models;
 
+use App\Enums\FactionStatus;
 use App\Enums\WorldEntityType;
-use Database\Factories\LocationFactory;
+use Database\Factories\OtherFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'id',
     'chronicle_id',
     'entity_type',
-    'parent_location_id',
-    'details',
+    'status',
 ])]
-class Location extends Model
+class Other extends Model
 {
-    /** @use HasFactory<LocationFactory> */
+    /** @use HasFactory<OtherFactory> */
     use HasFactory;
 
     public $incrementing = false;
-
-    /**
-     * @return BelongsTo<Location, $this>
-     */
-    public function parent(): BelongsTo
-    {
-        return $this->belongsTo(self::class, 'parent_location_id');
-    }
-
-    /**
-     * @return HasMany<Location, $this>
-     */
-    public function children(): HasMany
-    {
-        return $this->hasMany(self::class, 'parent_location_id');
-    }
 
     /**
      * @return BelongsTo<Chronicle, $this>
@@ -53,7 +36,7 @@ class Location extends Model
         return [
             'id' => 'integer',
             'entity_type' => WorldEntityType::class,
-            'details' => 'array',
+            'status' => FactionStatus::class,
         ];
     }
 }

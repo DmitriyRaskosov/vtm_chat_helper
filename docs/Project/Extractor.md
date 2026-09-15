@@ -67,14 +67,36 @@ LLM **не** ставит `entity_id`. Смысл формы (имена пол�
 
 ```json
 {
-  "mentions": [{ "name": "Камарилья", "kind": "faction" }],
-  "relations": [{ "source": "Виктория", "target": "Камарилья", "key": "member_of" }],
+  "mentions": [
+    { "name": "Камарилья", "kind": "faction" },
+    { "name": "Бруха", "kind": "clan" },
+    { "name": "Маскарад", "kind": "concept" }
+  ],
+  "relations": [
+    { "source": "Бруха", "target": "Камарилья", "key": "member_of" },
+    { "source": "Виктория", "target": "Камарилья", "key": "member_of" }
+  ],
   "events": [{ "title": "…", "summary": "…", "participants": ["Виктория"] }],
   "memories": [{ "character": "Виктория", "text": "…", "node_type": "event" }]
 }
 ```
 
 `key` только из enabled-строк `world_relation_types`. Неизвестный ключ — не INSERT (отбросить или пометить «не из списка»).
+
+### Маппинг лора (directory + relations)
+
+Промпт `ExtractionPromptBuilder` задаёт канон для модели. Кратко для рассказчика:
+
+| В тексте | `kind` | Связи |
+|----------|--------|--------|
+| Камарилья, Шабаш, Анархи, Инквизиция | `faction` | `hostile_to` / `allied_with` между фракциями; не `member_of` на клан |
+| Кланы (Бруха, Вентру, …) | `clan` | **`клан → секта`:** `member_of` с source=клан, target=фракция (Камарилья). Не наоборот |
+| Котерия | `coterie` | `member_of` → фракция-секта, если уместно |
+| Круг примогенов | `circle` | то же |
+| Традиции, Маскарад, кодексы | `concept` | только mention; **не** `created` от фракции |
+| Персонаж в секте | `character` (не в directory) | `member_of` → фракция |
+
+**Неверные паттерны (matcher отбросит):** `Камарилья member_of Бруха`; `Камарилья created Маскарад`. После правки промпта — переразбор статьи (`POST /api/extract` заново или reparse для сцены).
 
 После PHP:
 
@@ -119,7 +141,7 @@ UI первого захода — не отдельный продукт: кн�
 
 Срез = `canonical_text` статьи + каталог. Accept `new_entity` → `WorldEntityService::create`. Accept relation → `WorldRelationService::relate` (активный дубликат — `merged`). UI: кнопка «Разобрать» на вкладке лора. API: [[API/Extract]].
 
-**Приёмка:** известное имя → ребро после accept; выдуманное → pending `new_entity`, `create` только по Accept. Рассказчик правит pending mention (именительный вручную, тип и подтип справочника, aka-список, либо «это имя уже существующего узла») через PATCH; accept с `alias_of_entity_id` пишет aka (`merged`) и extra aliases на цель, не `create`. Без subtype фракция на Accept — `other`.
+**Приёмка:** известное имя → ребро после accept; выдуманное → pending `new_entity`, `create` только по Accept. Matcher дедуплирует mentions и синтезирует endpoint-имена из relations (один раз); невалидные relation endpoints → `discarded` + `discard_reason`. Рассказчик правит pending mention (именительный, kind, optional `sect_faction_id` для clan/coterie/circle, aka, alias_of) через PATCH. Когда pending не осталось — run `reviewed`, из inbox уходит. Повторный POST лора/био supersede-ит старый `needs_review` того же источника.
 
 ### 3. Био: только память — **в коде**
 

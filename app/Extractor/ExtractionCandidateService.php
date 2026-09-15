@@ -41,6 +41,10 @@ class ExtractionCandidateService
      */
     private const DIRECTORY_KINDS = [
         WorldEntityType::Faction,
+        WorldEntityType::Clan,
+        WorldEntityType::Coterie,
+        WorldEntityType::Circle,
+        WorldEntityType::Other,
         WorldEntityType::Location,
         WorldEntityType::Item,
         WorldEntityType::Concept,
@@ -81,7 +85,7 @@ class ExtractionCandidateService
     }
 
     /**
-     * @param  array{name?: string, kind?: string, subtype?: string|null, aliases?: list<string>, alias_of_entity_id?: int|null}  $patch
+     * @param  array{name?: string, kind?: string, aliases?: list<string>, alias_of_entity_id?: int|null, sect_faction_id?: int|null}  $patch
      */
     public function patchMention(ExtractionRun $run, int $index, array $patch): ExtractionRun
     {
@@ -113,26 +117,27 @@ class ExtractionCandidateService
                     );
                 }
                 $candidate['kind'] = $kind->value;
-                if (isset($candidate['subtype']) && is_string($candidate['subtype'])
-                    && ! $this->entities->isValidDirectorySubtype($kind, $candidate['subtype'])) {
-                    unset($candidate['subtype']);
+                if (! in_array($kind, [WorldEntityType::Clan, WorldEntityType::Coterie, WorldEntityType::Circle], true)) {
+                    unset($candidate['sect_faction_id']);
                 }
             }
 
-            if (array_key_exists('subtype', $patch)) {
+            if (array_key_exists('sect_faction_id', $patch)) {
                 $kind = WorldEntityType::tryFrom((string) ($candidate['kind'] ?? ''));
-                if ($kind === null || ! in_array($kind, self::DIRECTORY_KINDS, true)) {
-                    throw new InvalidArgumentException(
-                        'Set a directory type before choosing a subtype.',
-                    );
-                }
-
-                $subtype = $patch['subtype'];
-                if ($subtype === null || (is_string($subtype) && trim($subtype) === '')) {
-                    unset($candidate['subtype']);
+                if ($kind === null || ! in_array($kind, [WorldEntityType::Clan, WorldEntityType::Coterie, WorldEntityType::Circle], true)) {
+                    unset($candidate['sect_faction_id']);
                 } else {
-                    $this->entities->directoryTyped($kind, (string) $subtype);
-                    $candidate['subtype'] = trim((string) $subtype);
+                    $sectId = $patch['sect_faction_id'];
+                    if ($sectId === null) {
+                        unset($candidate['sect_faction_id']);
+                    } else {
+                        $sect = WorldEntity::query()->findOrFail((int) $sectId);
+                        $this->entities->assertSameChronicle($chronicle, $sect);
+                        if ($sect->entity_type !== WorldEntityType::Faction || $sect->status !== WorldEntityStatus::Active) {
+                            throw new InvalidArgumentException('Sect must be an active faction.');
+                        }
+                        $candidate['sect_faction_id'] = (int) $sect->id;
+                    }
                 }
             }
 
@@ -164,8 +169,24 @@ class ExtractionCandidateService
             $run->candidates = $candidates;
             $run->save();
 
-            return $run->refresh();
+            return $this->finalizeRun($run);
         });
+    }
+
+    /**
+     * @param  array<string, mixed>  $candidates
+     */
+    private function saveCandidates(ExtractionRun $run, array $candidates): ExtractionRun
+    {
+        $run->candidates = $candidates;
+        $run->save();
+
+        return $this->finalizeRun($run);
+    }
+
+    private function finalizeRun(ExtractionRun $run): ExtractionRun
+    {
+        return ExtractionRunCompletion::finalizeIfComplete($run);
     }
 
     private function acceptMention(ExtractionRun $run, int $index): ExtractionRun
@@ -187,8 +208,11 @@ class ExtractionCandidateService
                     throw new InvalidArgumentException('Alias target must be an active entity.');
                 }
 
-                $this->entities->addAka($entity, (string) $candidate['name']);
-                foreach ($this->normalizeAliasList($candidate['aliases'] ?? [], (string) $candidate['name']) as $alias) {
+                $mentionName = (string) $candidate['name'];
+                if (AliasNormalizer::normalize($mentionName) !== AliasNormalizer::normalize((string) $entity->canonical_name)) {
+                    $this->entities->addAka($entity, $mentionName);
+                }
+                foreach ($this->normalizeAliasList($candidate['aliases'] ?? [], $mentionName) as $alias) {
                     $this->entities->addAka($entity, $alias);
                 }
 
@@ -203,16 +227,17 @@ class ExtractionCandidateService
                 }
 
                 $name = (string) $candidate['name'];
+                $typed = $this->entities->defaultTypedPayload($kind);
+                if (isset($candidate['sect_faction_id'])) {
+                    $typed['sect_faction_id'] = (int) $candidate['sect_faction_id'];
+                }
                 try {
                     $entity = $this->entities->create(
                         $chronicle,
                         $kind,
                         $name,
                         aliases: $this->normalizeAliasList($candidate['aliases'] ?? [], $name),
-                        typed: $this->entities->directoryTyped(
-                            $kind,
-                            isset($candidate['subtype']) ? (string) $candidate['subtype'] : null,
-                        ),
+                        typed: $typed,
                     );
                 } catch (UniqueConstraintViolationException) {
                     throw new InvalidArgumentException('This name is already used in the chronicle.');
@@ -231,10 +256,7 @@ class ExtractionCandidateService
             $candidates['mentions'] = $this->replaceMention($candidates['mentions'] ?? [], $index, $candidate);
             $candidates = $this->refreshRelationEndpointFlags($candidates, $chronicle);
 
-            $run->candidates = $candidates;
-            $run->save();
-
-            return $run->refresh();
+            return $this->saveCandidates($run, $candidates);
         });
     }
 
@@ -301,10 +323,8 @@ class ExtractionCandidateService
             }
 
             $candidates['relations'] = $this->replaceRelation($candidates['relations'] ?? [], $index, $candidate);
-            $run->candidates = $candidates;
-            $run->save();
 
-            return $run->refresh();
+            return $this->saveCandidates($run, $candidates);
         });
     }
 
@@ -345,10 +365,7 @@ class ExtractionCandidateService
             $candidate['memory_node_id'] = (int) $node->id;
             $candidates['memories'] = $this->replaceMemory($candidates['memories'] ?? [], $index, $candidate);
 
-            $run->candidates = $candidates;
-            $run->save();
-
-            return $run->refresh();
+            return $this->saveCandidates($run, $candidates);
         });
     }
 
@@ -431,10 +448,7 @@ class ExtractionCandidateService
             $candidates['events'] = $this->replaceEvent($candidates['events'] ?? [], $index, $candidate);
             $candidates = $this->refreshRelationEndpointFlags($candidates, $chronicle);
 
-            $run->candidates = $candidates;
-            $run->save();
-
-            return $run->refresh();
+            return $this->saveCandidates($run, $candidates);
         });
     }
 
@@ -498,10 +512,7 @@ class ExtractionCandidateService
                 $candidates['memories'] = $this->replaceMemory($candidates['memories'] ?? [], $index, $candidate);
             }
 
-            $run->candidates = $candidates;
-            $run->save();
-
-            return $run->refresh();
+            return $this->saveCandidates($run, $candidates);
         });
     }
 
@@ -689,7 +700,7 @@ class ExtractionCandidateService
                 $relation['target_matched_entity_id'] = (int) $target->id;
             }
 
-            $relations[] = $relation;
+            $relations[] = $this->matcher->validateRelationCandidate($relation, $source, $target);
         }
 
         $candidates['relations'] = $relations;
@@ -714,7 +725,7 @@ class ExtractionCandidateService
                 return WorldEntity::query()->find((int) $mention['alias_of_entity_id']);
             }
 
-            if ($status === ExtractionCandidateStatus::Accepted->value) {
+            if (in_array($status, [ExtractionCandidateStatus::Accepted->value, ExtractionCandidateStatus::Merged->value], true)) {
                 $entityId = $mention['created_entity_id'] ?? $mention['matched_entity_id'] ?? null;
                 if ($entityId !== null) {
                     return WorldEntity::query()->find((int) $entityId);

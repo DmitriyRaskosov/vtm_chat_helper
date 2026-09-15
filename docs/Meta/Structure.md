@@ -68,7 +68,7 @@ Views — оболочки маршрутов. Разметка блоков и 
 | `Chronicle.php` | корневой scope мира и игровых встреч |
 | `WorldEntity.php` | стабильный ID сущности мира |
 | `WorldEntityAlias.php` | каноническое имя и aka внутри хроники |
-| `Location.php`, `Faction.php`, `Item.php`, `Concept.php`, `Character.php` | typed-строки с shared PK |
+| `Location.php`, `Faction.php`, `Clan.php`, `Coterie.php`, `Circle.php`, `Other.php`, `Item.php`, `Concept.php`, `Character.php` | typed-строки с shared PK |
 | `WorldEvent.php`, `WorldEventParticipant.php`, `WorldEventSource.php` | события мира |
 | `CharacterStat.php`, `CharacterStatSpecialization.php` | реляционный лист |
 | `CharacterMeritFlaw.php` | merits/flaws; таблица `character_merits_flaws` |
@@ -186,7 +186,7 @@ Views — оболочки маршрутов. Разметка блоков и 
 
 - `ChronicleStatus.php`, `GameSessionStatus.php`, `SceneStatus.php`
 - `WorldEntityType.php`, `WorldEntityStatus.php`, `WorldEntityAliasType.php`
-- `LocationType.php`, `FactionType.php`, `FactionStatus.php`, `ItemType.php`, `ItemStatus.php`, `ConceptType.php`, `CharacterType.php`, `CharacterStatCategory.php`, `CharacterHealthState.php`, `CharacterHealthDamage.php`, `CharacterMeritKind.php`, `CharacterStatusEffectType.php`, `CharacterBiographyStatus.php`, `CharacterBiographySection.php`, `CharacterAffiliationType.php`, `CharacterAffiliationStance.php`, `WorldEventType.php`, `WorldEventStatus.php`, `WorldEventVisibility.php`, `WorldEventParticipantRole.php`, `LoreEntryKind.php`, `LoreEntryStatus.php`, `LoreVisibility.php`, `LoreChunkSection.php`, `RulesetStatus.php`, `RuleDocumentStatus.php`, `CharacterKnowledgeLevel.php`, `CharacterMemoryNodeType.php`, `CharacterMemoryStatus.php`, `CharacterMemoryEdgeType.php`, `MemoryEntityRole.php`, `RetrievalCorpus.php`
+- `FactionStatus.php`, `ItemStatus.php`, `CharacterType.php`, `CharacterStatCategory.php`, `CharacterHealthState.php`, `CharacterHealthDamage.php`, `CharacterMeritKind.php`, `CharacterStatusEffectType.php`, `CharacterBiographyStatus.php`, `CharacterBiographySection.php`, `CharacterAffiliationType.php`, `CharacterAffiliationStance.php`, `WorldEventType.php`, `WorldEventStatus.php`, `WorldEventVisibility.php`, `WorldEventParticipantRole.php`, `LoreEntryKind.php`, `LoreEntryStatus.php`, `LoreVisibility.php`, `LoreChunkSection.php`, `RulesetStatus.php`, `RuleDocumentStatus.php`, `CharacterKnowledgeLevel.php`, `CharacterMemoryNodeType.php`, `CharacterMemoryStatus.php`, `CharacterMemoryEdgeType.php`, `MemoryEntityRole.php`, `RetrievalCorpus.php`
 
 Слои: [[Architecture/Backend]].
 

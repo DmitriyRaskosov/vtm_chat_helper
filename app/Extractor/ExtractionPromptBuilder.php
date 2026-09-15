@@ -8,20 +8,92 @@ use App\Enums\WorldEntityType;
 class ExtractionPromptBuilder
 {
     /**
+     * @return list<string>
+     */
+    private function directoryKindValues(): array
+    {
+        return array_map(
+            fn (WorldEntityType $type): string => $type->value,
+            [
+                WorldEntityType::Faction,
+                WorldEntityType::Clan,
+                WorldEntityType::Coterie,
+                WorldEntityType::Circle,
+                WorldEntityType::Other,
+                WorldEntityType::Location,
+                WorldEntityType::Item,
+                WorldEntityType::Concept,
+            ],
+        );
+    }
+
+    /**
+     * @param  list<string>  $relationKeys
+     */
+    private function graphExtractionRules(string $relationKeyList, bool $forScene): string
+    {
+        $entityKinds = implode(', ', $this->directoryKindValues());
+        $memoriesLine = $forScene
+            ? '- Do not output memories — leave "memories" empty.'
+            : '- "memories" only when the source is character-centric subjective text; for lore articles leave "memories" empty.';
+
+        return <<<TEXT
+Rules:
+- Use entity names as plain text only. Never output numeric entity IDs.
+- "kind" must be one of: {$entityKinds} (directory types only — not character or event).
+- Entity kinds (VtM directory):
+  - Sects and political blocs (Камарилья, Шабаш, Анархи, Инквизиция) → faction.
+  - Vampire clans (Бруха, Вентру, Гангрел, …) → clan — never faction.
+  - Player coteries → coterie; primogen councils / inner circles → circle.
+  - Traditions, Masquerade, customs, codes (Традиции Каина, Маскарад) → concept — not faction, not event.
+  - Unclear mortal or mixed groups → other.
+- "key" must be one of: {$relationKeyList}.
+- Relations:
+  - member_of: the member is source, the sect/political faction is target. Example: Бруха → Камарилья (clan joins sect). NEVER Камарилья → Бруха.
+  - member_of target must be faction only — never clan, coterie, circle, location, or concept.
+  - Do not use member_of to mean "sect contains clan"; use clan member_of sect instead.
+  - hostile_to / allied_with: usually between two factions (or characters).
+  - created: source must be a character only — never faction, clan, or concept. Do not propose "Камарилья created Маскарад"; mention Маскарад as kind concept without a created relation.
+- Prefer names that appear in the source text or catalog aliases.
+- Every entity name used in relations must appear exactly once in mentions.
+- Write mention names in nominative case (именительный падеж).
+- Do not propose job titles or offices without a personal name (e.g. not "Примоген" alone).
+- Do not create nodes for bloodlines, generations, or textbook facts unrelated to this chronicle.
+- Traditions and customs are concepts, not dated events.
+{$memoriesLine}
+- Omit empty arrays when nothing applies.
+
+Good example:
+{
+  "mentions": [
+    { "name": "Камарилья", "kind": "faction" },
+    { "name": "Бруха", "kind": "clan" },
+    { "name": "Маскарад", "kind": "concept" }
+  ],
+  "relations": [
+    { "source": "Бруха", "target": "Камарилья", "key": "member_of" }
+  ]
+}
+
+Bad (never output):
+{ "source": "Камарилья", "target": "Бруха", "key": "member_of" }
+{ "source": "Камарилья", "target": "Маскарад", "key": "created" }
+TEXT;
+    }
+
+    /**
      * @param  list<string>  $catalogLines
      * @param  list<string>  $relationKeys
      * @return list<array{role: string, content: string}>
      */
     public function build(string $sliceText, array $catalogLines, array $relationKeys): array
     {
-        $entityKinds = implode(', ', array_map(
-            fn (WorldEntityType $type): string => $type->value,
-            WorldEntityType::cases(),
-        ));
+        $entityKinds = implode(', ', $this->directoryKindValues());
         $relationKeyList = $relationKeys === [] ? '(none)' : implode(', ', $relationKeys);
         $catalog = $catalogLines === []
             ? '(empty — no known entities yet)'
             : implode("\n", $catalogLines);
+        $rules = $this->graphExtractionRules($relationKeyList, false);
 
         $system = <<<TEXT
 /no_think
@@ -35,16 +107,7 @@ Schema:
   "memories": [{ "character": "string", "text": "string", "node_type": "event|fact|belief|rumor" }]
 }
 
-Rules:
-- Use entity names as plain text only. Never output numeric entity IDs.
-- "kind" must be one of: {$entityKinds}.
-- "key" must be one of: {$relationKeyList}.
-- Prefer names that appear in the source text or catalog aliases.
-- Write mention names in nominative case (именительный падеж).
-- Do not propose job titles or offices without a personal name (e.g. not "Примоген" alone).
-- Do not create nodes for bloodlines, generations, or textbook facts unrelated to this chronicle.
-- Traditions and customs are concepts, not dated events.
-- Omit empty arrays when nothing applies.
+{$rules}
 TEXT;
 
         $user = <<<TEXT
@@ -122,10 +185,7 @@ TEXT;
         array $relationKeys,
         bool $truncated = false,
     ): array {
-        $entityKinds = implode(', ', array_map(
-            fn (WorldEntityType $type): string => $type->value,
-            WorldEntityType::cases(),
-        ));
+        $entityKinds = implode(', ', $this->directoryKindValues());
         $relationKeyList = $relationKeys === [] ? '(none)' : implode(', ', $relationKeys);
         $catalog = $catalogLines === []
             ? '(empty — no known entities yet)'
@@ -133,6 +193,7 @@ TEXT;
         $truncationNote = $truncated
             ? "\n- The message log was truncated to the newest lines; cite only message ids present in the slice."
             : '';
+        $rules = $this->graphExtractionRules($relationKeyList, true);
 
         $system = <<<TEXT
 /no_think
@@ -153,14 +214,9 @@ Schema:
   "memories": []
 }
 
-Rules:
-- Use entity names as plain text only. Never output numeric entity IDs.
-- "kind" must be one of: {$entityKinds}.
-- "key" must be one of: {$relationKeyList}.
+{$rules}
 - "source_message_ids" must reference message ids from the scene log (id column).
-- Prefer names from participants, the catalog, or the message authors.
-- Do not output lore articles or memories — leave "memories" empty.
-- Omit empty arrays when nothing applies.{$truncationNote}
+- Prefer names from participants, the catalog, or the message authors.{$truncationNote}
 TEXT;
 
         $user = <<<TEXT

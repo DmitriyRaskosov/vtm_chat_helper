@@ -227,6 +227,8 @@ class GraphExtractorService
                 'candidates' => $candidates,
             ]);
 
+            ExtractionRunCompletion::finalizeIfComplete($run->refresh());
+
             $scene->refresh();
             $cursor = $scene->last_extracted_to_message_id;
             if ($cursor === null || (int) $cursor < $toMessageId) {
@@ -298,7 +300,7 @@ class GraphExtractorService
         $parsed = $this->parseModelResponse($raw);
         $candidates = $matchCallback($parsed);
 
-        return ExtractionRun::query()->create([
+        $run = ExtractionRun::query()->create([
             'chronicle_id' => $chronicle->id,
             'source_type' => $sourceType,
             'source_id' => $sourceId,
@@ -312,6 +314,28 @@ class GraphExtractorService
             'candidates' => $candidates,
             'user_id' => $user->id,
         ]);
+
+        $this->supersedePriorInboxRuns($chronicle, $sourceType, $sourceId, (int) $run->id);
+
+        return ExtractionRunCompletion::finalizeIfComplete($run);
+    }
+
+    private function supersedePriorInboxRuns(
+        Chronicle $chronicle,
+        ExtractionSourceType $sourceType,
+        int $sourceId,
+        int $replacementRunId,
+    ): void {
+        ExtractionRun::query()
+            ->where('chronicle_id', $chronicle->id)
+            ->where('source_type', $sourceType)
+            ->where('source_id', $sourceId)
+            ->where('status', ExtractionRunStatus::NeedsReview)
+            ->where('id', '!=', $replacementRunId)
+            ->update([
+                'status' => ExtractionRunStatus::Superseded,
+                'superseded_by_run_id' => $replacementRunId,
+            ]);
     }
 
     /**

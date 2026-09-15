@@ -18,16 +18,6 @@ use InvalidArgumentException;
 
 class WorldEntityController extends Controller
 {
-    /**
-     * @var list<WorldEntityType>
-     */
-    public const DIRECTORY_TYPES = [
-        WorldEntityType::Faction,
-        WorldEntityType::Location,
-        WorldEntityType::Item,
-        WorldEntityType::Concept,
-    ];
-
     public function __construct(private WorldEntityService $entities) {}
 
     public function index(Request $request): JsonResponse
@@ -35,12 +25,22 @@ class WorldEntityController extends Controller
         $chronicleId = Chronicle::resolveId(
             $request->filled('chronicle_id') ? $request->integer('chronicle_id') : null,
         );
-        $types = array_map(fn (WorldEntityType $type): string => $type->value, self::DIRECTORY_TYPES);
+        $types = array_map(fn (WorldEntityType $type): string => $type->value, WorldEntityService::DIRECTORY_TYPES);
 
         $query = WorldEntity::query()
             ->where('chronicle_id', $chronicleId)
             ->whereIn('entity_type', $types)
-            ->with(['faction', 'location', 'item', 'concept', 'aliases'])
+            ->with([
+                'faction',
+                'clan',
+                'coterie',
+                'circle',
+                'other',
+                'location',
+                'item',
+                'concept',
+                'aliases',
+            ])
             ->orderBy('entity_type')
             ->orderBy('canonical_name')
             ->orderBy('id');
@@ -68,9 +68,13 @@ class WorldEntityController extends Controller
             $description = null;
         }
 
-        $typed = $this->entities->directoryTyped($type, $validated['subtype'] ?? null);
+        $typed = $this->entities->defaultTypedPayload($type);
         if ($type === WorldEntityType::Faction && array_key_exists('parent_faction_id', $validated)) {
             $typed['parent_faction_id'] = $validated['parent_faction_id'];
+        }
+        if (in_array($type, [WorldEntityType::Clan, WorldEntityType::Coterie, WorldEntityType::Circle], true)
+            && array_key_exists('sect_faction_id', $validated)) {
+            $typed['sect_faction_id'] = $validated['sect_faction_id'];
         }
 
         try {
@@ -108,9 +112,6 @@ class WorldEntityController extends Controller
         if ($description === '') {
             $description = null;
         }
-        $subtype = isset($validated['subtype']) && is_string($validated['subtype']) && trim($validated['subtype']) !== ''
-            ? trim($validated['subtype'])
-            : null;
         $aliases = array_key_exists('aliases', $validated)
             ? $this->akaList($validated['aliases'] ?? [])
             : null;
@@ -118,16 +119,21 @@ class WorldEntityController extends Controller
         $parentFactionId = $updateParentFaction && $validated['parent_faction_id'] !== null
             ? (int) $validated['parent_faction_id']
             : null;
+        $updateSectFaction = array_key_exists('sect_faction_id', $validated);
+        $sectFactionId = $updateSectFaction && $validated['sect_faction_id'] !== null
+            ? (int) $validated['sect_faction_id']
+            : null;
 
         try {
             $entity = $this->entities->update(
                 $worldEntity,
                 $validated['canonical_name'],
                 $description,
-                $subtype,
                 $aliases,
                 $updateParentFaction,
                 $parentFactionId,
+                $updateSectFaction,
+                $sectFactionId,
             );
         } catch (InvalidArgumentException $e) {
             abort(422, $e->getMessage());
@@ -161,15 +167,17 @@ class WorldEntityController extends Controller
      */
     private function serialize(WorldEntity $entity): array
     {
-        $entity->loadMissing(['faction', 'location', 'item', 'concept', 'aliases']);
-
-        $subtype = match ($entity->entity_type) {
-            WorldEntityType::Faction => $entity->faction?->faction_type?->value,
-            WorldEntityType::Location => $entity->location?->location_type?->value,
-            WorldEntityType::Item => $entity->item?->item_type?->value,
-            WorldEntityType::Concept => $entity->concept?->concept_type?->value,
-            default => null,
-        };
+        $entity->loadMissing([
+            'faction',
+            'clan',
+            'coterie',
+            'circle',
+            'other',
+            'location',
+            'item',
+            'concept',
+            'aliases',
+        ]);
 
         $aliases = $entity->aliases
             ->filter(fn ($alias): bool => $alias->alias_type === WorldEntityAliasType::Aka)
@@ -182,13 +190,25 @@ class WorldEntityController extends Controller
             'entity_type' => $entity->entity_type->value,
             'canonical_name' => $entity->canonical_name,
             'short_description' => $entity->short_description,
-            'subtype' => $subtype,
             'aliases' => $aliases,
             'parent_faction_id' => $entity->entity_type === WorldEntityType::Faction && $entity->faction?->parent_faction_id !== null
                 ? (int) $entity->faction->parent_faction_id
                 : null,
+            'sect_faction_id' => $this->sectFactionId($entity),
             'status' => $entity->status->value,
         ];
+    }
+
+    private function sectFactionId(WorldEntity $entity): ?int
+    {
+        $id = match ($entity->entity_type) {
+            WorldEntityType::Clan => $entity->clan?->sect_faction_id,
+            WorldEntityType::Coterie => $entity->coterie?->sect_faction_id,
+            WorldEntityType::Circle => $entity->circle?->sect_faction_id,
+            default => null,
+        };
+
+        return $id !== null ? (int) $id : null;
     }
 
     /**
@@ -221,8 +241,8 @@ class WorldEntityController extends Controller
             abort(404);
         }
 
-        if (! in_array($entity->entity_type, self::DIRECTORY_TYPES, true)) {
-            abort(422, 'This endpoint archives factions, locations, items, and concepts.');
+        if (! in_array($entity->entity_type, WorldEntityService::DIRECTORY_TYPES, true)) {
+            abort(422, 'This endpoint archives directory entities only.');
         }
     }
 }

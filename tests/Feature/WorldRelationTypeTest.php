@@ -31,7 +31,10 @@ class WorldRelationTypeTest extends TestCase
         $this->assertFalse($memberOf->symmetric);
         $this->assertFalse($memberOf->transitive);
         $this->assertTrue($memberOf->enabled);
-        $this->assertSame(['character'], $memberOf->allowedSourceTypeValues());
+        $this->assertSame(
+            ['character', 'clan', 'coterie', 'circle', 'faction'],
+            $memberOf->allowedSourceTypeValues(),
+        );
         $this->assertSame(['faction'], $memberOf->allowedTargetTypeValues());
 
         $allied = WorldRelationType::query()->where('key', 'allied_with')->firstOrFail();

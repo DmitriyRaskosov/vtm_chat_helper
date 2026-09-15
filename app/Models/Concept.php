@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\ConceptType;
 use App\Enums\WorldEntityType;
 use Database\Factories\ConceptFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -14,7 +13,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'id',
     'chronicle_id',
     'entity_type',
-    'concept_type',
     'definition',
 ])]
 class Concept extends Model
@@ -37,7 +35,6 @@ class Concept extends Model
         return [
             'id' => 'integer',
             'entity_type' => WorldEntityType::class,
-            'concept_type' => ConceptType::class,
         ];
     }
 }

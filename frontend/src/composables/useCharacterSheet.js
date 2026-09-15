@@ -91,8 +91,8 @@ export function useCharacterSheet() {
     const extractorEnabled = ref(false);
     const extracting = ref(false);
     const compact = computed(() => sheet.value?.character_type === 'ghoul');
-    const sects = computed(() => worldEntities.value.filter((row) => row.entity_type === 'faction' && row.subtype === 'sect'));
-    const clans = computed(() => worldEntities.value.filter((row) => row.entity_type === 'faction' && row.subtype === 'clan'));
+    const sects = computed(() => worldEntities.value.filter((row) => row.entity_type === 'faction'));
+    const clans = computed(() => worldEntities.value.filter((row) => row.entity_type === 'clan'));
     const havens = computed(() => worldEntities.value.filter((row) => row.entity_type === 'location'));
     const statsMap = computed(() => {
         const map = {};
@@ -327,8 +327,10 @@ export function useCharacterSheet() {
         error.value = '';
         try {
             const payload = kind === 'haven'
-                ? { canonical_name: name, entity_type: 'location', subtype: 'site' }
-                : { canonical_name: name, entity_type: 'faction', subtype: kind };
+                ? { canonical_name: name, entity_type: 'location' }
+                : kind === 'clan'
+                    ? { canonical_name: name, entity_type: 'clan' }
+                    : { canonical_name: name, entity_type: 'faction' };
             const { data } = await api.post('/world/entities', payload);
             worldEntities.value = [...worldEntities.value, data.entity];
             if (kind === 'sect') {

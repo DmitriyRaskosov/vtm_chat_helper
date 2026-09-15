@@ -2,27 +2,27 @@
 
 namespace Database\Factories;
 
-use App\Enums\ItemStatus;
+use App\Enums\FactionStatus;
 use App\Enums\WorldEntityType;
-use App\Models\Item;
+use App\Models\Circle;
 use App\Models\WorldEntity;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
- * @extends Factory<Item>
+ * @extends Factory<Circle>
  */
-class ItemFactory extends Factory
+class CircleFactory extends Factory
 {
     public function definition(): array
     {
         return [
-            'id' => WorldEntity::factory()->state(['entity_type' => WorldEntityType::Item]),
+            'id' => WorldEntity::factory()->state(['entity_type' => WorldEntityType::Circle]),
             'chronicle_id' => fn (array $attributes) => WorldEntity::query()
                 ->findOrFail($attributes['id'])
                 ->chronicle_id,
-            'entity_type' => WorldEntityType::Item,
-            'owner_entity_id' => null,
-            'status' => ItemStatus::Intact,
+            'entity_type' => WorldEntityType::Circle,
+            'sect_faction_id' => null,
+            'status' => FactionStatus::Active,
         ];
     }
 }

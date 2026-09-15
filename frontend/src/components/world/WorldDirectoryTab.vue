@@ -1,7 +1,7 @@
 <template>
     <section class="card">
             <h2>Справочник</h2>
-            <p class="muted">Группы, места, предметы и идеи хроники. Персонажи остаются на отдельном экране.</p>
+            <p class="muted">Секты / фракции, кланы, места, предметы и идеи хроники. Персонажи остаются на отдельном экране.</p>
             <div class="sheet-actions">
                 <button v-if="editing" type="button" class="secondary" @click="emit('new')">Новая</button>
             </div>
@@ -16,21 +16,26 @@
                         <option v-for="row in entityTypes" :key="row.value" :value="row.value">{{ row.label }}</option>
                     </select>
                 </label>
-                <label>
-                    Подтип
-                    <select v-model="form.subtype">
-                        <option v-for="row in subtypesFor(form.entity_type)" :key="row.value" :value="row.value">
-                            {{ row.label }}
-                        </option>
-                    </select>
-                </label>
                 <label v-if="form.entity_type === 'faction'">
-                    Входит в группу
+                    Родительская секта / фракция
                     <select v-model="form.parent_faction_id">
                         <option value="">— ни в какую —</option>
                         <option
                             v-for="row in parentFactionOptions"
                             :key="'parent-'+row.id"
+                            :value="String(row.id)"
+                        >
+                            {{ row.canonical_name }}
+                        </option>
+                    </select>
+                </label>
+                <label v-if="hasSectFactionField(form.entity_type)">
+                    Секта / фракция
+                    <select v-model="form.sect_faction_id">
+                        <option value="">— не указана —</option>
+                        <option
+                            v-for="row in factions"
+                            :key="'sect-'+row.id"
                             :value="String(row.id)"
                         >
                             {{ row.canonical_name }}
@@ -86,8 +91,8 @@
                         >
                             {{ row.canonical_name }}
                         </button>
-                        <span v-if="subtypeLabel(row)" class="muted"> · {{ subtypeLabel(row) }}</span>
                         <span v-if="parentFactionName(row)" class="muted"> · в {{ parentFactionName(row) }}</span>
+                        <span v-if="sectLabel(row)" class="muted"> · {{ sectLabel(row) }}</span>
                         <span v-if="row.short_description" class="muted"> — {{ row.short_description }}</span>
                         <button class="link" type="button" @click="emit('archive', row.id)">Скрыть</button>
                     </div>
@@ -102,9 +107,7 @@
                 <li v-for="row in archived" :key="row.id">
                     <div class="character-row">
                         <strong>{{ row.canonical_name }}</strong>
-                        <span class="muted">
-                            · {{ typeLabel(row.entity_type) }}<template v-if="subtypeLabel(row)"> · {{ subtypeLabel(row) }}</template>
-                        </span>
+                        <span class="muted"> · {{ typeLabel(row.entity_type) }}</span>
                         <button class="link" type="button" @click="emit('restore', row.id)">Вернуть</button>
                     </div>
                 </li>
@@ -123,7 +126,7 @@
 
 <script setup>
 import { computed, ref } from 'vue';
-import { entityTypes, subtypeLabel, subtypesFor, typeLabel } from '../../composables/useWorldEntities';
+import { entityTypes, hasSectFactionField, sectFactionName, typeLabel } from '../../composables/useWorldEntities';
 import WorldPoliticsSection from './WorldPoliticsSection.vue';
 
 const props = defineProps({
@@ -150,6 +153,11 @@ function parentFactionName(row) {
         return '';
     }
     return props.factions.find((item) => item.id === row.parent_faction_id)?.canonical_name ?? '';
+}
+
+function sectLabel(row) {
+    const name = sectFactionName(row, props.factions);
+    return name ? `секта: ${name}` : '';
 }
 
 function addAlias() {
