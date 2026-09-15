@@ -18,8 +18,8 @@ cp .env.example .env
 docker compose up -d --build
 docker compose exec laravel.test php artisan key:generate
 docker compose exec laravel.test php artisan migrate
-docker compose exec ollama ollama pull qwen3-embedding:0.6b
-docker compose exec ollama ollama pull qwen3:8b
+ollama pull qwen3-embedding:0.6b
+ollama pull qwen3:8b
 ```
 
 Подробности: [docs/Development/Setup.md](docs/Development/Setup.md).

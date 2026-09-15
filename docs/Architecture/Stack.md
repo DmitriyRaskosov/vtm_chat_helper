@@ -11,12 +11,12 @@
 
 Роли: первый зарегистрированный пользователь — **рассказчик** (`storyteller`), остальные — **игроки** (`player`). Общий чат `messages`. Подробнее: [[Project/Roles]].
 
-## ИИ (Ollama в Docker)
+## ИИ (Ollama)
 
-- Сервис `ollama` в `compose.yaml`, том `sail-ollama`. Порт **11434 не на хост** — Laravel ходит на `http://ollama:11434`.
-- **qwen3-embedding:0.6b** — эмбеддинги (1024-d) для RAG. **qwen3:8b** — генерация черновиков copilot.
-- Pull моделей только в контейнер `ollama`: `docker compose exec ollama ollama pull …`
-- Env: см. [[Development/Environment]].
+- **По умолчанию:** Ollama на **хосте** (GPU). Laravel в Sail: `OLLAMA_URL=http://host.docker.internal:11434`. Pull: `ollama pull …` на хосте.
+- **Опционально:** сервис `ollama` в compose (profile `docker-ollama`, CPU), `OLLAMA_URL=http://ollama:11434`.
+- **qwen3-embedding:0.6b** — эмбеддинги (1024-d). **qwen3:8b** — copilot и экстрактор.
+- Env: [[Development/Environment]], setup: [[Development/Setup]].
 
 ## RAG
 
