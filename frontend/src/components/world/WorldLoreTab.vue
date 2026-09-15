@@ -127,8 +127,20 @@
                 <button type="button" :disabled="savingLore || !loreForm.title.trim() || !loreForm.canonical_text.trim()" @click="saveLore">
                     Сохранить статью
                 </button>
+                <button
+                    v-if="extractorEnabled && loreForm.id"
+                    type="button"
+                    class="secondary"
+                    :disabled="extracting || savingLore"
+                    @click="runExtraction"
+                >
+                    {{ extracting ? 'Разбор…' : 'Разобрать' }}
+                </button>
                 <span v-if="flashLore" class="saved-flash">Сохранено!</span>
             </div>
+            <p v-if="extractorEnabled && loreForm.id" class="muted">
+                Кандидаты графа появятся на вкладке «Разбор».
+            </p>
         </section>
 
         <section class="card">
@@ -166,11 +178,14 @@ defineProps({
     characterOptions: { type: Array, required: true },
     savingLore: { type: Boolean, required: true },
     flashLore: { type: Boolean, required: true },
+    extractorEnabled: { type: Boolean, required: true },
+    extracting: { type: Boolean, required: true },
     newLore: { type: Function, required: true },
     selectLore: { type: Function, required: true },
     saveLore: { type: Function, required: true },
     archiveLore: { type: Function, required: true },
     restoreLore: { type: Function, required: true },
+    runExtraction: { type: Function, required: true },
     exceptionToggle: { type: Function, required: true },
 });
 

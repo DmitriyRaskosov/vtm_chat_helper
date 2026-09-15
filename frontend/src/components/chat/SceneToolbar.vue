@@ -56,6 +56,22 @@
             >
                 Закрыть сцену
             </button>
+            <button
+                v-if="extractorEnabled && selectedScene"
+                type="button"
+                class="secondary"
+                :disabled="sceneLoading || extracting"
+                @click="emit('extract')"
+            >
+                {{ extracting ? 'Разбор…' : 'Разобрать' }}
+            </button>
+            <router-link
+                v-if="inboxCount > 0"
+                to="/world?tab=inbox"
+                class="inbox-badge"
+            >
+                {{ inboxCount }} {{ inboxCount === 1 ? 'окно ждёт' : 'окон ждут' }}
+            </router-link>
         </div>
 
         <div v-if="isStoryteller" class="scene-cast">
@@ -152,6 +168,9 @@ defineProps({
     participantBusy: { type: Boolean, required: true },
     participantError: { type: String, required: true },
     participantFlash: { type: String, required: true },
+    extractorEnabled: { type: Boolean, default: false },
+    extracting: { type: Boolean, default: false },
+    inboxCount: { type: Number, default: 0 },
 });
 
 const selectedSceneId = defineModel('selectedSceneId');
@@ -159,5 +178,14 @@ const newSceneTitle = defineModel('newSceneTitle', { type: String });
 const addCharacterId = defineModel('addCharacterId');
 const newGameSessionTitle = defineModel('newGameSessionTitle', { type: String });
 
-const emit = defineEmits(['switch', 'create-scene', 'activate', 'close', 'add', 'remove', 'create-session']);
+const emit = defineEmits([
+    'switch',
+    'create-scene',
+    'activate',
+    'close',
+    'add',
+    'remove',
+    'create-session',
+    'extract',
+]);
 </script>

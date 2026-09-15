@@ -47,6 +47,8 @@ Views — оболочки маршрутов. Разметка блоков и 
 | `SceneContextController.php` | GET/PUT канона сцены |
 | `SceneParticipantController.php` | list/enter/leave участников |
 | `CopilotController.php` | POST `/api/copilot/drafts` (storyteller) |
+| `ExtractController.php` | POST/GET `/api/extract` (storyteller) |
+| `WorldEventController.php` | POST `/api/world/events`, participants, sources |
 | `RagSearchController.php` | GET `/api/rag/search` (storyteller) |
 | `CharacterSheetController.php` | catalog, CRUD листа V20, place |
 | `WorldEntityController.php` | ST-справочник faction/location/item/concept |
@@ -92,6 +94,16 @@ Views — оболочки маршрутов. Разметка блоков и 
 | `Message.php` | scene_id, body, npc_name snapshot, nullable author_character_id, token estimate, nullable copilot_request_id, nullable user_id |
 | `RagChunk.php` | векторный индекс для RAG |
 | `CopilotRequest.php` | prompt, drafts, context metadata, character_id для новых строк, snapshot npc_name |
+| `ExtractionRun.php` | прогон экстрактора: source_type/id, driver, model, raw_response, candidates jsonb, user_id |
+
+### Extractor/
+
+- `GraphExtractorService.php` — прогон лора/био/сцены → Ollama → matcher → `extraction_runs`
+- `SceneExtractionWindowPlanner.php`, `SceneExtractionDispatcher.php` — окна сцены и enqueue
+- `SceneSliceBuilder.php` — срез ленты сцены для промпта
+- `BiographySliceBuilder.php` — срез биографии персонажа
+- `ExtractionCandidateService.php` — accept/discard кандидатов в канон
+- `EntityCatalogBuilder.php`, `ExtractionPromptBuilder.php`, `ExtractionResponseParser.php`, `ExtractionCandidateMatcher.php`
 
 ### Context/
 
@@ -168,6 +180,7 @@ Views — оболочки маршрутов. Разметка блоков и 
 ### Jobs
 
 - `IndexRagMessageJob.php` — индексация после сообщения
+- `RunSceneExtractionJob.php` — фоновый прогон окна сцены (`ShouldBeUnique` по scene+окну)
 
 ### Enums
 
@@ -246,4 +259,4 @@ Views — оболочки маршрутов. Разметка блоков и 
 
 Подробнее: [[Features/Copilot]], [[API/Copilot]].
 
-Ollama только внутри Docker: `http://ollama:11434` (порт 11434 не на хосте).
+Host Ollama (GPU): `http://host.docker.internal:11434` из Sail. Опционально CPU в Docker — profile `docker-ollama`, `OLLAMA_URL=http://ollama:11434`.

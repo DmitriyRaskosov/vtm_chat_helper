@@ -2,6 +2,22 @@ import { computed, reactive, ref } from 'vue';
 import { api } from '../auth';
 import { typeLabel } from './useWorldEntities';
 
+export const extractionKindLabels = {
+    faction: 'группа',
+    location: 'место',
+    item: 'предмет',
+    concept: 'идея',
+    character: 'персонаж',
+    event: 'событие',
+};
+
+export const extractionDirectoryKinds = [
+    { value: 'faction', label: 'группа' },
+    { value: 'location', label: 'место' },
+    { value: 'item', label: 'предмет' },
+    { value: 'concept', label: 'идея' },
+];
+
 export const loreKinds = [
     { value: 'history', label: 'История' },
     { value: 'place', label: 'Место' },
@@ -24,7 +40,7 @@ export const loreAccessLevels = [
 export const aboutFilterChips = [
     { value: 'all', label: 'все' },
     { value: 'characters', label: 'НПС и гули' },
-    { value: 'faction', label: 'фракции' },
+    { value: 'faction', label: 'группы' },
     { value: 'location', label: 'места' },
     { value: 'item', label: 'предметы' },
     { value: 'concept', label: 'идеи' },
@@ -82,9 +98,42 @@ function matchesAboutFilter(row, filter) {
     return row.entity_type === filter;
 }
 
+export function extractionCandidateLabel(candidate, type) {
+    if (type === 'relation') {
+        return `${candidate.source} → ${candidate.target} (${candidate.key})`;
+    }
+    const kind = extractionKindLabels[candidate.kind] ?? candidate.kind;
+    if (candidate.candidate_type === 'new_entity') {
+        return `${candidate.name} · новая ${kind}`;
+    }
+    return `${candidate.name} · ${kind}`;
+}
+
+export function inboxRunLabel(run) {
+    if (run.source_type === 'lore') {
+        return run.source_label || `Статья #${run.source_id}`;
+    }
+    if (run.source_type === 'biography') {
+        return run.source_label ? `Био: ${run.source_label}` : `Персонаж #${run.source_id}`;
+    }
+    return run.source_label || run.scene_title || `Сцена #${run.source_id}`;
+}
+
+export function inboxRunMeta(run) {
+    if (run.source_type === 'scene') {
+        return `сообщения ${run.from_message_id}–${run.to_message_id} (${run.message_count ?? '?'})`;
+    }
+    if (run.source_type === 'lore') {
+        return 'статья лора';
+    }
+    return 'биография';
+}
+
 export function useWorldLore({ error, entities, archived }) {
     const savingLore = ref(false);
     const flashLore = ref(false);
+    const extractorEnabled = ref(false);
+    const extracting = ref(false);
     const loreList = ref([]);
     const loreArchived = ref([]);
     const characterOptions = ref([]);
@@ -152,6 +201,15 @@ export function useWorldLore({ error, entities, archived }) {
         loreForm[other] = loreForm[other].filter((value) => value !== id);
     }
 
+    async function loadExtractorStatus() {
+        try {
+            const { data } = await api.get('/extract/status');
+            extractorEnabled.value = Boolean(data.enabled);
+        } catch {
+            extractorEnabled.value = false;
+        }
+    }
+
     function resetLoreForm() {
         loreForm.id = null;
         loreForm.title = '';
@@ -196,9 +254,26 @@ export function useWorldLore({ error, entities, archived }) {
     async function openLoreTab() {
         error.value = '';
         try {
-            await loadLore();
+            await Promise.all([loadLore(), loadExtractorStatus()]);
         } catch (e) {
             error.value = e.response?.data?.message ?? 'Не удалось загрузить лор.';
+        }
+    }
+
+    async function runExtraction() {
+        if (!loreForm.id || extracting.value) {
+            return null;
+        }
+        extracting.value = true;
+        error.value = '';
+        try {
+            const { data } = await api.post('/extract', { lore_entry_id: loreForm.id }, { timeout: 320000 });
+            return data.extraction_run_id ?? data.run?.id ?? null;
+        } catch (e) {
+            error.value = e.response?.data?.message ?? 'Не удалось разобрать статью.';
+            return null;
+        } finally {
+            extracting.value = false;
         }
     }
 
@@ -278,6 +353,8 @@ export function useWorldLore({ error, entities, archived }) {
     return {
         savingLore,
         flashLore,
+        extractorEnabled,
+        extracting,
         loreList,
         loreArchived,
         characterOptions,
@@ -288,6 +365,7 @@ export function useWorldLore({ error, entities, archived }) {
         aboutFilter,
         onExceptionToggle,
         openLoreTab,
+        runExtraction,
         newLore,
         selectLore,
         saveLore,

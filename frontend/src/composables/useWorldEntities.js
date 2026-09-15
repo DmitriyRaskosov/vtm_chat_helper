@@ -2,7 +2,7 @@ import { computed, reactive, ref, watch } from 'vue';
 import { api } from '../auth';
 
 export const entityTypes = [
-    { value: 'faction', label: 'Фракция' },
+    { value: 'faction', label: 'Группа' },
     { value: 'location', label: 'Место' },
     { value: 'item', label: 'Предмет' },
     { value: 'concept', label: 'Идея' },
@@ -12,7 +12,7 @@ const factionSubtypes = [
     { value: 'sect', label: 'Секта' },
     { value: 'clan', label: 'Клан' },
     { value: 'coterie', label: 'Котерия' },
-    { value: 'guild', label: 'Гильдия' },
+    { value: 'circle', label: 'Круг' },
     { value: 'other', label: 'Другое' },
 ];
 const locationSubtypes = [
@@ -48,14 +48,15 @@ export function typeLabel(type) {
 }
 
 export function subtypeLabel(row) {
-    return subtypesFor(row.entity_type).find((item) => item.value === row.subtype)?.label ?? row.subtype ?? '';
+    const label = subtypesFor(row.entity_type).find((item) => item.value === row.subtype)?.label ?? row.subtype ?? '';
+    return label === '—' ? '' : label;
 }
 
-function defaultSubtype(type) {
+export function defaultSubtype(type) {
     if (type === 'location') return 'site';
     if (type === 'item') return 'mundane';
-    if (type === 'concept') return 'other';
-    return 'sect';
+    if (type === 'faction') return 'other';
+    return 'other';
 }
 
 function emptyForm() {
@@ -63,8 +64,10 @@ function emptyForm() {
         id: null,
         canonical_name: '',
         entity_type: 'faction',
-        subtype: 'sect',
+        subtype: 'other',
         short_description: '',
+        aliases: [],
+        parent_faction_id: '',
     };
 }
 
@@ -76,7 +79,7 @@ export function useWorldEntities({ error, reload }) {
 
     const factions = computed(() => entities.value.filter((row) => row.entity_type === 'faction'));
     const directoryGroups = computed(() => [
-        { type: 'faction', title: 'Фракции', rows: entities.value.filter((row) => row.entity_type === 'faction') },
+        { type: 'faction', title: 'Группы', rows: entities.value.filter((row) => row.entity_type === 'faction') },
         { type: 'location', title: 'Места', rows: entities.value.filter((row) => row.entity_type === 'location') },
         { type: 'item', title: 'Предметы', rows: entities.value.filter((row) => row.entity_type === 'item') },
         { type: 'concept', title: 'Идеи', rows: entities.value.filter((row) => row.entity_type === 'concept') },
@@ -88,6 +91,7 @@ export function useWorldEntities({ error, reload }) {
             return;
         }
         form.subtype = defaultSubtype(type);
+        form.parent_faction_id = '';
     });
 
     function resetForm() {
@@ -100,6 +104,8 @@ export function useWorldEntities({ error, reload }) {
         form.entity_type = row.entity_type;
         form.subtype = row.subtype ?? defaultSubtype(row.entity_type);
         form.short_description = row.short_description ?? '';
+        form.aliases = [...(row.aliases ?? [])];
+        form.parent_faction_id = row.parent_faction_id ? String(row.parent_faction_id) : '';
     }
 
     async function fetchEntities() {
@@ -120,10 +126,14 @@ export function useWorldEntities({ error, reload }) {
                 canonical_name: form.canonical_name.trim(),
                 entity_type: form.entity_type,
                 subtype: form.subtype,
+                aliases: [...form.aliases],
             };
             const description = form.short_description.trim();
             if (description) {
                 payload.short_description = description;
+            }
+            if (form.entity_type === 'faction') {
+                payload.parent_faction_id = form.parent_faction_id ? Number(form.parent_faction_id) : null;
             }
             await api.post('/world/entities', payload);
             resetForm();
@@ -132,6 +142,7 @@ export function useWorldEntities({ error, reload }) {
             error.value = e.response?.data?.message
                 ?? e.response?.data?.errors?.canonical_name?.[0]
                 ?? e.response?.data?.errors?.subtype?.[0]
+                ?? e.response?.data?.errors?.parent_faction_id?.[0]
                 ?? 'Не удалось создать сущность.';
         } finally {
             saving.value = false;
@@ -149,13 +160,18 @@ export function useWorldEntities({ error, reload }) {
                 canonical_name: form.canonical_name.trim(),
                 short_description: form.short_description.trim() || null,
                 subtype: form.subtype,
+                aliases: [...form.aliases],
             };
+            if (form.entity_type === 'faction') {
+                payload.parent_faction_id = form.parent_faction_id ? Number(form.parent_faction_id) : null;
+            }
             await api.put(`/world/entities/${form.id}`, payload);
             await reload();
         } catch (e) {
             error.value = e.response?.data?.message
                 ?? e.response?.data?.errors?.canonical_name?.[0]
                 ?? e.response?.data?.errors?.subtype?.[0]
+                ?? e.response?.data?.errors?.parent_faction_id?.[0]
                 ?? 'Не удалось сохранить сущность.';
         } finally {
             saving.value = false;

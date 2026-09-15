@@ -1,4 +1,8 @@
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+
+export function extractionMemoryLabel(candidate) {
+    return `${candidate.text} · ${candidate.node_type}`;
+}
 import { useRoute } from 'vue-router';
 import { api, useAuth } from '../auth';
 
@@ -84,7 +88,8 @@ export function useCharacterSheet() {
         place: false,
     });
     const flashTimers = {};
-
+    const extractorEnabled = ref(false);
+    const extracting = ref(false);
     const compact = computed(() => sheet.value?.character_type === 'ghoul');
     const sects = computed(() => worldEntities.value.filter((row) => row.entity_type === 'faction' && row.subtype === 'sect'));
     const clans = computed(() => worldEntities.value.filter((row) => row.entity_type === 'faction' && row.subtype === 'clan'));
@@ -175,6 +180,19 @@ export function useCharacterSheet() {
         merits.value.splice(index, 1);
     }
 
+    async function loadExtractorStatus() {
+        if (!isStoryteller.value) {
+            extractorEnabled.value = false;
+            return;
+        }
+        try {
+            const { data } = await api.get('/extract/status');
+            extractorEnabled.value = Boolean(data.enabled);
+        } catch {
+            extractorEnabled.value = false;
+        }
+    }
+
     function applySheet(next) {
         sheet.value = next;
         identity.canonical_name = next.canonical_name ?? '';
@@ -202,6 +220,23 @@ export function useCharacterSheet() {
         healthDamage.value = damaged?.damage ?? 'bashing';
     }
 
+    async function runBiographyExtraction() {
+        if (!sheet.value?.id || extracting.value) {
+            return null;
+        }
+        extracting.value = true;
+        error.value = '';
+        try {
+            const { data } = await api.post('/extract', { character_id: sheet.value.id }, { timeout: 320000 });
+            return data.extraction_run_id ?? data.run?.id ?? null;
+        } catch (e) {
+            error.value = e.response?.data?.message ?? 'Не удалось разобрать биографию.';
+            return null;
+        } finally {
+            extracting.value = false;
+        }
+    }
+
     async function load() {
         error.value = '';
         try {
@@ -225,6 +260,7 @@ export function useCharacterSheet() {
                 worldEntities.value = worldRes.data.entities ?? [];
             }
             applySheet(sheetRes.data.character);
+            await loadExtractorStatus();
         } catch (e) {
             error.value = e.response?.data?.message ?? 'Не удалось загрузить лист.';
         }
@@ -482,5 +518,8 @@ export function useCharacterSheet() {
         saveMerits,
         setDiscipline,
         addDiscipline,
+        extractorEnabled,
+        extracting,
+        runBiographyExtraction,
     };
 }

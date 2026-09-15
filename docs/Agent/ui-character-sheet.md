@@ -19,9 +19,11 @@ Route: `/characters/:id`. Shell: `frontend/src/views/CharacterSheetView.vue`.
 | Disciplines / backgrounds / virtues | `frontend/src/components/sheet/SheetAdvantagesSection.vue` |
 | Merits & flaws | `frontend/src/components/sheet/SheetMeritsSection.vue` |
 | Humanity / Willpower | `frontend/src/components/sheet/SheetOtherSection.vue` |
-| Биография | `frontend/src/components/sheet/SheetBiographySection.vue` |
+| Биография, экстрактор памяти | `frontend/src/components/sheet/SheetBiographySection.vue`, `useCharacterSheet.js` (`runBiographyExtraction` → `/world?tab=inbox`) |
 | Место в мире + lore_clearance_levels | `frontend/src/components/sheet/SheetPlaceSection.vue` |
 | Шапка сайта | `frontend/src/components/layout/AppNav.vue` |
+
+Экстрактор био (ST): `GET /api/extract/status`, `POST /api/extract` с `character_id` — кандидаты памяти принимаются на `/world` → вкладка «Разбор». См. [[API/Extract]].
 
 Контракт места:
 

@@ -16,6 +16,8 @@ ST-only статьи канона хроники. Доступ NPC: уровен
 
 Полная статья: список плюс `canonical_text`, `entity_ids`, `entities` (`id`, `canonical_name`, `entity_type`), `granted_character_ids`, `denied_character_ids`.
 
+На экране мира у сохранённой статьи рассказчик может запустить разбор графа (`POST /api/extract` с `lore_entry_id`) и принять кандидатов — см. [[API/Extract]].
+
 ## POST /api/lore
 
 **201.** Body: `title`, `canonical_text`, optional `kind` (`history`/`place`/`faction`/`person`/`ritual`/`item`/`custom`, дефолт `custom`), `visibility` (`public` / `storyteller_only`, дефолт `public`; на NPC не влияет, в SPA скрыта — всегда шлётся `public`), `classification` (`0`–`5`, дефолт `0`), `situational` (boolean, дефолт `false`), `entity_ids[]`, `granted_character_ids[]`, `denied_character_ids[]`.

@@ -42,6 +42,7 @@ HTTP создание персонажей — [[API/Characters]]. Игрок м
 - `restore` — `status=active`, `archived_at` сбрасывается; у персонажа `is_active=true`
 - `assertClanFaction` — клан персонажа только активная фракция `faction_type=clan`
 - `findByAlias` / `assertSameChronicle` — chronicle scope
+- `addAka` / `syncAka` — дополнительные имена (`aka`); канон только через rename
 
 Физическое удаление запрещено: Eloquent `delete()` бросает `CannotDeleteWorldEntityException`, триггер PostgreSQL отклоняет `DELETE`.
 
@@ -75,7 +76,7 @@ HTTP создание персонажей — [[API/Characters]]. Игрок м
 
 `character_relationships` — typed extension ребра character→character без метрик и без журнала (набор шкал не зафиксирован). A→B ≠ B→A.
 
-`character_affiliations` — typed extension character→faction/location/item/concept с stance, метриками 0–5 и журналом `character_affiliation_changes`. Секта листа — единственный активный `member` к `faction_type=sect` (`member_of`); гавань — единственный активный `resident` к location (`located_at`). Котерия этим слотом не заменяется.
+`character_affiliations` — typed extension character→faction/location/item/concept с stance, метриками 0–5 и журналом `character_affiliation_changes`. Секта листа — единственный активный `member` к `faction_type=sect` (`member_of`); гавань — единственный активный `resident` к location (`located_at`). Котерия и `faction_type=circle` этим слотом не заменяются. Подтипы фракций: `sect`, `clan`, `coterie`, `circle`, `other`.
 
 События — typed `world_events` плюс participants/sources. Место, причина, свидетели и участие — рёбра `occurred_at` / `caused` / `witnessed` / `participated_in`. Таблицы `chronicle_timeline` нет.
 

@@ -386,6 +386,14 @@ button.link {
 .place-create-row input { margin: 0; }
 .place-create-row button { margin: 0; white-space: nowrap; }
 .world-desc { grid-column: 1 / -1; }
+.alias-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: flex-end;
+}
+.alias-row input { flex: 1; min-width: 10rem; }
+.extraction-mention-edit { margin-bottom: 1rem; }
 .world-politics { margin-top: 0.75rem; }
 .world-tabs {
     display: flex;

@@ -26,6 +26,10 @@
             @add="addToScene"
             @remove="removeFromScene"
             @create-session="onCreateGameSession"
+            :extractor-enabled="extractorEnabled"
+            :extracting="extracting"
+            :inbox-count="inboxCount"
+            @extract="onExtractScene"
         />
 
         <div :class="{ stage: isStoryteller }">
@@ -61,6 +65,7 @@ import ChatLog from '../components/chat/ChatLog.vue';
 import SceneToolbar from '../components/chat/SceneToolbar.vue';
 import StorytellerCopilotPanel from '../components/chat/StorytellerCopilotPanel.vue';
 import { useChatMessages } from '../composables/useChatMessages';
+import { useSceneExtraction } from '../composables/useSceneExtraction';
 import { useSceneSession } from '../composables/useSceneSession';
 
 const auth = useAuth();
@@ -99,6 +104,15 @@ const {
 } = useSceneSession({ auth });
 
 const {
+    extractorEnabled,
+    extracting,
+    inboxCount,
+    loadExtractorStatus,
+    loadInboxCount,
+    runExtraction,
+} = useSceneExtraction({ error: sceneError });
+
+const {
     messages,
     body,
     lastId,
@@ -134,6 +148,13 @@ async function switchScene() {
     resetCopilotDrafts();
     await loadParticipants();
     await load();
+}
+
+async function onExtractScene() {
+    if (!selectedSceneId.value) {
+        return;
+    }
+    await runExtraction(selectedSceneId.value);
 }
 
 async function onCreateGameSession() {
@@ -177,6 +198,10 @@ async function poll() {
         } else {
             await load(lastId());
         }
+
+        if (isStoryteller.value) {
+            await loadInboxCount();
+        }
     } catch {
         // A later poll retries transient API failures.
     } finally {
@@ -191,6 +216,10 @@ async function onNpcSent(message) {
 
 onMounted(async () => {
     await loadGameSession();
+    if (isStoryteller.value) {
+        await loadExtractorStatus();
+        await loadInboxCount();
+    }
     await loadParticipants();
     await load();
     timer = setInterval(poll, 3000);

@@ -10,17 +10,17 @@ ST-only справочник мира и политика фракций. Пер
 
 Активные `faction` / `location` / `item` / `concept` и отдельно `archived`. Персонажи и события не входят.
 
-Элемент: `id`, `entity_type`, `canonical_name`, `short_description`, `subtype` (`faction_type` / `location_type` / `item_type` / `concept_type`), `status`.
+Элемент: `id`, `entity_type`, `canonical_name`, `short_description`, `subtype` (`faction_type` / `location_type` / `item_type` / `concept_type`), `aliases` (только aka, без канонического имени), `parent_faction_id` (только у `faction`, иначе `null`), `status`.
 
 ## POST /api/world/entities
 
-**201.** Body: `canonical_name`, `entity_type` (`faction`/`location`/`item`/`concept`), optional `subtype`, `short_description`, `chronicle_id`.
+**201.** Body: `canonical_name`, `entity_type` (`faction`/`location`/`item`/`concept`), optional `subtype`, `aliases` (список aka), `parent_faction_id` (только фракция; `null` — без родителя), `short_description`, `chronicle_id`.
 
-Дефолты subtype: фракция `other`, место `site`, предмет `mundane`, идея `other`. Дубликат имени/алиаса — **422**. `character`/`event` — **422**.
+Дефолты subtype: фракция `other`, место `site`, предмет `mundane`, идея `other`. Фракции: `sect` / `clan` / `coterie` / `circle` / `other` (`guild` нет, **422**). `circle` — советы, круги влияния; не секта листа, не клан. Иерархия — `parent_faction_id` (та же хроника, не self). Дубликат имени/алиаса — **422**. `character`/`event` — **422**. Не-фракция с `parent_faction_id` — **422**.
 
 ## PUT /api/world/entities/{entity}
 
-**200.** Только активные `faction` / `location` / `item` / `concept` той же хроники. Body: `canonical_name` (required), optional `short_description`, `subtype`. `entity_type` в body запрещён (**422**). Archived / character / event — **422**. Дубликат имени/алиаса — **422**. Имя обновляет канонический alias через `WorldEntityService::update`.
+**200.** Только активные `faction` / `location` / `item` / `concept` той же хроники. Body: `canonical_name` (required); optional `short_description`, `subtype`, `aliases` (заменяет набор aka, канон не трогает; отсутствие поля — aka не менять), `parent_faction_id` (только фракция; `null` снимает родителя; отсутствие поля — не менять). `entity_type` в body запрещён (**422**). Archived / character / event — **422**. Дубликат имени/алиаса — **422**. Имя обновляет канонический alias через `WorldEntityService::update`. Self-parent — **422**.
 
 ## POST /api/world/entities/{entity}/archive
 
@@ -45,6 +45,22 @@ Body: `source_entity_id`, `target_entity_id`, `relation_key` (`hostile_to`|`alli
 ## POST /api/world/faction-relations/{relation}/end
 
 **200.** Ставит `ended_at`. Только политические рёбра фракция–фракция.
+
+## POST /api/world/events
+
+Тонкий ST API вокруг `WorldEntityService::create(Event)` + typed `world_events`. Не полный CRUD; списка/редактора в SPA нет.
+
+**201.** Body: `title` (required); optional `description`/`summary`, `scene_id` (та же хроника), `event_type` (`social`|`violence`|`discovery`|`ritual`|`political`|`other`, default `other`), `importance` 0–5, `visibility`, `chronicle_id`.
+
+## POST /api/world/events/{event}/participants
+
+**201.** Body: `entity_id`, `role` (`actor`|`victim`|`witness`|`organizer`|`mentioned`|`other`). Обёртка `WorldEventService::addParticipant`.
+
+## POST /api/world/events/{event}/sources
+
+**201.** Body: `message_id` и/или `scene_id` (хотя бы одно). Обёртка `WorldEventService::addSource`. Excerpt для message — обрезка body.
+
+Accept экстрактора сцены вызывает те же сервисы напрямую, не этот HTTP.
 
 ## Ошибки
 

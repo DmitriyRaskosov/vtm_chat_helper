@@ -45,7 +45,7 @@ Membership/RBAC нет: текущий рассказчик управляет �
 
 **Auth:** sanctum + `storyteller`.
 
-Закрывает сцену и, если есть `scene_contexts`, фиксирует `frozen_revision`. Сообщения остаются доступны через [[API/Messages]], но новые сообщения и Copilot для закрытой сцены запрещены. LLM при закрытии не вызывается. Дальнейшие правки context/participants дают **409**.
+Закрывает сцену и, если есть `scene_contexts`, фиксирует `frozen_revision`. Сообщения остаются доступны через [[API/Messages]], но новые сообщения и Copilot для закрытой сцены запрещены. LLM **синхронно не ждёт**; незакрытый хвост ленты может быть **поставлен в очередь** (`RunSceneExtractionJob`). Дальнейшие правки context/participants дают **409**.
 
 ## GET /api/scenes/{scene}/context
 

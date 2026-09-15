@@ -10,6 +10,7 @@ Route: `/chat`. Shell: `frontend/src/views/ChatView.vue`.
 |--------|--------|
 | Оболочка: poll, смена сцены, AppNav | `frontend/src/views/ChatView.vue` |
 | Сессия, сцены, «На сцене» | `frontend/src/composables/useSceneSession.js`, `frontend/src/components/chat/SceneToolbar.vue` |
+| Экстрактор сцены (ST) | `frontend/src/composables/useSceneExtraction.js` — кнопка «Разобрать», бейдж inbox; кандидаты в `/world?tab=inbox` |
 | Лента и poll load | `frontend/src/composables/useChatMessages.js`, `frontend/src/components/chat/ChatLog.vue` |
 | Composer игрока | `frontend/src/components/chat/ChatComposer.vue` |
 | Copilot ST | `frontend/src/components/chat/StorytellerCopilotPanel.vue` |

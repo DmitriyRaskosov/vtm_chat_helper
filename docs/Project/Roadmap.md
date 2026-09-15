@@ -2,13 +2,13 @@
 
 Основной архитектурный план чата, Copilot и базы хроники завершён.
 
-Живой пошаговый план — [[Project/Extractor]] (LLM-кандидаты в граф; код не начат). Прицел «этап 3 LLM-черновик» им заменён.
+Живой пошаговый план — [[Project/Extractor]] (LLM-кандидаты в граф; **этап 1 в коде**). Прицел «этап 3 LLM-черновик» им заменён.
 
 Подробный план из 35 этапов и критерии приёмки — в архиве [[Archive/Architecture Migration]].
 
 ## Текущее состояние
 
-- **В работе (план, код позже):** экстрактор графа — очередь кандидатов из лора/био, затем сцены; локальная Ollama, канон только после accept. [[Project/Extractor]].
+- **В работе:** экстрактор графа — этапы 1–4 в коде (лор, био-память, сцена → events/relations); память сцены — после. [[Project/Extractor]], [[API/Extract]].
 - **Готово:** игровые сессии и сцены, Vue-чат, token budget, Context Assembler, аудит `copilot_requests`, `search_messages`, `get_message_range`.
 - **Снято:** L0/L1/final summaries, intent memory, `search_summaries`, глобальный пассивный message-RAG.
 - **Этап 0:** безопасная исходная точка подтверждена 2026-09-11 (`php artisan test` 36 passed, `npm run build` зелёный; L0/intent таблиц и summary-чанков нет).
