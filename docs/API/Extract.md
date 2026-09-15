@@ -58,11 +58,11 @@
 
 **Auth:** sanctum + storyteller
 
-Inbox рассказчика: прогоны сцены со статусом `needs_review` или `failed` (не Laravel queue). Failed — чтобы переразобрать сломанное окно; бейдж «Разбор» считает оба.
+Inbox рассказчика: прогоны **лора, биографии и сцен** со статусом `needs_review` или `failed`. Failed — чтобы переразобрать сломанное окно; бейдж «Разбор» считает оба.
 
 Query: optional `chronicle_id`, `status` (один статус вместо дефолта), `count_only=true` (только `{ "count": N }`).
 
-**Response 200:** `{ "count", "runs": [ { …run, "scene_title", "message_count" } ] }`
+**Response 200:** `{ "count", "runs": [ { …run, "source_label", "scene_title"?, "message_count"? } ] }`
 
 ## POST /api/extract/{run}/reparse
 
