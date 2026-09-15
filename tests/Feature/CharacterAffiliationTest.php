@@ -234,6 +234,25 @@ class CharacterAffiliationTest extends TestCase
         $this->assertTrue(WorldRelation::query()->findOrFail($coterieRow->id)->isActive());
     }
 
+    public function test_set_sect_rejects_circle_faction(): void
+    {
+        $chronicle = Chronicle::factory()->create();
+        $entities = $this->app->make(WorldEntityService::class);
+        $affiliations = $this->app->make(CharacterAffiliationService::class);
+        $character = Character::query()->findOrFail(
+            $entities->create($chronicle, WorldEntityType::Character, 'Виктория')->id,
+        );
+        $circle = $entities->create(
+            $chronicle,
+            WorldEntityType::Faction,
+            'Круг Примогенов',
+            typed: ['faction_type' => FactionType::Circle],
+        );
+
+        $this->expectException(InvalidArgumentException::class);
+        $affiliations->setSect($character, $circle);
+    }
+
     public function test_set_haven_is_unique_resident_location(): void
     {
         $chronicle = Chronicle::factory()->create();

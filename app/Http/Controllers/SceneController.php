@@ -7,13 +7,18 @@ use App\Enums\SceneStatus;
 use App\Http\Requests\StoreSceneRequest;
 use App\Models\GameSession;
 use App\Models\Scene;
+use App\Extractor\SceneExtractionDispatcher;
 use App\Scene\SceneContextService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class SceneController extends Controller
 {
-    public function __construct(private SceneContextService $contexts) {}
+    public function __construct(
+        private SceneContextService $contexts,
+        private SceneExtractionDispatcher $sceneExtraction,
+    ) {}
 
     public function store(StoreSceneRequest $request, GameSession $gameSession): JsonResponse
     {
@@ -92,7 +97,7 @@ class SceneController extends Controller
         return response()->json(['scene' => $this->serialize($scene)]);
     }
 
-    public function close(Scene $scene): JsonResponse
+    public function close(Request $request, Scene $scene): JsonResponse
     {
         $scene = DB::transaction(function () use ($scene): Scene {
             $lockedScene = Scene::query()
@@ -117,6 +122,10 @@ class SceneController extends Controller
 
             return $lockedScene->refresh();
         });
+
+        if ($request->user() !== null) {
+            $this->sceneExtraction->dispatchTailOnClose($scene->fresh(), $request->user());
+        }
 
         return response()->json(['scene' => $this->serialize($scene)]);
     }

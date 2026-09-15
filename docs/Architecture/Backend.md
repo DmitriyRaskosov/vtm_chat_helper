@@ -18,9 +18,25 @@ Laravel JSON API. Маршруты только в `routes/api.php`.
 | Компонент | Назначение |
 |-----------|------------|
 | `ChatProvider` | Интерфейс чат-модели, включая `chatTurn` для tool calls |
-| `OllamaChatProvider` | Ollama `/api/chat` для `qwen3:8b`, runtime-лимиты и JSON tools |
+| `OllamaChatProvider` | Ollama `/api/chat` для `qwen3:8b`, runtime-лимиты и JSON tools; опциональная модель в конструкторе |
+| `ExtractorChatProvider` | Отдельный singleton для экстрактора (`EXTRACTOR_OLLAMA_MODEL`), не Copilot |
 | `NpcCopilotService` | Два вызова LLM: топики, затем tool-loop и парсинг JSON drafts |
 | `CopilotDraftResult` | Drafts и данные для аудита успешной генерации |
+
+### `app/Extractor/`
+
+| Компонент | Назначение |
+|-----------|------------|
+| `GraphExtractorService` | Прогон лора/био/сцены → Ollama → парсер → matcher → `extraction_runs` |
+| `WorldEventController` | Тонкий ST HTTP: create event, participants, sources |
+| `BiographySliceBuilder` | Склейка полей `character_biographies` для среза био |
+| `EntityCatalogBuilder` | Компактные строки активных `world_entities` хроники |
+| `ExtractionPromptBuilder` | System/user prompt с whitelist ключей рёбер |
+| `ExtractionResponseParser` | JSON из ответа модели; сломанный → 502 |
+| `ExtractionCandidateMatcher` | `findByAlias`, `invalid_key`, фильтр по `source_type` |
+| `ExtractionCandidateService` | accept/discard: `WorldEntityService::create`, `WorldRelationService::relate`, duplicate → `merged` |
+
+HTTP: [[API/Extract]]. План: [[Project/Extractor]].
 
 ### `app/Context/`
 

@@ -1,6 +1,6 @@
 # Экстрактор графа
 
-**Статус:** к исполнению (код не начат). Заменяет отложенный «этап 3» прицела (LLM-черновик узлов/рёбер на accept). Не этап архива [[Archive/Architecture Migration]].
+**Статус:** этапы 1–4 в коде (этап 4: 2026-09-14). Этап 1: драйвер Ollama, `extraction_runs`, POST/GET `/api/extract`, PHP-матчинг. Этап 2: accept/discard, кнопка «Разобрать» на статье лора. Этап 3: био → память. Этап 4: сцена → events + relations, тонкий HTTP событий. **После:** память сцены (кто что запомнил) — отдельно. Заменяет отложенный «этап 3» прицела (LLM-черновик узлов/рёбер на accept). Не этап архива [[Archive/Architecture Migration]].
 
 Канон этого плана — эта заметка. Файл в `.cursor/plans/` каноном не является.
 
@@ -29,9 +29,9 @@ flowchart LR
 |-----|-------|------------|
 | Copilot | реплика NPC | нет |
 | Экстрактор лора / био | кнопка рассказчика | нет, только очередь |
-| Экстрактор сцены | кнопка рассказчика, не каждое сообщение | нет, та же очередь |
+| Экстрактор сцены | фоновые окна + кнопка «Разобрать» (хвост / reparse) | нет, inbox `needs_review` |
 
-Не вешать экстракцию на `PATCH /scenes/{id}/close`: закрытие сцены не ждёт LLM.
+`PATCH /scenes/{id}/close` **не ждёт** LLM, но может **enqueue** незакрытый хвост (&lt; 30 сообщений). Авторазбор — `RunSceneExtractionJob` после полного окна (30 или токен-стоп), не в `POST /api/messages`. Failed-окно автомат не ставит снова: inbox / reparse / ручной «Разобрать».
 
 ## Что переиспользовать
 
@@ -53,7 +53,9 @@ flowchart LR
 
 Вход модели: текст среза + компактный каталог `id | type | name | aliases` активных сущностей хроники. Не тащить всю хронику, био+лор+ленту одним запросом.
 
-Низкая температура. Ответ — JSON. Сломанный JSON → 502 (как у Copilot), очередь пустая.
+Низкая температура. Ответ — JSON. У экстрактора reasoning **выключен** (`think: false` в теле `/api/chat` + `/no_think` в system): qwen3 не тратит `num_predict` на отдельное поле `thinking`, JSON идёт в `content`. Если Ollama всё же вернёт пустой `content`, провайдер читает `thinking` как страховку. Префикс **Thinking... / ...done thinking.** в тексте — `ExtractionResponseParser` вырезает и берёт первый сбалансированный `{…}`. Перед decode: голые CR/LF → пробел; лишняя кавычка перед ключом (`{ " "key":` / `{ ""key":`) → обычный ключ (пустое `""` после `:` и экранированную пару `\`+`n` не трогает). Сломанный JSON → **502**, очередь пустая; сырой ответ — `storage/extractor-fails/` (в `laravel.log` только путь, `bytes`, `json_error`). `done_reason: length` → **502** с подсказкой про `EXTRACTOR_MAX_OUTPUT_TOKENS`.
+
+Общее окно **16384** (`OLLAMA_CONTEXT_LENGTH`): вход (срез + каталог + промпт) и `num_predict` делят один `num_ctx`. Перед вызовом PHP оценивает вход (`TokenEstimator`) и передаёт `effective = min(EXTRACTOR_MAX_OUTPUT_TOKENS, 16384 − prompt − 256)`; если effective &lt; 512 — **422** без вызова Ollama. HTTP-таймаут экстрактора — 300 с (`EXTRACTOR_HTTP_TIMEOUT_SECONDS`), Copilot — 180 с.
 
 Слабая локальная модель не повод писать FK из ответа LLM: упоминания текстом, сопоставление в PHP.
 
@@ -98,6 +100,7 @@ ST-only API (набросок):
 
 - `POST /api/extract` — прогон (`lore_entry_id` \| `character_id` \| `scene_id`)
 - `GET /api/extract/{run}`
+- `PATCH /api/extract/{run}/candidates/{i}` — правка pending mention (имя, kind, `alias_of_entity_id`) до accept
 - `POST /api/extract/{run}/candidates/{i}/accept` и `…/discard`
 
 Пока `EXTRACTOR_DRIVER=none` — даже POST не предлагает «попробуем Copilot-модель втихую». При `ollama` кнопка видна.
@@ -106,29 +109,27 @@ UI первого захода — не отдельный продукт: кн�
 
 ## Этапы
 
-Код по этому плану **пока не пишем**. Порядок, когда дойдёте:
+### 1. Клиент + очередь, без канона — **в коде**
 
-### 1. Клиент + очередь, без канона
+Драйвер `ollama`, `extraction_runs`, POST/GET, PHP-матчинг алиасов, отсев ключей рёбер. Тесты: `ExtractorTest` + `Http::fake`. Docs: [[API/Extract]], [[Development/Environment]]. Copilot не трогать.
 
-Драйвер `ollama`, `extraction_runs`, POST/GET, PHP-матчинг алиасов, отсев ключей рёбер. Тесты fake HTTP: matched / new_entity / unknown `relation_key`. Docs: [[Development/Environment]], API-заметка экстрактора. Copilot не трогать.
+**Приёмка:** прогон сохраняется; `world_entities` / `world_relations` не растут из экстрактора, пока нет accept (этап 2).
 
-**Приёмка:** прогон сохраняется; `world_entities` / `world_relations` пусты, пока нет accept.
+### 2. Лор: кнопка и accept сущностей/рёбер — **в коде**
 
-### 2. Лор: кнопка и accept сущностей/рёбер
+Срез = `canonical_text` статьи + каталог. Accept `new_entity` → `WorldEntityService::create`. Accept relation → `WorldRelationService::relate` (активный дубликат — `merged`). UI: кнопка «Разобрать» на вкладке лора. API: [[API/Extract]].
 
-Срез = `canonical_text` статьи + каталог. Accept `new_entity` → `WorldEntityService::create`. Accept relation → `WorldRelationService::relate` (активный дубликат — как сейчас, не второй ряд). События и память с лора не включать.
+**Приёмка:** известное имя → ребро после accept; выдуманное → pending `new_entity`, `create` только по Accept. Рассказчик правит pending mention (именительный вручную, тип и подтип справочника, aka-список, либо «это имя уже существующего узла») через PATCH; accept с `alias_of_entity_id` пишет aka (`merged`) и extra aliases на цель, не `create`. Без subtype фракция на Accept — `other`.
 
-**Приёмка:** известное имя → ребро после accept; выдуманное → pending `new_entity`, `create` только по Accept.
+### 3. Био: только память — **в коде**
 
-### 3. Био: только память
-
-Срез = био этого персонажа. Кандидаты `memories` → `CharacterMemoryService::remember`. Если модель прислала `events` — PHP выкидывает. SPA памяти по-прежнему нет: accept из очереди на листе достаточен.
+Срез = био этого персонажа (`POST /api/extract` с `character_id`). Кандидаты `memories` → accept → `CharacterMemoryService::remember`. `events` / world-факты PHP отбрасывает. UI: кнопка «Разобрать» на био листа. SPA памяти нет — accept/discard на листе.
 
 **Приёмка:** био не создаёт `world_events`.
 
-### 4. Сцены — тем же контрактом
+### 4. Сцены — окна + inbox — **в коде**
 
-Не в первом PR. Кнопка у рассказчика на чате / закрытой сцене, не автомат на сообщение и не хук close. Срез = сообщения сцены (+ участники). Главное: events + relations, не новые `lore_entries`. Accept события → typed event + `WorldEventService` (participants/sources с `message_id`). Здесь же — минимальный ST HTTP событий, если его ещё нет; не полный редактор мира.
+Непересекающиеся окна по `scenes.last_extracted_to_message_id` (default 30 сообщений, раньше при токен-лимите). Inbox на `/world` (вкладка «Разбор»); в чате — бейдж, не панель кандидатов. Ручная «Разобрать» — sync POST; авто — job. Reparse superseded старый run. Срез = участники + диапазон id ленты. `events` + `relations`; `memories` → discarded.
 
 Память сцены (кто что запомнил) — **после** этапа 4, отдельно: субъективно, по персонажу, не канон.
 
@@ -136,7 +137,7 @@ UI первого захода — не отдельный продукт: кн�
 
 ## Сознательно нет
 
-Автозапись из Copilot. Natasha / spaCy. Матрица NPC×NPC. Стриминг. Внутриигровые часы. Подмена Ollama у реплик. Разбор всей хроники одним запросом. Прод-подключение внешнего LLM в этом цикле. Автоизвлечение при закрытии сцены.
+Автозапись из Copilot. Natasha / spaCy. Матрица NPC×NPC. Стриминг. Внутриигровые часы. Подмена Ollama у реплик. Разбор всей хроники одним запросом. Прод-подключение внешнего LLM в этом цикле. Синхронный LLM на `POST /api/messages` или на close.
 
 ## Открыто (мало)
 

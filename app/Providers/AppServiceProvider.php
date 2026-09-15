@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use App\Llm\ChatProvider;
+use App\Llm\ExtractorChatProvider;
 use App\Llm\OllamaChatProvider;
 use App\Rag\EmbeddingProvider;
 use App\Rag\OllamaEmbeddingProvider;
@@ -24,6 +25,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(ChatProvider::class, OllamaChatProvider::class);
+        $this->app->singleton(ExtractorChatProvider::class);
 
         $this->app->singleton(RetrievalToolRegistry::class, function ($app) {
             return new RetrievalToolRegistry([

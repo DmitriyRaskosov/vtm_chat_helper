@@ -7,6 +7,6 @@ enum FactionType: string
     case Sect = 'sect';
     case Clan = 'clan';
     case Coterie = 'coterie';
-    case Guild = 'guild';
+    case Circle = 'circle';
     case Other = 'other';
 }

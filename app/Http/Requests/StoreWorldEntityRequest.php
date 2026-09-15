@@ -33,6 +33,9 @@ class StoreWorldEntityRequest extends FormRequest
             ])],
             'short_description' => ['sometimes', 'nullable', 'string', 'max:4000'],
             'subtype' => ['sometimes', 'nullable', 'string', 'max:32'],
+            'aliases' => ['sometimes', 'array'],
+            'aliases.*' => ['string', 'max:120'],
+            'parent_faction_id' => ['sometimes', 'nullable', 'integer', 'exists:factions,id'],
             'chronicle_id' => ['sometimes', 'integer', 'exists:chronicles,id'],
         ];
     }
@@ -45,20 +48,22 @@ class StoreWorldEntityRequest extends FormRequest
             }
 
             $subtype = $this->input('subtype');
-            if (! is_string($subtype) || trim($subtype) === '') {
-                return;
+            if (is_string($subtype) && trim($subtype) !== '') {
+                $ok = match ($this->input('entity_type')) {
+                    WorldEntityType::Faction->value => FactionType::tryFrom($subtype) !== null,
+                    WorldEntityType::Location->value => LocationType::tryFrom($subtype) !== null,
+                    WorldEntityType::Item->value => ItemType::tryFrom($subtype) !== null,
+                    WorldEntityType::Concept->value => ConceptType::tryFrom($subtype) !== null,
+                    default => false,
+                };
+
+                if (! $ok) {
+                    $validator->errors()->add('subtype', 'Invalid subtype for this entity type.');
+                }
             }
 
-            $ok = match ($this->input('entity_type')) {
-                WorldEntityType::Faction->value => FactionType::tryFrom($subtype) !== null,
-                WorldEntityType::Location->value => LocationType::tryFrom($subtype) !== null,
-                WorldEntityType::Item->value => ItemType::tryFrom($subtype) !== null,
-                WorldEntityType::Concept->value => ConceptType::tryFrom($subtype) !== null,
-                default => false,
-            };
-
-            if (! $ok) {
-                $validator->errors()->add('subtype', 'Invalid subtype for this entity type.');
+            if ($this->filled('parent_faction_id') && $this->input('entity_type') !== WorldEntityType::Faction->value) {
+                $validator->errors()->add('parent_faction_id', 'Only factions can have a parent faction.');
             }
         });
     }

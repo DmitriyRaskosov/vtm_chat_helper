@@ -92,11 +92,17 @@ class WorldEntityService
     /**
      * @param  list<int>  $loreClearanceLevels
      */
+    /**
+     * @param  list<string>|null  $aliases  null — не трогать aka; [] — снять все aka
+     */
     public function update(
         WorldEntity $entity,
         string $canonicalName,
         ?string $shortDescription = null,
         ?string $subtype = null,
+        ?array $aliases = null,
+        bool $updateParentFaction = false,
+        ?int $parentFactionId = null,
     ): WorldEntity {
         $type = $entity->entity_type instanceof WorldEntityType
             ? $entity->entity_type
@@ -115,7 +121,7 @@ class WorldEntityService
             throw new InvalidArgumentException('Archived entities cannot be edited.');
         }
 
-        return DB::transaction(function () use ($entity, $canonicalName, $shortDescription, $subtype, $type): WorldEntity {
+        return DB::transaction(function () use ($entity, $canonicalName, $shortDescription, $subtype, $aliases, $type, $updateParentFaction, $parentFactionId): WorldEntity {
             $name = trim($canonicalName);
             if ($name === '') {
                 throw new InvalidArgumentException('A name is required.');
@@ -133,6 +139,14 @@ class WorldEntityService
 
             if ($subtype !== null && trim($subtype) !== '') {
                 $this->updateSubtype($entity, $type, trim($subtype));
+            }
+
+            if ($aliases !== null) {
+                $this->syncAka($entity, $aliases);
+            }
+
+            if ($updateParentFaction) {
+                $this->updateParentFaction($entity, $parentFactionId);
             }
 
             return $entity->refresh()->load(['aliases', 'location', 'faction', 'item', 'concept']);
@@ -205,6 +219,125 @@ class WorldEntityService
                 fn ($query) => $query->where('normalized_alias', $normalized),
             )
             ->first();
+    }
+
+    public function addAka(WorldEntity $entity, string $alias, ?string $language = null): WorldEntityAlias
+    {
+        if ($entity->status !== WorldEntityStatus::Active) {
+            throw new InvalidArgumentException('Archived entities cannot receive aliases.');
+        }
+
+        $alias = trim($alias);
+        if ($alias === '') {
+            throw new InvalidArgumentException('A name is required.');
+        }
+
+        $normalized = AliasNormalizer::normalize($alias);
+
+        if ($normalized === AliasNormalizer::normalize((string) $entity->canonical_name)) {
+            throw new InvalidArgumentException('Alias must differ from the canonical name.');
+        }
+
+        $taken = WorldEntityAlias::query()
+            ->where('chronicle_id', $entity->chronicle_id)
+            ->where('normalized_alias', $normalized)
+            ->first();
+
+        if ($taken !== null) {
+            if ((int) $taken->entity_id === (int) $entity->id) {
+                return $taken;
+            }
+
+            throw new InvalidArgumentException('This name is already used in the chronicle.');
+        }
+
+        return $this->storeAlias($entity, $alias, WorldEntityAliasType::Aka, $language);
+    }
+
+    /**
+     * @param  list<string>  $aliases
+     */
+    public function syncAka(WorldEntity $entity, array $aliases): void
+    {
+        if ($entity->status !== WorldEntityStatus::Active) {
+            throw new InvalidArgumentException('Archived entities cannot be edited.');
+        }
+
+        $wanted = [];
+        $canonicalNorm = AliasNormalizer::normalize((string) $entity->canonical_name);
+
+        foreach ($aliases as $alias) {
+            $alias = trim($alias);
+            if ($alias === '') {
+                continue;
+            }
+
+            $normalized = AliasNormalizer::normalize($alias);
+            if ($normalized === $canonicalNorm) {
+                continue;
+            }
+
+            $wanted[$normalized] = $alias;
+        }
+
+        $existing = WorldEntityAlias::query()
+            ->where('entity_id', $entity->id)
+            ->where('alias_type', WorldEntityAliasType::Aka)
+            ->get();
+
+        foreach ($existing as $row) {
+            if (! array_key_exists($row->normalized_alias, $wanted)) {
+                $row->delete();
+            }
+        }
+
+        $kept = $existing->keyBy('normalized_alias');
+        foreach ($wanted as $normalized => $alias) {
+            if ($kept->has($normalized)) {
+                continue;
+            }
+
+            $this->addAka($entity, $alias);
+        }
+    }
+
+    public function isValidDirectorySubtype(WorldEntityType $type, string $subtype): bool
+    {
+        $subtype = trim($subtype);
+        if ($subtype === '') {
+            return false;
+        }
+
+        return match ($type) {
+            WorldEntityType::Faction => FactionType::tryFrom($subtype) !== null,
+            WorldEntityType::Location => LocationType::tryFrom($subtype) !== null,
+            WorldEntityType::Item => ItemType::tryFrom($subtype) !== null,
+            WorldEntityType::Concept => ConceptType::tryFrom($subtype) !== null,
+            default => false,
+        };
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    public function directoryTyped(WorldEntityType $type, ?string $subtype): array
+    {
+        if ($subtype === null || trim($subtype) === '') {
+            return [];
+        }
+
+        $value = trim($subtype);
+        if (! $this->isValidDirectorySubtype($type, $value)) {
+            throw new InvalidArgumentException('Invalid subtype for this entity type.');
+        }
+
+        return match ($type) {
+            WorldEntityType::Faction => ['faction_type' => $value],
+            WorldEntityType::Location => ['location_type' => $value],
+            WorldEntityType::Item => ['item_type' => $value],
+            WorldEntityType::Concept => ['concept_type' => $value],
+            default => [],
+        };
     }
 
     public function assertSameChronicle(Chronicle $chronicle, WorldEntity ...$entities): void
@@ -524,6 +657,33 @@ class WorldEntityService
                 'normalized_alias' => $normalized,
             ]);
         }
+    }
+
+    private function updateParentFaction(WorldEntity $entity, ?int $parentFactionId): void
+    {
+        $type = $entity->entity_type instanceof WorldEntityType
+            ? $entity->entity_type
+            : WorldEntityType::from((string) $entity->entity_type);
+
+        if ($type !== WorldEntityType::Faction) {
+            throw new InvalidArgumentException('Only factions can have a parent faction.');
+        }
+
+        if ($parentFactionId === (int) $entity->id) {
+            throw new InvalidArgumentException('A faction cannot be its own parent.');
+        }
+
+        if ($parentFactionId !== null) {
+            $parent = Faction::query()->findOrFail($parentFactionId);
+            $this->assertSameChronicle(
+                $entity->chronicle,
+                WorldEntity::query()->findOrFail($parent->id),
+            );
+        }
+
+        $entity->faction()->update([
+            'parent_faction_id' => $parentFactionId,
+        ]);
     }
 
     private function updateSubtype(WorldEntity $entity, WorldEntityType $type, string $subtype): void

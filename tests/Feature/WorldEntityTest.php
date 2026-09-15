@@ -146,4 +146,25 @@ class WorldEntityTest extends TestCase
         $this->assertNull($restored->archived_at);
         $this->assertTrue((bool) Character::query()->findOrFail($entity->id)->is_active);
     }
+
+    public function test_sync_aka_adds_and_removes_without_touching_canonical(): void
+    {
+        $chronicle = Chronicle::factory()->create();
+        $service = $this->app->make(WorldEntityService::class);
+        $entity = $service->create(
+            $chronicle,
+            WorldEntityType::Faction,
+            'Гангрел',
+            aliases: ['Gangrel', 'Гангрелы'],
+        );
+
+        $service->syncAka($entity, ['Gangrel']);
+
+        $this->assertNotNull($service->findByAlias($chronicle, 'Gangrel'));
+        $this->assertNull($service->findByAlias($chronicle, 'Гангрелы'));
+        $this->assertSame($entity->id, $service->findByAlias($chronicle, 'Гангрел')?->id);
+
+        $again = $service->addAka($entity->fresh(), 'Gangrel');
+        $this->assertSame('Gangrel', $again->alias);
+    }
 }

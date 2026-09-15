@@ -90,6 +90,56 @@ class WorldDirectoryTest extends TestCase
         $this->postJson('/api/world/entities/'.$character->id.'/archive')->assertUnprocessable();
     }
 
+    public function test_storyteller_creates_circle_faction(): void
+    {
+        Sanctum::actingAs(User::factory()->storyteller()->create());
+
+        $circle = $this->postJson('/api/world/entities', [
+            'canonical_name' => 'Круг Примогенов',
+            'entity_type' => 'faction',
+            'subtype' => 'circle',
+        ])->assertCreated()->json('entity');
+
+        $this->assertSame('circle', $circle['subtype']);
+    }
+
+    public function test_storyteller_sets_and_clears_parent_faction(): void
+    {
+        Sanctum::actingAs(User::factory()->storyteller()->create());
+
+        $camarilla = $this->postJson('/api/world/entities', [
+            'canonical_name' => 'Камарилья',
+            'entity_type' => 'faction',
+            'subtype' => 'sect',
+        ])->assertCreated()->json('entity');
+
+        $circle = $this->postJson('/api/world/entities', [
+            'canonical_name' => 'Круг Примогенов',
+            'entity_type' => 'faction',
+            'subtype' => 'circle',
+            'parent_faction_id' => $camarilla['id'],
+        ])->assertCreated()->json('entity');
+
+        $this->assertSame($camarilla['id'], $circle['parent_faction_id']);
+
+        $this->putJson('/api/world/entities/'.$circle['id'], [
+            'canonical_name' => 'Круг Примогенов',
+            'parent_faction_id' => null,
+        ])->assertOk()->assertJsonPath('entity.parent_faction_id', null);
+
+        $this->putJson('/api/world/entities/'.$camarilla['id'], [
+            'canonical_name' => 'Камарилья',
+            'parent_faction_id' => $camarilla['id'],
+        ])->assertUnprocessable();
+
+        $this->postJson('/api/world/entities', [
+            'canonical_name' => 'Элизиум',
+            'entity_type' => 'location',
+            'subtype' => 'site',
+            'parent_faction_id' => $camarilla['id'],
+        ])->assertUnprocessable();
+    }
+
     public function test_faction_politics_are_symmetric_and_mutually_exclusive(): void
     {
         Sanctum::actingAs(User::factory()->storyteller()->create());
@@ -172,11 +222,50 @@ class WorldDirectoryTest extends TestCase
         $this->putJson('/api/world/entities/'.$faction['id'], [
             'canonical_name' => 'Новая Камарилья',
             'short_description' => 'Обновлённое описание.',
-            'subtype' => 'guild',
+            'subtype' => 'coterie',
         ])->assertOk()
             ->assertJsonPath('entity.canonical_name', 'Новая Камарилья')
             ->assertJsonPath('entity.short_description', 'Обновлённое описание.')
-            ->assertJsonPath('entity.subtype', 'guild');
+            ->assertJsonPath('entity.subtype', 'coterie');
+    }
+
+    public function test_storyteller_manages_directory_aliases(): void
+    {
+        Sanctum::actingAs(User::factory()->storyteller()->create());
+
+        $entity = $this->postJson('/api/world/entities', [
+            'canonical_name' => 'Гангрел',
+            'entity_type' => 'faction',
+            'subtype' => 'clan',
+            'aliases' => ['Gangrel', 'Гангрелы'],
+        ])->assertCreated()->json('entity');
+
+        $this->assertSame(['Gangrel', 'Гангрелы'], $entity['aliases']);
+
+        $this->putJson('/api/world/entities/'.$entity['id'], [
+            'canonical_name' => 'Гангрел',
+            'subtype' => 'clan',
+            'aliases' => ['Gangrel'],
+        ])->assertOk()
+            ->assertJsonPath('entity.aliases', ['Gangrel']);
+
+        $this->assertDatabaseMissing('world_entity_aliases', [
+            'entity_id' => $entity['id'],
+            'alias' => 'Гангрелы',
+        ]);
+        $this->getJson('/api/world/entities')->assertOk()
+            ->assertJsonPath('entities.0.aliases', ['Gangrel']);
+    }
+
+    public function test_storyteller_cannot_use_removed_guild_subtype(): void
+    {
+        Sanctum::actingAs(User::factory()->storyteller()->create());
+
+        $this->postJson('/api/world/entities', [
+            'canonical_name' => 'Гильдия воров',
+            'entity_type' => 'faction',
+            'subtype' => 'guild',
+        ])->assertUnprocessable();
     }
 
     public function test_player_cannot_update_directory_entity(): void

@@ -7,6 +7,10 @@ use RuntimeException;
 
 class OllamaChatProvider implements ChatProvider
 {
+    public function __construct(
+        private ?string $chatModel = null,
+    ) {}
+
     /**
      * @param  list<array<string, mixed>>  $messages
      * @param  array<string, int|float|string|bool>  $options
@@ -34,7 +38,7 @@ class OllamaChatProvider implements ChatProvider
         ], $options);
 
         $payload = [
-            'model' => config('ollama.chat_model'),
+            'model' => $this->chatModel ?? config('ollama.chat_model'),
             'stream' => false,
             'messages' => $messages,
             'options' => $options,
@@ -44,7 +48,7 @@ class OllamaChatProvider implements ChatProvider
             $payload['tools'] = $tools;
         }
 
-        $response = Http::timeout(180)
+        $response = Http::timeout($this->httpTimeoutSeconds())
             ->baseUrl((string) config('ollama.url'))
             ->post('/api/chat', $payload);
 
@@ -96,5 +100,10 @@ class OllamaChatProvider implements ChatProvider
         return $this->chat([
             ['role' => 'user', 'content' => $prompt],
         ]);
+    }
+
+    protected function httpTimeoutSeconds(): int
+    {
+        return 180;
     }
 }

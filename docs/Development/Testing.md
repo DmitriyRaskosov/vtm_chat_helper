@@ -26,7 +26,7 @@ docker compose exec laravel.test php artisan test
 | `tests/Feature/TypedWorldEntityTest.php` | shared PK, entity_type constraint, parent/owner той же хроники |
 | `tests/Feature/CharacterTest.php` | PC/NPC/гули, `character_id` cutover, snapshot/rename-safe author и Copilot, нет `character_users` |
 | `tests/Feature/CharacterSheetTest.php` | catalog V20, создание/список, права игрока, round-trip stats/status/health/merits/XP/disciplines, биография HTTP, archive/restore |
-| `tests/Feature/WorldDirectoryTest.php` | ST-справочник мира, политика фракций, place HTTP |
+| `tests/Feature/WorldDirectoryTest.php` | ST-справочник мира, политика фракций, aka, `parent_faction_id`, place HTTP |
 | `tests/Feature/CharacterStatTest.php` | реляционный лист, unique key, SQL по category/value, read model |
 | `tests/Feature/CharacterDisciplineTest.php` | каталог дисциплин/сил, уровень, совместимость, SQL-поиск |
 | `tests/Feature/CharacterStatusTest.php` | current status, эффекты, журнал, optimistic revision, location chronicle |
@@ -51,6 +51,8 @@ docker compose exec laravel.test php artisan test
 | `tests/Feature/MemoryGraphRagTest.php` | depth, циклы, слабые рёбра, изоляция, bound |
 | `tests/Feature/WorldGraphRagTest.php` | character→faction→location/event, leakage |
 | `tests/Feature/CopilotTest.php` | два вызова Ollama (топики + реплика), лимит assembler, tool-loop, одноразовая привязка, HTTP E2E provenance Memory/World GraphRAG |
+| `tests/Feature/ExtractorTest.php` | POST/GET `/api/extract` (лор + `character_id`), PATCH mention (имя/тип/подтип/aka), accept/discard mention/relation/memory, 502 без run; Ollama через `Http::fake` |
+| `tests/Feature/ExtractorSceneTest.php` | окна сцены, auto-job, failed не re-dispatch, inbox, reparse, events/relations, accept event → `world_events`, close enqueue, Copilot без графа, `POST /api/world/events` |
 | `tests/Feature/ContextAssemblerTest.php` | секции reply/topics, provenance, knowledge filter, GraphRAG не вытесняет newest messages |
 | `tests/Feature/RagSearchTest.php` | message index, обязательный chronicle scope, embedding failure |
 | `tests/Feature/RetrievalToolsTest.php` | session scope, лимиты range, отказ неизвестного `search_summaries` |
@@ -60,6 +62,7 @@ docker compose exec laravel.test php artisan test
 
 - `TokenEstimatorTest` — Unicode-оценка и валидация коэффициента.
 - `AliasNormalizerTest` — нормализация алиасов и slug.
+- `ExtractionResponseParserTest` — thinking-блок, newlines, лишняя кавычка перед ключом (`" "name"` / `""name"`).
 
 Context Assembler проверяется через `ContextAssemblerTest` и payload fake Ollama в `CopilotTest`: вход реплики не превышает 12000, топики — 8000, newest raw history имеет приоритет, обязательные секции не вытесняются GraphRAG, лор выше допуска NPC в prompt не попадает.
 

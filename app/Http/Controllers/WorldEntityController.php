@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\WorldEntityAliasType;
 use App\Enums\WorldEntityStatus;
 use App\Enums\WorldEntityType;
 use App\Http\Requests\StoreWorldEntityRequest;
@@ -39,7 +40,7 @@ class WorldEntityController extends Controller
         $query = WorldEntity::query()
             ->where('chronicle_id', $chronicleId)
             ->whereIn('entity_type', $types)
-            ->with(['faction', 'location', 'item', 'concept'])
+            ->with(['faction', 'location', 'item', 'concept', 'aliases'])
             ->orderBy('entity_type')
             ->orderBy('canonical_name')
             ->orderBy('id');
@@ -67,13 +68,19 @@ class WorldEntityController extends Controller
             $description = null;
         }
 
+        $typed = $this->entities->directoryTyped($type, $validated['subtype'] ?? null);
+        if ($type === WorldEntityType::Faction && array_key_exists('parent_faction_id', $validated)) {
+            $typed['parent_faction_id'] = $validated['parent_faction_id'];
+        }
+
         try {
             $entity = $this->entities->create(
                 $chronicle,
                 $type,
                 $validated['canonical_name'],
                 $description,
-                typed: $this->typedPayload($type, $validated['subtype'] ?? null),
+                aliases: $this->akaList($validated['aliases'] ?? []),
+                typed: $typed,
             );
         } catch (InvalidArgumentException $e) {
             abort(422, $e->getMessage());
@@ -104,6 +111,13 @@ class WorldEntityController extends Controller
         $subtype = isset($validated['subtype']) && is_string($validated['subtype']) && trim($validated['subtype']) !== ''
             ? trim($validated['subtype'])
             : null;
+        $aliases = array_key_exists('aliases', $validated)
+            ? $this->akaList($validated['aliases'] ?? [])
+            : null;
+        $updateParentFaction = array_key_exists('parent_faction_id', $validated);
+        $parentFactionId = $updateParentFaction && $validated['parent_faction_id'] !== null
+            ? (int) $validated['parent_faction_id']
+            : null;
 
         try {
             $entity = $this->entities->update(
@@ -111,6 +125,9 @@ class WorldEntityController extends Controller
                 $validated['canonical_name'],
                 $description,
                 $subtype,
+                $aliases,
+                $updateParentFaction,
+                $parentFactionId,
             );
         } catch (InvalidArgumentException $e) {
             abort(422, $e->getMessage());
@@ -144,7 +161,7 @@ class WorldEntityController extends Controller
      */
     private function serialize(WorldEntity $entity): array
     {
-        $entity->loadMissing(['faction', 'location', 'item', 'concept']);
+        $entity->loadMissing(['faction', 'location', 'item', 'concept', 'aliases']);
 
         $subtype = match ($entity->entity_type) {
             WorldEntityType::Faction => $entity->faction?->faction_type?->value,
@@ -154,34 +171,44 @@ class WorldEntityController extends Controller
             default => null,
         };
 
+        $aliases = $entity->aliases
+            ->filter(fn ($alias): bool => $alias->alias_type === WorldEntityAliasType::Aka)
+            ->map(fn ($alias): string => (string) $alias->alias)
+            ->values()
+            ->all();
+
         return [
             'id' => (int) $entity->id,
             'entity_type' => $entity->entity_type->value,
             'canonical_name' => $entity->canonical_name,
             'short_description' => $entity->short_description,
             'subtype' => $subtype,
+            'aliases' => $aliases,
+            'parent_faction_id' => $entity->entity_type === WorldEntityType::Faction && $entity->faction?->parent_faction_id !== null
+                ? (int) $entity->faction->parent_faction_id
+                : null,
             'status' => $entity->status->value,
         ];
     }
 
     /**
-     * @return array<string, mixed>
+     * @param  list<mixed>  $raw
+     * @return list<string>
      */
-    private function typedPayload(WorldEntityType $type, mixed $subtype): array
+    private function akaList(array $raw): array
     {
-        if (! is_string($subtype) || trim($subtype) === '') {
-            return [];
+        $aliases = [];
+        foreach ($raw as $item) {
+            if (! is_string($item)) {
+                continue;
+            }
+            $alias = trim($item);
+            if ($alias !== '') {
+                $aliases[] = $alias;
+            }
         }
 
-        $value = trim($subtype);
-
-        return match ($type) {
-            WorldEntityType::Faction => ['faction_type' => $value],
-            WorldEntityType::Location => ['location_type' => $value],
-            WorldEntityType::Item => ['item_type' => $value],
-            WorldEntityType::Concept => ['concept_type' => $value],
-            default => [],
-        };
+        return array_values($aliases);
     }
 
     private function assertDirectoryEntity(Request $request, WorldEntity $entity): void

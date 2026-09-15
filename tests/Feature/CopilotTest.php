@@ -105,6 +105,10 @@ class CopilotTest extends TestCase
                     'num_predict' => 3000,
                 ];
         });
+
+        foreach (Http::recorded() as [$request]) {
+            $this->assertArrayNotHasKey('think', $request->data());
+        }
     }
 
     public function test_player_cannot_generate_drafts(): void

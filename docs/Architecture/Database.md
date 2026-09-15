@@ -146,6 +146,10 @@ erDiagram
 
 Таблицы `rag_chunks` нет.
 
+## Очередь экстрактора
+
+`extraction_runs` — аудит прогонов экстрактора. Поля: `chronicle_id`, `source_type` (`lore` \| `biography` \| `scene`), `source_id`, `status` / `trigger` / окно `from_message_id`–`to_message_id` (сцена), `driver`, `model`, `raw_response` (jsonb), `candidates` (jsonb), `user_id`. Лор/био: ошибочный вызов модели строку не создаёт. Сцена: run пишется сразу; parse/таймаут → `failed`. Курсор `scenes.last_extracted_to_message_id` двигается только после успешного окна. Accept в канон — лор/сцена (mentions, relations, events), био (memories). См. [[API/Extract]], [[Project/Extractor]].
+
 ## UI и backlog
 
 HTTP-лист V20: [[API/Characters]], [[Features/Characters]]. Blood Per Turn нет: кровь — число `character_status.blood_pool`. Справочник мира: [[API/World]], [[Features/World]]. Лор: [[API/Lore]].

@@ -6,6 +6,7 @@ use App\Enums\CharacterType;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneStatus;
 use App\Http\Requests\StoreMessageRequest;
+use App\Extractor\SceneExtractionDispatcher;
 use App\Jobs\IndexRagMessageJob;
 use App\Models\Character;
 use App\Models\Chronicle;
@@ -119,6 +120,13 @@ class ChatController extends Controller
             IndexRagMessageJob::dispatchSync($message->id);
         } else {
             IndexRagMessageJob::dispatch($message->id);
+        }
+
+        if ($request->user() !== null) {
+            app(SceneExtractionDispatcher::class)->maybeDispatchAfterMessage(
+                $scene->fresh(),
+                $request->user(),
+            );
         }
 
         return response()->json(['message' => $this->serialize($message, $characterLookup)], 201);
