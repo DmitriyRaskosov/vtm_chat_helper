@@ -6,7 +6,8 @@
 
 - [[Project/Overview]]
 - [[Project/Roadmap]]
-- [[Project/Extractor]] — живой план: LLM-кандидаты в граф (код не начат)
+- [[Project/ClanCard]] — живой план: карточка клана, дисциплины, `regards`
+- [[Project/Extractor]] — экстрактор графа (этапы 1–4 в коде; парсер профиля — после ClanCard)
 - [[Archive/Architecture Migration|Переход на новую архитектуру]] — архив: план из 35 этапов (завершён)
 - [[Project/Roles]]
 

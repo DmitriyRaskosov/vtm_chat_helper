@@ -45,7 +45,7 @@ Settings → **Files & Links**:
 
 ## Архивация планов
 
-Живой пошаговый план: [[Project/Extractor]]. Завершённый или заменённый план из `docs/Project/` переносится в `docs/Archive/`; на старом пути — короткая заглушка со ссылкой на архив (образец: [[Project/Architecture Migration]] → [[Archive/Architecture Migration]]). Живые заметки (`Roadmap`, `Overview`, `Roles`) не архивируются. Подробности — правило `.cursor/rules/docs-plan-archive.mdc`.
+Живой пошаговый план: [[Project/ClanCard]]. Канон экстрактора: [[Project/Extractor]] (не архив). Завершённый или заменённый план из `docs/Project/` переносится в `docs/Archive/`; на старом пути — короткая заглушка со ссылкой на архив (образец: [[Project/Architecture Migration]] → [[Archive/Architecture Migration]]). Живые заметки (`Roadmap`, `Overview`, `Roles`) не архивируются. Подробности — правило `.cursor/rules/docs-plan-archive.mdc`.
 
 ## Cursor
 
