@@ -39,7 +39,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/characters/{character}/experience', [CharacterSheetController::class, 'updateExperience']);
     Route::put('/characters/{character}/disciplines', [CharacterSheetController::class, 'updateDisciplines']);
     Route::put('/characters/{character}/biography', [CharacterSheetController::class, 'updateBiography']);
-    Route::get('/rag/search', RagSearchController::class)->middleware('storyteller');
+    //Route::get('/rag/search', RagSearchController::class)->middleware('storyteller');
     Route::post('/copilot/drafts', [CopilotController::class, 'drafts'])->middleware('storyteller');
 
     Route::middleware('storyteller')->group(function () {
@@ -53,15 +53,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/world/entities/{worldEntity}', [WorldEntityController::class, 'update']);
         Route::post('/world/entities/{worldEntity}/archive', [WorldEntityController::class, 'archive']);
         Route::post('/world/entities/{worldEntity}/restore', [WorldEntityController::class, 'restore']);
-        Route::get('/world/faction-relations', [WorldFactionRelationController::class, 'index']);
-        Route::post('/world/faction-relations', [WorldFactionRelationController::class, 'store']);
-        Route::post('/world/faction-relations/{worldRelation}/end', [WorldFactionRelationController::class, 'end']);
-        Route::get('/world/relations', [WorldDirectoryRelationController::class, 'index']);
-        Route::post('/world/relations', [WorldDirectoryRelationController::class, 'store']);
-        Route::post('/world/relations/{worldRelation}/end', [WorldDirectoryRelationController::class, 'end']);
-        Route::post('/world/events', [WorldEventController::class, 'store']);
-        Route::post('/world/events/{event}/participants', [WorldEventController::class, 'storeParticipant']);
-        Route::post('/world/events/{event}/sources', [WorldEventController::class, 'storeSource']);
+        //Route::get('/world/faction-relations', [WorldFactionRelationController::class, 'index']);
+        //Route::post('/world/faction-relations', [WorldFactionRelationController::class, 'store']);
+        //Route::post('/world/faction-relations/{worldRelation}/end', [WorldFactionRelationController::class, 'end']);
+        //Route::get('/world/relations', [WorldDirectoryRelationController::class, 'index']);
+        //Route::post('/world/relations', [WorldDirectoryRelationController::class, 'store']);
+        //Route::post('/world/relations/{worldRelation}/end', [WorldDirectoryRelationController::class, 'end']);
+        //Route::post('/world/events', [WorldEventController::class, 'store']);
+        //Route::post('/world/events/{event}/participants', [WorldEventController::class, 'storeParticipant']);
+        //Route::post('/world/events/{event}/sources', [WorldEventController::class, 'storeSource']);
         Route::get('/lore', [LoreEntryController::class, 'index']);
         Route::post('/lore', [LoreEntryController::class, 'store']);
         Route::get('/lore/{loreEntry}', [LoreEntryController::class, 'show']);
