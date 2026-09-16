@@ -38,11 +38,21 @@
 | `EXTRACTOR_DRIVER` | `ollama` | `ollama` — локальная Ollama; `none` — POST `/api/extract` → 503; `openai_compat` — задел, не реализован |
 | `EXTRACTOR_OLLAMA_MODEL` | `OLLAMA_CHAT_MODEL` / `qwen3:8b` | Модель экстрактора; Copilot не меняется |
 | `EXTRACTOR_TEMPERATURE` | `0.1` | Низкая температура JSON-ответа |
-| `EXTRACTOR_MAX_OUTPUT_TOKENS` | `5000` | `num_predict` экстрактора (не `num_ctx`; в `.env` можно 12000 — рантайм ужмёт под остаток окна 16384) |
 | `EXTRACTOR_HTTP_TIMEOUT_SECONDS` | `300` | HTTP-таймаут вызова Ollama из экстрактора (Copilot остаётся на 180 с) |
 | `EXTRACTOR_THINK` | `false` | `think: false` в теле `/api/chat` — reasoning выкл., JSON в `content` |
-| `EXTRACTOR_SCENE_MESSAGE_LIMIT` | `30` | Макс. сообщений в одном окне сцены (не хвост всей ленты; упирается и в токен-бюджет) |
-| `EXTRACTOR_CATALOG_MAX_ENTITIES` | `150` | Макс. строк справочника в промпте после фильтра по срезу |
+| `EXTRACTOR_CHARACTERS_PER_TOKEN` | `2` | Оценка токенов экстрактора: `ceil(mb_strlen / 2)`; Copilot по-прежнему `/3` |
+| `EXTRACTOR_LORE_ARTICLE_MAX_CHARS` | `10000` | Макс. символов статьи в одном POST лора |
+| `EXTRACTOR_LORE_SYSTEM_TOKENS` | `3000` | Жёсткий бюджет system prompt лора (тест) |
+| `EXTRACTOR_LORE_CATALOG_TOKENS` | `1000` | Обрезка каталога в промпте лора |
+| `EXTRACTOR_LORE_OUTPUT_TOKENS` | `7128` | `num_predict` лора (`16384 − вход − 256`) |
+| `EXTRACTOR_SCENE_SYSTEM_TOKENS` | `1800` | Бюджет system prompt сцены |
+| `EXTRACTOR_SCENE_CATALOG_TOKENS` | `1000` | Каталог + участники сцены |
+| `EXTRACTOR_SCENE_FEED_TOKENS` | `5392` | Корзина ленты сообщений |
+| `EXTRACTOR_SCENE_INPUT_TOKENS` | `8192` | Кап всего входа сцены |
+| `EXTRACTOR_SCENE_OUTPUT_TOKENS` | `7936` | `num_predict` сцены |
+| `EXTRACTOR_SCENE_MESSAGE_LIMIT` | `30` | Макс. сообщений в одном окне сцены (раньше при токен-стопе) |
+| `EXTRACTOR_BIOGRAPHY_OUTPUT_TOKENS` | `7128` | `num_predict` биографии |
+| `EXTRACTOR_CATALOG_MAX_ENTITIES` | `150` | Макс. строк справочника до обрезки по токенам профиля |
 
 Конфиг: `config/extractor.php`. См. [[API/Extract]], [[Project/Extractor]].
 

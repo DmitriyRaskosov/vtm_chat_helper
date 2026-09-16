@@ -285,7 +285,7 @@ class ExtractorSceneTest extends TestCase
 
     public function test_scene_windows_split_45_messages_into_two_ranges(): void
     {
-        config(['extractor.scene_message_limit' => 30]);
+        config(['extractor.profiles.scene.message_limit' => 30]);
 
         $scene = Scene::query()->active()->firstOrFail();
         Message::query()->where('scene_id', $scene->id)->delete();
@@ -326,7 +326,7 @@ class ExtractorSceneTest extends TestCase
 
     public function test_auto_job_creates_run_without_blocking_message_post(): void
     {
-        config(['extractor.scene_message_limit' => 2]);
+        config(['extractor.profiles.scene.message_limit' => 2]);
         Queue::fake();
 
         $scene = Scene::query()->active()->firstOrFail();
@@ -348,7 +348,7 @@ class ExtractorSceneTest extends TestCase
 
     public function test_failed_scene_window_stays_in_inbox_and_blocks_auto_dispatch(): void
     {
-        config(['extractor.scene_message_limit' => 2]);
+        config(['extractor.profiles.scene.message_limit' => 2]);
 
         $scene = Scene::query()->active()->firstOrFail();
         Message::query()->where('scene_id', $scene->id)->delete();
@@ -566,6 +566,91 @@ class ExtractorSceneTest extends TestCase
         $this->postJson("/api/extract/{$runId}/candidates/0/accept", [
             'candidate_type' => 'memory',
         ])->assertUnprocessable();
+    }
+
+    public function test_scene_window_stops_at_feed_token_budget_before_message_limit(): void
+    {
+        config([
+            'extractor.profiles.scene.message_limit' => 30,
+            'extractor.profiles.scene.feed_tokens' => 5392,
+            'extractor.profiles.scene.input_tokens' => 8192,
+            'extractor.characters_per_token' => 2,
+        ]);
+
+        $scene = Scene::query()->active()->firstOrFail();
+        Message::query()->where('scene_id', $scene->id)->delete();
+        $scene->update(['last_extracted_to_message_id' => null]);
+        $storyteller = User::factory()->storyteller()->create();
+
+        Message::factory()->count(25)->create([
+            'scene_id' => $scene->id,
+            'user_id' => $storyteller->id,
+            'body' => str_repeat('Д', 800),
+        ]);
+
+        $this->fakeOllamaExtraction([
+            'mentions' => [],
+            'relations' => [],
+            'events' => [],
+            'memories' => [],
+        ]);
+
+        Sanctum::actingAs($storyteller);
+
+        $runId = $this->postJson('/api/extract', ['scene_id' => $scene->id])
+            ->assertCreated()
+            ->json('extraction_run_id');
+
+        $run = ExtractionRun::query()->findOrFail($runId);
+        $messageCount = \App\Models\Message::query()
+            ->where('scene_id', $scene->id)
+            ->whereBetween('id', [(int) $run->from_message_id, (int) $run->to_message_id])
+            ->count();
+
+        $this->assertLessThan(30, $messageCount);
+        $this->assertGreaterThan(0, $messageCount);
+    }
+
+    public function test_scene_window_allows_thirty_short_messages(): void
+    {
+        config([
+            'extractor.profiles.scene.message_limit' => 30,
+            'extractor.profiles.scene.feed_tokens' => 5392,
+            'extractor.profiles.scene.input_tokens' => 8192,
+            'extractor.characters_per_token' => 2,
+        ]);
+
+        $scene = Scene::query()->active()->firstOrFail();
+        Message::query()->where('scene_id', $scene->id)->delete();
+        $scene->update(['last_extracted_to_message_id' => null]);
+        $storyteller = User::factory()->storyteller()->create();
+
+        Message::factory()->count(30)->create([
+            'scene_id' => $scene->id,
+            'user_id' => $storyteller->id,
+            'body' => 'Коротко.',
+        ]);
+
+        $this->fakeOllamaExtraction([
+            'mentions' => [],
+            'relations' => [],
+            'events' => [],
+            'memories' => [],
+        ]);
+
+        Sanctum::actingAs($storyteller);
+
+        $runId = $this->postJson('/api/extract', ['scene_id' => $scene->id])
+            ->assertCreated()
+            ->json('extraction_run_id');
+
+        $run = ExtractionRun::query()->findOrFail($runId);
+        $messageCount = \App\Models\Message::query()
+            ->where('scene_id', $scene->id)
+            ->whereBetween('id', [(int) $run->from_message_id, (int) $run->to_message_id])
+            ->count();
+
+        $this->assertSame(30, $messageCount);
     }
 
     /**

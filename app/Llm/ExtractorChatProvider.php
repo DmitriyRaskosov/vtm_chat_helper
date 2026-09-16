@@ -19,9 +19,14 @@ final class ExtractorChatProvider extends OllamaChatProvider
      */
     public function chat(array $messages, array $options = []): string
     {
+        $profile = (string) ($options['profile'] ?? 'lore');
+        unset($options['profile']);
+
+        $defaultOutput = (int) config("extractor.profiles.{$profile}.output_tokens", 7128);
+
         $options = array_replace([
             'num_ctx' => (int) config('ollama.context_length'),
-            'num_predict' => (int) config('extractor.max_output_tokens'),
+            'num_predict' => $defaultOutput,
         ], $options);
 
         $payload = [
@@ -43,7 +48,7 @@ final class ExtractorChatProvider extends OllamaChatProvider
 
         $doneReason = $response->json('done_reason');
         if ($doneReason === 'length') {
-            throw new ExtractionTokenLimitException;
+            throw new ExtractionTokenLimitException($profile);
         }
 
         $message = $response->json('message');

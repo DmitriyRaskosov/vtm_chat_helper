@@ -132,6 +132,9 @@ export function inboxRunMeta(run) {
         return `сообщения ${run.from_message_id}–${run.to_message_id} (${run.message_count ?? '?'})`;
     }
     if (run.source_type === 'lore') {
+        if (run.from_char_offset != null && run.to_char_offset != null && run.to_char_offset > run.from_char_offset) {
+            return `символы ${run.from_char_offset + 1}–${run.to_char_offset}`;
+        }
         return 'статья лора';
     }
     return 'биография';
@@ -142,6 +145,8 @@ export function useWorldLore({ error, entities, archived }) {
     const flashLore = ref(false);
     const extractorEnabled = ref(false);
     const extracting = ref(false);
+    const loreLimits = ref({ article_max_chars: 10000, characters_per_token: 2 });
+    const loreWindow = ref(null);
     const loreList = ref([]);
     const loreArchived = ref([]);
     const characterOptions = ref([]);
@@ -209,12 +214,21 @@ export function useWorldLore({ error, entities, archived }) {
         loreForm[other] = loreForm[other].filter((value) => value !== id);
     }
 
-    async function loadExtractorStatus() {
+    async function loadExtractorStatus(loreEntryId = null) {
         try {
-            const { data } = await api.get('/extract/status');
+            const params = loreEntryId ? { lore_entry_id: loreEntryId } : {};
+            const { data } = await api.get('/extract/status', { params });
             extractorEnabled.value = Boolean(data.enabled);
+            if (data.lore) {
+                loreLimits.value = {
+                    article_max_chars: data.lore.article_max_chars ?? 10000,
+                    characters_per_token: data.lore.characters_per_token ?? 2,
+                };
+            }
+            loreWindow.value = data.lore_window ?? null;
         } catch {
             extractorEnabled.value = false;
+            loreWindow.value = null;
         }
     }
 
@@ -262,7 +276,8 @@ export function useWorldLore({ error, entities, archived }) {
     async function openLoreTab() {
         error.value = '';
         try {
-            await Promise.all([loadLore(), loadExtractorStatus()]);
+            await loadLore();
+            await loadExtractorStatus(loreForm.id);
         } catch (e) {
             error.value = e.response?.data?.message ?? 'Не удалось загрузить лор.';
         }
@@ -294,6 +309,7 @@ export function useWorldLore({ error, entities, archived }) {
         try {
             const { data } = await api.get(`/lore/${id}`);
             applyLore(data.lore);
+            await loadExtractorStatus(id);
         } catch (e) {
             error.value = e.response?.data?.message ?? 'Не удалось открыть статью.';
         }
@@ -319,6 +335,9 @@ export function useWorldLore({ error, entities, archived }) {
                 : await api.post('/lore', payload);
             applyLore(data.lore);
             await loadLore();
+            if (loreForm.id) {
+                await loadExtractorStatus(loreForm.id);
+            }
             flashLore.value = true;
             clearTimeout(flashLoreTimer);
             flashLoreTimer = setTimeout(() => {
@@ -363,6 +382,9 @@ export function useWorldLore({ error, entities, archived }) {
         flashLore,
         extractorEnabled,
         extracting,
+        loreLimits,
+        loreWindow,
+        loadExtractorStatus,
         loreList,
         loreArchived,
         characterOptions,

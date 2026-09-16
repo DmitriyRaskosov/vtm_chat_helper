@@ -53,9 +53,19 @@ flowchart LR
 
 Вход модели: текст среза + компактный каталог `id | type | name | aliases` активных сущностей хроники. Не тащить всю хронику, био+лор+ленту одним запросом.
 
-Низкая температура. Ответ — JSON. У экстрактора reasoning **выключен** (`think: false` в теле `/api/chat` + `/no_think` в system): qwen3 не тратит `num_predict` на отдельное поле `thinking`, JSON идёт в `content`. Если Ollama всё же вернёт пустой `content`, провайдер читает `thinking` как страховку. Префикс **Thinking... / ...done thinking.** в тексте — `ExtractionResponseParser` вырезает и берёт первый сбалансированный `{…}`. Перед decode: голые CR/LF → пробел; лишняя кавычка перед ключом (`{ " "key":` / `{ ""key":`) → обычный ключ (пустое `""` после `:` и экранированную пару `\`+`n` не трогает). Сломанный JSON → **502**, очередь пустая; сырой ответ — `storage/extractor-fails/` (в `laravel.log` только путь, `bytes`, `json_error`). `done_reason: length` → **502** с подсказкой про `EXTRACTOR_MAX_OUTPUT_TOKENS`.
+Низкая температура. Ответ — JSON. У экстрактора reasoning **выключен** (`think: false` в теле `/api/chat` + `/no_think` в system): qwen3 не тратит `num_predict` на отдельное поле `thinking`, JSON идёт в `content`. Если Ollama всё же вернёт пустой `content`, провайдер читает `thinking` как страховку. Префикс **Thinking... / ...done thinking.** в тексте — `ExtractionResponseParser` вырезает и берёт первый сбалансированный `{…}`. Перед decode: голые CR/LF → пробел; лишняя кавычка перед ключом (`{ " "key":` / `{ ""key":`) → обычный ключ (пустое `""` после `:` и экранированную пару `\`+`n` не трогает). Сломанный JSON → **502**, очередь пустая; сырой ответ — `storage/extractor-fails/` (в `laravel.log` только путь, `bytes`, `json_error`). `done_reason: length` → **502** с подсказкой про `EXTRACTOR_LORE_OUTPUT_TOKENS` / `EXTRACTOR_SCENE_OUTPUT_TOKENS`.
 
-Общее окно **16384** (`OLLAMA_CONTEXT_LENGTH`): вход (срез + каталог + промпт) и `num_predict` делят один `num_ctx`. Перед вызовом PHP оценивает вход (`TokenEstimator`) и передаёт `effective = min(EXTRACTOR_MAX_OUTPUT_TOKENS, 16384 − prompt − 256)`; если effective &lt; 512 — **422** без вызова Ollama. HTTP-таймаут экстрактора — 300 с (`EXTRACTOR_HTTP_TIMEOUT_SECONDS`), Copilot — 180 с.
+Общее окно **16384** (`OLLAMA_CONTEXT_LENGTH`): лор и сцена — разные профильные корзины, оценка токенов экстрактора `ceil(mb_strlen / 2)` (`EXTRACTOR_CHARACTERS_PER_TOKEN=2`), не глобальный Copilot `TokenEstimator`. Перед вызовом `ExtractorTokenBudget::effectiveNumPredict(profile)` = `min(profile.output, 16384 − prompt − 256)`; если &lt; 512 — **422** без Ollama. HTTP-таймаут экстрактора — 300 с (`EXTRACTOR_HTTP_TIMEOUT_SECONDS`), Copilot — 180 с.
+
+### Профили бюджета (`graph-extract-v2`)
+
+| Профиль | Вход (корзины) | Выход `num_predict` |
+|---------|----------------|---------------------|
+| **Лор** | статья ≤ 10000 символов (5000 tok) + system ≤ 3000 + каталог ≤ 1000 + запас 256 | 7128 |
+| **Сцена** | system 1800 + каталог+участники 1000 + лента ≤ 5392; кап входа 8192 | 7936 |
+| **Био** | биография целиком + prompt | до 7128 |
+
+Длинная статья лора (&gt; 10k символов): непересекающиеся char-окна по 10k; один POST = одно окно; `extraction_runs.from_char_offset` / `to_char_offset`; курсор — max `to_char_offset` у `reviewed` runs.
 
 Слабая локальная модель не повод писать FK из ответа LLM: упоминания текстом, сопоставление в PHP.
 
@@ -85,7 +95,7 @@ LLM **не** ставит `entity_id`. Смысл формы (имена пол�
 
 ### Маппинг лора (directory + relations)
 
-Промпт `ExtractionPromptBuilder` задаёт канон для модели. Кратко для рассказчика:
+Промпт `ExtractionPromptBuilder::build()` — отдельный system v2 (`graph-extract-v2`): только `mentions` + `relations`, полное покрытие имён и списков, без `character` / `event`. Каталог — exact match; «Бруха» ≠ «Отступники Бруха». Кратко для рассказчика:
 
 | В тексте | `kind` | Связи |
 |----------|--------|--------|
@@ -141,7 +151,7 @@ UI первого захода — не отдельный продукт: кн�
 
 Срез = `canonical_text` статьи + каталог. Accept `new_entity` → `WorldEntityService::create`. Accept relation → `WorldRelationService::relate` (активный дубликат — `merged`). UI: кнопка «Разобрать» на вкладке лора. API: [[API/Extract]].
 
-**Приёмка:** известное имя → ребро после accept; выдуманное → pending `new_entity`, `create` только по Accept. Matcher дедуплирует mentions и синтезирует endpoint-имена из relations (один раз); невалидные relation endpoints → `discarded` + `discard_reason`. Рассказчик правит pending mention (именительный, kind, optional `sect_faction_id` для clan/coterie/circle, aka, alias_of) через PATCH. Когда pending не осталось — run `reviewed`, из inbox уходит. Повторный POST лора/био supersede-ит старый `needs_review` того же источника.
+**Приёмка:** известное имя → ребро после accept; выдуманное → pending `new_entity`, `create` только по Accept. Matcher дедуплирует mentions и синтезирует endpoint-имена из relations (один раз); невалидные relation endpoints → `discarded` + `discard_reason`. Рассказчик правит pending mention (именительный, kind, optional `sect_faction_id` для clan/coterie/circle, aka, alias_of) через PATCH. Когда pending не осталось — run `reviewed`, из inbox уходит. Повторный POST лора supersede-ит старый `needs_review` **того же char-окна**; длинная статья — окна по 10k символов.
 
 ### 3. Био: только память — **в коде**
 

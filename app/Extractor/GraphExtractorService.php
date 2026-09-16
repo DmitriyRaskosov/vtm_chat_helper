@@ -31,6 +31,7 @@ class GraphExtractorService
         private BiographySliceBuilder $biographySlice,
         private SceneSliceBuilder $sceneSlice,
         private SceneExtractionWindowPlanner $windowPlanner,
+        private LoreExtractionWindowPlanner $loreWindowPlanner,
         private ExtractorTokenBudget $tokenBudget,
     ) {}
 
@@ -46,19 +47,27 @@ class GraphExtractorService
 
         $this->assertDriverEnabled();
 
+        $window = $this->loreWindowPlanner->planNextWindow($entry);
+        if ($window === null) {
+            throw new InvalidArgumentException('Lore entry has no text left to extract.');
+        }
+
         $entry->loadMissing('entities');
         $catalogLines = $this->catalog->build(
             $chronicle,
-            (string) $entry->canonical_text,
+            $window['slice_text'],
             $entry->entities->pluck('id')->map(fn ($id): int => (int) $id)->all(),
+            'lore',
         );
         $relationKeys = $this->enabledRelationKeys();
 
         $messages = $this->prompts->build(
-            (string) $entry->canonical_text,
+            $window['slice_text'],
             $catalogLines,
             $relationKeys,
         );
+
+        $this->loreWindowPlanner->assertWindowFits($messages, $this->tokenBudget);
 
         return $this->executeRun(
             chronicle: $chronicle,
@@ -66,6 +75,9 @@ class GraphExtractorService
             sourceType: ExtractionSourceType::Lore,
             sourceId: $entry->id,
             llmMessages: $messages,
+            profile: 'lore',
+            fromCharOffset: $window['from_char_offset'],
+            toCharOffset: $window['to_char_offset'],
             matchCallback: fn (array $parsed): array => $this->matcher->match(
                 $parsed,
                 $chronicle,
@@ -110,6 +122,7 @@ class GraphExtractorService
             sourceType: ExtractionSourceType::Biography,
             sourceId: $character->id,
             llmMessages: $messages,
+            profile: 'biography',
             matchCallback: fn (array $parsed): array => $this->matcher->match(
                 $parsed,
                 $chronicle,
@@ -212,7 +225,7 @@ class GraphExtractorService
             ]);
 
         try {
-            $raw = $this->callModel($messages);
+            $raw = $this->callModel($messages, 'scene');
             $parsed = $this->parseModelResponse($raw);
             $candidates = $this->matcher->match(
                 $parsed,
@@ -294,9 +307,12 @@ class GraphExtractorService
         ExtractionSourceType $sourceType,
         int $sourceId,
         array $llmMessages,
+        string $profile,
         callable $matchCallback,
+        ?int $fromCharOffset = null,
+        ?int $toCharOffset = null,
     ): ExtractionRun {
-        $raw = $this->callModel($llmMessages);
+        $raw = $this->callModel($llmMessages, $profile);
         $parsed = $this->parseModelResponse($raw);
         $candidates = $matchCallback($parsed);
 
@@ -308,6 +324,8 @@ class GraphExtractorService
             'trigger' => null,
             'from_message_id' => null,
             'to_message_id' => null,
+            'from_char_offset' => $fromCharOffset,
+            'to_char_offset' => $toCharOffset,
             'driver' => (string) config('extractor.driver'),
             'model' => (string) config('extractor.ollama_model'),
             'raw_response' => $parsed,
@@ -315,7 +333,7 @@ class GraphExtractorService
             'user_id' => $user->id,
         ]);
 
-        $this->supersedePriorInboxRuns($chronicle, $sourceType, $sourceId, (int) $run->id);
+        $this->supersedePriorInboxRuns($chronicle, $sourceType, $sourceId, (int) $run->id, $fromCharOffset, $toCharOffset);
 
         return ExtractionRunCompletion::finalizeIfComplete($run);
     }
@@ -325,17 +343,26 @@ class GraphExtractorService
         ExtractionSourceType $sourceType,
         int $sourceId,
         int $replacementRunId,
+        ?int $fromCharOffset = null,
+        ?int $toCharOffset = null,
     ): void {
-        ExtractionRun::query()
+        $query = ExtractionRun::query()
             ->where('chronicle_id', $chronicle->id)
             ->where('source_type', $sourceType)
             ->where('source_id', $sourceId)
             ->where('status', ExtractionRunStatus::NeedsReview)
-            ->where('id', '!=', $replacementRunId)
-            ->update([
-                'status' => ExtractionRunStatus::Superseded,
-                'superseded_by_run_id' => $replacementRunId,
-            ]);
+            ->where('id', '!=', $replacementRunId);
+
+        if ($sourceType === ExtractionSourceType::Lore) {
+            $query
+                ->where('from_char_offset', $fromCharOffset)
+                ->where('to_char_offset', $toCharOffset);
+        }
+
+        $query->update([
+            'status' => ExtractionRunStatus::Superseded,
+            'superseded_by_run_id' => $replacementRunId,
+        ]);
     }
 
     /**
@@ -372,14 +399,15 @@ class GraphExtractorService
     /**
      * @param  list<array{role: string, content: string}>  $messages
      */
-    private function callModel(array $messages): string
+    private function callModel(array $messages, string $profile): string
     {
-        $this->tokenBudget->assertFits($messages);
-        $numPredict = $this->tokenBudget->effectiveNumPredict($messages);
+        $this->tokenBudget->assertFits($messages, $profile);
+        $numPredict = $this->tokenBudget->effectiveNumPredict($messages, $profile);
 
         return $this->chat->chat($messages, [
             'temperature' => (float) config('extractor.temperature'),
             'num_predict' => $numPredict,
+            'profile' => $profile,
         ]);
     }
 
@@ -405,6 +433,7 @@ class GraphExtractorService
             $chronicle,
             $this->sceneSlice->formatForPrompt($slice),
             $participantIds,
+            'scene',
         );
     }
 

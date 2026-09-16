@@ -9,12 +9,18 @@ use App\World\AliasNormalizer;
 
 class EntityCatalogBuilder
 {
+    public function __construct(private ExtractorTokenBudget $tokenBudget) {}
+
     /**
      * @param  list<int>  $alwaysIncludeEntityIds
      * @return list<string>
      */
-    public function build(Chronicle $chronicle, ?string $sliceText = null, array $alwaysIncludeEntityIds = []): array
-    {
+    public function build(
+        Chronicle $chronicle,
+        ?string $sliceText = null,
+        array $alwaysIncludeEntityIds = [],
+        string $profile = 'lore',
+    ): array {
         $entities = WorldEntity::query()
             ->where('chronicle_id', $chronicle->id)
             ->where('status', WorldEntityStatus::Active)
@@ -28,20 +34,33 @@ class EntityCatalogBuilder
         $haystack = $sliceText === null ? null : mb_strtolower($sliceText);
         $filterBySlice = $haystack !== null || $alwaysInclude !== [];
 
-        $lines = [];
+        $priorityLines = [];
+        $matchedLines = [];
+
         foreach ($entities as $entity) {
-            if ($filterBySlice && ! $this->entityBelongsInCatalog($entity, $haystack, $alwaysInclude)) {
+            if ($filterBySlice && ! $this->entityBelongsInCatalog($entity, $haystack, $sliceText, $alwaysInclude)) {
                 continue;
             }
 
-            $lines[] = $this->formatLine($entity);
+            $line = $this->formatLine($entity);
 
-            if (count($lines) >= $this->maxLines()) {
+            if (isset($alwaysInclude[(int) $entity->id])) {
+                $priorityLines[] = $line;
+
+                continue;
+            }
+
+            $matchedLines[] = $line;
+
+            if (count($priorityLines) + count($matchedLines) >= $this->maxLines()) {
                 break;
             }
         }
 
-        return $lines;
+        return $this->trimLinesToTokenBudget(
+            [...$priorityLines, ...$matchedLines],
+            $this->tokenBudget->profileCatalogTokenLimit($profile),
+        );
     }
 
     private function maxLines(): int
@@ -52,8 +71,12 @@ class EntityCatalogBuilder
     /**
      * @param  array<int, true>  $alwaysInclude
      */
-    private function entityBelongsInCatalog(WorldEntity $entity, ?string $haystack, array $alwaysInclude): bool
-    {
+    private function entityBelongsInCatalog(
+        WorldEntity $entity,
+        ?string $haystack,
+        ?string $originalSlice,
+        array $alwaysInclude,
+    ): bool {
         if (isset($alwaysInclude[(int) $entity->id])) {
             return true;
         }
@@ -62,12 +85,12 @@ class EntityCatalogBuilder
             return false;
         }
 
-        if ($this->nameAppearsInSlice($entity->canonical_name, $haystack)) {
+        if ($this->nameAppearsInSlice($entity->canonical_name, $haystack, $originalSlice)) {
             return true;
         }
 
         foreach ($entity->aliases as $alias) {
-            if ($this->nameAppearsInSlice($alias->alias, $haystack)) {
+            if ($this->nameAppearsInSlice($alias->alias, $haystack, $originalSlice)) {
                 return true;
             }
         }
@@ -75,14 +98,58 @@ class EntityCatalogBuilder
         return false;
     }
 
-    private function nameAppearsInSlice(string $name, string $haystack): bool
+    private function nameAppearsInSlice(string $name, string $haystack, ?string $originalSlice = null): bool
     {
         $normalized = AliasNormalizer::normalize($name);
         if ($normalized === '') {
             return false;
         }
 
-        return str_contains($haystack, mb_strtolower($normalized));
+        $needle = mb_strtolower($normalized);
+        $pattern = '/(?<![\p{L}\p{N}])'
+            .preg_quote($needle, '/')
+            .'(?![\p{L}\p{N}])/u';
+
+        if (preg_match($pattern, $haystack) !== 1) {
+            return false;
+        }
+
+        if ($originalSlice === null) {
+            return true;
+        }
+
+        $longerPattern = '/\p{Lu}\p{L}*[\s\-]+'
+            .preg_quote($needle, '/')
+            .'(?![\p{L}\p{N}])/ui';
+
+        return preg_match($longerPattern, $originalSlice) !== 1;
+    }
+
+    /**
+     * @param  list<string>  $lines
+     * @return list<string>
+     */
+    private function trimLinesToTokenBudget(array $lines, int $maxTokens): array
+    {
+        if ($lines === []) {
+            return [];
+        }
+
+        $result = [];
+        $usedTokens = 0;
+
+        foreach ($lines as $line) {
+            $lineTokens = $this->tokenBudget->estimateTokens($line."\n");
+
+            if ($result !== [] && ($usedTokens + $lineTokens) > $maxTokens) {
+                break;
+            }
+
+            $result[] = $line;
+            $usedTokens += $lineTokens;
+        }
+
+        return $result;
     }
 
     private function formatLine(WorldEntity $entity): string

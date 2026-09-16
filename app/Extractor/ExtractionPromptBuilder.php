@@ -88,26 +88,73 @@ TEXT;
      */
     public function build(string $sliceText, array $catalogLines, array $relationKeys): array
     {
-        $entityKinds = implode(', ', $this->directoryKindValues());
+        $entityKinds = implode('|', $this->directoryKindValues());
         $relationKeyList = $relationKeys === [] ? '(none)' : implode(', ', $relationKeys);
         $catalog = $catalogLines === []
             ? '(empty — no known entities yet)'
             : implode("\n", $catalogLines);
-        $rules = $this->graphExtractionRules($relationKeyList, false);
 
         $system = <<<TEXT
 /no_think
-You extract structured graph candidates from chronicle text. Reply with JSON only — no markdown fences, no commentary.
+You extract a chronicle lore graph. The source article is the only truth. Goal: complete coverage of named entities and explicit relations — not a summary. Reply with JSON only: no markdown, no commentary.
 
 Schema:
 {
-  "mentions": [{ "name": "string", "kind": "one of: {$entityKinds}" }],
-  "relations": [{ "source": "string", "target": "string", "key": "one of enabled relation keys" }],
-  "events": [{ "title": "string", "summary": "string", "participants": ["string"] }],
-  "memories": [{ "character": "string", "text": "string", "node_type": "event|fact|belief|rumor" }]
+  "mentions": [{ "name": "string", "kind": "{$entityKinds}" }],
+  "relations": [{ "source": "string", "target": "string", "key": "{$relationKeyList}" }]
 }
 
-{$rules}
+Coverage:
+- Extract every named proper noun and every item of a list, table, or numbered code.
+- If the text says a count ("16 статей", "кланы:"), output that many mention objects. Do not collapse a list into one node.
+- Empty "mentions" is wrong when the article contains names. Fill mentions first; relations only between those names.
+- Nominative case. No numeric IDs.
+
+Catalog:
+- Catalog lines are hints for an exact name/alias match (same spelling after case/space normalize).
+- Substring is not identity: "Отступники Бруха" is not "Бруха". A longer or different name in the article is a new node even if a shorter catalog name sits inside it.
+- Do not replace article names with catalog Camarilla clans.
+
+Kinds:
+- Sects and blocs (Камарилья, Шабаш, Анархи, Инквизиция) → faction.
+- Clans and bloodlines named as clans, including antitribu / «Отступники X» → clan, never faction.
+- Coteries → coterie; inner circles / primogen councils → circle.
+- Cities, domains, temples, havens → location.
+- Codes, traditions, named laws, offices without a personal name (Регент, Лексталионис, Кодекс Милана, статья кодекса) → concept.
+- Mixed/unclear mortal groups → other.
+- Skip: generation numbers, nameless «вампир» / «каинит» / «примоген».
+- Do not output character or event.
+
+Relations (key must be in the enabled list). Allowed directions:
+- member_of: clan|coterie|circle|faction → faction. Source is the member. NEVER faction → clan.
+- hostile_to / allied_with: faction ↔ faction only. A clan must not hostile_to a sect; use the sect (Шабаш hostile_to Камарилья).
+- controls: faction → location|faction, only if the text states dominion over a place or bloc.
+- owns: faction → item, only if stated.
+- Do not emit located_at (not valid for faction/clan), created, knows, affiliated_with, or event keys.
+- Do not fake part-of: Code articles are sibling concepts, not member_of the code.
+
+Good:
+{
+  "mentions": [
+    { "name": "Шабаш", "kind": "faction" },
+    { "name": "Отступники Бруха", "kind": "clan" },
+    { "name": "Мехико", "kind": "location" },
+    { "name": "Кодекс Милана", "kind": "concept" },
+    { "name": "Регент", "kind": "concept" }
+  ],
+  "relations": [
+    { "source": "Отступники Бруха", "target": "Шабаш", "key": "member_of" },
+    { "source": "Шабаш", "target": "Камарилья", "key": "hostile_to" },
+    { "source": "Шабаш", "target": "Мехико", "key": "controls" }
+  ]
+}
+
+Bad (never):
+{ "name": "Бруха", "kind": "clan" }   // when the article says Отступники Бруха
+{ "source": "Шабаш", "target": "Ласомбра", "key": "member_of" }
+{ "source": "Отступники Бруха", "target": "Камарилья", "key": "hostile_to" }
+{ "source": "Шабаш", "target": "Мехико", "key": "located_at" }
+{ "source": "Статья I", "target": "Кодекс Милана", "key": "member_of" }
 TEXT;
 
         $user = <<<TEXT
@@ -119,7 +166,7 @@ TEXT;
 
 {$catalog}
 
-Extract mentions, relations, events, and memories from the source text.
+Extract every named entity and explicit relation from the source text. Do not summarize lists.
 TEXT;
 
         return [

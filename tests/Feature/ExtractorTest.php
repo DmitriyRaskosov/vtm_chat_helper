@@ -538,11 +538,6 @@ class ExtractorTest extends TestCase
 
     public function test_ollama_request_disables_thinking_and_clamps_num_predict(): void
     {
-        config([
-            'extractor.max_output_tokens' => 12000,
-            'ollama.context_length' => 16384,
-        ]);
-
         $this->fakeOllamaExtraction([
             'mentions' => [
                 ['name' => 'Камарилья', 'kind' => 'faction'],
@@ -554,7 +549,7 @@ class ExtractorTest extends TestCase
 
         $storyteller = User::factory()->storyteller()->create();
         $chronicle = Chronicle::query()->firstOrFail();
-        $lore = $this->createLoreEntry($chronicle, 'Камарилья правит городом.');
+        $lore = $this->createLoreEntry($chronicle, str_repeat('К', 10000));
 
         Sanctum::actingAs($storyteller);
 
@@ -562,14 +557,15 @@ class ExtractorTest extends TestCase
             'lore_entry_id' => $lore->id,
         ])->assertCreated();
 
+        Http::assertSentCount(1);
         Http::assertSent(function (Request $request): bool {
             $body = $request->data();
             $options = $body['options'] ?? [];
 
-            return ($body['think'] ?? null) === false
-                && isset($options['num_predict'])
-                && $options['num_predict'] <= 12000
-                && $options['num_predict'] >= 512;
+            return array_key_exists('think', $body)
+                && $body['think'] === false
+                && ($options['num_predict'] ?? 0) <= 7128
+                && ($options['num_predict'] ?? 0) >= 512;
         });
     }
 
@@ -579,7 +575,7 @@ class ExtractorTest extends TestCase
             config('ollama.url').'/api/chat' => Http::response([
                 'done_reason' => 'length',
                 'message' => [
-                    'content' => '{"mentions":[{"name":"Камарилья","kind":"faction"}],"relations":[],"events":[],"memories":[]}',
+                    'content' => '{"mentions":[{"name":"Камарилья","kind":"faction"}],"relations":[]}',
                 ],
             ]),
         ]);
@@ -594,7 +590,7 @@ class ExtractorTest extends TestCase
             'lore_entry_id' => $lore->id,
         ])->assertStatus(502);
 
-        $this->assertStringContainsString('EXTRACTOR_MAX_OUTPUT_TOKENS', (string) $response->json('message'));
+        $this->assertStringContainsString('EXTRACTOR_LORE_OUTPUT_TOKENS', (string) $response->json('message'));
 
         $this->assertDatabaseCount('extraction_runs', 0);
     }
@@ -603,12 +599,12 @@ class ExtractorTest extends TestCase
     {
         config([
             'ollama.context_length' => 1000,
-            'extractor.max_output_tokens' => 5000,
+            'extractor.profiles.lore.output_tokens' => 7128,
         ]);
 
         $storyteller = User::factory()->storyteller()->create();
         $chronicle = Chronicle::query()->firstOrFail();
-        $lore = $this->createLoreEntry($chronicle, str_repeat('А', 5000));
+        $lore = $this->createLoreEntry($chronicle, str_repeat('А', 10000));
 
         Sanctum::actingAs($storyteller);
 
@@ -618,6 +614,166 @@ class ExtractorTest extends TestCase
 
         Http::assertNothingSent();
         $this->assertDatabaseCount('extraction_runs', 0);
+    }
+
+    public function test_lore_long_article_is_split_into_ten_k_char_windows(): void
+    {
+        config(['extractor.profiles.lore.article_max_chars' => 10000]);
+
+        $this->fakeOllamaExtraction([
+            'mentions' => [['name' => 'Камарилья', 'kind' => 'faction']],
+            'relations' => [],
+        ]);
+
+        $storyteller = User::factory()->storyteller()->create();
+        $chronicle = Chronicle::query()->firstOrFail();
+        $text = str_repeat('А', 15000);
+        $lore = $this->createLoreEntry($chronicle, $text);
+
+        Sanctum::actingAs($storyteller);
+
+        $firstId = $this->postJson('/api/extract', [
+            'lore_entry_id' => $lore->id,
+        ])->assertCreated()->json('extraction_run_id');
+
+        $firstRun = ExtractionRun::query()->findOrFail($firstId);
+        $this->assertSame(0, $firstRun->from_char_offset);
+        $this->assertSame(10000, $firstRun->to_char_offset);
+
+        Http::assertSent(function (Request $request): bool {
+            $content = $request->data()['messages'][1]['content'] ?? '';
+
+            return mb_strlen($this->sliceTextFromPrompt($content)) <= 10000;
+        });
+
+        $firstRun->update(['status' => 'reviewed']);
+
+        $secondId = $this->postJson('/api/extract', [
+            'lore_entry_id' => $lore->id,
+        ])->assertCreated()->json('extraction_run_id');
+
+        $secondRun = ExtractionRun::query()->findOrFail($secondId);
+        $this->assertSame(10000, $secondRun->from_char_offset);
+        $this->assertSame(15000, $secondRun->to_char_offset);
+        $this->assertSame('reviewed', $firstRun->fresh()->status->value);
+    }
+
+    public function test_lore_reextract_supersedes_only_same_char_window(): void
+    {
+        config(['extractor.profiles.lore.article_max_chars' => 10000]);
+
+        $this->fakeOllamaExtraction([
+            'mentions' => [['name' => 'Камарилья', 'kind' => 'faction']],
+            'relations' => [],
+        ]);
+
+        $storyteller = User::factory()->storyteller()->create();
+        $chronicle = Chronicle::query()->firstOrFail();
+        $lore = $this->createLoreEntry($chronicle, str_repeat('Б', 15000));
+
+        Sanctum::actingAs($storyteller);
+
+        $windowOneId = $this->postJson('/api/extract', [
+            'lore_entry_id' => $lore->id,
+        ])->assertCreated()->json('extraction_run_id');
+
+        ExtractionRun::query()->findOrFail($windowOneId)->update(['status' => 'reviewed']);
+
+        $windowTwoId = $this->postJson('/api/extract', [
+            'lore_entry_id' => $lore->id,
+        ])->assertCreated()->json('extraction_run_id');
+
+        $this->fakeOllamaExtraction([
+            'mentions' => [['name' => 'Шабаш', 'kind' => 'faction']],
+            'relations' => [],
+        ]);
+
+        $windowTwoRetryId = $this->postJson('/api/extract', [
+            'lore_entry_id' => $lore->id,
+        ])->assertCreated()->json('extraction_run_id');
+
+        $this->assertSame('superseded', ExtractionRun::query()->findOrFail($windowTwoId)->status->value);
+        $this->assertSame('reviewed', ExtractionRun::query()->findOrFail($windowOneId)->status->value);
+    }
+
+    public function test_lore_num_predict_is_capped_at_seven_thousand_one_hundred_twenty_eight(): void
+    {
+        config([
+            'extractor.profiles.lore.article_max_chars' => 10000,
+            'ollama.context_length' => 16384,
+        ]);
+
+        $this->fakeOllamaExtraction([
+            'mentions' => [['name' => 'Камарилья', 'kind' => 'faction']],
+            'relations' => [],
+        ]);
+
+        $storyteller = User::factory()->storyteller()->create();
+        $chronicle = Chronicle::query()->firstOrFail();
+        $lore = $this->createLoreEntry($chronicle, str_repeat('В', 10000));
+
+        Sanctum::actingAs($storyteller);
+
+        $this->postJson('/api/extract', [
+            'lore_entry_id' => $lore->id,
+        ])->assertCreated();
+
+        Http::assertSent(function (Request $request): bool {
+            $options = $request->data()['options'] ?? [];
+
+            return ($options['num_predict'] ?? 0) <= 7128;
+        });
+    }
+
+    public function test_lore_prompt_uses_graph_extract_v2_rules(): void
+    {
+        $relationKeys = \App\Models\WorldRelationType::query()
+            ->where('enabled', true)
+            ->orderBy('key')
+            ->pluck('key')
+            ->all();
+
+        $messages = $this->app->make(\App\Extractor\ExtractionPromptBuilder::class)->build(
+            'Отступники Бруха в Мехико.',
+            [],
+            $relationKeys,
+        );
+
+        $system = $messages[0]['content'];
+        $user = $messages[1]['content'];
+
+        $this->assertStringContainsString('You extract a chronicle lore graph.', $system);
+        $this->assertStringContainsString('Do not summarize lists.', $user);
+        $this->assertStringContainsString('Отступники Бруха', $system);
+        $this->assertStringNotContainsString('textbook facts unrelated to this chronicle', $system);
+        $this->assertStringNotContainsString('"events"', $system);
+    }
+
+    public function test_extract_status_reports_lore_limits_and_window_preview(): void
+    {
+        $storyteller = User::factory()->storyteller()->create();
+        $chronicle = Chronicle::query()->firstOrFail();
+        $lore = $this->createLoreEntry($chronicle, str_repeat('Г', 15000));
+
+        Sanctum::actingAs($storyteller);
+
+        $this->getJson('/api/extract/status?lore_entry_id='.$lore->id)
+            ->assertOk()
+            ->assertJsonPath('enabled', true)
+            ->assertJsonPath('lore.article_max_chars', 10000)
+            ->assertJsonPath('lore_window.from_char_offset', 0)
+            ->assertJsonPath('lore_window.to_char_offset', 10000)
+            ->assertJsonPath('lore_window.total_chars', 15000)
+            ->assertJsonPath('lore_window.window_count', 2);
+    }
+
+    private function sliceTextFromPrompt(string $prompt): string
+    {
+        if (! preg_match('/## Source text\n\n(.+?)\n\n## Known entities/su', $prompt, $matches)) {
+            return '';
+        }
+
+        return $matches[1];
     }
 
     /**

@@ -9,6 +9,7 @@ use App\Extractor\ExtractionDisabledException;
 use App\Extractor\ExtractionParseException;
 use App\Extractor\ExtractionTokenLimitException;
 use App\Extractor\GraphExtractorService;
+use App\Extractor\LoreExtractionWindowPlanner;
 use App\Http\Requests\ManageExtractionCandidateRequest;
 use App\Http\Requests\PatchExtractionCandidateRequest;
 use App\Http\Requests\RunExtractionRequest;
@@ -29,11 +30,35 @@ use Throwable;
 
 class ExtractController extends Controller
 {
-    public function status(): JsonResponse
+    public function status(Request $request, LoreExtractionWindowPlanner $loreWindows): JsonResponse
     {
-        return response()->json([
+        $payload = [
             'enabled' => (string) config('extractor.driver') === 'ollama',
-        ]);
+            'lore' => [
+                'article_max_chars' => (int) config('extractor.profiles.lore.article_max_chars'),
+                'characters_per_token' => (int) config('extractor.characters_per_token'),
+            ],
+            'scene' => [
+                'message_limit' => (int) config('extractor.profiles.scene.message_limit'),
+                'input_tokens' => (int) config('extractor.profiles.scene.input_tokens'),
+                'feed_tokens' => (int) config('extractor.profiles.scene.feed_tokens'),
+            ],
+        ];
+
+        if ($request->filled('lore_entry_id')) {
+            $chronicleId = Chronicle::resolveId(
+                $request->filled('chronicle_id') ? $request->integer('chronicle_id') : null,
+            );
+            $entry = LoreEntry::query()->findOrFail((int) $request->integer('lore_entry_id'));
+
+            if ((int) $entry->chronicle_id !== $chronicleId) {
+                abort(404);
+            }
+
+            $payload['lore_window'] = $loreWindows->previewNextWindow($entry);
+        }
+
+        return response()->json($payload);
     }
 
     public function inbox(Request $request): JsonResponse
@@ -306,6 +331,8 @@ class ExtractController extends Controller
             'trigger' => $run->trigger?->value,
             'from_message_id' => $run->from_message_id === null ? null : (int) $run->from_message_id,
             'to_message_id' => $run->to_message_id === null ? null : (int) $run->to_message_id,
+            'from_char_offset' => $run->from_char_offset === null ? null : (int) $run->from_char_offset,
+            'to_char_offset' => $run->to_char_offset === null ? null : (int) $run->to_char_offset,
             'message_count' => $run->from_message_id !== null && $run->to_message_id !== null
                 ? $this->messageCountForRun($run)
                 : null,

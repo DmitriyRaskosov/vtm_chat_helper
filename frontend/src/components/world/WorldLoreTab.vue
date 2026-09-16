@@ -40,6 +40,12 @@
             <label>
                 Текст
                 <textarea v-model="loreForm.canonical_text" class="bio-full" rows="8" maxlength="50000" />
+                <span v-if="loreForm.id" class="muted">
+                    {{ canonicalTextLength }} символов
+                    <template v-if="loreLimits.article_max_chars">
+                        · разбор за раз ≤ {{ loreLimits.article_max_chars }}
+                    </template>
+                </span>
             </label>
             <label>
                 Уровень
@@ -134,12 +140,16 @@
                     :disabled="extracting || savingLore"
                     @click="runExtraction"
                 >
-                    {{ extracting ? 'Разбор…' : 'Разобрать' }}
+                    {{ extracting ? 'Разбор…' : extractButtonLabel }}
                 </button>
                 <span v-if="flashLore" class="saved-flash">Сохранено!</span>
             </div>
             <p v-if="extractorEnabled && loreForm.id" class="muted">
                 Кандидаты графа появятся на вкладке «Разбор».
+                <template v-if="loreWindow && loreWindow.window_count > 1">
+                    Следующее окно: символы {{ loreWindow.from_char_offset + 1 }}–{{ loreWindow.to_char_offset }}
+                    из {{ loreWindow.total_chars }} ({{ loreWindow.window_index }}/{{ loreWindow.window_count }}).
+                </template>
             </p>
         </section>
 
@@ -159,6 +169,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import {
     aboutFilterChips,
     aboutTypeLabel,
@@ -169,7 +180,7 @@ import {
     loreKinds,
 } from '../../composables/useWorldLore';
 
-defineProps({
+const props = defineProps({
     loreList: { type: Array, required: true },
     loreArchived: { type: Array, required: true },
     loreForm: { type: Object, required: true },
@@ -180,6 +191,8 @@ defineProps({
     flashLore: { type: Boolean, required: true },
     extractorEnabled: { type: Boolean, required: true },
     extracting: { type: Boolean, required: true },
+    loreLimits: { type: Object, required: true },
+    loreWindow: { type: Object, default: null },
     newLore: { type: Function, required: true },
     selectLore: { type: Function, required: true },
     saveLore: { type: Function, required: true },
@@ -191,4 +204,14 @@ defineProps({
 
 const aboutSearch = defineModel('aboutSearch', { type: String, required: true });
 const aboutFilter = defineModel('aboutFilter', { type: String, required: true });
+
+const canonicalTextLength = computed(() => [...(props.loreForm.canonical_text ?? '')].length);
+
+const extractButtonLabel = computed(() => {
+    const window = props.loreWindow;
+    if (window && window.window_count > 1 && window.to_char_offset > window.from_char_offset) {
+        return `Разобрать (${window.from_char_offset + 1}–${window.to_char_offset} из ${window.total_chars})`;
+    }
+    return 'Разобрать';
+});
 </script>

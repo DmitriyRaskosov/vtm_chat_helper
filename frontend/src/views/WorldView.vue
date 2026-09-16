@@ -66,6 +66,8 @@
             :flash-lore="flashLore"
             :extractor-enabled="extractorEnabled"
             :extracting="extracting"
+            :lore-limits="loreLimits"
+            :lore-window="loreWindow"
             :new-lore="newLore"
             :select-lore="selectLore"
             :save-lore="saveLore"
@@ -173,6 +175,8 @@ const {
     openLoreTab: loadLoreTab,
     extractorEnabled,
     extracting,
+    loreLimits,
+    loreWindow,
     runExtraction,
     newLore,
     selectLore,

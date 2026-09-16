@@ -95,7 +95,7 @@ class SceneExtractionWindowPlanner
      */
     private function buildWindowIds(Scene $scene, Chronicle $chronicle, Collection $messages): array
     {
-        $limit = max(1, (int) config('extractor.scene_message_limit'));
+        $limit = max(1, (int) config('extractor.profiles.scene.message_limit', 30));
         $windowIds = [];
 
         foreach ($messages as $message) {
@@ -131,7 +131,7 @@ class SceneExtractionWindowPlanner
         array $windowIds,
         Collection $messages,
     ): bool {
-        $limit = max(1, (int) config('extractor.scene_message_limit'));
+        $limit = max(1, (int) config('extractor.profiles.scene.message_limit', 30));
 
         if (count($windowIds) >= $limit) {
             return true;
@@ -156,6 +156,7 @@ class SceneExtractionWindowPlanner
     private function fitsSceneWindow(Scene $scene, Chronicle $chronicle, array $messageIds): bool
     {
         $slice = $this->sceneSlice->buildFromMessageIds($scene, $messageIds);
+        $formattedSlice = $this->sceneSlice->formatForPrompt($slice);
         $participantIds = $scene->participants()
             ->where('is_current', true)
             ->pluck('character_id')
@@ -163,8 +164,9 @@ class SceneExtractionWindowPlanner
             ->all();
         $catalogLines = $this->catalog->build(
             $chronicle,
-            $this->sceneSlice->formatForPrompt($slice),
+            $formattedSlice,
             $participantIds,
+            'scene',
         );
         $relationKeys = WorldRelationType::query()
             ->where('enabled', true)
@@ -173,13 +175,24 @@ class SceneExtractionWindowPlanner
             ->all();
 
         $messages = $this->prompts->buildForScene(
-            $this->sceneSlice->formatForPrompt($slice),
+            $formattedSlice,
             $catalogLines,
             $relationKeys,
             false,
         );
 
-        return $this->tokenBudget->fits($messages);
+        $promptTokens = $this->tokenBudget->promptTokens($messages);
+        $feedTokens = $this->tokenBudget->estimateTokens($formattedSlice);
+
+        if ($promptTokens > $this->tokenBudget->profileSceneInputTokenLimit()) {
+            return false;
+        }
+
+        if ($feedTokens > $this->tokenBudget->profileSceneFeedTokenLimit()) {
+            return false;
+        }
+
+        return $this->tokenBudget->fits($messages, 'scene');
     }
 
     /**

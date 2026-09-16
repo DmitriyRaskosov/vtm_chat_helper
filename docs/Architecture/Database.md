@@ -155,7 +155,7 @@ erDiagram
 
 ## Очередь экстрактора
 
-`extraction_runs` — аудит прогонов экстрактора. Поля: `chronicle_id`, `source_type` (`lore` \| `biography` \| `scene`), `source_id`, `status` / `trigger` / окно `from_message_id`–`to_message_id` (сцена), `driver`, `model`, `raw_response` (jsonb), `candidates` (jsonb), `user_id`. Лор/био: ошибочный вызов модели строку не создаёт. Сцена: run пишется сразу; parse/таймаут → `failed`. Курсор `scenes.last_extracted_to_message_id` двигается только после успешного окна. Accept в канон — лор/сцена (mentions, relations, events), био (memories). См. [[API/Extract]], [[Project/Extractor]].
+`extraction_runs` — аудит прогонов экстрактора. Поля: `chronicle_id`, `source_type` (`lore` \| `biography` \| `scene`), `source_id`, `status` / `trigger` / окно `from_message_id`–`to_message_id` (сцена), nullable `from_char_offset`–`to_char_offset` (лор), `driver`, `model`, `raw_response` (jsonb), `candidates` (jsonb), `user_id`. Лор: курсор следующего окна — max `to_char_offset` у `reviewed` runs; supersede `needs_review` только того же char-окна. Лор/био: ошибочный вызов модели строку не создаёт. Сцена: run пишется сразу; parse/таймаут → `failed`. Курсор `scenes.last_extracted_to_message_id` двигается только после успешного окна. Accept в канон — лор/сцена (mentions, relations, events), био (memories). См. [[API/Extract]], [[Project/Extractor]].
 
 ## UI и backlog
 
