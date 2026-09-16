@@ -50,6 +50,9 @@
 | GET | `/api/world/faction-relations` | sanctum | storyteller | [[API/World]] |
 | POST | `/api/world/faction-relations` | sanctum | storyteller | [[API/World]] |
 | POST | `/api/world/faction-relations/{relation}/end` | sanctum | storyteller | [[API/World]] |
+| GET | `/api/world/relations` | sanctum | storyteller | [[API/World]] |
+| POST | `/api/world/relations` | sanctum | storyteller | [[API/World]] |
+| POST | `/api/world/relations/{relation}/end` | sanctum | storyteller | [[API/World]] |
 | POST | `/api/world/events` | sanctum | storyteller | [[API/World]] |
 | POST | `/api/world/events/{event}/participants` | sanctum | storyteller | [[API/World]] |
 | POST | `/api/world/events/{event}/sources` | sanctum | storyteller | [[API/World]] |

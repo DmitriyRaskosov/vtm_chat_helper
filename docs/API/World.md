@@ -46,6 +46,26 @@ Body: `source_entity_id`, `target_entity_id`, `relation_key` (`hostile_to`|`alli
 
 **200.** Ставит `ended_at`. Только политические рёбра фракция–фракция.
 
+## GET /api/world/relations
+
+Активные directory-рёбра хроники (`controls`, `owns` и др. по allowlist). Не политика фракций.
+
+Query: `keys` (required) — через запятую, например `controls,owns,part_of`. Без `keys` — **422**. Неизвестный ключ в `keys` — **422**.
+
+Элемент: `id`, `relation_key`, `source_entity_id`, `source_name`, `target_entity_id`, `target_name`, `note`, `ended_at`. Оба конца — активные directory-сущности (не character, не event).
+
+## POST /api/world/relations
+
+Body: `source_entity_id`, `target_entity_id`, `relation_key` (`controls`|`owns`|`part_of`), optional `chronicle_id`.
+
+`WorldRelationService::relate` (не `replaceAmong`). Валидатор каталога отвергает нелегальные пары (например location→faction для `controls`). Дубликат активного того же ключа и пары — **200** (существующее). Новое — **201**. Смешанные хроники — **409**. Политические ключи — **422**.
+
+Направление для UI: `controls` — фракция → место; `owns` — фракция → предмет; `part_of` — идея → целое (идея, фракция, клан, место и т.д.).
+
+## POST /api/world/relations/{relation}/end
+
+**200.** Ставит `ended_at`. Только `controls` / `owns` / `part_of`. Политика и прочие ключи — **422**. Чужая хроника — **404**.
+
 ## POST /api/world/events
 
 Тонкий ST API вокруг `WorldEntityService::create(Event)` + typed `world_events`. Не полный CRUD; списка/редактора в SPA нет.

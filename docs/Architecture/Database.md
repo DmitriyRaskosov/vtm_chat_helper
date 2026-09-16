@@ -4,7 +4,7 @@
 
 Корень всего — `chronicles`. Имя сущности не ID: стабильный ключ — `world_entities.id`. Typed-таблицы (`characters`, `locations`, …) имеют тот же `id`, что и identity.
 
-Канон живёт в обычных таблицах. `*_chunks`, `message_embeddings`, `tsvector` и HNSW — производные индексы, их можно пересчитать.
+Канон живёт в обычных таблицах. `*_chunks`, `message_embeddings`, `tsvector` и HNSW — производные индексы, их можно пересчитать. У `world_relation_types` опциональный `inverse_key` (например `part_of` → `contains`) задаёт чтение обратного направления без второй строки в `world_relations`.
 
 Подробности полей: [[Architecture/World]], [[Architecture/Memory]], [[Architecture/Lore]], [[Architecture/Rules]], [[Architecture/Backend]]. Миграции: `database/migrations/`.
 

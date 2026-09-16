@@ -88,6 +88,30 @@ class WorldRelationTest extends TestCase
         $this->assertSame($camarilla->id, $fromAnarchs->first()->other($anarchs)->id);
     }
 
+    public function test_part_of_incoming_edge_is_visible_via_inverse_key_without_reverse_row(): void
+    {
+        $chronicle = Chronicle::factory()->create();
+        $service = $this->app->make(WorldEntityService::class);
+        $relations = $this->app->make(WorldRelationService::class);
+        $codex = $service->create($chronicle, WorldEntityType::Concept, 'Кодекс Милана');
+        $article = $service->create($chronicle, WorldEntityType::Concept, 'Статья I');
+        $partOf = $this->type('part_of');
+
+        $edge = $relations->relate($article, $codex, $partOf);
+
+        $this->assertDatabaseCount('world_relations', 1);
+        $this->assertSame($article->id, $edge->source_entity_id);
+        $this->assertSame($codex->id, $edge->target_entity_id);
+        $this->assertSame('contains', $partOf->inverse_key);
+
+        $fromArticle = $relations->neighbors($article, $partOf);
+        $fromCodex = $relations->neighbors($codex, $partOf);
+
+        $this->assertCount(1, $fromArticle);
+        $this->assertCount(1, $fromCodex);
+        $this->assertTrue($fromCodex->first()->is($edge));
+    }
+
     public function test_asymmetric_incoming_edge_is_not_a_neighbor(): void
     {
         $chronicle = Chronicle::factory()->create();

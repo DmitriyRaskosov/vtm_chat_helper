@@ -14,6 +14,7 @@ use App\Models\User;
 use App\Models\WorldEntity;
 use App\Models\WorldEvent;
 use App\Models\WorldRelation;
+use App\Models\WorldRelationType;
 use App\World\WorldEntityService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Client\Request;
@@ -696,6 +697,82 @@ class ExtractorTest extends TestCase
         $this->assertSame('reviewed', ExtractionRun::query()->findOrFail($windowOneId)->status->value);
     }
 
+    public function test_lore_reparse_from_scratch_after_reviewed_run(): void
+    {
+        $this->fakeOllamaExtraction([
+            'mentions' => [['name' => 'Камарилья', 'kind' => 'faction']],
+            'relations' => [],
+        ]);
+
+        $storyteller = User::factory()->storyteller()->create();
+        $chronicle = Chronicle::query()->firstOrFail();
+        $lore = $this->createLoreEntry($chronicle, 'Камарилья правит городом.');
+
+        Sanctum::actingAs($storyteller);
+
+        $firstId = $this->postJson('/api/extract', [
+            'lore_entry_id' => $lore->id,
+        ])->assertCreated()->json('extraction_run_id');
+
+        ExtractionRun::query()->findOrFail($firstId)->update(['status' => 'reviewed']);
+
+        $this->postJson('/api/extract', [
+            'lore_entry_id' => $lore->id,
+        ])->assertUnprocessable();
+
+        $secondId = $this->postJson('/api/extract', [
+            'lore_entry_id' => $lore->id,
+            'reparse' => true,
+        ])->assertCreated()->json('extraction_run_id');
+
+        $this->assertNotSame($firstId, $secondId);
+        $this->assertSame('superseded', ExtractionRun::query()->findOrFail($firstId)->status->value);
+        $this->assertSame(0, ExtractionRun::query()->findOrFail($secondId)->from_char_offset);
+        $this->assertSame('reparse', ExtractionRun::query()->findOrFail($secondId)->trigger->value);
+    }
+
+    public function test_lore_reparse_endpoint_reruns_char_window(): void
+    {
+        $this->fakeOllamaExtraction([
+            'mentions' => [['name' => 'Шабаш', 'kind' => 'faction']],
+            'relations' => [],
+        ]);
+
+        $storyteller = User::factory()->storyteller()->create();
+        $chronicle = Chronicle::query()->firstOrFail();
+        $lore = $this->createLoreEntry($chronicle, str_repeat('А', 15000));
+
+        Sanctum::actingAs($storyteller);
+
+        $runId = $this->postJson('/api/extract', [
+            'lore_entry_id' => $lore->id,
+        ])->assertCreated()->json('extraction_run_id');
+
+        ExtractionRun::query()->findOrFail($runId)->update(['status' => 'reviewed']);
+
+        $replacementId = $this->postJson("/api/extract/{$runId}/reparse")
+            ->assertCreated()
+            ->json('extraction_run_id');
+
+        $this->assertNotSame($runId, $replacementId);
+        $this->assertSame('superseded', ExtractionRun::query()->findOrFail($runId)->status->value);
+        $this->assertSame(0, ExtractionRun::query()->findOrFail($replacementId)->from_char_offset);
+        $this->assertSame(10000, ExtractionRun::query()->findOrFail($replacementId)->to_char_offset);
+    }
+
+    public function test_reparse_flag_is_only_valid_for_lore(): void
+    {
+        $storyteller = User::factory()->storyteller()->create();
+        $npc = $this->createNpcWithBiography(Chronicle::query()->firstOrFail(), 'Био.');
+
+        Sanctum::actingAs($storyteller);
+
+        $this->postJson('/api/extract', [
+            'character_id' => $npc->id,
+            'reparse' => true,
+        ])->assertUnprocessable();
+    }
+
     public function test_lore_num_predict_is_capped_at_seven_thousand_one_hundred_twenty_eight(): void
     {
         config([
@@ -749,6 +826,76 @@ class ExtractorTest extends TestCase
         $this->assertStringNotContainsString('"events"', $system);
     }
 
+    public function test_accept_part_of_creates_single_graph_edge_for_code_articles(): void
+    {
+        $this->fakeOllamaExtraction([
+            'mentions' => [],
+            'relations' => [
+                ['source' => 'Статья I', 'target' => 'Кодекс Милана', 'key' => 'part_of'],
+            ],
+            'events' => [],
+            'memories' => [],
+        ]);
+
+        $storyteller = User::factory()->storyteller()->create();
+        $chronicle = Chronicle::query()->firstOrFail();
+        $entities = $this->app->make(WorldEntityService::class);
+        $entities->create($chronicle, WorldEntityType::Concept, 'Кодекс Милана');
+        $entities->create($chronicle, WorldEntityType::Concept, 'Статья I');
+        $lore = $this->createLoreEntry($chronicle, 'Статья I входит в кодекс.');
+
+        Sanctum::actingAs($storyteller);
+
+        $runId = $this->postJson('/api/extract', [
+            'lore_entry_id' => $lore->id,
+        ])->assertCreated()->json('extraction_run_id');
+
+        $this->assertDatabaseCount('world_relations', 0);
+
+        $this->postJson("/api/extract/{$runId}/candidates/0/accept", [
+            'candidate_type' => 'relation',
+        ])->assertOk()
+            ->assertJsonPath('run.candidates.relations.0.key', 'part_of')
+            ->assertJsonPath('run.candidates.relations.0.status', 'accepted');
+
+        $this->assertDatabaseCount('world_relations', 1);
+        $partOfId = WorldRelationType::query()->where('key', 'part_of')->value('id');
+        $this->assertTrue(WorldRelation::query()->where('relation_type_id', $partOfId)->active()->exists());
+    }
+
+    public function test_contains_relation_is_normalized_to_part_of_in_candidates(): void
+    {
+        $this->fakeOllamaExtraction([
+            'mentions' => [
+                ['name' => 'Кодекс Милана', 'kind' => 'concept'],
+                ['name' => 'Статья I', 'kind' => 'concept'],
+            ],
+            'relations' => [
+                ['source' => 'Кодекс Милана', 'target' => 'Статья I', 'key' => 'contains'],
+            ],
+            'events' => [],
+            'memories' => [],
+        ]);
+
+        $storyteller = User::factory()->storyteller()->create();
+        $chronicle = Chronicle::query()->firstOrFail();
+        $entities = $this->app->make(WorldEntityService::class);
+        $entities->create($chronicle, WorldEntityType::Concept, 'Кодекс Милана');
+        $entities->create($chronicle, WorldEntityType::Concept, 'Статья I');
+        $lore = $this->createLoreEntry($chronicle, 'Статья I входит в кодекс.');
+
+        Sanctum::actingAs($storyteller);
+
+        $runId = $this->postJson('/api/extract', [
+            'lore_entry_id' => $lore->id,
+        ])->assertCreated()->json('extraction_run_id');
+
+        $run = ExtractionRun::query()->findOrFail($runId);
+        $this->assertSame('part_of', $run->candidates['relations'][0]['key']);
+        $this->assertSame('Статья I', $run->candidates['relations'][0]['source']);
+        $this->assertSame('Кодекс Милана', $run->candidates['relations'][0]['target']);
+    }
+
     public function test_extract_status_reports_lore_limits_and_window_preview(): void
     {
         $storyteller = User::factory()->storyteller()->create();
@@ -764,7 +911,32 @@ class ExtractorTest extends TestCase
             ->assertJsonPath('lore_window.from_char_offset', 0)
             ->assertJsonPath('lore_window.to_char_offset', 10000)
             ->assertJsonPath('lore_window.total_chars', 15000)
-            ->assertJsonPath('lore_window.window_count', 2);
+            ->assertJsonPath('lore_window.window_count', 2)
+            ->assertJsonPath('lore_window.can_extract', true);
+    }
+
+    public function test_lore_extract_status_reports_can_extract_false_when_exhausted(): void
+    {
+        $this->fakeOllamaExtraction([
+            'mentions' => [['name' => 'Камарилья', 'kind' => 'faction']],
+            'relations' => [],
+        ]);
+
+        $storyteller = User::factory()->storyteller()->create();
+        $chronicle = Chronicle::query()->firstOrFail();
+        $lore = $this->createLoreEntry($chronicle, 'Камарилья.');
+
+        Sanctum::actingAs($storyteller);
+
+        $runId = $this->postJson('/api/extract', [
+            'lore_entry_id' => $lore->id,
+        ])->assertCreated()->json('extraction_run_id');
+
+        ExtractionRun::query()->findOrFail($runId)->update(['status' => 'reviewed']);
+
+        $this->getJson('/api/extract/status?lore_entry_id='.$lore->id)
+            ->assertOk()
+            ->assertJsonPath('lore_window.can_extract', false);
     }
 
     private function sliceTextFromPrompt(string $prompt): string

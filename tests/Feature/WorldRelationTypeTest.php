@@ -20,8 +20,9 @@ class WorldRelationTypeTest extends TestCase
 
     public function test_catalog_keys_match_seeded_rows(): void
     {
-        $keys = WorldRelationType::query()->orderBy('key')->pluck('key')->all();
+        $keys = WorldRelationType::query()->pluck('key')->all();
         $expected = WorldRelationTypeCatalog::keys();
+        sort($keys);
         sort($expected);
 
         $this->assertSame($expected, $keys);
@@ -40,6 +41,12 @@ class WorldRelationTypeTest extends TestCase
         $allied = WorldRelationType::query()->where('key', 'allied_with')->firstOrFail();
         $this->assertTrue($allied->symmetric);
         $this->assertFalse($allied->transitive);
+
+        $partOf = WorldRelationType::query()->where('key', 'part_of')->firstOrFail();
+        $this->assertFalse($partOf->symmetric);
+        $this->assertTrue($partOf->transitive);
+        $this->assertSame('contains', $partOf->inverse_key);
+        $this->assertSame(['concept'], $partOf->allowedSourceTypeValues());
     }
 
     public function test_validator_accepts_allowed_direction_and_rejects_illegal_node_types(): void

@@ -65,6 +65,7 @@ class LoreExtractionWindowPlanner
                 'total_chars' => 0,
                 'window_index' => 0,
                 'window_count' => 0,
+                'can_extract' => false,
             ];
         }
 
@@ -83,7 +84,13 @@ class LoreExtractionWindowPlanner
             'total_chars' => $totalChars,
             'window_index' => $windowIndex,
             'window_count' => $windowCount,
+            'can_extract' => $this->planNextWindow($entry) !== null,
         ];
+    }
+
+    public function canExtractNext(LoreEntry $entry): bool
+    {
+        return $this->planNextWindow($entry) !== null;
     }
 
     public function lastExtractedCharOffset(LoreEntry $entry): int

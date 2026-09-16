@@ -18,7 +18,8 @@ final class WorldRelationTypeCatalog
      *     symmetric: bool,
      *     transitive: bool,
      *     default_weight: float,
-     *     enabled: bool
+     *     enabled: bool,
+     *     inverse_key: string|null
      * }>
      */
     public static function definitions(): array
@@ -115,6 +116,24 @@ final class WorldRelationTypeCatalog
                 false,
             ),
             self::row('occurred_at', 'Occurred at', [WorldEntityType::Event], [WorldEntityType::Location], false, false),
+            self::row(
+                'part_of',
+                'Part of',
+                [WorldEntityType::Concept],
+                [
+                    WorldEntityType::Concept,
+                    WorldEntityType::Faction,
+                    WorldEntityType::Clan,
+                    WorldEntityType::Coterie,
+                    WorldEntityType::Circle,
+                    WorldEntityType::Other,
+                    WorldEntityType::Location,
+                    WorldEntityType::Item,
+                ],
+                false,
+                true,
+                inverseKey: 'contains',
+            ),
         ];
     }
 
@@ -137,7 +156,8 @@ final class WorldRelationTypeCatalog
      *     symmetric: bool,
      *     transitive: bool,
      *     default_weight: float,
-     *     enabled: bool
+     *     enabled: bool,
+     *     inverse_key: string|null
      * }
      */
     private static function row(
@@ -148,6 +168,7 @@ final class WorldRelationTypeCatalog
         bool $symmetric,
         bool $transitive,
         float $defaultWeight = 1.0,
+        ?string $inverseKey = null,
     ): array {
         return [
             'key' => $key,
@@ -158,6 +179,7 @@ final class WorldRelationTypeCatalog
             'transitive' => $transitive,
             'default_weight' => $defaultWeight,
             'enabled' => true,
+            'inverse_key' => $inverseKey,
         ];
     }
 }

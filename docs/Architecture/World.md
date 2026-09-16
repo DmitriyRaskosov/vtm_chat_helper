@@ -69,7 +69,9 @@ HTTP создание персонажей — [[API/Characters]]. Игрок м
 
 ## Типы связей
 
-Каталог `world_relation_types` задаёт семантику рёбер: allowed source/target `WorldEntityType`, `symmetric`, `transitive`, `default_weight`, `enabled`. Ключи: knows, member_of, located_at, owns, controls, allied_with, hostile_to, created, participated_in, caused, witnessed, affiliated_with, occurred_at.
+Каталог `world_relation_types` задаёт семантику рёбер: allowed source/target `WorldEntityType`, `symmetric`, `transitive`, `inverse_key`, `default_weight`, `enabled`. Ключи: knows, member_of, located_at, owns, controls, allied_with, hostile_to, created, participated_in, caused, witnessed, affiliated_with, occurred_at, **part_of**.
+
+`part_of`: source `concept` → target directory-тип (идея, фракция, клан, место, предмет…). `transitive: true`. Виртуальная инверсия `contains` хранится в `inverse_key` типа, отдельной строки `contains` в БД нет; `WorldRelationService::neighbors` и GraphRAG CTE обходят входящие `part_of` как «содержит», без второй строки в `world_relations`.
 
 `WorldRelationTypeValidator` отклоняет disabled-типы, смешанные хроники и нелегальные направления/типы узлов. Новый тип — INSERT строки, без миграции схемы графа.
 

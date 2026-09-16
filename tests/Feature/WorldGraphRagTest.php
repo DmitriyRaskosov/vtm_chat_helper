@@ -61,6 +61,25 @@ class WorldGraphRagTest extends TestCase
         $this->assertTrue(collect($bundle->entities)->firstWhere('id', $graph['victoria']->id)?->seed);
     }
 
+    public function test_part_of_reaches_child_concept_from_parent_via_inverse_key(): void
+    {
+        $chronicle = Chronicle::factory()->create();
+        $entities = $this->app->make(WorldEntityService::class);
+        $relations = $this->app->make(WorldRelationService::class);
+        $codex = $entities->create($chronicle, WorldEntityType::Concept, 'Кодекс Милана');
+        $article = $entities->create($chronicle, WorldEntityType::Concept, 'Статья I');
+        $partOf = WorldRelationType::query()->where('key', 'part_of')->firstOrFail();
+        $relations->relate($article, $codex, $partOf);
+
+        $bundle = $this->app->make(WorldGraphRag::class)->expand($chronicle, [(int) $codex->id]);
+        $ids = collect($bundle->entities)->pluck('id')->all();
+
+        $this->assertContains($codex->id, $ids);
+        $this->assertContains($article->id, $ids);
+        $this->assertTrue(collect($bundle->relations)->contains('typeKey', 'part_of'));
+        $this->assertDatabaseCount('world_relations', 1);
+    }
+
     public function test_cycles_stay_bounded(): void
     {
         $chronicle = Chronicle::factory()->create();

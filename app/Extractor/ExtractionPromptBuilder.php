@@ -50,8 +50,9 @@ Rules:
 - "key" must be one of: {$relationKeyList}.
 - Relations:
   - member_of: the member is source, the sect/political faction is target. Example: Бруха → Камарилья (clan joins sect). NEVER Камарилья → Бруха.
-  - member_of target must be faction only — never clan, coterie, circle, location, or concept.
+  - member_of target must be faction only — never clan, coterie, circle, location, or concept. Never member_of from concept to anything.
   - Do not use member_of to mean "sect contains clan"; use clan member_of sect instead.
+  - part_of: the part is source, the whole is target. Code articles, traditions, chapters → part_of the parent code or concept. Example: Статья I → Кодекс Милана. Never member_of for this.
   - hostile_to / allied_with: usually between two factions (or characters).
   - created: source must be a character only — never faction, clan, or concept. Do not propose "Камарилья created Маскарад"; mention Маскарад as kind concept without a created relation.
 - Prefer names that appear in the source text or catalog aliases.
@@ -126,12 +127,12 @@ Kinds:
 - Do not output character or event.
 
 Relations (key must be in the enabled list). Allowed directions:
-- member_of: clan|coterie|circle|faction → faction. Source is the member. NEVER faction → clan.
+- member_of: clan|coterie|circle|faction → faction. Source is the member. NEVER faction → clan. Never concept → anything.
+- part_of: concept → concept|faction|clan|coterie|circle|other|location|item. Source is the part (article, chapter, tradition). Example: Статья I → Кодекс Милана.
 - hostile_to / allied_with: faction ↔ faction only. A clan must not hostile_to a sect; use the sect (Шабаш hostile_to Камарилья).
 - controls: faction → location|faction, only if the text states dominion over a place or bloc.
 - owns: faction → item, only if stated.
 - Do not emit located_at (not valid for faction/clan), created, knows, affiliated_with, or event keys.
-- Do not fake part-of: Code articles are sibling concepts, not member_of the code.
 
 Good:
 {
@@ -140,12 +141,15 @@ Good:
     { "name": "Отступники Бруха", "kind": "clan" },
     { "name": "Мехико", "kind": "location" },
     { "name": "Кодекс Милана", "kind": "concept" },
-    { "name": "Регент", "kind": "concept" }
+    { "name": "Статья I", "kind": "concept" },
+    { "name": "Статья II", "kind": "concept" }
   ],
   "relations": [
     { "source": "Отступники Бруха", "target": "Шабаш", "key": "member_of" },
     { "source": "Шабаш", "target": "Камарилья", "key": "hostile_to" },
-    { "source": "Шабаш", "target": "Мехико", "key": "controls" }
+    { "source": "Шабаш", "target": "Мехико", "key": "controls" },
+    { "source": "Статья I", "target": "Кодекс Милана", "key": "part_of" },
+    { "source": "Статья II", "target": "Кодекс Милана", "key": "part_of" }
   ]
 }
 

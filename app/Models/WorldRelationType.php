@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Model;
     'allowed_target_types',
     'symmetric',
     'transitive',
+    'inverse_key',
     'default_weight',
     'enabled',
 ])]

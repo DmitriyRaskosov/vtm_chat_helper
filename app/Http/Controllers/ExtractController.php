@@ -142,7 +142,12 @@ class ExtractController extends Controller
                     abort(404);
                 }
 
-                $run = $extractor->runFromLore($loreEntry, $chronicle, $request->user());
+                $run = $extractor->runFromLore(
+                    $loreEntry,
+                    $chronicle,
+                    $request->user(),
+                    $request->boolean('reparse'),
+                );
             }
         } catch (ExtractionDisabledException) {
             return response()->json(['message' => 'Graph extractor is disabled.'], 503);
@@ -184,14 +189,16 @@ class ExtractController extends Controller
     {
         $this->assertChronicle($request, $run);
 
-        if ($run->source_type !== ExtractionSourceType::Scene) {
-            abort(422, 'Only scene extraction runs can be reparsed.');
+        if (! in_array($run->source_type, [ExtractionSourceType::Scene, ExtractionSourceType::Lore], true)) {
+            abort(422, 'Only scene and lore extraction runs can be reparsed.');
         }
 
         $chronicle = Chronicle::query()->findOrFail($run->chronicle_id);
 
         try {
-            $replacement = $extractor->reparseSceneRun($run, $chronicle, $request->user());
+            $replacement = $run->source_type === ExtractionSourceType::Scene
+                ? $extractor->reparseSceneRun($run, $chronicle, $request->user())
+                : $extractor->reparseLoreRun($run, $chronicle, $request->user());
         } catch (ExtractionDisabledException) {
             return response()->json(['message' => 'Graph extractor is disabled.'], 503);
         } catch (ExtractionParseException|ExtractionTokenLimitException $e) {

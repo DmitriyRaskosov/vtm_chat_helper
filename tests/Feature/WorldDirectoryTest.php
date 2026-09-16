@@ -63,6 +63,139 @@ class WorldDirectoryTest extends TestCase
             'canonical_name' => 'Камарилья',
             'entity_type' => 'faction',
         ])->assertForbidden();
+        $this->getJson('/api/world/relations?keys=controls,owns')->assertForbidden();
+        $this->postJson('/api/world/relations', [
+            'source_entity_id' => 1,
+            'target_entity_id' => 2,
+            'relation_key' => 'controls',
+        ])->assertForbidden();
+    }
+
+    public function test_storyteller_manages_directory_controls_and_owns_relations(): void
+    {
+        Sanctum::actingAs(User::factory()->storyteller()->create());
+
+        $sabbat = $this->postJson('/api/world/entities', [
+            'canonical_name' => 'Саббат',
+            'entity_type' => 'faction',
+        ])->assertCreated()->json('entity');
+        $city = $this->postJson('/api/world/entities', [
+            'canonical_name' => 'Чикаго',
+            'entity_type' => 'location',
+        ])->assertCreated()->json('entity');
+        $relic = $this->postJson('/api/world/entities', [
+            'canonical_name' => 'Клинок',
+            'entity_type' => 'item',
+        ])->assertCreated()->json('entity');
+
+        $controls = $this->postJson('/api/world/relations', [
+            'source_entity_id' => $sabbat['id'],
+            'target_entity_id' => $city['id'],
+            'relation_key' => 'controls',
+        ])->assertCreated()->json('relation');
+
+        $this->assertSame('controls', $controls['relation_key']);
+        $this->assertSame($sabbat['id'], $controls['source_entity_id']);
+        $this->assertSame($city['id'], $controls['target_entity_id']);
+        $this->assertDatabaseCount('world_relations', 1);
+
+        $this->postJson('/api/world/relations', [
+            'source_entity_id' => $sabbat['id'],
+            'target_entity_id' => $city['id'],
+            'relation_key' => 'controls',
+        ])->assertOk()->assertJsonPath('relation.id', $controls['id']);
+
+        $owns = $this->postJson('/api/world/relations', [
+            'source_entity_id' => $sabbat['id'],
+            'target_entity_id' => $relic['id'],
+            'relation_key' => 'owns',
+        ])->assertCreated()->json('relation');
+
+        $this->assertSame('owns', $owns['relation_key']);
+
+        $list = $this->getJson('/api/world/relations?keys=controls,owns')->assertOk()->json('relations');
+        $this->assertCount(2, $list);
+
+        $controlsOnly = $this->getJson('/api/world/relations?keys=controls')->assertOk()->json('relations');
+        $this->assertCount(1, $controlsOnly);
+        $this->assertSame('controls', $controlsOnly[0]['relation_key']);
+
+        $this->getJson('/api/world/relations?keys=controls,foo')->assertUnprocessable();
+        $this->getJson('/api/world/relations')->assertUnprocessable();
+
+        $this->postJson('/api/world/relations/'.$controls['id'].'/end')->assertOk();
+        $this->assertSame([], $this->getJson('/api/world/relations?keys=controls')->json('relations'));
+        $this->assertCount(1, $this->getJson('/api/world/relations?keys=owns')->json('relations'));
+    }
+
+    public function test_directory_relations_reject_politics_and_invalid_pairs(): void
+    {
+        Sanctum::actingAs(User::factory()->storyteller()->create());
+
+        $camarilla = $this->postJson('/api/world/entities', [
+            'canonical_name' => 'Камарилья',
+            'entity_type' => 'faction',
+        ])->json('entity');
+        $sabbat = $this->postJson('/api/world/entities', [
+            'canonical_name' => 'Саббат',
+            'entity_type' => 'faction',
+        ])->json('entity');
+        $place = $this->postJson('/api/world/entities', [
+            'canonical_name' => 'Прага',
+            'entity_type' => 'location',
+        ])->json('entity');
+
+        $this->postJson('/api/world/relations', [
+            'source_entity_id' => $camarilla['id'],
+            'target_entity_id' => $sabbat['id'],
+            'relation_key' => 'allied_with',
+        ])->assertUnprocessable();
+
+        $this->postJson('/api/world/relations', [
+            'source_entity_id' => $place['id'],
+            'target_entity_id' => $camarilla['id'],
+            'relation_key' => 'controls',
+        ])->assertUnprocessable();
+
+        $politics = $this->postJson('/api/world/faction-relations', [
+            'source_entity_id' => $camarilla['id'],
+            'target_entity_id' => $sabbat['id'],
+            'relation_key' => 'hostile_to',
+        ])->assertCreated()->json('relation');
+
+        $this->postJson('/api/world/relations/'.$politics['id'].'/end')->assertUnprocessable();
+    }
+
+    public function test_storyteller_manages_part_of_directory_relations(): void
+    {
+        Sanctum::actingAs(User::factory()->storyteller()->create());
+
+        $codex = $this->postJson('/api/world/entities', [
+            'canonical_name' => 'Кодекс Милана',
+            'entity_type' => 'concept',
+        ])->assertCreated()->json('entity');
+        $article = $this->postJson('/api/world/entities', [
+            'canonical_name' => 'Статья I',
+            'entity_type' => 'concept',
+        ])->assertCreated()->json('entity');
+
+        $partOf = $this->postJson('/api/world/relations', [
+            'source_entity_id' => $article['id'],
+            'target_entity_id' => $codex['id'],
+            'relation_key' => 'part_of',
+        ])->assertCreated()->json('relation');
+
+        $this->assertSame('part_of', $partOf['relation_key']);
+        $this->assertDatabaseCount('world_relations', 1);
+
+        $this->postJson('/api/world/relations', [
+            'source_entity_id' => $article['id'],
+            'target_entity_id' => $codex['id'],
+            'relation_key' => 'part_of',
+        ])->assertOk()->assertJsonPath('relation.id', $partOf['id']);
+
+        $list = $this->getJson('/api/world/relations?keys=part_of')->assertOk()->json('relations');
+        $this->assertCount(1, $list);
     }
 
     public function test_directory_rejects_characters_and_invalid_entity_type(): void

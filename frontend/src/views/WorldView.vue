@@ -36,7 +36,12 @@
             v-if="tab === 'directory'"
             :form="form"
             :editing="editing"
-            :directory-groups="directoryGroups"
+            :faction-tree="factionTree"
+            :unaffiliated-sect-members="unaffiliatedSectMembers"
+            :flat-directory-groups="flatDirectoryGroups"
+            :flat-concept-tree="flatConceptTree"
+            :directory-entity-options="formDirectoryOptions"
+            :concepts-linked-to="conceptsLinkedTo"
             :archived="archived"
             :saving="saving"
             :factions="factions"
@@ -46,7 +51,7 @@
             @create="createEntity"
             @save="saveEntity"
             @new="resetForm"
-            @edit="loadEntity"
+            @edit="onEditEntity"
             @archive="archiveEntity"
             @restore="restoreEntity"
             @add-politics="addPolitics"
@@ -69,11 +74,12 @@
             :lore-limits="loreLimits"
             :lore-window="loreWindow"
             :new-lore="newLore"
-            :select-lore="selectLore"
+            :select-lore="onSelectLore"
             :save-lore="saveLore"
             :archive-lore="archiveLore"
             :restore-lore="restoreLore"
             :run-extraction="onLoreExtract"
+            :run-reparse="onLoreReparse"
             :exception-toggle="onExceptionToggle"
         />
         <WorldExtractionInboxTab
@@ -110,13 +116,14 @@
 </template>
 
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue';
+import { computed, nextTick, onMounted, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import AppNav from '../components/layout/AppNav.vue';
 import WorldDirectoryTab from '../components/world/WorldDirectoryTab.vue';
 import WorldExtractionInboxTab from '../components/world/WorldExtractionInboxTab.vue';
 import WorldLoreTab from '../components/world/WorldLoreTab.vue';
 import { useExtractionInbox } from '../composables/useExtractionInbox';
+import { useWorldDirectoryRelations } from '../composables/useWorldDirectoryRelations';
 import { useWorldEntities } from '../composables/useWorldEntities';
 import { useWorldLore } from '../composables/useWorldLore';
 import { useWorldPolitics } from '../composables/useWorldPolitics';
@@ -129,13 +136,27 @@ const tab = ref('directory');
 const inboxCount = ref(0);
 
 const {
+    relations: directoryRelations,
+    fetchRelations: fetchDirectoryRelations,
+    applyRelations: applyDirectoryRelations,
+    syncForEntity,
+    factionIdsForEntity,
+    partOfTargetIdsForConcept,
+} = useWorldDirectoryRelations();
+
+const {
     entities,
     archived,
     saving,
     form,
     editing,
     factions,
-    directoryGroups,
+    factionTree,
+    unaffiliatedSectMembers,
+    flatDirectoryGroups,
+    flatConceptTree,
+    directoryEntityOptions: formDirectoryOptions,
+    conceptsLinkedTo,
     fetchEntities,
     applyEntities,
     createEntity,
@@ -144,7 +165,14 @@ const {
     loadEntity,
     archiveEntity,
     restoreEntity,
-} = useWorldEntities({ error, reload: () => loadBase() });
+} = useWorldEntities({
+    error,
+    reload: () => loadBase(),
+    directoryRelations,
+    syncForEntity,
+    factionIdsForEntity,
+    partOfTargetIdsForConcept,
+});
 
 const directoryEntityOptions = computed(() => (
     entities.value.filter((row) => row.entity_type !== 'character')
@@ -231,16 +259,34 @@ async function loadInboxCount() {
 async function loadBase() {
     error.value = '';
     try {
-        const [worldData, politicsData] = await Promise.all([
+        const [worldData, politicsData, directoryData] = await Promise.all([
             fetchEntities(),
             fetchRelations(),
+            fetchDirectoryRelations(),
         ]);
         applyEntities(worldData);
         applyRelations(politicsData);
+        applyDirectoryRelations(directoryData);
         await loadInboxCount();
     } catch (e) {
         error.value = e.response?.data?.message ?? 'Не удалось загрузить мир.';
     }
+}
+
+function scrollToForm(elementId) {
+    nextTick(() => {
+        document.getElementById(elementId)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+}
+
+function onEditEntity(row) {
+    loadEntity(row);
+    scrollToForm('world-directory-form');
+}
+
+function onSelectLore(id) {
+    selectLore(id);
+    scrollToForm('world-lore-form');
 }
 
 async function openLoreTab() {
@@ -259,12 +305,19 @@ async function openInboxTab(runId = null) {
     await loadInboxCount();
 }
 
-async function onLoreExtract() {
-    const runId = await runExtraction();
+async function openLoreExtractionRun(runId) {
     if (runId) {
         await openInboxTab(runId);
         router.replace({ query: { tab: 'inbox', run: String(runId) } });
     }
+}
+
+async function onLoreExtract() {
+    await openLoreExtractionRun(await runExtraction());
+}
+
+async function onLoreReparse() {
+    await openLoreExtractionRun(await runExtraction({ reparse: true }));
 }
 
 async function onSelectInboxRun(runId) {

@@ -15,6 +15,7 @@ use App\Http\Controllers\SceneController;
 use App\Http\Controllers\SceneParticipantController;
 use App\Http\Controllers\WorldEntityController;
 use App\Http\Controllers\WorldEventController;
+use App\Http\Controllers\WorldDirectoryRelationController;
 use App\Http\Controllers\WorldFactionRelationController;
 use Illuminate\Support\Facades\Route;
 
@@ -55,6 +56,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/world/faction-relations', [WorldFactionRelationController::class, 'index']);
         Route::post('/world/faction-relations', [WorldFactionRelationController::class, 'store']);
         Route::post('/world/faction-relations/{worldRelation}/end', [WorldFactionRelationController::class, 'end']);
+        Route::get('/world/relations', [WorldDirectoryRelationController::class, 'index']);
+        Route::post('/world/relations', [WorldDirectoryRelationController::class, 'store']);
+        Route::post('/world/relations/{worldRelation}/end', [WorldDirectoryRelationController::class, 'end']);
         Route::post('/world/events', [WorldEventController::class, 'store']);
         Route::post('/world/events/{event}/participants', [WorldEventController::class, 'storeParticipant']);
         Route::post('/world/events/{event}/sources', [WorldEventController::class, 'storeSource']);

@@ -35,8 +35,12 @@ class GraphExtractorService
         private ExtractorTokenBudget $tokenBudget,
     ) {}
 
-    public function runFromLore(LoreEntry $entry, Chronicle $chronicle, User $user): ExtractionRun
-    {
+    public function runFromLore(
+        LoreEntry $entry,
+        Chronicle $chronicle,
+        User $user,
+        bool $reparse = false,
+    ): ExtractionRun {
         if ($entry->status === LoreEntryStatus::Archived) {
             throw new InvalidArgumentException('Cannot extract from archived lore entry.');
         }
@@ -46,6 +50,10 @@ class GraphExtractorService
         }
 
         $this->assertDriverEnabled();
+
+        if ($reparse) {
+            $this->supersedeAllPriorLoreRuns($chronicle, $entry);
+        }
 
         $window = $this->loreWindowPlanner->planNextWindow($entry);
         if ($window === null) {
@@ -76,13 +84,14 @@ class GraphExtractorService
             sourceId: $entry->id,
             llmMessages: $messages,
             profile: 'lore',
-            fromCharOffset: $window['from_char_offset'],
-            toCharOffset: $window['to_char_offset'],
             matchCallback: fn (array $parsed): array => $this->matcher->match(
                 $parsed,
                 $chronicle,
                 ExtractionSourceType::Lore,
             ),
+            fromCharOffset: $window['from_char_offset'],
+            toCharOffset: $window['to_char_offset'],
+            trigger: $reparse ? ExtractionTrigger::Reparse : null,
         );
     }
 
@@ -262,6 +271,47 @@ class GraphExtractorService
         return $run->refresh();
     }
 
+    public function reparseLoreRun(ExtractionRun $run, Chronicle $chronicle, User $user): ExtractionRun
+    {
+        if ($run->source_type !== ExtractionSourceType::Lore) {
+            throw new InvalidArgumentException('Only lore extraction runs can be reparsed.');
+        }
+
+        if ($run->from_char_offset === null || $run->to_char_offset === null) {
+            throw new InvalidArgumentException('Lore extraction run is missing char window.');
+        }
+
+        $entry = LoreEntry::query()->findOrFail($run->source_id);
+
+        if ($entry->status === LoreEntryStatus::Archived) {
+            throw new InvalidArgumentException('Cannot extract from archived lore entry.');
+        }
+
+        if ((int) $entry->chronicle_id !== (int) $chronicle->id) {
+            throw new InvalidArgumentException('Lore entry does not belong to this chronicle.');
+        }
+
+        $this->assertDriverEnabled();
+
+        $run->update([
+            'status' => ExtractionRunStatus::Superseded,
+        ]);
+
+        $replacement = $this->runFromLoreWindow(
+            $entry,
+            $chronicle,
+            $user,
+            (int) $run->from_char_offset,
+            (int) $run->to_char_offset,
+        );
+
+        $run->update([
+            'superseded_by_run_id' => $replacement->id,
+        ]);
+
+        return $replacement;
+    }
+
     public function reparseSceneRun(ExtractionRun $run, Chronicle $chronicle, User $user): ExtractionRun
     {
         if ($run->source_type !== ExtractionSourceType::Scene) {
@@ -298,6 +348,81 @@ class GraphExtractorService
         return $replacement;
     }
 
+    public function runFromLoreWindow(
+        LoreEntry $entry,
+        Chronicle $chronicle,
+        User $user,
+        int $fromCharOffset,
+        int $toCharOffset,
+    ): ExtractionRun {
+        if ($entry->status === LoreEntryStatus::Archived) {
+            throw new InvalidArgumentException('Cannot extract from archived lore entry.');
+        }
+
+        if ((int) $entry->chronicle_id !== (int) $chronicle->id) {
+            throw new InvalidArgumentException('Lore entry does not belong to this chronicle.');
+        }
+
+        $this->assertDriverEnabled();
+
+        $text = (string) $entry->canonical_text;
+        $sliceText = mb_substr($text, $fromCharOffset, $toCharOffset - $fromCharOffset);
+
+        if ($sliceText === '') {
+            throw new InvalidArgumentException('Lore entry has no text left to extract.');
+        }
+
+        $entry->loadMissing('entities');
+        $catalogLines = $this->catalog->build(
+            $chronicle,
+            $sliceText,
+            $entry->entities->pluck('id')->map(fn ($id): int => (int) $id)->all(),
+            'lore',
+        );
+        $relationKeys = $this->enabledRelationKeys();
+
+        $messages = $this->prompts->build(
+            $sliceText,
+            $catalogLines,
+            $relationKeys,
+        );
+
+        $this->loreWindowPlanner->assertWindowFits($messages, $this->tokenBudget);
+
+        return $this->executeRun(
+            chronicle: $chronicle,
+            user: $user,
+            sourceType: ExtractionSourceType::Lore,
+            sourceId: $entry->id,
+            llmMessages: $messages,
+            profile: 'lore',
+            matchCallback: fn (array $parsed): array => $this->matcher->match(
+                $parsed,
+                $chronicle,
+                ExtractionSourceType::Lore,
+            ),
+            fromCharOffset: $fromCharOffset,
+            toCharOffset: $toCharOffset,
+            trigger: ExtractionTrigger::Reparse,
+        );
+    }
+
+    private function supersedeAllPriorLoreRuns(Chronicle $chronicle, LoreEntry $entry): void
+    {
+        ExtractionRun::query()
+            ->where('chronicle_id', $chronicle->id)
+            ->where('source_type', ExtractionSourceType::Lore)
+            ->where('source_id', $entry->id)
+            ->whereIn('status', [
+                ExtractionRunStatus::NeedsReview,
+                ExtractionRunStatus::Reviewed,
+                ExtractionRunStatus::Failed,
+            ])
+            ->update([
+                'status' => ExtractionRunStatus::Superseded,
+            ]);
+    }
+
     /**
      * @param  callable(array<string, mixed>): array<string, mixed>  $matchCallback
      */
@@ -311,6 +436,7 @@ class GraphExtractorService
         callable $matchCallback,
         ?int $fromCharOffset = null,
         ?int $toCharOffset = null,
+        ?ExtractionTrigger $trigger = null,
     ): ExtractionRun {
         $raw = $this->callModel($llmMessages, $profile);
         $parsed = $this->parseModelResponse($raw);
@@ -321,7 +447,7 @@ class GraphExtractorService
             'source_type' => $sourceType,
             'source_id' => $sourceId,
             'status' => ExtractionRunStatus::NeedsReview,
-            'trigger' => null,
+            'trigger' => $trigger,
             'from_message_id' => null,
             'to_message_id' => null,
             'from_char_offset' => $fromCharOffset,

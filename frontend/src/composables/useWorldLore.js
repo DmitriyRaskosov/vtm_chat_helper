@@ -283,14 +283,19 @@ export function useWorldLore({ error, entities, archived }) {
         }
     }
 
-    async function runExtraction() {
+    async function runExtraction({ reparse = false } = {}) {
         if (!loreForm.id || extracting.value) {
             return null;
         }
         extracting.value = true;
         error.value = '';
         try {
-            const { data } = await api.post('/extract', { lore_entry_id: loreForm.id }, { timeout: 320000 });
+            const body = { lore_entry_id: loreForm.id };
+            if (reparse) {
+                body.reparse = true;
+            }
+            const { data } = await api.post('/extract', body, { timeout: 320000 });
+            await loadExtractorStatus(loreForm.id);
             return data.extraction_run_id ?? data.run?.id ?? null;
         } catch (e) {
             error.value = e.response?.data?.message ?? 'Не удалось разобрать статью.';

@@ -24,6 +24,7 @@ class RunExtractionRequest extends FormRequest
             'from_message_id' => ['nullable', 'integer', 'min:1', 'required_with:to_message_id'],
             'to_message_id' => ['nullable', 'integer', 'min:1', 'required_with:from_message_id', 'gte:from_message_id'],
             'chronicle_id' => ['sometimes', 'integer', 'exists:chronicles,id'],
+            'reparse' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -45,6 +46,13 @@ class RunExtractionRequest extends FormRequest
                 $validator->errors()->add(
                     'lore_entry_id',
                     'Provide exactly one of lore_entry_id, character_id, or scene_id.',
+                );
+            }
+
+            if ($this->boolean('reparse') && ! $this->filled('lore_entry_id')) {
+                $validator->errors()->add(
+                    'reparse',
+                    'reparse is only supported for lore_entry_id.',
                 );
             }
         });

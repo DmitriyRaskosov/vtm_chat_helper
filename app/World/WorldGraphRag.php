@@ -195,7 +195,7 @@ class WorldGraphRag
                    {$typeFilter}
                    AND (
                         r.source_entity_id = w.entity_id
-                        OR (r.target_entity_id = w.entity_id AND t.symmetric = true)
+                        OR (r.target_entity_id = w.entity_id AND (t.symmetric = true OR t.inverse_key IS NOT NULL))
                    )
                 INNER JOIN world_entities nxt
                     ON nxt.id = (CASE WHEN r.source_entity_id = w.entity_id THEN r.target_entity_id ELSE r.source_entity_id END)

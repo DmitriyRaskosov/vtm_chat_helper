@@ -145,7 +145,7 @@ class WorldRelationService
     }
 
     /**
-     * Directed outgoing edges, plus incoming edges whose type is symmetric.
+     * Directed outgoing edges, plus incoming edges whose type is symmetric or has inverse_key.
      *
      * @return Collection<int, WorldRelation>
      */
@@ -161,7 +161,9 @@ class WorldRelationService
         $incoming = WorldRelation::query()
             ->active()
             ->where('target_entity_id', $entity->id)
-            ->whereHas('type', fn ($query) => $query->where('symmetric', true))
+            ->whereHas('type', fn ($query) => $query
+                ->where('symmetric', true)
+                ->orWhereNotNull('inverse_key'))
             ->when($type !== null, fn ($query) => $query->where('relation_type_id', $type->id))
             ->with(['source', 'target', 'type'])
             ->get();

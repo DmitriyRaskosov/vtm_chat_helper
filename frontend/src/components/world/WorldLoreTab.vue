@@ -11,27 +11,29 @@
             <p v-if="!loreList.length" class="muted">Пока нет статей.</p>
             <ul v-else class="character-tree">
                 <li v-for="row in loreList" :key="row.id">
-                    <div class="character-row">
-                        <button
-                            class="link"
-                            type="button"
-                            :class="{ 'nav-current': loreForm.id === row.id }"
-                            @click="selectLore(row.id)"
-                        >
-                            {{ row.title }}
-                        </button>
-                        <span class="muted">
-                            · {{ loreKindLabel(row.kind) }}
-                            · {{ loreClassificationLabel(row.classification) }}
-                            <template v-if="row.situational"> · ситуационная</template>
-                        </span>
-                        <button class="link" type="button" @click="archiveLore(row.id)">Скрыть</button>
+                    <div class="world-list-row">
+                        <div class="world-list-row-title">
+                            <button
+                                class="link"
+                                type="button"
+                                :class="{ 'nav-current': loreForm.id === row.id }"
+                                @click="selectLore(row.id)"
+                            >
+                                {{ row.title }}
+                            </button>
+                            <span class="muted">
+                                · {{ loreKindLabel(row.kind) }}
+                                · {{ loreClassificationLabel(row.classification) }}
+                                <template v-if="row.situational"> · ситуационная</template>
+                            </span>
+                        </div>
+                        <button class="link world-list-row-action" type="button" @click="archiveLore(row.id)">Скрыть</button>
                     </div>
                 </li>
             </ul>
         </section>
 
-        <section class="card">
+        <section id="world-lore-form" class="card">
             <h2>{{ loreForm.id ? 'Статья' : 'Новая статья' }}</h2>
             <label>
                 Название
@@ -134,13 +136,22 @@
                     Сохранить статью
                 </button>
                 <button
+                    v-if="extractorEnabled && loreForm.id && canExtractNext"
+                    type="button"
+                    class="secondary"
+                    :disabled="extracting || savingLore"
+                    @click="runExtraction()"
+                >
+                    {{ extracting ? 'Разбор…' : extractButtonLabel }}
+                </button>
+                <button
                     v-if="extractorEnabled && loreForm.id"
                     type="button"
                     class="secondary"
                     :disabled="extracting || savingLore"
-                    @click="runExtraction"
+                    @click="runReparse"
                 >
-                    {{ extracting ? 'Разбор…' : extractButtonLabel }}
+                    {{ extracting ? 'Разбор…' : 'Разобрать заново' }}
                 </button>
                 <span v-if="flashLore" class="saved-flash">Сохранено!</span>
             </div>
@@ -158,10 +169,12 @@
             <p v-if="!loreArchived.length" class="muted">Скрытых статей нет.</p>
             <ul v-else class="character-tree">
                 <li v-for="row in loreArchived" :key="row.id">
-                    <div class="character-row">
-                        <strong>{{ row.title }}</strong>
-                        <span class="muted"> · {{ loreKindLabel(row.kind) }}</span>
-                        <button class="link" type="button" @click="restoreLore(row.id)">Вернуть</button>
+                    <div class="world-list-row">
+                        <div class="world-list-row-title">
+                            <strong>{{ row.title }}</strong>
+                            <span class="muted"> · {{ loreKindLabel(row.kind) }}</span>
+                        </div>
+                        <button class="link world-list-row-action" type="button" @click="restoreLore(row.id)">Вернуть</button>
                     </div>
                 </li>
             </ul>
@@ -199,6 +212,7 @@ const props = defineProps({
     archiveLore: { type: Function, required: true },
     restoreLore: { type: Function, required: true },
     runExtraction: { type: Function, required: true },
+    runReparse: { type: Function, required: true },
     exceptionToggle: { type: Function, required: true },
 });
 
@@ -206,6 +220,8 @@ const aboutSearch = defineModel('aboutSearch', { type: String, required: true })
 const aboutFilter = defineModel('aboutFilter', { type: String, required: true });
 
 const canonicalTextLength = computed(() => [...(props.loreForm.canonical_text ?? '')].length);
+
+const canExtractNext = computed(() => props.loreWindow?.can_extract !== false);
 
 const extractButtonLabel = computed(() => {
     const window = props.loreWindow;

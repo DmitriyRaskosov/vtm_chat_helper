@@ -96,6 +96,14 @@ class ExtractionCandidateMatcher
                 continue;
             }
 
+            if ($relation['key'] === 'contains') {
+                $relation = [
+                    'source' => $relation['target'],
+                    'target' => $relation['source'],
+                    'key' => 'part_of',
+                ];
+            }
+
             if (! in_array($relation['key'], $enabledKeys, true)) {
                 $discarded[] = [
                     'index' => $index,

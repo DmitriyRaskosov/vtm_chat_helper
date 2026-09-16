@@ -26,14 +26,14 @@ docker compose exec laravel.test php artisan test
 | `tests/Feature/TypedWorldEntityTest.php` | shared PK, entity_type constraint, parent/owner той же хроники |
 | `tests/Feature/CharacterTest.php` | PC/NPC/гули, `character_id` cutover, snapshot/rename-safe author и Copilot, нет `character_users` |
 | `tests/Feature/CharacterSheetTest.php` | catalog V20, создание/список, права игрока, round-trip stats/status/health/merits/XP/disciplines, биография HTTP, archive/restore |
-| `tests/Feature/WorldDirectoryTest.php` | ST-справочник мира, политика фракций, aka, `parent_faction_id`, place HTTP |
+| `tests/Feature/WorldDirectoryTest.php` | ST-справочник мира, политика фракций, directory-рёбра `controls`/`owns`/`part_of`, aka, `parent_faction_id`, place HTTP |
 | `tests/Feature/CharacterStatTest.php` | реляционный лист, unique key, SQL по category/value, read model |
 | `tests/Feature/CharacterDisciplineTest.php` | каталог дисциплин/сил, уровень, совместимость, SQL-поиск |
 | `tests/Feature/CharacterStatusTest.php` | current status, эффекты, журнал, optimistic revision, location chronicle |
 | `tests/Feature/CharacterBiographyTest.php` | канон биографии, версии, immutability; нет `character_goals` |
 | `tests/Feature/CharacterBioIndexTest.php` | отдельный HNSW биографии, rebuild, фильтр `character_id`, не `rag_chunks` |
 | `tests/Feature/WorldRelationTypeTest.php` | каталог типов связей, validator направления |
-| `tests/Feature/WorldRelationTest.php` | направленный граф, symmetric query, self-loop/дубли включая обратный symmetric |
+| `tests/Feature/WorldRelationTest.php` | направленный граф, `part_of` + `inverse_key`, symmetric query, self-loop/дубли |
 | `tests/Feature/CharacterRelationshipTest.php` | A→B ≠ B→A; нет метрик и `relationship_changes` |
 | `tests/Feature/CharacterAffiliationTest.php` | faction/location/item/concept, журнал, revision, setSect/setHaven, не character/event |
 | `tests/Feature/WorldEventTest.php` | typed event, participants/sources, граф occurred_at/caused; нет timeline |
@@ -49,9 +49,9 @@ docker compose exec laravel.test php artisan test
 | `tests/Feature/RetrievalCorpusTest.php` | раздельные корпуса, scoped message search, отсутствие `rag_chunks` |
 | `tests/Feature/HybridRetrievalTest.php` | coordinator, дедуп, NPC lore grants |
 | `tests/Feature/MemoryGraphRagTest.php` | depth, циклы, слабые рёбра, изоляция, bound |
-| `tests/Feature/WorldGraphRagTest.php` | character→faction→location/event, leakage |
+| `tests/Feature/WorldGraphRagTest.php` | character→faction→location/event, `part_of` через `inverse_key`, leakage |
 | `tests/Feature/CopilotTest.php` | два вызова Ollama (топики + реплика), лимит assembler, tool-loop, одноразовая привязка, HTTP E2E provenance Memory/World GraphRAG |
-| `tests/Feature/ExtractorTest.php` | POST/GET `/api/extract` (лор + `character_id`), PATCH mention (имя/тип/подтип/aka), accept/discard mention/relation/memory, 502 без run; Ollama через `Http::fake` |
+| `tests/Feature/ExtractorTest.php` | POST/GET `/api/extract` (лор + `character_id`), `part_of` / нормализация `contains`, PATCH mention, accept/discard; Ollama через `Http::fake` |
 | `tests/Feature/ExtractorSceneTest.php` | окна сцены, auto-job, failed не re-dispatch, inbox, reparse, events/relations, accept event → `world_events`, close enqueue, Copilot без графа, `POST /api/world/events` |
 | `tests/Feature/ContextAssemblerTest.php` | секции reply/topics, provenance, knowledge filter, GraphRAG не вытесняет newest messages |
 | `tests/Feature/RagSearchTest.php` | message index, обязательный chronicle scope, embedding failure |

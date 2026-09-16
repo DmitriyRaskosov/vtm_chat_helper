@@ -9,6 +9,7 @@
 ## Текущее состояние
 
 - **В работе:** карточка клана, `clan_disciplines`, ребро `regards`. [[Project/ClanCard]], [[API/World]].
+- **Готово (2026-09-17):** справочник — дерево сект, `controls`/`owns`/`part_of`, колонка «Скрыть», скролл к форме, плавающие вверх/вниз. [[Features/World]], [[API/World]].
 - **Готово (экстрактор):** этапы 1–4 в коде (лор, био-память, сцена → events/relations); память сцены и парсер профиля клана — после. [[Project/Extractor]], [[API/Extract]].
 - **Готово:** игровые сессии и сцены, Vue-чат, token budget, Context Assembler, аудит `copilot_requests`, `search_messages`, `get_message_range`.
 - **Снято:** L0/L1/final summaries, intent memory, `search_summaries`, глобальный пассивный message-RAG.

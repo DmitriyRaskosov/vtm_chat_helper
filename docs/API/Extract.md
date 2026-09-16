@@ -19,6 +19,7 @@
 | `scene_id` | integer | сцена той же хроники; непустой хвост после курсора |
 | `from_message_id` / `to_message_id` | integer | optional; явное окно сцены (оба, contiguous ids) |
 | `chronicle_id` | integer | optional; как у world/lore (`Chronicle::resolveId`) |
+| `reparse` | boolean | optional; только с `lore_entry_id` — разобрать статью **с начала** (supersede всех `reviewed` / `needs_review` / `failed` runs этой статьи, окно с offset 0) |
 
 Нельзя передавать два или три источника вместе (**422**).
 
@@ -27,6 +28,7 @@
 - Не больше `EXTRACTOR_LORE_ARTICLE_MAX_CHARS` (default **10000**) символов `canonical_text` за один POST.
 - Статья длиннее — char-окна по 10k; курсор по `reviewed` runs (`to_char_offset`); в run пишутся `from_char_offset` / `to_char_offset`.
 - Повторный POST supersede-ит `needs_review` только **того же окна**.
+- Когда весь текст уже разобран (`reviewed` до конца), обычный POST → **422** «no text left»; `reparse: true` — полный переразбор с offset 0.
 
 **Response 201:** `{ "extraction_run_id", "run": { … } }` — см. ниже.
 
@@ -60,7 +62,7 @@
 
 **Response 200:** `{ "enabled": true, "lore": { "article_max_chars", "characters_per_token" }, "scene": { "message_limit", "input_tokens", "feed_tokens" } }` — `enabled: false`, если `EXTRACTOR_DRIVER=none`.
 
-Optional query `lore_entry_id` (+ optional `chronicle_id`): добавляет `lore_window` — `{ from_char_offset, to_char_offset, total_chars, window_index, window_count }` для подписи кнопки «Разобрать» в UI.
+Optional query `lore_entry_id` (+ optional `chronicle_id`): добавляет `lore_window` — `{ from_char_offset, to_char_offset, total_chars, window_index, window_count, can_extract }` для кнопок «Разобрать» / «Разобрать заново» в UI.
 
 ## GET /api/extract/inbox
 
@@ -74,9 +76,11 @@ Query: optional `chronicle_id`, `status` (один статус вместо д�
 
 ## POST /api/extract/{run}/reparse
 
-**Auth:** sanctum + storyteller · только `source_type=scene`
+**Auth:** sanctum + storyteller · `source_type=scene` или `lore`
 
-Синхронный повтор того же `from_message_id`–`to_message_id`. Старый run → `superseded` (+ `superseded_by_run_id`); pending старого run accept/discard **422**. Успех двигает курсор, если он ещё позади `to_message_id`.
+**Сцена:** синхронный повтор того же `from_message_id`–`to_message_id`. Старый run → `superseded` (+ `superseded_by_run_id`); pending старого run accept/discard **422**. Успех двигает курсор, если он ещё позади `to_message_id`.
+
+**Лор:** синхронный повтор того же char-окна (`from_char_offset`–`to_char_offset`). Старый run → `superseded`. Полный переразбор всей статьи — `POST /api/extract` с `reparse: true`.
 
 **Response 201:** как POST `/api/extract`.
 

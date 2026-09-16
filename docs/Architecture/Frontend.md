@@ -19,6 +19,10 @@ UI-only правки: briefs в `docs/Agent/` (`ui-chat.md`, `ui-character-list.
 
 Не ходить на Laravel web-URL и не подключать Blade.
 
+## Плавающая прокрутка (`App.vue`)
+
+На маршрутах `characters`, `character`, `world` в оболочке `.wrap` рендерятся фиксированные кнопки «Наверх» / «Вниз» (`.scroll-float` в `styles.css`), `window.scrollTo` по `document.documentElement`. На `chat`, `login`, `register` не показываются: в чате лента скроллится внутри `ChatLog`, на auth-экранах навигация не нужна. Кнопки в правом нижнем углу, не перекрывают `AppNav`.
+
 ## Экраны
 
 - `LoginView.vue`, `RegisterView.vue` — auth (без AppNav)

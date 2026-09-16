@@ -36,12 +36,15 @@
                     <p v-if="selectedRun.status === 'failed' && selectedRun.source_type === 'scene'" class="error">
                         Разбор не удался. Переразберите окно — авторазбор это окно больше не ставит.
                     </p>
+                    <p v-else-if="selectedRun.status === 'failed' && selectedRun.source_type === 'lore'" class="error">
+                        Разбор не удался. Переразберите окно или запустите «Разобрать заново» на вкладке «Лор».
+                    </p>
                     <p v-else-if="selectedRun.status === 'failed'" class="error">
                         Разбор не удался. Запустите «Разобрать» снова из источника.
                     </p>
                 </div>
                 <button
-                    v-if="selectedRun.source_type === 'scene'"
+                    v-if="selectedRun.source_type === 'scene' || selectedRun.source_type === 'lore'"
                     type="button"
                     class="secondary"
                     :disabled="reparsing || managingCandidate"
