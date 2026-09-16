@@ -274,7 +274,7 @@ class HybridRetrievalCoordinator
             ->map(function ($relation, int $index) use ($request, $character, $entity): RetrievalHit {
                 $other = $relation->other($entity);
                 $note = $relation->note !== null && $relation->note !== '' ? ': '.$relation->note : '';
-                $content = $entity->canonical_name.' '.$relation->type->key.' '.$other->canonical_name.$note;
+                $content = $entity->canonical_name.' '.$relation->relation.' '.$other->canonical_name.$note;
 
                 return new RetrievalHit(
                     RetrievalCorpus::Relation,
@@ -287,9 +287,9 @@ class HybridRetrievalCoordinator
                     $this->tokens->estimate($content),
                     [
                         'table' => 'world_relations',
-                        'relation_type' => $relation->type->key,
-                        'source_entity_id' => $relation->source_entity_id,
-                        'target_entity_id' => $relation->target_entity_id,
+                        'relation_type' => $relation->relation,
+                        'source_id' => $relation->source_id,
+                        'target_id' => $relation->target_id,
                     ],
                 );
             })

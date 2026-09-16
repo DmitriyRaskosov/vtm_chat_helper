@@ -5,7 +5,6 @@ namespace Database\Factories;
 use App\Enums\WorldEntityType;
 use App\Models\WorldEntity;
 use App\Models\WorldRelation;
-use App\Models\WorldRelationType;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -23,13 +22,18 @@ class WorldRelationFactory extends Factory
 
         return [
             'chronicle_id' => $source->chronicle_id,
-            'source_entity_id' => $source->id,
-            'target_entity_id' => $target->id,
-            'relation_type_id' => fn () => WorldRelationType::query()->where('key', 'member_of')->value('id'),
+            'source_type' => WorldEntityType::Character->value,
+            'source_id' => $source->id,
+            'target_type' => WorldEntityType::Faction->value,
+            'target_id' => $target->id,
+            'relation' => 'member_of',
+            'source_of_truth' => 'chronicle',
+            'intensity' => null,
+            'metadata' => null,
             'weight' => 1,
             'note' => null,
-            'started_at' => now(),
-            'ended_at' => null,
+            'valid_from' => now(),
+            'valid_to' => null,
             'provenance' => [],
         ];
     }

@@ -11,13 +11,13 @@ return new class extends Migration
         DB::statement('CREATE INDEX scenes_game_session_status_index ON scenes (game_session_id, status)');
         DB::statement(
             'CREATE INDEX world_relations_source_active_index
-             ON world_relations (source_entity_id)
-             WHERE ended_at IS NULL'
+             ON world_relations (source_type, source_id)
+             WHERE valid_to IS NULL'
         );
         DB::statement(
             'CREATE INDEX world_relations_target_active_index
-             ON world_relations (target_entity_id)
-             WHERE ended_at IS NULL'
+             ON world_relations (target_type, target_id)
+             WHERE valid_to IS NULL'
         );
     }
 

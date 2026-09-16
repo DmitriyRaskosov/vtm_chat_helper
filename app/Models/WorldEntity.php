@@ -152,7 +152,12 @@ class WorldEntity extends Model
      */
     public function outgoingRelations(): HasMany
     {
-        return $this->hasMany(WorldRelation::class, 'source_entity_id');
+        $type = $this->entity_type instanceof \App\Enums\WorldEntityType
+            ? $this->entity_type->value
+            : (string) $this->entity_type;
+
+        return $this->hasMany(WorldRelation::class, 'source_id')
+            ->where('source_type', $type);
     }
 
     /**
@@ -160,7 +165,12 @@ class WorldEntity extends Model
      */
     public function incomingRelations(): HasMany
     {
-        return $this->hasMany(WorldRelation::class, 'target_entity_id');
+        $type = $this->entity_type instanceof \App\Enums\WorldEntityType
+            ? $this->entity_type->value
+            : (string) $this->entity_type;
+
+        return $this->hasMany(WorldRelation::class, 'target_id')
+            ->where('target_type', $type);
     }
 
     /**

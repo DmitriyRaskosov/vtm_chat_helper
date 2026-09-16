@@ -35,6 +35,7 @@ class OllamaChatProvider implements ChatProvider
         $options = array_replace([
             'num_ctx' => (int) config('ollama.context_length'),
             'num_predict' => (int) config('ollama.max_output_tokens'),
+            'temperature' => (float) config('ollama.chat_temperature', 0.1),
         ], $options);
 
         $payload = [
@@ -43,6 +44,11 @@ class OllamaChatProvider implements ChatProvider
             'messages' => $messages,
             'options' => $options,
         ];
+
+        $format = config('ollama.chat_format');
+        if (is_string($format) && $format !== '') {
+            $payload['format'] = $format;
+        }
 
         if ($tools !== []) {
             $payload['tools'] = $tools;

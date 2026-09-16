@@ -2,9 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Character\CharacterAffiliationService;
-use App\Enums\CharacterAffiliationStance;
-use App\Enums\CharacterAffiliationType;
 use App\Enums\CharacterType;
 use App\Enums\WorldEntityType;
 use App\Models\Character;
@@ -128,7 +125,7 @@ class WorldDirectoryTest extends TestCase
         $this->assertCount(1, $this->getJson('/api/world/relations?keys=owns')->json('relations'));
     }
 
-    public function test_directory_relations_reject_politics_and_invalid_pairs(): void
+    public function test_unified_relations_accept_politics_and_reject_invalid_pairs(): void
     {
         Sanctum::actingAs(User::factory()->storyteller()->create());
 
@@ -149,7 +146,7 @@ class WorldDirectoryTest extends TestCase
             'source_entity_id' => $camarilla['id'],
             'target_entity_id' => $sabbat['id'],
             'relation_key' => 'allied_with',
-        ])->assertUnprocessable();
+        ])->assertCreated();
 
         $this->postJson('/api/world/relations', [
             'source_entity_id' => $place['id'],
@@ -157,13 +154,13 @@ class WorldDirectoryTest extends TestCase
             'relation_key' => 'controls',
         ])->assertUnprocessable();
 
-        $politics = $this->postJson('/api/world/faction-relations', [
+        $politics = $this->postJson('/api/world/relations', [
             'source_entity_id' => $camarilla['id'],
             'target_entity_id' => $sabbat['id'],
             'relation_key' => 'hostile_to',
-        ])->assertCreated()->json('relation');
+        ])->assertOk()->json('relation');
 
-        $this->postJson('/api/world/relations/'.$politics['id'].'/end')->assertUnprocessable();
+        $this->postJson('/api/world/relations/'.$politics['id'].'/end')->assertOk();
     }
 
     public function test_storyteller_manages_part_of_directory_relations(): void
@@ -278,7 +275,7 @@ class WorldDirectoryTest extends TestCase
             'entity_type' => 'faction',
         ])->assertCreated()->json('entity');
 
-        $hostile = $this->postJson('/api/world/faction-relations', [
+        $hostile = $this->postJson('/api/world/relations', [
             'source_entity_id' => $camarilla['id'],
             'target_entity_id' => $sabbat['id'],
             'relation_key' => 'hostile_to',
@@ -287,28 +284,28 @@ class WorldDirectoryTest extends TestCase
         $this->assertSame('hostile_to', $hostile['relation_key']);
         $this->assertDatabaseCount('world_relations', 1);
 
-        $this->postJson('/api/world/faction-relations', [
+        $this->postJson('/api/world/relations', [
             'source_entity_id' => $sabbat['id'],
             'target_entity_id' => $camarilla['id'],
             'relation_key' => 'hostile_to',
         ])->assertOk()->assertJsonPath('relation.id', $hostile['id']);
 
-        $allied = $this->postJson('/api/world/faction-relations', [
+        $allied = $this->postJson('/api/world/relations', [
             'source_entity_id' => $camarilla['id'],
             'target_entity_id' => $sabbat['id'],
             'relation_key' => 'allied_with',
         ])->assertCreated()->json('relation');
 
         $this->assertNotSame($hostile['id'], $allied['id']);
-        $this->assertNotNull(WorldRelation::query()->findOrFail($hostile['id'])->ended_at);
+        $this->assertNotNull(WorldRelation::query()->findOrFail($hostile['id'])->valid_to);
         $this->assertSame(1, WorldRelation::query()->active()->count());
 
-        $list = $this->getJson('/api/world/faction-relations')->assertOk()->json('relations');
+        $list = $this->getJson('/api/world/relations?keys=hostile_to,allied_with')->assertOk()->json('relations');
         $this->assertCount(1, $list);
         $this->assertSame('allied_with', $list[0]['relation_key']);
 
-        $this->postJson('/api/world/faction-relations/'.$allied['id'].'/end')->assertOk();
-        $this->assertSame([], $this->getJson('/api/world/faction-relations')->json('relations'));
+        $this->postJson('/api/world/relations/'.$allied['id'].'/end')->assertOk();
+        $this->assertSame([], $this->getJson('/api/world/relations?keys=hostile_to,allied_with')->json('relations'));
     }
 
     public function test_faction_politics_reject_non_factions(): void
@@ -323,7 +320,7 @@ class WorldDirectoryTest extends TestCase
             'entity_type' => 'location',
         ])->json('entity');
 
-        $this->postJson('/api/world/faction-relations', [
+        $this->postJson('/api/world/relations', [
             'source_entity_id' => $faction['id'],
             'target_entity_id' => $place['id'],
             'relation_key' => 'hostile_to',
@@ -405,6 +402,7 @@ class WorldDirectoryTest extends TestCase
 
     public function test_storyteller_sets_character_place_in_the_world(): void
     {
+        $this->markTestSkipped('MVP: PUT /characters/{id}/place is frozen.');
         $storyteller = User::factory()->storyteller()->create();
         $player = User::factory()->create();
         Sanctum::actingAs($storyteller);

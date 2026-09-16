@@ -2,12 +2,9 @@
 
 namespace Tests\Feature;
 
-use App\Character\CharacterAffiliationService;
 use App\Character\CharacterLoreKnowledgeService;
 use App\Character\CharacterRuleKnowledgeService;
 use App\Context\ContextBuilder;
-use App\Enums\CharacterAffiliationStance;
-use App\Enums\CharacterAffiliationType;
 use App\Enums\CharacterHealthState;
 use App\Enums\CharacterKnowledgeLevel;
 use App\Enums\CharacterMemoryNodeType;
@@ -130,15 +127,11 @@ class ContextAssemblerTest extends TestCase
             'full_text' => 'Полный текст биографии не должен требовать векторный поиск.',
         ]);
         $camarilla = $entities->create($chronicle, WorldEntityType::Faction, 'Камарилья');
-        $this->app->make(CharacterAffiliationService::class)->attach(
-            $npc,
+        $this->app->make(\App\World\WorldRelationService::class)->relate(
+            \App\Models\WorldEntity::query()->findOrFail($npc->id),
             $camarilla,
-            CharacterAffiliationType::Member,
-            CharacterAffiliationStance::Allied,
             WorldRelationType::query()->where('key', 'member_of')->firstOrFail(),
-            loyalty: 4,
-            trust: 3,
-            role: 'неофит',
+            metadata: ['stance' => 'allied', 'loyalty' => 4, 'trust' => 3, 'role' => 'неофит'],
         );
 
         $build = $this->builder()->build(

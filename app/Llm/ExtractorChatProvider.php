@@ -27,6 +27,7 @@ final class ExtractorChatProvider extends OllamaChatProvider
         $options = array_replace([
             'num_ctx' => (int) config('ollama.context_length'),
             'num_predict' => $defaultOutput,
+            'temperature' => (float) config('extractor.temperature', 0.1),
         ], $options);
 
         $payload = [
@@ -35,6 +36,11 @@ final class ExtractorChatProvider extends OllamaChatProvider
             'messages' => $messages,
             'options' => $options,
         ];
+
+        $format = config('ollama.chat_format');
+        if (is_string($format) && $format !== '') {
+            $payload['format'] = $format;
+        }
 
         if (config('extractor.think') === false) {
             $payload['think'] = false;

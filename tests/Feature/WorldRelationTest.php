@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\WorldEntityType;
+use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\WorldRelation;
 use App\Models\WorldRelationType;
@@ -25,19 +26,24 @@ class WorldRelationTest extends TestCase
         $this->assertTrue(Schema::hasTable('world_relations'));
         $this->assertTrue(Schema::hasColumns('world_relations', [
             'chronicle_id',
-            'source_entity_id',
-            'target_entity_id',
-            'relation_type_id',
+            'source_type',
+            'source_id',
+            'target_type',
+            'target_id',
+            'relation',
+            'source_of_truth',
+            'intensity',
+            'metadata',
             'weight',
             'note',
-            'started_at',
-            'ended_at',
+            'valid_from',
+            'valid_to',
             'provenance',
         ]));
 
         $indexes = collect(Schema::getIndexes('world_relations'))->pluck('name');
-        $this->assertTrue($indexes->contains('world_relations_source_type_index'));
-        $this->assertTrue($indexes->contains('world_relations_target_type_index'));
+        $this->assertTrue($indexes->contains('world_relations_source_endpoint_index'));
+        $this->assertTrue($indexes->contains('world_relations_target_endpoint_index'));
     }
 
     public function test_any_entity_type_can_join_the_directed_graph(): void
@@ -76,8 +82,8 @@ class WorldRelationTest extends TestCase
         $edge = $relations->relate($camarilla, $anarchs, $allied, weight: 0.8, note: 'Перемирие.');
 
         $this->assertDatabaseCount('world_relations', 1);
-        $this->assertSame($camarilla->id, $edge->source_entity_id);
-        $this->assertSame($anarchs->id, $edge->target_entity_id);
+        $this->assertSame($camarilla->id, $edge->source_id);
+        $this->assertSame($anarchs->id, $edge->target_id);
 
         $fromCamarilla = $relations->neighbors($camarilla, $allied);
         $fromAnarchs = $relations->neighbors($anarchs, $allied);
@@ -100,8 +106,8 @@ class WorldRelationTest extends TestCase
         $edge = $relations->relate($article, $codex, $partOf);
 
         $this->assertDatabaseCount('world_relations', 1);
-        $this->assertSame($article->id, $edge->source_entity_id);
-        $this->assertSame($codex->id, $edge->target_entity_id);
+        $this->assertSame($article->id, $edge->source_id);
+        $this->assertSame($codex->id, $edge->target_id);
         $this->assertSame('contains', $partOf->inverse_key);
 
         $fromArticle = $relations->neighbors($article, $partOf);
@@ -179,7 +185,7 @@ class WorldRelationTest extends TestCase
         $second = $relations->relate($character, $faction, $memberOf, note: 'Вернулась.');
 
         $this->assertNotSame($first->id, $second->id);
-        $this->assertNotNull($first->fresh()->ended_at);
+        $this->assertNotNull($first->fresh()->valid_to);
         $this->assertTrue($second->isActive());
         $this->assertSame(1, WorldRelation::query()->active()->count());
     }
@@ -208,9 +214,12 @@ class WorldRelationTest extends TestCase
         $this->expectException(QueryException::class);
         WorldRelation::query()->create([
             'chronicle_id' => $chronicle->id,
-            'source_entity_id' => $entity->id,
-            'target_entity_id' => $entity->id,
-            'relation_type_id' => $this->type('knows')->id,
+            'source_type' => 'character',
+            'source_id' => $entity->id,
+            'target_type' => 'character',
+            'target_id' => $entity->id,
+            'relation' => 'knows',
+            'source_of_truth' => 'chronicle',
             'weight' => 1,
         ]);
     }
@@ -221,6 +230,24 @@ class WorldRelationTest extends TestCase
 
         $this->assertSame($relation->source->chronicle_id, $relation->target->chronicle_id);
         $this->assertTrue($relation->isActive());
+    }
+
+    public function test_set_sect_and_haven_slots_use_world_relations(): void
+    {
+        $chronicle = Chronicle::factory()->create();
+        $entities = $this->app->make(WorldEntityService::class);
+        $relations = $this->app->make(WorldRelationService::class);
+        $character = Character::query()->findOrFail(
+            $entities->create($chronicle, WorldEntityType::Character, 'Виктория')->id,
+        );
+        $sect = $entities->create($chronicle, WorldEntityType::Faction, 'Камарилья');
+        $haven = $entities->create($chronicle, WorldEntityType::Location, 'Прага');
+
+        $relations->setSect($character, $sect);
+        $relations->setHaven($character, $haven);
+
+        $this->assertSame($sect->id, $relations->activeSect($character)?->target_id);
+        $this->assertSame($haven->id, $relations->activeHaven($character)?->target_id);
     }
 
     private function type(string $key): WorldRelationType

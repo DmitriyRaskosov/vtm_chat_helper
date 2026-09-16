@@ -15,7 +15,7 @@ export function useWorldPolitics({ error, reload }) {
     });
 
     async function fetchRelations() {
-        const { data } = await api.get('/world/faction-relations');
+        const { data } = await api.get('/world/relations', { params: { keys: 'hostile_to,allied_with' } });
         return data;
     }
 
@@ -31,7 +31,7 @@ export function useWorldPolitics({ error, reload }) {
         savingPolitics.value = true;
         error.value = '';
         try {
-            await api.post('/world/faction-relations', {
+            await api.post('/world/relations', {
                 source_entity_id: Number(politics.source_entity_id),
                 target_entity_id: Number(politics.target_entity_id),
                 relation_key: politics.relation_key,
@@ -49,7 +49,7 @@ export function useWorldPolitics({ error, reload }) {
     async function endPolitics(id) {
         error.value = '';
         try {
-            await api.post(`/world/faction-relations/${id}/end`);
+            await api.post(`/world/relations/${id}/end`);
             await reload();
         } catch (e) {
             error.value = e.response?.data?.message ?? 'Не удалось снять отношение.';

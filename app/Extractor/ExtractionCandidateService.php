@@ -784,20 +784,27 @@ class ExtractionCandidateService
         WorldEntity $target,
         WorldRelationType $type,
     ): ?WorldRelation {
+        $sourceType = $source->entity_type->value;
+        $targetType = $target->entity_type->value;
+
         return WorldRelation::query()
             ->where('chronicle_id', $source->chronicle_id)
-            ->where('relation_type_id', $type->id)
-            ->whereNull('ended_at')
-            ->where(function ($query) use ($source, $target, $type): void {
-                $query->where(function ($inner) use ($source, $target): void {
-                    $inner->where('source_entity_id', $source->id)
-                        ->where('target_entity_id', $target->id);
+            ->where('relation', $type->key)
+            ->active()
+            ->where(function ($query) use ($source, $target, $type, $sourceType, $targetType): void {
+                $query->where(function ($inner) use ($source, $target, $sourceType, $targetType): void {
+                    $inner->where('source_type', $sourceType)
+                        ->where('source_id', $source->id)
+                        ->where('target_type', $targetType)
+                        ->where('target_id', $target->id);
                 });
 
                 if ($type->symmetric) {
-                    $query->orWhere(function ($inner) use ($source, $target): void {
-                        $inner->where('source_entity_id', $target->id)
-                            ->where('target_entity_id', $source->id);
+                    $query->orWhere(function ($inner) use ($source, $target, $sourceType, $targetType): void {
+                        $inner->where('source_type', $targetType)
+                            ->where('source_id', $target->id)
+                            ->where('target_type', $sourceType)
+                            ->where('target_id', $source->id);
                     });
                 }
             })

@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 
 class CharacterSheetReader
 {
-    public function __construct(private CharacterAffiliationService $affiliations) {}
+    public function __construct(private \App\World\WorldRelationService $relations) {}
 
     public function full(Character $character): CharacterSheet
     {
@@ -110,8 +110,8 @@ class CharacterSheetReader
             : WorldEntity::query()->whereIn('id', $ghoulIds)->pluck('canonical_name', 'id');
 
         $biography = $character->biography;
-        $sect = $this->affiliations->activeSect($character);
-        $haven = $this->affiliations->activeHaven($character);
+        $sect = $this->relations->activeSect($character);
+        $haven = $this->relations->activeHaven($character);
 
         return [
             'id' => (int) $character->id,
@@ -121,9 +121,9 @@ class CharacterSheetReader
             'user_id' => $character->user_id === null ? null : (int) $character->user_id,
             'clan_entity_id' => $character->clan_entity_id === null ? null : (int) $character->clan_entity_id,
             'clan_name' => $character->clan?->canonical_name,
-            'sect_entity_id' => $sect === null ? null : (int) $sect->target_entity_id,
+            'sect_entity_id' => $sect === null ? null : (int) $sect->target_id,
             'sect_name' => $sect?->target?->canonical_name,
-            'haven_entity_id' => $haven === null ? null : (int) $haven->target_entity_id,
+            'haven_entity_id' => $haven === null ? null : (int) $haven->target_id,
             'haven_name' => $haven?->target?->canonical_name,
             'lore_clearance_levels' => array_values(array_map(
                 'intval',

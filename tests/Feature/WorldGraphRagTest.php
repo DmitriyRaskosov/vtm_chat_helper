@@ -2,10 +2,7 @@
 
 namespace Tests\Feature;
 
-use App\Character\CharacterAffiliationService;
 use App\Character\CharacterLoreKnowledgeService;
-use App\Enums\CharacterAffiliationStance;
-use App\Enums\CharacterAffiliationType;
 use App\Enums\CharacterKnowledgeLevel;
 use App\Enums\CharacterMemoryNodeType;
 use App\Enums\LoreAccessLevel;
@@ -55,8 +52,8 @@ class WorldGraphRagTest extends TestCase
         $this->assertContains($graph['sabotage']->id, $ids);
         $this->assertTrue(collect($bundle->relations)->contains('typeKey', 'member_of'));
         $this->assertTrue(collect($bundle->relations)->contains('typeKey', 'controls'));
-        $this->assertNotEmpty($bundle->affiliations);
-        $this->assertSame(4, $bundle->affiliations[0]['loyalty']);
+        $this->assertSame([], $bundle->affiliations);
+        $this->assertSame([], $bundle->relationships);
         $this->assertTrue(collect($bundle->events)->contains('id', $graph['sabotage']->id));
         $this->assertTrue(collect($bundle->entities)->firstWhere('id', $graph['victoria']->id)?->seed);
     }
@@ -260,15 +257,11 @@ class WorldGraphRagTest extends TestCase
         $sabotage = WorldEvent::query()->findOrFail($sabotageIdentity->id);
         $this->app->make(WorldEventService::class)->approve($sabotage, User::factory()->storyteller()->create());
 
-        $this->app->make(CharacterAffiliationService::class)->attach(
-            $victoria,
+        $relations->relate(
+            WorldEntity::query()->findOrFail($victoria->id),
             $camarilla,
-            CharacterAffiliationType::Member,
-            CharacterAffiliationStance::Allied,
             WorldRelationType::query()->where('key', 'member_of')->firstOrFail(),
-            loyalty: 4,
-            trust: 3,
-            role: 'неофит',
+            metadata: ['stance' => 'allied', 'loyalty' => 4, 'trust' => 3, 'role' => 'неофит'],
         );
         $relations->relate(
             $camarilla,

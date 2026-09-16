@@ -6,8 +6,6 @@ use App\Context\ContextAssembly;
 use App\Context\ContextSection;
 use App\Context\LineTrimmer;
 use App\Context\TokenEstimator;
-use App\Models\CharacterAffiliation;
-use App\Models\CharacterRelationship;
 use App\Models\WorldEntity;
 use App\Models\WorldRelation;
 use App\World\WorldRelationService;
@@ -37,53 +35,31 @@ class DirectRelationsProvider implements ContextProvider
             ->sortByDesc(fn (WorldRelation $relation): float => abs((float) $relation->weight))
             ->values();
 
-        $affiliations = CharacterAffiliation::query()
-            ->where('character_id', $character->id)
-            ->get()
-            ->keyBy('id');
-
-        $incoming = CharacterRelationship::query()
-            ->where('target_character_id', $character->id)
+        $incomingCharacter = WorldRelation::query()
+            ->active()
+            ->where('target_type', 'character')
+            ->where('target_id', $character->id)
             ->whereNotIn('id', $neighbors->pluck('id'))
+            ->with(['source', 'target'])
             ->get();
-
-        $extraRelations = WorldRelation::query()
-            ->with(['source', 'target', 'type'])
-            ->whereIn('id', $incoming->pluck('id'))
-            ->get()
-            ->keyBy('id');
 
         $lines = [];
         $relationIds = [];
-        $affiliationIds = [];
-        $relationshipIds = [];
         $entityIds = [(int) $entity->id];
 
         foreach ($neighbors as $relation) {
             $relationIds[] = (int) $relation->id;
             $line = $this->formatRelation($entity, $relation);
-            $affiliation = $affiliations->get($relation->id);
-            if ($affiliation instanceof CharacterAffiliation) {
-                $affiliationIds[] = (int) $affiliation->id;
-                $line .= $this->formatAffiliationMetrics($affiliation);
-            }
-            if ($this->isCharacterRelationship($relation)) {
-                $relationshipIds[] = (int) $relation->id;
-            }
-            $entityIds[] = (int) $relation->source_entity_id;
-            $entityIds[] = (int) $relation->target_entity_id;
+            $line .= $this->formatMetadata($relation);
+            $entityIds[] = (int) $relation->source_id;
+            $entityIds[] = (int) $relation->target_id;
             $lines[] = $line;
         }
 
-        foreach ($incoming as $relationship) {
-            $relation = $extraRelations->get($relationship->id);
-            if (! $relation instanceof WorldRelation) {
-                continue;
-            }
+        foreach ($incomingCharacter as $relation) {
             $relationIds[] = (int) $relation->id;
-            $relationshipIds[] = (int) $relationship->id;
-            $entityIds[] = (int) $relation->source_entity_id;
-            $entityIds[] = (int) $relation->target_entity_id;
+            $entityIds[] = (int) $relation->source_id;
+            $entityIds[] = (int) $relation->target_id;
             $lines[] = $this->formatRelation($entity, $relation);
         }
 
@@ -103,54 +79,53 @@ class DirectRelationsProvider implements ContextProvider
             'character_id' => (int) $character->id,
             'entity_id' => (int) $entity->id,
             'relation_ids' => array_values(array_unique($relationIds)),
-            'affiliation_ids' => $affiliationIds,
-            'relationship_ids' => array_values(array_unique($relationshipIds)),
             'entity_ids' => array_values(array_unique($entityIds)),
         ], $truncated ? 'extra_edges' : null);
     }
 
     private function formatRelation(WorldEntity $self, WorldRelation $relation): string
     {
-        $counterpart = (int) $relation->source_entity_id === (int) $self->id
+        $counterpart = (int) $relation->source_id === (int) $self->id
             ? $relation->target
             : $relation->source;
         $selfName = $self->canonical_name;
-        $otherName = $counterpart?->canonical_name ?? ('#'.$relation->target_entity_id);
-        $type = $relation->type?->key ?? 'related';
+        $otherName = $counterpart?->canonical_name ?? ('#'.$relation->target_id);
+        $type = $relation->relation;
         $weight = number_format((float) $relation->weight, 2);
         $note = is_string($relation->note) && $relation->note !== '' ? '; '.$relation->note : '';
 
-        if ((int) $relation->source_entity_id === (int) $self->id) {
+        if ((int) $relation->source_id === (int) $self->id) {
             return "{$selfName} {$type} {$otherName} (weight {$weight}){$note}";
         }
 
         return "{$otherName} {$type} {$selfName} (weight {$weight}){$note}";
     }
 
-    private function formatAffiliationMetrics(CharacterAffiliation $affiliation): string
+    private function formatMetadata(WorldRelation $relation): string
     {
-        $parts = [
-            'stance '.$affiliation->stance->value,
-            'trust '.$affiliation->trust,
-            'loyalty '.$affiliation->loyalty,
-            'fear '.$affiliation->fear,
-            'obligation '.$affiliation->obligation,
-        ];
-        if (is_string($affiliation->role) && $affiliation->role !== '') {
-            $parts[] = 'role '.$affiliation->role;
-        }
-        if (is_string($affiliation->rank) && $affiliation->rank !== '') {
-            $parts[] = 'rank '.$affiliation->rank;
+        $metadata = is_array($relation->metadata) ? $relation->metadata : [];
+        $parts = [];
+
+        if (isset($metadata['stance']) && is_string($metadata['stance']) && $metadata['stance'] !== '') {
+            $parts[] = 'stance '.$metadata['stance'];
         }
 
-        return ' ['.implode(', ', $parts).']';
-    }
+        foreach (['trust', 'loyalty', 'fear', 'obligation'] as $metric) {
+            if (array_key_exists($metric, $metadata)) {
+                $parts[] = $metric.' '.$metadata[$metric];
+            }
+        }
 
-    private function isCharacterRelationship(WorldRelation $relation): bool
-    {
-        $sourceType = $relation->source?->entity_type?->value;
-        $targetType = $relation->target?->entity_type?->value;
+        foreach (['role', 'rank'] as $field) {
+            if (isset($metadata[$field]) && is_string($metadata[$field]) && $metadata[$field] !== '') {
+                $parts[] = $field.' '.$metadata[$field];
+            }
+        }
 
-        return $sourceType === 'character' && $targetType === 'character';
+        if ($relation->intensity !== null) {
+            $parts[] = 'intensity '.$relation->intensity;
+        }
+
+        return $parts === [] ? '' : ' ['.implode(', ', $parts).']';
     }
 }

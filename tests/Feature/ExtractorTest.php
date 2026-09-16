@@ -860,7 +860,7 @@ class ExtractorTest extends TestCase
 
         $this->assertDatabaseCount('world_relations', 1);
         $partOfId = WorldRelationType::query()->where('key', 'part_of')->value('id');
-        $this->assertTrue(WorldRelation::query()->where('relation_type_id', $partOfId)->active()->exists());
+        $this->assertTrue(WorldRelation::query()->where('relation', 'part_of')->active()->exists());
     }
 
     public function test_contains_relation_is_normalized_to_part_of_in_candidates(): void

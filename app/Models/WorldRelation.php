@@ -2,24 +2,29 @@
 
 namespace App\Models;
 
+use App\Enums\WorldEntityType;
 use Database\Factories\WorldRelationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use InvalidArgumentException;
 
 #[Fillable([
     'chronicle_id',
-    'source_entity_id',
-    'target_entity_id',
-    'relation_type_id',
+    'source_type',
+    'source_id',
+    'target_type',
+    'target_id',
+    'relation',
+    'source_of_truth',
+    'intensity',
+    'metadata',
     'weight',
     'note',
-    'started_at',
-    'ended_at',
+    'valid_from',
+    'valid_to',
     'provenance',
 ])]
 class WorldRelation extends Model
@@ -33,7 +38,7 @@ class WorldRelation extends Model
      */
     public function scopeActive(Builder $query): Builder
     {
-        return $query->whereNull('ended_at');
+        return $query->whereNull('valid_to');
     }
 
     /**
@@ -49,7 +54,7 @@ class WorldRelation extends Model
      */
     public function source(): BelongsTo
     {
-        return $this->belongsTo(WorldEntity::class, 'source_entity_id');
+        return $this->belongsTo(WorldEntity::class, 'source_id');
     }
 
     /**
@@ -57,44 +62,23 @@ class WorldRelation extends Model
      */
     public function target(): BelongsTo
     {
-        return $this->belongsTo(WorldEntity::class, 'target_entity_id');
+        return $this->belongsTo(WorldEntity::class, 'target_id');
     }
 
-    /**
-     * @return BelongsTo<WorldRelationType, $this>
-     */
-    public function type(): BelongsTo
+    public function relationType(): ?WorldRelationType
     {
-        return $this->belongsTo(WorldRelationType::class, 'relation_type_id');
-    }
-
-    /**
-     * Shared-PK subtype. Inverse belongsTo on CharacterRelationship is omitted.
-     *
-     * @return HasOne<CharacterRelationship, $this>
-     */
-    public function characterRelationship(): HasOne
-    {
-        return $this->hasOne(CharacterRelationship::class, 'id', 'id');
-    }
-
-    /**
-     * Shared-PK subtype. Inverse belongsTo on CharacterAffiliation is omitted.
-     *
-     * @return HasOne<CharacterAffiliation, $this>
-     */
-    public function characterAffiliation(): HasOne
-    {
-        return $this->hasOne(CharacterAffiliation::class, 'id', 'id');
+        return WorldRelationType::query()->where('key', $this->relation)->first();
     }
 
     public function other(WorldEntity $entity): WorldEntity
     {
-        if ((int) $this->source_entity_id === (int) $entity->id) {
+        if ((int) $this->source_id === (int) $entity->id
+            && $this->endpointType($entity) === $this->source_type) {
             return $this->target;
         }
 
-        if ((int) $this->target_entity_id === (int) $entity->id) {
+        if ((int) $this->target_id === (int) $entity->id
+            && $this->endpointType($entity) === $this->target_type) {
             return $this->source;
         }
 
@@ -103,19 +87,27 @@ class WorldRelation extends Model
 
     public function isActive(): bool
     {
-        return $this->ended_at === null;
+        return $this->valid_to === null;
+    }
+
+    public function endpointType(WorldEntity $entity): string
+    {
+        $type = $entity->entity_type;
+
+        return $type instanceof WorldEntityType ? $type->value : (string) $type;
     }
 
     protected function casts(): array
     {
         return [
             'chronicle_id' => 'integer',
-            'source_entity_id' => 'integer',
-            'target_entity_id' => 'integer',
-            'relation_type_id' => 'integer',
+            'source_id' => 'integer',
+            'target_id' => 'integer',
+            'intensity' => 'integer',
             'weight' => 'float',
-            'started_at' => 'datetime',
-            'ended_at' => 'datetime',
+            'metadata' => 'array',
+            'valid_from' => 'datetime',
+            'valid_to' => 'datetime',
             'provenance' => 'array',
         ];
     }

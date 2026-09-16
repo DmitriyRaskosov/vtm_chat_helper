@@ -802,14 +802,15 @@ class WorldEntityService
         $memberOf = WorldRelationType::query()->where('key', 'member_of')->firstOrFail();
 
         $autoSynced = WorldRelation::query()
-            ->where('source_entity_id', $entity->id)
-            ->where('relation_type_id', $memberOf->id)
+            ->where('source_type', $this->entityTypeValue($entity))
+            ->where('source_id', $entity->id)
+            ->where('relation', $memberOf->key)
             ->active()
             ->get()
             ->filter(fn (WorldRelation $relation): bool => ($relation->provenance[self::SECT_SYNC_PROVENANCE_KEY] ?? false) === true);
 
         foreach ($autoSynced as $relation) {
-            if ($sectFactionId === null || (int) $relation->target_entity_id !== $sectFactionId) {
+            if ($sectFactionId === null || (int) $relation->target_id !== $sectFactionId) {
                 $this->relations->end($relation);
             }
         }
@@ -819,9 +820,10 @@ class WorldEntityService
         }
 
         $alreadyActive = WorldRelation::query()
-            ->where('source_entity_id', $entity->id)
-            ->where('target_entity_id', $sectFactionId)
-            ->where('relation_type_id', $memberOf->id)
+            ->where('source_type', $this->entityTypeValue($entity))
+            ->where('source_id', $entity->id)
+            ->where('target_id', $sectFactionId)
+            ->where('relation', $memberOf->key)
             ->active()
             ->exists();
 
@@ -836,6 +838,13 @@ class WorldEntityService
             $memberOf,
             provenance: [self::SECT_SYNC_PROVENANCE_KEY => true],
         );
+    }
+
+    private function entityTypeValue(WorldEntity $entity): string
+    {
+        $type = $entity->entity_type;
+
+        return $type instanceof WorldEntityType ? $type->value : (string) $type;
     }
 
     private function assertSectFaction(Chronicle $chronicle, WorldEntity $faction): void

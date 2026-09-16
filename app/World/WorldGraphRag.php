@@ -11,8 +11,6 @@ use App\Lore\LoreSearcher;
 use App\Memory\CharacterMemorySearcher;
 use App\Memory\MemoryBridgeService;
 use App\Models\Character;
-use App\Models\CharacterAffiliation;
-use App\Models\CharacterRelationship;
 use App\Models\Chronicle;
 use App\Models\LoreChunk;
 use App\Models\LoreEntry;
@@ -153,7 +151,7 @@ class WorldGraphRag
         $secretEventFilter = $asNpc !== null
             ? "AND NOT EXISTS (
                 SELECT 1 FROM world_events secret
-                WHERE secret.id = (CASE WHEN r.source_entity_id = w.entity_id THEN r.target_entity_id ELSE r.source_entity_id END)
+                WHERE secret.id = (CASE WHEN r.source_id = w.entity_id THEN r.target_id ELSE r.source_id END)
                   AND secret.visibility = '".WorldEventVisibility::StorytellerOnly->value."'
               )"
             : '';
@@ -178,32 +176,32 @@ class WorldGraphRag
                   AND e.id IN ({$seedList})
                 UNION ALL
                 SELECT
-                    CASE WHEN r.source_entity_id = w.entity_id THEN r.target_entity_id ELSE r.source_entity_id END,
+                    CASE WHEN r.source_id = w.entity_id THEN r.target_id ELSE r.source_id END,
                     w.depth + 1,
-                    w.path || (CASE WHEN r.source_entity_id = w.entity_id THEN r.target_entity_id ELSE r.source_entity_id END),
+                    w.path || (CASE WHEN r.source_id = w.entity_id THEN r.target_id ELSE r.source_id END),
                     r.id,
                     w.path_strength * ABS(r.weight::double precision)
                 FROM walk w
                 INNER JOIN world_relations r
                     ON r.chronicle_id = ?
-                   AND r.ended_at IS NULL
-                   AND (r.started_at IS NULL OR r.started_at <= ?)
+                   AND r.valid_to IS NULL
+                   AND (r.valid_from IS NULL OR r.valid_from <= ?)
                    AND ABS(r.weight) >= ?
                 INNER JOIN world_relation_types t
-                    ON t.id = r.relation_type_id
+                    ON t.key = r.relation
                    AND t.enabled = true
                    {$typeFilter}
                    AND (
-                        r.source_entity_id = w.entity_id
-                        OR (r.target_entity_id = w.entity_id AND (t.symmetric = true OR t.inverse_key IS NOT NULL))
+                        r.source_id = w.entity_id
+                        OR (r.target_id = w.entity_id AND (t.symmetric = true OR t.inverse_key IS NOT NULL))
                    )
                 INNER JOIN world_entities nxt
-                    ON nxt.id = (CASE WHEN r.source_entity_id = w.entity_id THEN r.target_entity_id ELSE r.source_entity_id END)
+                    ON nxt.id = (CASE WHEN r.source_id = w.entity_id THEN r.target_id ELSE r.source_id END)
                    AND nxt.chronicle_id = ?
                    AND nxt.status = '".WorldEntityStatus::Active->value."'
                 WHERE w.depth < ?
                   AND NOT (
-                    CASE WHEN r.source_entity_id = w.entity_id THEN r.target_entity_id ELSE r.source_entity_id END
+                    CASE WHEN r.source_id = w.entity_id THEN r.target_id ELSE r.source_id END
                   ) = ANY(w.path)
                   {$secretEventFilter}
             )
@@ -270,11 +268,10 @@ class WorldGraphRag
         }
 
         $relations = WorldRelation::query()
-            ->with('type')
             ->where('chronicle_id', $chronicle->id)
             ->whereIn('id', array_values($relationIds))
-            ->whereIn('source_entity_id', $keptIds)
-            ->whereIn('target_entity_id', $keptIds)
+            ->whereIn('source_id', $keptIds)
+            ->whereIn('target_id', $keptIds)
             ->orderBy('id')
             ->get()
             ->take($maxEdges);
@@ -282,54 +279,14 @@ class WorldGraphRag
         $bundleRelations = $relations->map(function (WorldRelation $relation) use ($relationDepth): WorldGraphRelation {
             return new WorldGraphRelation(
                 (int) $relation->id,
-                (string) $relation->type->key,
-                (int) $relation->source_entity_id,
-                (int) $relation->target_entity_id,
+                (string) $relation->relation,
+                (int) $relation->source_id,
+                (int) $relation->target_id,
                 (float) $relation->weight,
                 $relation->note,
                 $relationDepth[(int) $relation->id] ?? 1,
             );
         })->all();
-
-        $characterIds = $models
-            ->filter(fn (WorldEntity $entity): bool => $entity->entity_type->value === 'character')
-            ->keys()
-            ->map(fn ($id): int => (int) $id)
-            ->all();
-
-        $affiliations = CharacterAffiliation::query()
-            ->where('chronicle_id', $chronicle->id)
-            ->whereIn('character_id', $characterIds)
-            ->whereIn('target_entity_id', $keptIds)
-            ->orderBy('id')
-            ->get()
-            ->map(fn (CharacterAffiliation $row): array => [
-                'id' => (int) $row->id,
-                'character_id' => (int) $row->character_id,
-                'target_entity_id' => (int) $row->target_entity_id,
-                'affiliation_type' => $row->affiliation_type->value,
-                'stance' => $row->stance->value,
-                'trust' => (int) $row->trust,
-                'loyalty' => (int) $row->loyalty,
-                'fear' => (int) $row->fear,
-                'obligation' => (int) $row->obligation,
-                'role' => $row->role,
-                'rank' => $row->rank,
-            ])
-            ->all();
-
-        $relationships = CharacterRelationship::query()
-            ->where('chronicle_id', $chronicle->id)
-            ->whereIn('source_character_id', $characterIds)
-            ->whereIn('target_character_id', $characterIds)
-            ->orderBy('id')
-            ->get()
-            ->map(fn (CharacterRelationship $row): array => [
-                'id' => (int) $row->id,
-                'source_character_id' => (int) $row->source_character_id,
-                'target_character_id' => (int) $row->target_character_id,
-            ])
-            ->all();
 
         $events = WorldEvent::query()
             ->where('chronicle_id', $chronicle->id)
@@ -406,8 +363,8 @@ class WorldGraphRag
             (int) $chronicle->id,
             $bundleEntities,
             $bundleRelations,
-            $affiliations,
-            $relationships,
+            [],
+            [],
             $events,
             $loreChunks,
             $seedEntityIds,

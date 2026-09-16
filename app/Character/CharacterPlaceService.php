@@ -4,12 +4,13 @@ namespace App\Character;
 
 use App\Models\Character;
 use App\Models\WorldEntity;
+use App\World\WorldRelationService;
 use Illuminate\Support\Facades\DB;
 
 class CharacterPlaceService
 {
     public function __construct(
-        private CharacterAffiliationService $affiliations,
+        private WorldRelationService $relations,
         private CharacterIdentityService $identity,
     ) {}
 
@@ -20,7 +21,7 @@ class CharacterPlaceService
     {
         return DB::transaction(function () use ($character, $fields): Character {
             if (array_key_exists('sect_entity_id', $fields)) {
-                $this->affiliations->setSect($character, $this->optionalEntity($fields['sect_entity_id']));
+                $this->relations->setSect($character, $this->optionalEntity($fields['sect_entity_id']));
             }
 
             if (array_key_exists('clan_entity_id', $fields)) {
@@ -28,7 +29,7 @@ class CharacterPlaceService
             }
 
             if (array_key_exists('haven_entity_id', $fields)) {
-                $this->affiliations->setHaven($character, $this->optionalEntity($fields['haven_entity_id']));
+                $this->relations->setHaven($character, $this->optionalEntity($fields['haven_entity_id']));
             }
 
             if (array_key_exists('lore_clearance_levels', $fields)) {

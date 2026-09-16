@@ -12,39 +12,35 @@ return new class extends Migration
         Schema::create('world_relations', function (Blueprint $table) {
             $table->id();
             $table->unsignedBigInteger('chronicle_id');
-            $table->unsignedBigInteger('source_entity_id');
-            $table->unsignedBigInteger('target_entity_id');
-            $table->foreignId('relation_type_id')->constrained('world_relation_types')->restrictOnDelete();
+            $table->string('source_type', 32);
+            $table->unsignedBigInteger('source_id');
+            $table->string('target_type', 32);
+            $table->unsignedBigInteger('target_id');
+            $table->string('relation', 64);
+            $table->string('source_of_truth', 32)->default('chronicle');
+            $table->unsignedTinyInteger('intensity')->nullable();
+            $table->jsonb('metadata')->nullable();
             $table->decimal('weight', 8, 4)->default(1);
             $table->text('note')->nullable();
-            $table->timestamp('started_at')->nullable();
-            $table->timestamp('ended_at')->nullable();
+            $table->timestamp('valid_from')->nullable();
+            $table->timestamp('valid_to')->nullable();
             $table->jsonb('provenance')->nullable();
             $table->timestamps();
 
-            $table->unique(['id', 'chronicle_id'], 'world_relations_id_chronicle_unique');
-            $table->unique(['id', 'source_entity_id', 'target_entity_id'], 'world_relations_id_endpoints_unique');
-            $table->index(['source_entity_id', 'relation_type_id'], 'world_relations_source_type_index');
-            $table->index(['target_entity_id', 'relation_type_id'], 'world_relations_target_type_index');
-        });
-
-        DB::statement('ALTER TABLE world_relations ADD CONSTRAINT world_relations_not_self_check CHECK (source_entity_id <> target_entity_id)');
-
-        Schema::table('world_relations', function (Blueprint $table) {
-            $table->foreign(['source_entity_id', 'chronicle_id'], 'world_relations_source_chronicle_foreign')
-                ->references(['id', 'chronicle_id'])
-                ->on('world_entities')
-                ->restrictOnDelete();
-            $table->foreign(['target_entity_id', 'chronicle_id'], 'world_relations_target_chronicle_foreign')
-                ->references(['id', 'chronicle_id'])
-                ->on('world_entities')
-                ->restrictOnDelete();
+            $table->index(['chronicle_id']);
+            $table->index(['source_type', 'source_id', 'relation'], 'world_relations_source_endpoint_index');
+            $table->index(['target_type', 'target_id', 'relation'], 'world_relations_target_endpoint_index');
         });
 
         DB::statement(
+            'ALTER TABLE world_relations ADD CONSTRAINT world_relations_not_self_check
+             CHECK (NOT (source_type = target_type AND source_id = target_id))'
+        );
+
+        DB::statement(
             'CREATE UNIQUE INDEX world_relations_active_unique
-             ON world_relations (chronicle_id, source_entity_id, target_entity_id, relation_type_id)
-             WHERE ended_at IS NULL'
+             ON world_relations (chronicle_id, source_type, source_id, target_type, target_id, relation)
+             WHERE valid_to IS NULL'
         );
     }
 

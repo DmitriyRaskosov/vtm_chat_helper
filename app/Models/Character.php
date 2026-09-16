@@ -179,27 +179,21 @@ class Character extends Model
     }
 
     /**
-     * @return HasMany<CharacterRelationship, $this>
+     * @return HasMany<WorldRelation, $this>
      */
-    public function outgoingRelationships(): HasMany
+    public function outgoingRelations(): HasMany
     {
-        return $this->hasMany(CharacterRelationship::class, 'source_character_id');
+        return $this->hasMany(WorldRelation::class, 'source_id')
+            ->where('source_type', 'character');
     }
 
     /**
-     * @return HasMany<CharacterRelationship, $this>
+     * @return HasMany<WorldRelation, $this>
      */
-    public function incomingRelationships(): HasMany
+    public function incomingRelations(): HasMany
     {
-        return $this->hasMany(CharacterRelationship::class, 'target_character_id');
-    }
-
-    /**
-     * @return HasMany<CharacterAffiliation, $this>
-     */
-    public function affiliations(): HasMany
-    {
-        return $this->hasMany(CharacterAffiliation::class);
+        return $this->hasMany(WorldRelation::class, 'target_id')
+            ->where('target_type', 'character');
     }
 
     /**
