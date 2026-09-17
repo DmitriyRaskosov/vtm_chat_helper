@@ -10,7 +10,7 @@
 
 ## Справочник V20 (`canon_*`)
 
-Глобальный канон сеттинга, **без** `chronicle_id`. Не путать с игровыми `factions` / `clans` (typed `world_entities` хроники). Источники: `resources/canon/sects/`, `resources/canon/lore/` (YAML front matter + markdown body). Импорт лора: `php artisan canon:import-lore` (также вызывается из `DatabaseSeeder` после сидеров секты/кланы).
+Глобальный канон сеттинга, **без** `chronicle_id`. Не путать с игровыми `factions` / `clans` (typed `world_entities` хроники). **Секты, кланы, членство и отношения кланов** — PHP-сидеры (`CanonSectSeeder`, `CanonClanSeeder`, …) → таблицы `canon_*`; источник истины — БД, не markdown. **Лор-статьи** — staging в плоском `resources/canon/lore/*.md` (YAML front matter + body); таксономия — поле `category` во front matter, не подпапки; после импорта источник истины — `canon_lore_entries`. Импорт: `php artisan canon:import-lore` (также из `DatabaseSeeder` после сидеров секты/кланы).
 
 ```mermaid
 erDiagram
@@ -38,7 +38,7 @@ erDiagram
 
 **Лист V20:** `canon_merits_flaws`, `canon_backgrounds`, `canon_attributes`, `canon_abilities`.
 
-**Лор для RAG:** `canon_lore_entries` (`slug` string 128, `title`, `text`, `category` indexed, `tags` jsonb nullable, источники, `era_*` smallint), `canon_lore_entry_entities` (`entity_type` string 32, `entity_id`, unique на triplet, timestamps), производные `canon_lore_chunks` (`embedding` vector 1024, HNSW). Категории — enum `LoreCategory` в приложении.
+**Лор для RAG:** `canon_lore_entries` (`slug` string 128, `title`, `text`, `category` indexed, `tags` jsonb nullable, источники, `era_*` smallint), `canon_lore_entry_entities` (`entity_type` string 32, `entity_id`, unique на triplet, timestamps; ссылки на `canon_sects` / `canon_clans` по slug из front matter `entities`), производные `canon_lore_chunks` (`embedding` vector 1024, HNSW). Категории — enum `LoreCategory` в приложении. Файлы — только `resources/canon/lore/` (без вложенных каталогов по category).
 
 ## Каркас мира и игры
 
