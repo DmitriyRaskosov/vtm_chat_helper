@@ -2,6 +2,7 @@
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -21,10 +22,14 @@ return new class extends Migration
             $table->text('note')->nullable();
             $table->timestamps();
 
-            $table->unique(['clan_id', 'sect_id', 'since_year']);
             $table->index(['clan_id']);
             $table->index(['sect_id']);
         });
+
+        DB::statement(
+            'CREATE UNIQUE INDEX canon_clan_sects_clan_sect_since_unique '
+            .'ON canon_clan_sects (clan_id, sect_id, since_year) NULLS NOT DISTINCT',
+        );
     }
 
     public function down(): void

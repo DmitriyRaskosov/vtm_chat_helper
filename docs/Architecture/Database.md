@@ -10,7 +10,7 @@
 
 ## Справочник V20 (`canon_*`)
 
-Глобальный канон сеттинга, **без** `chronicle_id`. Не путать с игровыми `factions` / `clans` (typed `world_entities` хроники). Источники: `resources/canon/sects/`, `resources/canon/lore/` (YAML front matter + markdown body). Импорт лора: `php artisan canon:import-lore`.
+Глобальный канон сеттинга, **без** `chronicle_id`. Не путать с игровыми `factions` / `clans` (typed `world_entities` хроники). Источники: `resources/canon/sects/`, `resources/canon/lore/` (YAML front matter + markdown body). Импорт лора: `php artisan canon:import-lore` (также вызывается из `DatabaseSeeder` после сидеров секты/кланы).
 
 ```mermaid
 erDiagram
@@ -28,7 +28,7 @@ erDiagram
   canon_lore_entries ||--o{ canon_lore_chunks : derived
 ```
 
-**Секты и кланы:** `canon_sects`, `canon_clans`, `canon_clan_sects` (история членства: `since_year`/`until_year` nullable smallint, `note` nullable, timestamps, cascade delete с кланом/сектой, unique `clan_id+sect_id+since_year`), `canon_clan_relations` (отношения клан↔клан: `relation_type`, `intensity`, годы, `source`; unique `(from, to, type, since_year)`; `from <> to`).
+**Секты и кланы:** `canon_sects`, `canon_clans`, `canon_clan_sects` (история членства: `since_year`/`until_year` nullable smallint, `note` nullable, timestamps, cascade delete с кланом/сектой, unique `clan_id+sect_id+since_year` **NULLS NOT DISTINCT**), `canon_clan_relations` (отношения клан↔клан: `relation_type`, `intensity` −5..5 nullable, годы smallint, `is_symmetric`, `note`/`source` nullable, timestamps; unique `(from, to, type, since_year)` **NULLS NOT DISTINCT** — идемпотентный upsert при `since_year IS NULL`; `from <> to`).
 
 **Дисциплины:** `canon_disciplines`, `canon_clan_disciplines` (PK `clan_id, discipline_id`, `is_in_clan`), `canon_discipline_powers` (уровень 1–9, unique `(discipline_id, level, name)`).
 
