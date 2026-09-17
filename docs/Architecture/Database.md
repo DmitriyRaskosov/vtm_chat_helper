@@ -8,6 +8,38 @@
 
 Подробности полей: [[Architecture/World]], [[Architecture/Memory]], [[Architecture/Lore]], [[Architecture/Rules]], [[Architecture/Backend]]. Миграции: `database/migrations/`.
 
+## Справочник V20 (`canon_*`)
+
+Глобальный канон сеттинга, **без** `chronicle_id`. Не путать с игровыми `factions` / `clans` (typed `world_entities` хроники). Источники: `resources/canon/sects/`, `resources/canon/lore/` (YAML front matter + markdown body). Импорт лора: `php artisan canon:import-lore`.
+
+```mermaid
+erDiagram
+  canon_clans ||--o| canon_clans : parent_clan_id
+  canon_clans ||--o{ canon_clan_sects : membership
+  canon_sects ||--o{ canon_clan_sects : members
+  canon_clans ||--o{ canon_clan_relations : from
+  canon_clans ||--o{ canon_clan_relations : to
+  canon_disciplines ||--o{ canon_clan_disciplines : in_clan
+  canon_clans ||--o{ canon_clan_disciplines : disciplines
+  canon_disciplines ||--o{ canon_discipline_powers : powers
+  canon_paths ||--o{ canon_path_sins : sins
+  canon_path_sin_levels ||--o{ canon_path_sins : level
+  canon_lore_entries ||--o{ canon_lore_entry_entities : mentions
+  canon_lore_entries ||--o{ canon_lore_chunks : derived
+```
+
+**Секты и кланы:** `canon_sects`, `canon_clans`, `canon_clan_sects` (история членства: `since_year`/`until_year` nullable smallint, `note` nullable, timestamps, cascade delete с кланом/сектой, unique `clan_id+sect_id+since_year`), `canon_clan_relations` (отношения клан↔клан: `relation_type`, `intensity`, годы, `source`; unique `(from, to, type, since_year)`; `from <> to`).
+
+**Дисциплины:** `canon_disciplines`, `canon_clan_disciplines` (PK `clan_id, discipline_id`, `is_in_clan`), `canon_discipline_powers` (уровень 1–9, unique `(discipline_id, level, name)`).
+
+**Поколения:** `canon_generations` — PK `generation` (3–15), `max_blood_pool`, `blood_per_turn`, `max_trait_rating`, `notes`.
+
+**Пути:** `canon_paths` (`is_humanity`, `virtue_conscience`, `virtue_selfcontrol`), справочник шкалы `canon_path_sin_levels` (уровни 1–10), `canon_path_sins` (PK `path_id, level` → текст греха).
+
+**Лист V20:** `canon_merits_flaws`, `canon_backgrounds`, `canon_attributes`, `canon_abilities`.
+
+**Лор для RAG:** `canon_lore_entries` (`slug` string 128, `title`, `text`, `category` indexed, `tags` jsonb nullable, источники, `era_*` smallint), `canon_lore_entry_entities` (`entity_type` string 32, `entity_id`, unique на triplet, timestamps), производные `canon_lore_chunks` (`embedding` vector 1024, HNSW). Категории — enum `LoreCategory` в приложении.
+
 ## Каркас мира и игры
 
 ```mermaid
