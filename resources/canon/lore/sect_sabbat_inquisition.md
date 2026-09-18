@@ -1,5 +1,5 @@
 ---
-slug: sabbat_inquisition
+slug: sect_sabbat_inquisition
 title: Инквизиция Шабаша
 category: society
 tags: [sabbat, society, military, laws]

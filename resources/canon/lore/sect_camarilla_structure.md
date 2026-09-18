@@ -1,5 +1,5 @@
 ---
-slug: camarilla_structure
+slug: sect_camarilla_structure
 title: Общество Камарильи
 category: society
 tags: [camarilla, sect, structure]

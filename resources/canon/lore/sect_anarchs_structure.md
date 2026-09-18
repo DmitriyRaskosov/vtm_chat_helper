@@ -1,12 +1,12 @@
 ---
-slug: anarch_structure
+slug: sect_anarchs_structure
 title: Структура Анархов
 category: sociery
-tags: [anarch, sect, structure, politics]
+tags: [anarchs, sect, structure, politics]
 era_from: 1944
 entities:
   - type: sect
-    slug: anarch
+    slug: anarchs
     note: Секта, которой посвящена статья
 ---
 

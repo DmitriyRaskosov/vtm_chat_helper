@@ -15,3 +15,19 @@ Legacy `RagIndexer::indexLore`, глобальный lore search и таблиц
 Мост из памяти — `memory_node_lore_entries`; NPC видит связанный лор только если статья в этом видимом множестве. World GraphRAG повторно применяет тот же фильтр. Context Assembler кладёт разрешённые lore chunks в блок `## World`. Гриф не пишет в промпт «ты неофит»: он только решает, какие куски попадут в `Known lore:`.
 
 См. [[Architecture/Backend]], [[Architecture/Memory]], [[Architecture/Retrieval]], [[API/RAG]], [[Archive/Architecture Migration]].
+
+Именование в lore:
+clan_<slug> / clan_<slug>_<тема> — про кланы
+
+sect_<slug> / sect_<slug>_<тема> — про секты
+
+<event_slug> — про события (без префикса)
+
+<concept_slug> — про концепции (без префикса)
+
+<location_slug> — про локации (без префикса)
+
+Category - history, politics, society, geography, clans, creatures, metaplot, misc - то, о чём статья
+Type - ответ идёт в entities, где у каждого type — имя таблицы canon_* в единственном числе. sect, clan (пока), позже discipline, event, path, location
+
+Для canon_clans сидера никаких префиксов. Там slug: 'lasombra', slug: 'followers_of_set'. Это структурный slug, он идёт в БД и в URL.

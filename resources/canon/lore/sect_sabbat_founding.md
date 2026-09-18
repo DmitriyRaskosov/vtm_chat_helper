@@ -1,5 +1,5 @@
 ---
-slug: sabbat_founding
+slug: sect_sabbat_founding
 title: Шабаш
 category: history
 tags: [sabbat, history]

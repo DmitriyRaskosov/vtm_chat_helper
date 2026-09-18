@@ -1,5 +1,5 @@
 ---
-slug: sabbat_black_hand
+slug: sect_sabbat_black_hand
 title: Чёрная рука Шабаша
 category: society
 tags: [sabbat, society, black_hand, military]

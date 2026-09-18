@@ -1,8 +1,8 @@
 ---
-slug: anarch
+slug: sect_anarchs
 title: Анархи
 category: society
-tags: [anarch, sect]
+tags: [anarchs, sect]
 era_from: 1493
 entities:
   - type: sect
@@ -15,7 +15,7 @@ entities:
     slug: brujah
     note: Основатели секты, один из основных кланов секты
   - type: clan
-    slug: kaitiff
+    slug: caitiff
     note: Большинство Каитиффов - Анархи
 ---
 

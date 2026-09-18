@@ -1,5 +1,5 @@
 ---
-slug: camarilla_founding
+slug: sect_camarilla_founding
 title: Камарилья
 category: history
 tags: [camarilla]

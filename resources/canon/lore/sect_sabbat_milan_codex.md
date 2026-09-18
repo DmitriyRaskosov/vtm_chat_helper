@@ -1,5 +1,5 @@
 ---
-slug: milan_codex
+slug: sect_sabbat_milan_codex
 title: Миланский Кодекс
 category: politics
 tags: [sabbat, law, codex]

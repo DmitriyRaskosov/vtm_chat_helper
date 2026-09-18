@@ -1,8 +1,8 @@
 ---
-slug: anarch_revolt
+slug: anarchs_revolt
 title: Первое Восстание Анархов
 category: history
-tags: [anarch, history]
+tags: [anarchs, history]
 era_from: 1493
 era_to: 1493
 entities:

@@ -50,7 +50,7 @@ class CanonClanRelationSeeder extends Seeder
             $this->asym($c['tremere'], $c['ventrue'], 'respect', 2,
                 'Тремеры признают политическое превосходство Вентру.'),
             // Последователи Сета плетут интриги против Ассамитов (но не наоборот).
-            $this->asym($c['followers_of_set'], $c['assamite'], 'contempt', -3,
+            $this->asym($c['followers_of_set'], $c['assamites'], 'contempt', -3,
                 'Сеттиты считают Ассамитов грубыми убийцами без изящества.'),
         ];
 

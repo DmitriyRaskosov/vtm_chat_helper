@@ -1,5 +1,5 @@
 ---
-slug: sabbat
+slug: sect_sabbat
 title: Шабаш
 category: society
 tags: [sabbat, sect]

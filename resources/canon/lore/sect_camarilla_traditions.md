@@ -1,5 +1,5 @@
 ---
-slug: camarilla_traditions
+slug: sect_camarilla_traditions
 title: Традиции Камарилья
 category: politics
 tags: [camarilla, law, codex]

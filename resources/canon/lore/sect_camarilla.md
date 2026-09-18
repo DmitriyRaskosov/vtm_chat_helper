@@ -1,5 +1,5 @@
 ---
-slug: camarilla_founding
+slug: sect_camarilla
 title: Камарилья
 category: society
 tags: [camarilla, sect]
@@ -12,13 +12,13 @@ entities:
     slug: ventrue
     note: Управляющий Камарильей клан Вентру
   - type: clan
-    slug: brujha
+    slug: brujah
     note: Клан Бруха в составе секты
   - type: clan
     slug: gangrel
     note: Клан Гангрел в составе секты
   - type: clan
-    slug: Malkavian
+    slug: malkavian
     note: Клан Малкавиан в составе секты
   - type: clan
     slug: nosferatu
@@ -27,7 +27,7 @@ entities:
     slug: toreador
     note: Клан Тореадор в составе секты
   - type: clan
-    slug: tremer
+    slug: tremere
     note: Клан Тремер в составе секты
 ---
 

@@ -1,13 +1,13 @@
 ---
-slug: anarch_founding
+slug: sect_anarchs_founding
 title: основание Анархов
 category: history
-tags: [anarch, sect, politics]
+tags: [anarchs, sect, politics]
 era_from: 1944
 era_to: 1945
 entities:
   - type: sect
-    slug: anarch
+    slug: anarchs
     note: События полноценного основания этой секты
   - type: sect
     slug: camarilla

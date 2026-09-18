@@ -1,5 +1,5 @@
 ---
-slug: sabbat_structure
+slug: sect_sabbat_structure
 title: Структура Шабаша
 category: society
 tags: [sabbat, sect, structure, politics]
