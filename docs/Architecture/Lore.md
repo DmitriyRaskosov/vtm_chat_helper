@@ -31,3 +31,5 @@ Category - history, politics, society, geography, clans, creatures, metapl
 Type - ответ идёт в entities, где у каждого type — имя таблицы canon_* в единственном числе. sect, clan (пока), позже discipline, event, path, location
 
 Для canon_clans сидера никаких префиксов. Там slug: 'lasombra', slug: 'followers_of_set'. Это структурный slug, он идёт в БД и в URL.
+
+Кланы и bloodlines — обе в canon_clans. Различаются полем is_bloodline и parent_clan_id. В UI bloodlines показываются отдельной группой, скрыты по умолчанию. Отступники (antitribu) пока не заводятся — помечаются в листе персонажа.

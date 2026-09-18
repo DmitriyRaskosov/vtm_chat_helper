@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\CharacterType;
 use App\Enums\WorldEntityType;
+use App\Models\CanonClan;
 use App\Models\Chronicle;
 use App\Models\CopilotRequest;
 use App\Models\Message;
@@ -36,11 +37,14 @@ class CharacterTest extends TestCase
         $chronicle = Chronicle::factory()->create();
         $service = $this->app->make(WorldEntityService::class);
         $playerUser = User::factory()->create();
-        $clan = $service->create(
-            $chronicle,
-            WorldEntityType::Clan,
-            'Вентру',
-        );
+        $clan = CanonClan::query()->create([
+            'slug' => 'ventrue',
+            'name' => 'Вентру',
+            'nickname' => 'Аристократы',
+            'description' => 'test',
+            'weakness' => '',
+            'weakness_system' => '',
+        ]);
         $sire = $service->create($chronicle, WorldEntityType::Character, 'Сир');
 
         $npc = $service->create(
@@ -49,7 +53,7 @@ class CharacterTest extends TestCase
             'Виктория',
             typed: [
                 'character_type' => CharacterType::Npc,
-                'clan_entity_id' => $clan->id,
+                'clan_id' => $clan->id,
                 'sire_character_id' => $sire->id,
                 'generation' => 8,
                 'nature' => 'Architect',
@@ -69,7 +73,7 @@ class CharacterTest extends TestCase
 
         $this->assertSame(CharacterType::Npc, $npc->character->character_type);
         $this->assertNull($npc->character->user_id);
-        $this->assertSame($clan->id, $npc->character->clan_entity_id);
+        $this->assertSame($clan->id, $npc->character->clan_id);
         $this->assertSame($sire->id, $npc->character->sire_character_id);
         $this->assertSame(8, $npc->character->generation);
         $this->assertSame('Князь Праги', $npc->character->concept);
@@ -327,26 +331,22 @@ class CharacterTest extends TestCase
         $this->assertTrue($pc->character->ghouls->contains($second->character));
     }
 
-    public function test_clan_and_sire_must_belong_to_the_same_chronicle(): void
+    public function test_character_rejects_unknown_canon_clan_id(): void
     {
         $service = $this->app->make(WorldEntityService::class);
-        $clan = $service->create(
-            Chronicle::factory()->create(),
-            WorldEntityType::Clan,
-            'Вентру',
-        );
+        $chronicle = Chronicle::factory()->create();
 
-        $this->expectException(MixedChronicleException::class);
+        $this->expectException(InvalidArgumentException::class);
 
         $service->create(
-            Chronicle::factory()->create(),
+            $chronicle,
             WorldEntityType::Character,
             'Виктория',
-            typed: ['clan_entity_id' => $clan->id],
+            typed: ['clan_id' => 999_999],
         );
     }
 
-    public function test_clan_must_be_a_clan(): void
+    public function test_character_rejects_world_entity_id_as_clan_id(): void
     {
         $service = $this->app->make(WorldEntityService::class);
         $chronicle = Chronicle::factory()->create();
@@ -358,7 +358,7 @@ class CharacterTest extends TestCase
             $chronicle,
             WorldEntityType::Character,
             'Виктория',
-            typed: ['clan_entity_id' => $camarilla->id],
+            typed: ['clan_id' => $camarilla->id],
         );
     }
 

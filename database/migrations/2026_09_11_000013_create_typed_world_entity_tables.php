@@ -37,18 +37,6 @@ return new class extends Migration
             $table->unique(['id', 'entity_type'], 'factions_id_type_unique');
         });
 
-        Schema::create('clans', function (Blueprint $table) {
-            $table->unsignedBigInteger('id')->primary();
-            $table->unsignedBigInteger('chronicle_id');
-            $table->string('entity_type', 20)->default('clan');
-            $table->unsignedBigInteger('sect_faction_id')->nullable();
-            $table->string('status', 20)->default('active');
-            $table->timestamps();
-
-            $table->unique(['id', 'chronicle_id'], 'clans_id_chronicle_unique');
-            $table->unique(['id', 'entity_type'], 'clans_id_type_unique');
-        });
-
         Schema::create('coteries', function (Blueprint $table) {
             $table->unsignedBigInteger('id')->primary();
             $table->unsignedBigInteger('chronicle_id');
@@ -109,14 +97,13 @@ return new class extends Migration
 
         DB::statement("ALTER TABLE locations ADD CONSTRAINT locations_entity_type_check CHECK (entity_type = 'location')");
         DB::statement("ALTER TABLE factions ADD CONSTRAINT factions_entity_type_check CHECK (entity_type = 'faction')");
-        DB::statement("ALTER TABLE clans ADD CONSTRAINT clans_entity_type_check CHECK (entity_type = 'clan')");
         DB::statement("ALTER TABLE coteries ADD CONSTRAINT coteries_entity_type_check CHECK (entity_type = 'coterie')");
         DB::statement("ALTER TABLE circles ADD CONSTRAINT circles_entity_type_check CHECK (entity_type = 'circle')");
         DB::statement("ALTER TABLE others ADD CONSTRAINT others_entity_type_check CHECK (entity_type = 'other')");
         DB::statement("ALTER TABLE items ADD CONSTRAINT items_entity_type_check CHECK (entity_type = 'item')");
         DB::statement("ALTER TABLE concepts ADD CONSTRAINT concepts_entity_type_check CHECK (entity_type = 'concept')");
 
-        foreach (['locations', 'factions', 'clans', 'coteries', 'circles', 'others', 'items', 'concepts'] as $table) {
+        foreach (['locations', 'factions', 'coteries', 'circles', 'others', 'items', 'concepts'] as $table) {
             $this->typedIdentityForeign($table);
         }
 
@@ -134,7 +121,7 @@ return new class extends Migration
                 ->restrictOnDelete();
         });
 
-        foreach (['clans', 'coteries', 'circles'] as $table) {
+        foreach (['coteries', 'circles'] as $table) {
             Schema::table($table, function (Blueprint $blueprint) use ($table) {
                 $blueprint->foreign(['sect_faction_id', 'chronicle_id'], $table.'_sect_chronicle_foreign')
                     ->references(['id', 'chronicle_id'])
@@ -158,7 +145,6 @@ return new class extends Migration
         Schema::dropIfExists('others');
         Schema::dropIfExists('circles');
         Schema::dropIfExists('coteries');
-        Schema::dropIfExists('clans');
         Schema::dropIfExists('factions');
         Schema::dropIfExists('locations');
 

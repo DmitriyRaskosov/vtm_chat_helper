@@ -18,6 +18,7 @@ use App\Enums\WorldEntityType;
 use App\Lore\LoreEntryService;
 use App\Lore\LoreIndexer;
 use App\Memory\CharacterMemoryService;
+use App\Models\CanonClan;
 use App\Models\Character;
 use App\Models\CharacterBiography;
 use App\Models\CharacterStat;
@@ -91,15 +92,18 @@ class ContextAssemblerTest extends TestCase
         $scene = Scene::query()->active()->with('gameSession.chronicle')->firstOrFail();
         $chronicle = $scene->gameSession->chronicle;
         $entities = $this->app->make(WorldEntityService::class);
-        $clan = $entities->create(
-            $chronicle,
-            WorldEntityType::Clan,
-            'Вентру',
-        );
+        $clan = CanonClan::query()->create([
+            'slug' => 'ventrue-'.uniqid(),
+            'name' => 'Вентру',
+            'nickname' => 'Аристократы',
+            'description' => 'test',
+            'weakness' => '',
+            'weakness_system' => '',
+        ]);
         $npc = Character::query()->findOrFail(
             $entities->create($chronicle, WorldEntityType::Character, 'Виктория-'.uniqid(), typed: [
                 'character_type' => CharacterType::Npc,
-                'clan_entity_id' => $clan->id,
+                'clan_id' => $clan->id,
                 'generation' => 8,
                 'nature' => 'Architect',
                 'demeanor' => 'Director',

@@ -16,7 +16,6 @@ class ExtractionPromptBuilder
             fn (WorldEntityType $type): string => $type->value,
             [
                 WorldEntityType::Faction,
-                WorldEntityType::Clan,
                 WorldEntityType::Coterie,
                 WorldEntityType::Circle,
                 WorldEntityType::Other,

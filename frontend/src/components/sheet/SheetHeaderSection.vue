@@ -23,7 +23,7 @@
         <p class="muted">
             {{ typeLabel(sheet.character_type) }}
             <template v-if="sheet.domitor_name"> · домитор {{ sheet.domitor_name }}</template>
-            <template v-if="sheet.clan_name"> · {{ sheet.clan_name }}</template>
+            <template v-if="sheet.clan?.name"> · {{ sheet.clan.name }}</template>
         </p>
         <div class="sheet-actions">
             <button type="button" class="secondary" @click="emit('save')">Сохранить шапку</button>

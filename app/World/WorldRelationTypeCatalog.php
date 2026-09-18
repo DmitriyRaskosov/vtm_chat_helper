@@ -31,7 +31,6 @@ final class WorldRelationTypeCatalog
                 'Member of',
                 [
                     WorldEntityType::Character,
-                    WorldEntityType::Clan,
                     WorldEntityType::Coterie,
                     WorldEntityType::Circle,
                     WorldEntityType::Faction,
@@ -104,7 +103,6 @@ final class WorldRelationTypeCatalog
                 [WorldEntityType::Character],
                 [
                     WorldEntityType::Faction,
-                    WorldEntityType::Clan,
                     WorldEntityType::Coterie,
                     WorldEntityType::Circle,
                     WorldEntityType::Other,
@@ -123,7 +121,6 @@ final class WorldRelationTypeCatalog
                 [
                     WorldEntityType::Concept,
                     WorldEntityType::Faction,
-                    WorldEntityType::Clan,
                     WorldEntityType::Coterie,
                     WorldEntityType::Circle,
                     WorldEntityType::Other,

@@ -24,7 +24,7 @@ class CharacterFactory extends Factory
             'entity_type' => WorldEntityType::Character,
             'character_type' => CharacterType::Npc,
             'user_id' => null,
-            'clan_entity_id' => null,
+            'clan_id' => null,
             'sire_character_id' => null,
             'domitor_character_id' => null,
             'generation' => null,

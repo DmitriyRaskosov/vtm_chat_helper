@@ -67,12 +67,12 @@ export function useCharacterSheet() {
     });
     const place = reactive({
         sect_entity_id: '',
-        clan_entity_id: '',
+        clan_id: '',
         haven_entity_id: '',
         lore_clearance_levels: [0],
     });
-    const creating = reactive({ sect: false, clan: false, haven: false });
-    const createNames = reactive({ sect: '', clan: '', haven: '' });
+    const creating = reactive({ sect: false, haven: false });
+    const createNames = reactive({ sect: '', haven: '' });
     const merits = ref([]);
     const bloodPool = ref(0);
     const tempWillpower = ref(0);
@@ -90,9 +90,9 @@ export function useCharacterSheet() {
     const flashTimers = {};
     const extractorEnabled = ref(false);
     const extracting = ref(false);
-    const compact = computed(() => sheet.value?.character_type === 'ghoul');
-    const sects = computed(() => worldEntities.value.filter((row) => row.entity_type === 'faction'));
-    const clans = computed(() => worldEntities.value.filter((row) => row.entity_type === 'clan'));
+    const sects = computed(() => catalog.value?.sects ?? []);
+    const clans = computed(() => catalog.value?.clans ?? []);
+    const bloodlines = computed(() => catalog.value?.bloodlines ?? []);
     const havens = computed(() => worldEntities.value.filter((row) => row.entity_type === 'location'));
     const statsMap = computed(() => {
         const map = {};
@@ -208,7 +208,7 @@ export function useCharacterSheet() {
         biography.desires = next.biography?.desires ?? '';
         biography.behavioral_rules = next.biography?.behavioral_rules ?? '';
         place.sect_entity_id = next.sect_entity_id == null ? '' : String(next.sect_entity_id);
-        place.clan_entity_id = next.clan_entity_id == null ? '' : String(next.clan_entity_id);
+        place.clan_id = next.clan_id == null ? '' : String(next.clan_id);
         place.haven_entity_id = next.haven_entity_id == null ? '' : String(next.haven_entity_id);
         place.lore_clearance_levels = [...(next.lore_clearance_levels ?? [0])];
         merits.value = (next.merits_flaws ?? []).map((row) => ({ ...row }));
@@ -254,6 +254,9 @@ export function useCharacterSheet() {
                 catalog.value = {
                     ...catalogRes.data.catalog,
                     disciplineList: catalogRes.data.disciplines ?? [],
+                    clans: catalogRes.data.clans ?? [],
+                    bloodlines: catalogRes.data.bloodlines ?? [],
+                    sects: catalogRes.data.sects ?? [],
                 };
             }
             if (worldRes) {
@@ -296,8 +299,8 @@ export function useCharacterSheet() {
                 && !sects.value.some((row) => row.id === sheet.value.sect_entity_id);
         }
         if (kind === 'clan') {
-            return Boolean(sheet.value?.clan_entity_id)
-                && !clans.value.some((row) => row.id === sheet.value.clan_entity_id);
+            return Boolean(sheet.value?.clan_id)
+                && !clans.value.some((row) => row.id === sheet.value.clan_id);
         }
         return Boolean(sheet.value?.haven_entity_id)
             && !havens.value.some((row) => row.id === sheet.value.haven_entity_id);
@@ -308,7 +311,7 @@ export function useCharacterSheet() {
         try {
             const { data } = await api.put(`/characters/${sheet.value.id}/place`, {
                 sect_entity_id: optionalId(place.sect_entity_id),
-                clan_entity_id: optionalId(place.clan_entity_id),
+                clan_id: optionalId(place.clan_id),
                 haven_entity_id: optionalId(place.haven_entity_id),
                 lore_clearance_levels: [...place.lore_clearance_levels].sort((a, b) => a - b),
             });
@@ -328,15 +331,11 @@ export function useCharacterSheet() {
         try {
             const payload = kind === 'haven'
                 ? { canonical_name: name, entity_type: 'location' }
-                : kind === 'clan'
-                    ? { canonical_name: name, entity_type: 'clan' }
-                    : { canonical_name: name, entity_type: 'faction' };
+                : { canonical_name: name, entity_type: 'faction' };
             const { data } = await api.post('/world/entities', payload);
             worldEntities.value = [...worldEntities.value, data.entity];
             if (kind === 'sect') {
                 place.sect_entity_id = String(data.entity.id);
-            } else if (kind === 'clan') {
-                place.clan_entity_id = String(data.entity.id);
             } else {
                 place.haven_entity_id = String(data.entity.id);
             }
@@ -488,7 +487,6 @@ export function useCharacterSheet() {
         healthBoxes,
         healthDamage,
         flash,
-        compact,
         sects,
         clans,
         havens,

@@ -41,7 +41,6 @@ class ExtractionCandidateService
      */
     private const DIRECTORY_KINDS = [
         WorldEntityType::Faction,
-        WorldEntityType::Clan,
         WorldEntityType::Coterie,
         WorldEntityType::Circle,
         WorldEntityType::Other,
@@ -117,14 +116,14 @@ class ExtractionCandidateService
                     );
                 }
                 $candidate['kind'] = $kind->value;
-                if (! in_array($kind, [WorldEntityType::Clan, WorldEntityType::Coterie, WorldEntityType::Circle], true)) {
+                if (! in_array($kind, [WorldEntityType::Coterie, WorldEntityType::Circle], true)) {
                     unset($candidate['sect_faction_id']);
                 }
             }
 
             if (array_key_exists('sect_faction_id', $patch)) {
                 $kind = WorldEntityType::tryFrom((string) ($candidate['kind'] ?? ''));
-                if ($kind === null || ! in_array($kind, [WorldEntityType::Clan, WorldEntityType::Coterie, WorldEntityType::Circle], true)) {
+                if ($kind === null || ! in_array($kind, [WorldEntityType::Coterie, WorldEntityType::Circle], true)) {
                     unset($candidate['sect_faction_id']);
                 } else {
                     $sectId = $patch['sect_faction_id'];

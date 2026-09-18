@@ -140,6 +140,15 @@ MVP-срез — с чем работаем сейчас. Остальное **�
 
 ---
 
+## Вехи
+
+- [x] Канон отделён (canon_sects, canon_clans, canon_clan_sects, canon_clan_relations, canon_lore_entries)
+- [x] world_relations унифицирован, три контроллера слиты в WorldRelationController
+- [x] characters.clan_id → canon_clans
+- [x] WorldEntityType::Clan и таблица clans удалены
+
+---
+
 ## Правила для агентов
 
 - **Миграции:** не создавать новые файлы в `database/migrations/` без явной просьбы — править существующие create-миграции (`.cursor/rules/migrations.mdc`).

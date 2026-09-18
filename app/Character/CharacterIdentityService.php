@@ -2,6 +2,7 @@
 
 namespace App\Character;
 
+use App\Models\CanonClan;
 use App\Models\Character;
 use App\Models\WorldEntity;
 use App\Models\WorldEntityAlias;
@@ -43,9 +44,9 @@ class CharacterIdentityService
             $typed['generation'] = $generation === null || $generation === '' ? null : (int) $generation;
         }
 
-        if (array_key_exists('clan_entity_id', $fields)) {
-            $clanId = $fields['clan_entity_id'];
-            $typed['clan_entity_id'] = $clanId === null || $clanId === '' ? null : (int) $clanId;
+        if (array_key_exists('clan_id', $fields)) {
+            $clanId = $fields['clan_id'];
+            $typed['clan_id'] = $clanId === null || $clanId === '' ? null : (int) $clanId;
         }
 
         if (array_key_exists('sire_character_id', $fields)) {
@@ -103,9 +104,9 @@ class CharacterIdentityService
      */
     private function applyTyped(Character $character, array $typed): void
     {
-        if (isset($typed['clan_entity_id'])) {
-            $clan = WorldEntity::query()->findOrFail((int) $typed['clan_entity_id']);
-            $this->entities->assertClan($character->chronicle, $clan);
+        if (isset($typed['clan_id']) && $typed['clan_id'] !== null
+            && ! CanonClan::query()->whereKey((int) $typed['clan_id'])->exists()) {
+            throw new InvalidArgumentException('The selected clan does not exist.');
         }
 
         if (isset($typed['sire_character_id'])) {

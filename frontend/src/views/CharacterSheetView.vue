@@ -135,7 +135,6 @@ const {
     healthBoxes,
     healthDamage,
     flash,
-    compact,
     sects,
     clans,
     havens,

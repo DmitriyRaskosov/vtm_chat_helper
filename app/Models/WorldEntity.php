@@ -92,14 +92,6 @@ class WorldEntity extends Model
     }
 
     /**
-     * @return HasOne<Clan, $this>
-     */
-    public function clan(): HasOne
-    {
-        return $this->hasOne(Clan::class, 'id', 'id');
-    }
-
-    /**
      * @return HasOne<Coterie, $this>
      */
     public function coterie(): HasOne

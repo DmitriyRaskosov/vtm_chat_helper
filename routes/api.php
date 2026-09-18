@@ -29,7 +29,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/messages', [ChatController::class, 'store']);
 
     // frozen: character-sheet/catalog
-    //Route::get('/character-sheet/catalog', [CharacterSheetController::class, 'catalog']);
+    Route::get('/character-sheet/catalog', [CharacterSheetController::class, 'catalog']);
 
     Route::get('/characters', [CharacterSheetController::class, 'index']);
     Route::get('/characters/{character}', [CharacterSheetController::class, 'show']);

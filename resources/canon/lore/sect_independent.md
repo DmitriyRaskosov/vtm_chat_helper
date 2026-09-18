@@ -5,7 +5,7 @@ category: society
 tags: [independent, sect]
 entities:
   - type: clan
-    slug: assamites
+    slug: assamite
     note: Один из независимых кланов
   - type: clan
     slug: followers_of_set

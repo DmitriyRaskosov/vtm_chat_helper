@@ -1,5 +1,5 @@
 ---
-slug: clan_assamites
+slug: clan_assamite
 title: Ассамиты
 category: society
 tags: [independent, clan]

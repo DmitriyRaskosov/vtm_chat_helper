@@ -51,7 +51,7 @@ class EntityCatalogBuilderTest extends TestCase
     {
         $chronicle = Chronicle::query()->firstOrFail();
         $entities = $this->app->make(WorldEntityService::class);
-        $entities->create($chronicle, WorldEntityType::Clan, 'Бруха');
+        $entities->create($chronicle, WorldEntityType::Coterie, 'Котерия Бруха');
         $entities->create($chronicle, WorldEntityType::Faction, 'Шабаш');
 
         $lines = $this->app->make(EntityCatalogBuilder::class)->build(

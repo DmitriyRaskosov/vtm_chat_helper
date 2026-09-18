@@ -15,7 +15,7 @@ use App\Enums\WorldEventVisibility;
 use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\Circle;
-use App\Models\Clan;
+use App\Models\CanonClan;
 use App\Models\Concept;
 use App\Models\Coterie;
 use App\Models\Faction;
@@ -40,7 +40,6 @@ class WorldEntityService
      */
     public const DIRECTORY_TYPES = [
         WorldEntityType::Faction,
-        WorldEntityType::Clan,
         WorldEntityType::Coterie,
         WorldEntityType::Circle,
         WorldEntityType::Other,
@@ -211,23 +210,6 @@ class WorldEntityService
         });
     }
 
-    public function assertClan(Chronicle $chronicle, WorldEntity $clan): void
-    {
-        $this->assertSameChronicle($chronicle, $clan);
-
-        $type = $clan->entity_type instanceof WorldEntityType
-            ? $clan->entity_type
-            : WorldEntityType::from((string) $clan->entity_type);
-
-        if ($type !== WorldEntityType::Clan) {
-            throw new InvalidArgumentException('A character clan must be a clan in the same chronicle.');
-        }
-
-        if ($clan->status !== WorldEntityStatus::Active) {
-            throw new InvalidArgumentException('A character clan must be an active clan.');
-        }
-    }
-
     public function findByAlias(Chronicle $chronicle, string $alias): ?WorldEntity
     {
         $normalized = AliasNormalizer::normalize($alias);
@@ -328,7 +310,7 @@ class WorldEntityService
     {
         return match ($type) {
             WorldEntityType::Faction => ['status' => FactionStatus::Active],
-            WorldEntityType::Clan, WorldEntityType::Coterie, WorldEntityType::Circle => [
+            WorldEntityType::Coterie, WorldEntityType::Circle => [
                 'status' => FactionStatus::Active,
                 'sect_faction_id' => null,
             ],
@@ -356,7 +338,6 @@ class WorldEntityService
             'aliases',
             'location',
             'faction',
-            'clan',
             'coterie',
             'circle',
             'other',
@@ -375,7 +356,6 @@ class WorldEntityService
         match ($entity->entity_type) {
             WorldEntityType::Location => $this->insertLocation($entity, $typed),
             WorldEntityType::Faction => $this->insertFaction($entity, $typed),
-            WorldEntityType::Clan => $this->insertClan($entity, $typed),
             WorldEntityType::Coterie => $this->insertCoterie($entity, $typed),
             WorldEntityType::Circle => $this->insertCircle($entity, $typed),
             WorldEntityType::Other => $this->insertOther($entity, $typed),
@@ -473,19 +453,10 @@ class WorldEntityService
         ];
 
         match ($type) {
-            WorldEntityType::Clan => Clan::query()->create($payload),
             WorldEntityType::Coterie => Coterie::query()->create($payload),
             WorldEntityType::Circle => Circle::query()->create($payload),
             default => throw new InvalidArgumentException('Unsupported sect-affiliated type.'),
         };
-    }
-
-    /**
-     * @param  array<string, mixed>  $typed
-     */
-    private function insertClan(WorldEntity $entity, array $typed): void
-    {
-        $this->insertSectAffiliatedGroup($entity, $typed, WorldEntityType::Clan);
     }
 
     /**
@@ -582,11 +553,10 @@ class WorldEntityService
             throw new InvalidArgumentException('A ghoul cannot belong to a user.');
         }
 
-        $clanId = isset($typed['clan_entity_id']) ? (int) $typed['clan_entity_id'] : null;
+        $clanId = isset($typed['clan_id']) ? (int) $typed['clan_id'] : null;
 
-        if ($clanId !== null) {
-            $clan = WorldEntity::query()->findOrFail($clanId);
-            $this->assertClan($entity->chronicle, $clan);
+        if ($clanId !== null && ! CanonClan::query()->whereKey($clanId)->exists()) {
+            throw new InvalidArgumentException('The selected clan does not exist.');
         }
 
         $sireId = isset($typed['sire_character_id']) ? (int) $typed['sire_character_id'] : null;
@@ -633,7 +603,7 @@ class WorldEntityService
             'entity_type' => WorldEntityType::Character,
             'character_type' => $characterType,
             'user_id' => $userId,
-            'clan_entity_id' => $clanId,
+            'clan_id' => $clanId,
             'sire_character_id' => $sireId,
             'domitor_character_id' => $domitorId,
             'generation' => $typed['generation'] ?? null,
@@ -770,8 +740,8 @@ class WorldEntityService
             ? $entity->entity_type
             : WorldEntityType::from((string) $entity->entity_type);
 
-        if (! in_array($type, [WorldEntityType::Clan, WorldEntityType::Coterie, WorldEntityType::Circle], true)) {
-            throw new InvalidArgumentException('Only clans, coteries, and circles can have a sect faction.');
+        if (! in_array($type, [WorldEntityType::Coterie, WorldEntityType::Circle], true)) {
+            throw new InvalidArgumentException('Only coteries and circles can have a sect faction.');
         }
 
         if ($sectFactionId !== null) {
@@ -780,7 +750,6 @@ class WorldEntityService
         }
 
         match ($type) {
-            WorldEntityType::Clan => $entity->clan()->update(['sect_faction_id' => $sectFactionId]),
             WorldEntityType::Coterie => $entity->coterie()->update(['sect_faction_id' => $sectFactionId]),
             WorldEntityType::Circle => $entity->circle()->update(['sect_faction_id' => $sectFactionId]),
             default => null,
@@ -795,7 +764,7 @@ class WorldEntityService
             ? $entity->entity_type
             : WorldEntityType::from((string) $entity->entity_type);
 
-        if (! in_array($type, [WorldEntityType::Clan, WorldEntityType::Coterie, WorldEntityType::Circle], true)) {
+        if (! in_array($type, [WorldEntityType::Coterie, WorldEntityType::Circle], true)) {
             return;
         }
 

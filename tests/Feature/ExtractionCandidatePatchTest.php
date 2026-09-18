@@ -533,17 +533,17 @@ class ExtractionCandidatePatchTest extends TestCase
 
         $this->patchJson("/api/extract/{$runId}/candidates/0", [
             'candidate_type' => 'mention',
-            'kind' => 'clan',
+            'kind' => 'coterie',
         ])->assertOk()
-            ->assertJsonPath('run.candidates.mentions.0.kind', 'clan');
+            ->assertJsonPath('run.candidates.mentions.0.kind', 'coterie');
 
         $createdId = $this->postJson("/api/extract/{$runId}/candidates/0/accept", [
             'candidate_type' => 'mention',
         ])->assertOk()->json('run.candidates.mentions.0.created_entity_id');
 
-        $entity = WorldEntity::query()->with('clan')->findOrFail($createdId);
-        $this->assertSame(WorldEntityType::Clan, $entity->entity_type);
-        $this->assertNotNull($entity->clan);
+        $entity = WorldEntity::query()->with('coterie')->findOrFail($createdId);
+        $this->assertSame(WorldEntityType::Coterie, $entity->entity_type);
+        $this->assertNotNull($entity->coterie);
     }
 
     public function test_patch_mention_circle_kind_is_written_on_accept(): void
@@ -671,9 +671,9 @@ class ExtractionCandidatePatchTest extends TestCase
 
         $storyteller = User::factory()->storyteller()->create();
         $chronicle = Chronicle::query()->firstOrFail();
-        $clan = $this->app->make(WorldEntityService::class)->create(
+        $coterie = $this->app->make(WorldEntityService::class)->create(
             $chronicle,
-            WorldEntityType::Clan,
+            WorldEntityType::Coterie,
             'Гангрел',
         );
         $lore = $this->createLoreEntry($chronicle, 'Гангрелы ушли.');
@@ -686,7 +686,7 @@ class ExtractionCandidatePatchTest extends TestCase
 
         $this->patchJson("/api/extract/{$runId}/candidates/0", [
             'candidate_type' => 'mention',
-            'alias_of_entity_id' => $clan->id,
+            'alias_of_entity_id' => $coterie->id,
             'aliases' => ['Gangrel'],
         ])->assertOk();
 
@@ -696,12 +696,12 @@ class ExtractionCandidatePatchTest extends TestCase
             ->assertJsonPath('run.candidates.mentions.0.status', 'merged');
 
         $this->assertDatabaseHas('world_entity_aliases', [
-            'entity_id' => $clan->id,
+            'entity_id' => $coterie->id,
             'alias' => 'Гангрелы',
             'alias_type' => 'aka',
         ]);
         $this->assertDatabaseHas('world_entity_aliases', [
-            'entity_id' => $clan->id,
+            'entity_id' => $coterie->id,
             'alias' => 'Gangrel',
             'alias_type' => 'aka',
         ]);

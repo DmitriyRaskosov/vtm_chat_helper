@@ -19,7 +19,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'entity_type',
     'character_type',
     'user_id',
-    'clan_entity_id',
+    'clan_id',
     'sire_character_id',
     'domitor_character_id',
     'generation',
@@ -50,12 +50,9 @@ class Character extends Model
         return $this->belongsTo(User::class);
     }
 
-    /**
-     * @return BelongsTo<WorldEntity, $this>
-     */
     public function clan(): BelongsTo
     {
-        return $this->belongsTo(WorldEntity::class, 'clan_entity_id');
+        return $this->belongsTo(CanonClan::class, 'clan_id');
     }
 
     /**

@@ -18,7 +18,7 @@ class UpdateCharacterIdentityRequest extends FormRequest
     {
         return [
             'canonical_name' => ['sometimes', 'string', 'max:120'],
-            'clan_entity_id' => ['sometimes', 'nullable', 'integer', 'exists:world_entities,id'],
+            'clan_id' => ['sometimes', 'nullable', 'integer', 'exists:canon_clans,id'],
             'sire_character_id' => ['sometimes', 'nullable', 'integer', 'exists:characters,id'],
             'generation' => ['sometimes', 'nullable', 'integer', 'min:4', 'max:15'],
             'nature' => ['sometimes', 'nullable', 'string', 'max:64'],

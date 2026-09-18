@@ -8,7 +8,6 @@ use App\Enums\ItemStatus;
 use App\Enums\WorldEntityType;
 use App\Models\Character;
 use App\Models\Chronicle;
-use App\Models\Clan;
 use App\Models\Concept;
 use App\Models\Coterie;
 use App\Models\Faction;
@@ -160,14 +159,12 @@ class TypedWorldEntityTest extends TestCase
     {
         $location = Location::factory()->create();
         $faction = Faction::factory()->create();
-        $clan = Clan::factory()->create();
         $item = Item::factory()->create();
         $concept = Concept::factory()->create();
         $character = Character::factory()->create();
 
         $this->assertSame(WorldEntityType::Location, WorldEntity::query()->findOrFail($location->id)->entity_type);
         $this->assertSame(WorldEntityType::Faction, WorldEntity::query()->findOrFail($faction->id)->entity_type);
-        $this->assertSame(WorldEntityType::Clan, WorldEntity::query()->findOrFail($clan->id)->entity_type);
         $this->assertSame(WorldEntityType::Item, WorldEntity::query()->findOrFail($item->id)->entity_type);
         $this->assertSame(WorldEntityType::Concept, WorldEntity::query()->findOrFail($concept->id)->entity_type);
         $this->assertSame(WorldEntityType::Character, WorldEntity::query()->findOrFail($character->id)->entity_type);

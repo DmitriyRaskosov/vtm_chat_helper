@@ -19,7 +19,6 @@ class WorldRelationService
      */
     private const AFFILIATION_TARGETS = [
         WorldEntityType::Faction,
-        WorldEntityType::Clan,
         WorldEntityType::Coterie,
         WorldEntityType::Circle,
         WorldEntityType::Other,

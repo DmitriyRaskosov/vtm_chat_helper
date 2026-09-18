@@ -24,7 +24,6 @@ class PatchExtractionCandidateRequest extends FormRequest
             'name' => ['sometimes', 'string', 'min:1', 'max:255'],
             'kind' => ['sometimes', 'string', Rule::in([
                 WorldEntityType::Faction->value,
-                WorldEntityType::Clan->value,
                 WorldEntityType::Coterie->value,
                 WorldEntityType::Circle->value,
                 WorldEntityType::Other->value,

@@ -14,22 +14,34 @@
                             {{ sheet.sect_name }} (скрыта)
                         </option>
                         <option v-for="row in sects" :key="row.id" :value="String(row.id)">
-                            {{ row.canonical_name }}
+                            {{ row.name }}
+                        </option>
+                    </select>
+                </label>
+                <label>
+                    Секта / фракция
+                    <select v-model="place.sect_id">
+                        <option value="">—</option>
+                        <option v-if="missingPlaceOption('sect')" :value="String(sheet.sect_id)">
+                            {{ sheet.sect?.name }} (скрыта)
+                        </option>
+                        <option v-for="row in sects" :key="row.id" :value="String(row.id)">
+                            {{ row.name }}
                         </option>
                     </select>
                 </label>
                 <label>
                     Клан
-                    <select v-model="place.clan_entity_id">
+                    <select v-model="place.clan_id">
                         <option value="">—</option>
                         <option
                             v-if="missingPlaceOption('clan')"
-                            :value="String(sheet.clan_entity_id)"
+                            :value="String(sheet.clan_id)"
                         >
-                            {{ sheet.clan_name }} (скрыт)
+                            {{ sheet.clan?.name }} (скрыт)
                         </option>
                         <option v-for="row in clans" :key="row.id" :value="String(row.id)">
-                            {{ row.canonical_name }}
+                            {{ row.name }}
                         </option>
                     </select>
                 </label>
@@ -78,13 +90,6 @@
                     </div>
                 </div>
                 <div>
-                    <button class="link" type="button" @click="creating.clan = !creating.clan">Создать клан…</button>
-                    <div v-if="creating.clan" class="place-create-row">
-                        <input v-model="createNames.clan" type="text" maxlength="120" placeholder="Вентру" />
-                        <button type="button" class="secondary" @click="emit('create-entity', 'clan')">Добавить</button>
-                    </div>
-                </div>
-                <div>
                     <button class="link" type="button" @click="creating.haven = !creating.haven">Создать место…</button>
                     <div v-if="creating.haven" class="place-create-row">
                         <input v-model="createNames.haven" type="text" maxlength="120" placeholder="Элизиум" />
@@ -99,7 +104,7 @@
         </template>
         <p v-else class="muted">
             Секта / фракция: {{ sheet.sect_name || '—' }}
-            · Клан: {{ sheet.clan_name || '—' }}
+            · Клан: {{ sheet.clan?.name || '—' }}
             · Гавань: {{ sheet.haven_name || '—' }}
             · Допуск к лору: {{ loreClearanceLevelsLabel(sheet.lore_clearance_levels) }}
         </p>

@@ -351,25 +351,25 @@ class WorldDirectoryTest extends TestCase
         Sanctum::actingAs(User::factory()->storyteller()->create());
 
         $entity = $this->postJson('/api/world/entities', [
-            'canonical_name' => 'Гангрел',
-            'entity_type' => 'clan',
-            'aliases' => ['Gangrel', 'Гангрелы'],
+            'canonical_name' => 'Котерия Гангрелов',
+            'entity_type' => 'coterie',
+            'aliases' => ['Gangrel Coterie', 'Гангрелы'],
         ])->assertCreated()->json('entity');
 
-        $this->assertSame(['Gangrel', 'Гангрелы'], $entity['aliases']);
+        $this->assertSame(['Gangrel Coterie', 'Гангрелы'], $entity['aliases']);
 
         $this->putJson('/api/world/entities/'.$entity['id'], [
-            'canonical_name' => 'Гангрел',
-            'aliases' => ['Gangrel'],
+            'canonical_name' => 'Котерия Гангрелов',
+            'aliases' => ['Gangrel Coterie'],
         ])->assertOk()
-            ->assertJsonPath('entity.aliases', ['Gangrel']);
+            ->assertJsonPath('entity.aliases', ['Gangrel Coterie']);
 
         $this->assertDatabaseMissing('world_entity_aliases', [
             'entity_id' => $entity['id'],
             'alias' => 'Гангрелы',
         ]);
         $this->getJson('/api/world/entities')->assertOk()
-            ->assertJsonPath('entities.0.aliases', ['Gangrel']);
+            ->assertJsonPath('entities.0.aliases', ['Gangrel Coterie']);
     }
 
     public function test_player_cannot_update_directory_entity(): void

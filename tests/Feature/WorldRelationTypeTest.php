@@ -33,7 +33,7 @@ class WorldRelationTypeTest extends TestCase
         $this->assertFalse($memberOf->transitive);
         $this->assertTrue($memberOf->enabled);
         $this->assertSame(
-            ['character', 'clan', 'coterie', 'circle', 'faction'],
+            ['character', 'coterie', 'circle', 'faction'],
             $memberOf->allowedSourceTypeValues(),
         );
         $this->assertSame(['faction'], $memberOf->allowedTargetTypeValues());

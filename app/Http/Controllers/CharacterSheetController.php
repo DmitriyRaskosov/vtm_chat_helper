@@ -33,6 +33,8 @@ use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\Discipline;
 use App\Models\WorldEntity;
+use App\Models\CanonClan;
+use App\Models\CanonSect;
 use App\Scene\SceneParticipantService;
 use App\World\MixedChronicleException;
 use App\World\WorldEntityService;
@@ -61,24 +63,64 @@ class CharacterSheetController extends Controller
     ) {}
 
     public function catalog(): JsonResponse
-    {
-        $disciplines = Discipline::query()
-            ->orderBy('display_name')
-            ->get(['id', 'key', 'display_name', 'ruleset'])
-            ->map(fn (Discipline $row): array => [
-                'id' => (int) $row->id,
-                'key' => $row->key,
-                'display_name' => $row->display_name,
-                'ruleset' => $row->ruleset,
-            ])
-            ->values();
+{
+    $disciplines = Discipline::query()
+        ->orderBy('display_name')
+        ->get(['id', 'key', 'display_name', 'ruleset'])
+        ->map(fn (Discipline $row): array => [
+            'id' => (int) $row->id,
+            'key' => $row->key,
+            'display_name' => $row->display_name,
+            'ruleset' => $row->ruleset,
+        ])
+        ->values();
 
-        return response()->json([
-            'catalog' => $this->catalog->definition(),
-            'traits' => $this->catalog->traits(),
-            'disciplines' => $disciplines,
-        ]);
-    }
+    $clans = CanonClan::query()
+        ->where('is_playable', true)
+        ->where('is_bloodline', false)
+        ->orderBy('name')
+        ->get(['id', 'slug', 'name', 'nickname'])
+        ->map(fn (CanonClan $row): array => [
+            'id' => (int) $row->id,
+            'slug' => $row->slug,
+            'name' => $row->name,
+            'nickname' => $row->nickname,
+        ])
+        ->values();
+
+    $bloodlines = CanonClan::query()
+        ->where('is_playable', true)
+        ->where('is_bloodline', true)
+        ->orderBy('name')
+        ->get(['id', 'slug', 'name', 'nickname', 'parent_clan_id'])
+        ->map(fn (CanonClan $row): array => [
+            'id' => (int) $row->id,
+            'slug' => $row->slug,
+            'name' => $row->name,
+            'nickname' => $row->nickname,
+            'parent_clan_id' => $row->parent_clan_id === null ? null : (int) $row->parent_clan_id,
+        ])
+        ->values();
+
+    $sects = CanonSect::query()
+        ->orderBy('name')
+        ->get(['id', 'slug', 'name'])
+        ->map(fn (CanonSect $row): array => [
+            'id' => (int) $row->id,
+            'slug' => $row->slug,
+            'name' => $row->name,
+        ])
+        ->values();
+
+    return response()->json([
+        'catalog' => $this->catalog->definition(),
+        'traits' => $this->catalog->traits(),
+        'disciplines' => $disciplines,
+        'clans' => $clans,
+        'bloodlines' => $bloodlines,
+        'sects' => $sects,
+    ]);
+}
 
     public function index(Request $request): JsonResponse
     {
@@ -147,8 +189,8 @@ class CharacterSheetController extends Controller
         if (isset($validated['domitor_character_id'])) {
             $typed['domitor_character_id'] = (int) $validated['domitor_character_id'];
         }
-        if (isset($validated['clan_entity_id'])) {
-            $typed['clan_entity_id'] = (int) $validated['clan_entity_id'];
+        if (isset($validated['clan_id'])) {
+            $typed['clan_id'] = (int) $validated['clan_id'];
         }
         if (isset($validated['sire_character_id'])) {
             $typed['sire_character_id'] = (int) $validated['sire_character_id'];

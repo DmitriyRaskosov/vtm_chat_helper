@@ -9,7 +9,6 @@ use App\Context\LineTrimmer;
 use App\Context\TokenEstimator;
 use App\Models\CharacterDiscipline;
 use App\Models\CharacterStat;
-use App\Models\WorldEntity;
 
 class NpcIdentityProvider implements ContextProvider
 {
@@ -41,10 +40,11 @@ class NpcIdentityProvider implements ContextProvider
 
             $lines[] = 'Type: '.$character->character_type->value;
 
-            if ($character->clan_entity_id !== null) {
-                $clan = WorldEntity::query()->whereKey($character->clan_entity_id)->value('canonical_name');
-                if (is_string($clan) && $clan !== '') {
-                    $lines[] = "Clan: {$clan}";
+            if ($character->clan_id !== null) {
+                $character->loadMissing('clan');
+                $clanName = $character->clan?->name;
+                if (is_string($clanName) && $clanName !== '') {
+                    $lines[] = "Clan: {$clanName}";
                 }
             }
 

@@ -52,11 +52,10 @@ class UpdateWorldEntityRequest extends FormRequest
 
             if ($this->filled('sect_faction_id')
                 && ! in_array($entityType, [
-                    WorldEntityType::Clan->value,
                     WorldEntityType::Coterie->value,
                     WorldEntityType::Circle->value,
                 ], true)) {
-                $validator->errors()->add('sect_faction_id', 'Only clans, coteries, and circles can have a sect faction.');
+                $validator->errors()->add('sect_faction_id', 'Only coteries and circles can have a sect faction.');
             }
         });
     }

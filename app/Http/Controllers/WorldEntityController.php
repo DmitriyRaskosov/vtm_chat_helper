@@ -32,7 +32,6 @@ class WorldEntityController extends Controller
             ->whereIn('entity_type', $types)
             ->with([
                 'faction',
-                'clan',
                 'coterie',
                 'circle',
                 'other',
@@ -72,7 +71,7 @@ class WorldEntityController extends Controller
         if ($type === WorldEntityType::Faction && array_key_exists('parent_faction_id', $validated)) {
             $typed['parent_faction_id'] = $validated['parent_faction_id'];
         }
-        if (in_array($type, [WorldEntityType::Clan, WorldEntityType::Coterie, WorldEntityType::Circle], true)
+        if (in_array($type, [WorldEntityType::Coterie, WorldEntityType::Circle], true)
             && array_key_exists('sect_faction_id', $validated)) {
             $typed['sect_faction_id'] = $validated['sect_faction_id'];
         }
@@ -169,7 +168,6 @@ class WorldEntityController extends Controller
     {
         $entity->loadMissing([
             'faction',
-            'clan',
             'coterie',
             'circle',
             'other',
@@ -202,7 +200,6 @@ class WorldEntityController extends Controller
     private function sectFactionId(WorldEntity $entity): ?int
     {
         $id = match ($entity->entity_type) {
-            WorldEntityType::Clan => $entity->clan?->sect_faction_id,
             WorldEntityType::Coterie => $entity->coterie?->sect_faction_id,
             WorldEntityType::Circle => $entity->circle?->sect_faction_id,
             default => null,

@@ -14,8 +14,8 @@ return new class extends Migration
             $table->unsignedBigInteger('chronicle_id');
             $table->string('entity_type', 20)->default('character');
             $table->string('character_type', 20);
+            $table->foreignId('clan_id')->nullable()->after('character_type')->constrained('canon_clans')->nullOnDelete();
             $table->foreignId('user_id')->nullable()->unique()->constrained()->restrictOnDelete();
-            $table->unsignedBigInteger('clan_entity_id')->nullable();
             $table->unsignedBigInteger('sire_character_id')->nullable();
             $table->unsignedTinyInteger('generation')->nullable();
             $table->unsignedSmallInteger('apparent_age')->nullable();
@@ -48,10 +48,6 @@ SQL);
             $table->foreign(['id', 'entity_type'], 'characters_id_type_foreign')
                 ->references(['id', 'entity_type'])
                 ->on('world_entities')
-                ->restrictOnDelete();
-            $table->foreign(['clan_entity_id', 'chronicle_id'], 'characters_clan_chronicle_foreign')
-                ->references(['id', 'chronicle_id'])
-                ->on('clans')
                 ->restrictOnDelete();
             $table->foreign(['sire_character_id', 'chronicle_id'], 'characters_sire_chronicle_foreign')
                 ->references(['id', 'chronicle_id'])

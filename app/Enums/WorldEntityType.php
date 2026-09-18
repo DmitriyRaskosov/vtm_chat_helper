@@ -6,7 +6,6 @@ enum WorldEntityType: string
 {
     case Character = 'character';
     case Faction = 'faction';
-    case Clan = 'clan';
     case Coterie = 'coterie';
     case Circle = 'circle';
     case Other = 'other';
