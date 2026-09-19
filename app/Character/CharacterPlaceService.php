@@ -14,18 +14,22 @@ class CharacterPlaceService
         private CharacterIdentityService $identity,
     ) {}
 
-    /**
-     * @param  array{sect_entity_id?: int|null, clan_entity_id?: int|null, haven_entity_id?: int|null, lore_clearance_levels?: list<int>}  $fields
-     */
+    /** 
+    @param  array{sect_id?: int|null, clan_id?: int|null, haven_entity_id?: int|null, lore_clearance_levels?: list<int>}  $fields
+    */
     public function apply(Character $character, array $fields): Character
     {
         return DB::transaction(function () use ($character, $fields): Character {
-            if (array_key_exists('sect_entity_id', $fields)) {
-                $this->relations->setSect($character, $this->optionalEntity($fields['sect_entity_id']));
+            if (array_key_exists('sect_id', $fields)) {
+                $id = $fields['sect_id'];
+                $character->sect_id = ($id === null || $id === '') ? null : (int) $id;
+                $character->save();
             }
 
-            if (array_key_exists('clan_entity_id', $fields)) {
-                $this->identity->update($character, ['clan_entity_id' => $fields['clan_entity_id']]);
+            if (array_key_exists('clan_id', $fields)) {
+                $id = $fields['clan_id'];
+                $character->clan_id = ($id === null || $id === '') ? null : (int) $id;
+                $character->save();
             }
 
             if (array_key_exists('haven_entity_id', $fields)) {

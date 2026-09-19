@@ -17,7 +17,7 @@ class UpdateCharacterPlaceRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'sect_entity_id' => ['present', 'nullable', 'integer', 'exists:world_entities,id'],
+            'sect_id' => ['sometimes', 'nullable', 'integer', 'exists:canon_sects,id'],
             'clan_entity_id' => ['present', 'nullable', 'integer', 'exists:world_entities,id'],
             'haven_entity_id' => ['present', 'nullable', 'integer', 'exists:world_entities,id'],
             'lore_clearance_levels' => ['sometimes', 'array', 'min:1'],

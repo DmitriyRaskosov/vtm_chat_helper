@@ -66,7 +66,7 @@ export function useCharacterSheet() {
         behavioral_rules: '',
     });
     const place = reactive({
-        sect_entity_id: '',
+        sect_id: '',
         clan_id: '',
         haven_entity_id: '',
         lore_clearance_levels: [0],
@@ -193,29 +193,35 @@ export function useCharacterSheet() {
         }
     }
 
-    function applySheet(next) {
-        sheet.value = next;
-        identity.canonical_name = next.canonical_name ?? '';
-        identity.nature = next.nature ?? '';
-        identity.demeanor = next.demeanor ?? '';
-        identity.concept = next.concept ?? '';
-        identity.generation = next.generation;
-        biography.summary = next.biography?.summary ?? '';
-        biography.full_text = next.biography?.full_text ?? '';
-        biography.principles = next.biography?.principles ?? '';
-        biography.motivation = next.biography?.motivation ?? '';
-        biography.fears = next.biography?.fears ?? '';
-        biography.desires = next.biography?.desires ?? '';
-        biography.behavioral_rules = next.biography?.behavioral_rules ?? '';
-        place.sect_entity_id = next.sect_entity_id == null ? '' : String(next.sect_entity_id);
-        place.clan_id = next.clan_id == null ? '' : String(next.clan_id);
-        place.haven_entity_id = next.haven_entity_id == null ? '' : String(next.haven_entity_id);
-        place.lore_clearance_levels = [...(next.lore_clearance_levels ?? [0])];
-        merits.value = (next.merits_flaws ?? []).map((row) => ({ ...row }));
-        bloodPool.value = next.status?.blood_pool ?? 0;
-        tempWillpower.value = next.status?.temporary_willpower ?? 0;
-        experience.value = next.experience ?? 0;
-        healthBoxes.value = (next.health_boxes ?? []).map((box) => ({ ...box }));
+    function applySheet(character) {
+        sheet.value = character;
+
+        identity.canonical_name = character.canonical_name ?? '';
+        identity.nature = character.nature ?? '';
+        identity.demeanor = character.demeanor ?? '';
+        identity.concept = character.concept ?? '';
+        identity.generation = character.generation;
+        biography.summary = character.biography?.summary ?? '';
+        biography.full_text = character.biography?.full_text ?? '';
+        biography.principles = character.biography?.principles ?? '';
+        biography.motivation = character.biography?.motivation ?? '';
+        biography.fears = character.biography?.fears ?? '';
+        biography.desires = character.biography?.desires ?? '';
+        biography.behavioral_rules = character.biography?.behavioral_rules ?? '';
+
+        // синхронизируем place с новым состоянием персонажа
+        Object.assign(place, {
+            sect_id: character.sect_id ?? '',
+            clan_id: character.clan_id ?? '',
+            haven_entity_id: character.haven_entity_id ?? '',
+            lore_clearance_levels: [...(character.lore_clearance_levels ?? [0])],
+        });
+
+        merits.value = (character.merits_flaws ?? []).map((row) => ({ ...row }));
+        bloodPool.value = character.status?.blood_pool ?? 0;
+        tempWillpower.value = character.status?.temporary_willpower ?? 0;
+        experience.value = character.experience ?? 0;
+        healthBoxes.value = (character.health_boxes ?? []).map((box) => ({ ...box }));
         const damaged = [...healthBoxes.value].reverse().find((box) => box.damage);
         healthDamage.value = damaged?.damage ?? 'bashing';
     }
@@ -262,7 +268,9 @@ export function useCharacterSheet() {
             if (worldRes) {
                 worldEntities.value = worldRes.data.entities ?? [];
             }
-            applySheet(sheetRes.data.character);
+            if (sheetRes) {
+                applySheet(sheetRes.data.character);
+            }
             await loadExtractorStatus();
         } catch (e) {
             error.value = e.response?.data?.message ?? 'Не удалось загрузить лист.';
@@ -295,8 +303,8 @@ export function useCharacterSheet() {
 
     function missingPlaceOption(kind) {
         if (kind === 'sect') {
-            return Boolean(sheet.value?.sect_entity_id)
-                && !sects.value.some((row) => row.id === sheet.value.sect_entity_id);
+            return Boolean(sheet.value?.sect_id)
+                && !sects.value.some((row) => row.id === sheet.value.sect_id);
         }
         if (kind === 'clan') {
             return Boolean(sheet.value?.clan_id)
@@ -310,7 +318,7 @@ export function useCharacterSheet() {
         error.value = '';
         try {
             const { data } = await api.put(`/characters/${sheet.value.id}/place`, {
-                sect_entity_id: optionalId(place.sect_entity_id),
+                sect_id: optionalId(place.sect_id),
                 clan_id: optionalId(place.clan_id),
                 haven_entity_id: optionalId(place.haven_entity_id),
                 lore_clearance_levels: [...place.lore_clearance_levels].sort((a, b) => a - b),
@@ -335,7 +343,7 @@ export function useCharacterSheet() {
             const { data } = await api.post('/world/entities', payload);
             worldEntities.value = [...worldEntities.value, data.entity];
             if (kind === 'sect') {
-                place.sect_entity_id = String(data.entity.id);
+                place.sect_id = String(data.entity.id);
             } else {
                 place.haven_entity_id = String(data.entity.id);
             }

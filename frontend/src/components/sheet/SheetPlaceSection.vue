@@ -5,25 +5,10 @@
             <div class="character-create-grid">
                 <label>
                     Секта / фракция
-                    <select v-model="place.sect_entity_id">
-                        <option value="">—</option>
-                        <option
-                            v-if="missingPlaceOption('sect')"
-                            :value="String(sheet.sect_entity_id)"
-                        >
-                            {{ sheet.sect_name }} (скрыта)
-                        </option>
-                        <option v-for="row in sects" :key="row.id" :value="String(row.id)">
-                            {{ row.name }}
-                        </option>
-                    </select>
-                </label>
-                <label>
-                    Секта / фракция
                     <select v-model="place.sect_id">
                         <option value="">—</option>
                         <option v-if="missingPlaceOption('sect')" :value="String(sheet.sect_id)">
-                            {{ sheet.sect?.name }} (скрыта)
+                            {{ sheet.sect?.name || '—' }}
                         </option>
                         <option v-for="row in sects" :key="row.id" :value="String(row.id)">
                             {{ row.name }}

@@ -56,6 +56,7 @@ class CharacterSheetReader
     public function aggregate(Character $character): array
     {
         $character->load([
+            'sect',
             'stats.specializations',
             'disciplines.discipline',
             'status',
@@ -126,8 +127,12 @@ class CharacterSheetReader
                 'name' => $character->clan->name,
                 'nickname' => $character->clan->nickname,
             ] : null,
-            'sect_entity_id' => $sect === null ? null : (int) $sect->target_id,
-            'sect_name' => $sect?->target?->canonical_name,
+            'sect_id' => $character->sect_id === null ? null : (int) $character->sect_id,
+            'sect' => $character->sect ? [
+                'id' => $character->sect->id,
+                'slug' => $character->sect->slug,
+                'name' => $character->sect->name,
+            ] : null,
             'haven_entity_id' => $haven === null ? null : (int) $haven->target_id,
             'haven_name' => $haven?->target?->canonical_name,
             'lore_clearance_levels' => array_values(array_map(

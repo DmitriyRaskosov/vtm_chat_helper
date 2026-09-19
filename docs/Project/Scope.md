@@ -154,3 +154,18 @@ MVP-срез — с чем работаем сейчас. Остальное **�
 - **Миграции:** не создавать новые файлы в `database/migrations/` без явной просьбы — править существующие create-миграции (`.cursor/rules/migrations.mdc`).
 - **MVP:** правки только в активных маршрутах и их потребителях; замороженное не расширять.
 - **Тесты:** прогон — только по запросу пользователя.
+
+- [x] characters.sect_id → canon_sects, characters.clan_id → canon_clans
+- [x] UI выбора клана и секты в листе персонажа
+- [x] CharacterPlaceService пишет sect_id/clan_id напрямую
+
+на очереди:
+canon_disciplines — перенести дисциплины в канон (технический долг)
+сидеры: CanonDisciplineSeeder - дисциплины, CanonClanDisciplineSeeder - клановые дисциплины,  CanonDisciplinePowerSeeder - силы по уровням
+миграция: character_disciplines.discipline_id → FK на canon_disciplines.
+перевод catalog, CharacterSheetController::updateDisciplines, CharacterSheetReader на CanonDiscipline
+удаление модели Discipline и таблицы disciplines
+заполнить canon_clan_relations минимально
+
+после:
+Copilot + канон. ContextAssembler станет подтягивать канон в промпт: canon_clans, canon_sects, canon_clan_relations, canon_lore_entries. 

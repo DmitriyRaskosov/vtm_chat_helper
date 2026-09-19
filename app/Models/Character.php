@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Models\CanonSect;
 use App\Casts\PostgresIntegerArray;
 use App\Enums\CharacterType;
 use App\Enums\WorldEntityType;
@@ -227,6 +228,11 @@ class Character extends Model
         return $this->character_type === CharacterType::Ghoul;
     }
 
+    public function sect(): BelongsTo
+    {
+    return $this->belongsTo(CanonSect::class, 'sect_id');
+    }
+
     public function isPlayableBy(?User $user): bool
     {
         if ($user === null) {
@@ -252,7 +258,6 @@ class Character extends Model
     {
         return [
             'id' => 'integer',
-            'entity_type' => WorldEntityType::class,
             'character_type' => CharacterType::class,
             'lore_clearance_levels' => PostgresIntegerArray::class,
             'domitor_character_id' => 'integer',
