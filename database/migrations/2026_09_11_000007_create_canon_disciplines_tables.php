@@ -15,6 +15,7 @@ return new class extends Migration
             $table->text('name');
             $table->text('description');
             $table->boolean('is_common');
+            $table->timestamps();
         });
 
         Schema::create('canon_clan_disciplines', function (Blueprint $table) {
@@ -27,6 +28,7 @@ return new class extends Migration
             $table->boolean('is_in_clan');
 
             $table->primary(['clan_id', 'discipline_id']);
+            $table->timestamps();
         });
 
         Schema::create('canon_discipline_powers', function (Blueprint $table) {
@@ -41,6 +43,8 @@ return new class extends Migration
             $table->text('source_book');
 
             $table->unique(['discipline_id', 'level', 'name'], 'canon_discipline_powers_discipline_level_name_unique');
+            $table->unique(['id', 'discipline_id'], 'canon_discipline_powers_id_discipline_unique');
+            $table->timestamps();
         });
 
         DB::statement('ALTER TABLE canon_discipline_powers ADD CONSTRAINT canon_discipline_powers_level_check CHECK (level >= 1 AND level <= 9)');

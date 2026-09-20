@@ -44,33 +44,6 @@ return new class extends Migration
         DB::statement('ALTER TABLE character_status DROP CONSTRAINT character_status_health_state_check');
         DB::statement("ALTER TABLE character_status ADD CONSTRAINT character_status_health_state_check CHECK (health_state IN ('healthy', 'bruised', 'hurt', 'injured', 'wounded', 'mauled', 'crippled', 'incapacitated', 'torpor'))");
 
-        $now = now();
-        $disciplines = [
-            ['animalism', 'Animalism'],
-            ['auspex', 'Auspex'],
-            ['celerity', 'Celerity'],
-            ['dominate', 'Dominate'],
-            ['fortitude', 'Fortitude'],
-            ['obfuscate', 'Obfuscate'],
-            ['potence', 'Potence'],
-            ['presence', 'Presence'],
-            ['protean', 'Protean'],
-        ];
-
-        foreach ($disciplines as [$key, $name]) {
-            $exists = DB::table('disciplines')->where('ruleset', 'v20')->where('key', $key)->exists();
-            if ($exists) {
-                continue;
-            }
-
-            DB::table('disciplines')->insert([
-                'ruleset' => 'v20',
-                'key' => $key,
-                'display_name' => $name,
-                'created_at' => $now,
-                'updated_at' => $now,
-            ]);
-        }
     }
 
     public function down(): void

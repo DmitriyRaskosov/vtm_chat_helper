@@ -9,35 +9,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('disciplines', function (Blueprint $table) {
-            $table->id();
-            $table->string('ruleset', 64);
-            $table->string('key', 64);
-            $table->string('display_name', 120);
-            $table->timestamps();
-
-            $table->unique(['ruleset', 'key'], 'disciplines_ruleset_key_unique');
-        });
-
-        Schema::create('discipline_powers', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('discipline_id')->constrained('disciplines')->restrictOnDelete();
-            $table->string('key', 64);
-            $table->string('display_name', 120);
-            $table->unsignedTinyInteger('required_level');
-            $table->string('rule_key', 80)->nullable();
-            $table->timestamps();
-
-            $table->unique(['discipline_id', 'key'], 'discipline_powers_discipline_key_unique');
-            $table->unique(['id', 'discipline_id'], 'discipline_powers_id_discipline_unique');
-        });
-
-        DB::statement('ALTER TABLE discipline_powers ADD CONSTRAINT discipline_powers_required_level_check CHECK (required_level BETWEEN 1 AND 9)');
-
         Schema::create('character_disciplines', function (Blueprint $table) {
             $table->id();
             $table->foreignId('character_id')->constrained('characters')->restrictOnDelete();
-            $table->foreignId('discipline_id')->constrained('disciplines')->restrictOnDelete();
+            $table->foreignId('discipline_id')->constrained('canon_disciplines')->restrictOnDelete();
             $table->unsignedTinyInteger('level');
             $table->timestamps();
 
@@ -66,7 +41,7 @@ return new class extends Migration
                 ->restrictOnDelete();
             $table->foreign(['discipline_power_id', 'discipline_id'], 'character_powers_power_discipline_foreign')
                 ->references(['id', 'discipline_id'])
-                ->on('discipline_powers')
+                ->on('canon_discipline_powers')
                 ->restrictOnDelete();
         });
 
@@ -79,8 +54,8 @@ DECLARE
     known_level integer;
     needed_level integer;
 BEGIN
-    SELECT required_level INTO needed_level
-    FROM discipline_powers
+    SELECT level INTO needed_level
+    FROM canon_discipline_powers
     WHERE id = NEW.discipline_power_id;
 
     SELECT level INTO known_level
@@ -111,10 +86,10 @@ BEGIN
     IF EXISTS (
         SELECT 1
         FROM character_powers
-        JOIN discipline_powers ON discipline_powers.id = character_powers.discipline_power_id
+        JOIN canon_discipline_powers ON canon_discipline_powers.id = character_powers.discipline_power_id
         WHERE character_powers.character_id = NEW.character_id
           AND character_powers.discipline_id = NEW.discipline_id
-          AND discipline_powers.required_level > NEW.level
+          AND canon_discipline_powers.level > NEW.level
     ) THEN
         RAISE EXCEPTION 'Character discipline level is below a learned power required level.';
     END IF;
@@ -143,7 +118,5 @@ SQL);
 
         Schema::dropIfExists('character_powers');
         Schema::dropIfExists('character_disciplines');
-        Schema::dropIfExists('discipline_powers');
-        Schema::dropIfExists('disciplines');
     }
 };

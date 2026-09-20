@@ -18,7 +18,7 @@ class UpdateCharacterDisciplinesRequest extends FormRequest
     {
         return [
             'disciplines' => ['required', 'array'],
-            'disciplines.*.discipline_id' => ['required', 'integer', 'exists:disciplines,id'],
+            'disciplines.*.discipline_id' => ['required', 'integer', 'exists:canon_disciplines,id'],
             'disciplines.*.level' => ['required', 'integer', 'min:0', 'max:9'],
         ];
     }

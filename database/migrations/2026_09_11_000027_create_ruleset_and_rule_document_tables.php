@@ -78,7 +78,7 @@ SQL);
         Schema::create('rule_document_disciplines', function (Blueprint $table) {
             $table->id();
             $table->foreignId('rule_document_id')->constrained('rule_documents')->restrictOnDelete();
-            $table->foreignId('discipline_id')->constrained('disciplines')->restrictOnDelete();
+            $table->foreignId('discipline_id')->constrained('canon_disciplines')->restrictOnDelete();
             $table->timestamps();
 
             $table->unique(['rule_document_id', 'discipline_id'], 'rule_document_disciplines_unique');
@@ -87,7 +87,7 @@ SQL);
         Schema::create('rule_document_powers', function (Blueprint $table) {
             $table->id();
             $table->foreignId('rule_document_id')->constrained('rule_documents')->restrictOnDelete();
-            $table->foreignId('discipline_power_id')->constrained('discipline_powers')->restrictOnDelete();
+            $table->foreignId('discipline_power_id')->constrained('canon_discipline_powers')->restrictOnDelete();
             $table->timestamps();
 
             $table->unique(['rule_document_id', 'discipline_power_id'], 'rule_document_powers_unique');

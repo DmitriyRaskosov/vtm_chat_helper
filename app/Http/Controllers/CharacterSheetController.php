@@ -31,7 +31,7 @@ use App\Http\Requests\UpdateCharacterStatsRequest;
 use App\Http\Requests\UpdateCharacterStatusRequest;
 use App\Models\Character;
 use App\Models\Chronicle;
-use App\Models\Discipline;
+use App\Models\CanonDiscipline;
 use App\Models\WorldEntity;
 use App\Models\CanonClan;
 use App\Models\CanonSect;
@@ -64,16 +64,17 @@ class CharacterSheetController extends Controller
 
     public function catalog(): JsonResponse
 {
-    $disciplines = Discipline::query()
-        ->orderBy('display_name')
-        ->get(['id', 'key', 'display_name', 'ruleset'])
-        ->map(fn (Discipline $row): array => [
-            'id' => (int) $row->id,
-            'key' => $row->key,
-            'display_name' => $row->display_name,
-            'ruleset' => $row->ruleset,
-        ])
-        ->values();
+    $disciplines = CanonDiscipline::query()
+    ->orderBy('name')
+    ->get(['id', 'slug', 'name', 'description', 'is_common'])
+    ->map(fn (CanonDiscipline $row): array => [
+        'id' => (int) $row->id,
+        'slug' => $row->slug,
+        'name' => $row->name,
+        'description' => $row->description,
+        'is_common' => (bool) $row->is_common,
+    ])
+    ->values();
 
     $clans = CanonClan::query()
         ->where('is_playable', true)
@@ -332,7 +333,7 @@ class CharacterSheetController extends Controller
         try {
             DB::transaction(function () use ($request, $character): void {
                 foreach ($request->validated('disciplines') as $row) {
-                    $discipline = Discipline::query()->findOrFail((int) $row['discipline_id']);
+                    $discipline = CanonDiscipline::query()->findOrFail((int) $row['discipline_id']);
                     $level = (int) $row['level'];
                     if ($level === 0) {
                         $this->disciplines->clearCharacterDiscipline($character, $discipline);

@@ -31,7 +31,7 @@ class CharacterDiscipline extends Model
      */
     public function discipline(): BelongsTo
     {
-        return $this->belongsTo(Discipline::class);
+        return $this->belongsTo(CanonDiscipline::class);
     }
 
     protected function casts(): array

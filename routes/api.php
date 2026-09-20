@@ -57,10 +57,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/game-sessions', [GameSessionController::class, 'store']);
         Route::post('/characters', [CharacterSheetController::class, 'store']);
 
-        // frozen: archive / restore / place
-        //Route::post('/characters/{character}/archive', [CharacterSheetController::class, 'archive']);
-        //Route::post('/characters/{character}/restore', [CharacterSheetController::class, 'restore']);
-        //Route::put('/characters/{character}/place', [CharacterSheetController::class, 'updatePlace']);
+        // Пока ещё НЕ заморожены: archive / restore / place
+        Route::post('/characters/{character}/archive', [CharacterSheetController::class, 'archive']);
+        Route::post('/characters/{character}/restore', [CharacterSheetController::class, 'restore']);
+        Route::put('/characters/{character}/place', [CharacterSheetController::class, 'updatePlace']);
 
         Route::get('/world/entities', [WorldEntityController::class, 'index']);
         Route::post('/world/entities', [WorldEntityController::class, 'store']);

@@ -154,8 +154,8 @@ class CharacterSheetReader
             'stats' => $stats,
             'disciplines' => $character->disciplines->map(fn ($row): array => [
                 'discipline_id' => (int) $row->discipline_id,
-                'key' => $row->discipline?->key,
-                'display_name' => $row->discipline?->display_name,
+                'slug' => $row->discipline?->slug,
+                'name' => $row->discipline?->name,
                 'level' => (int) $row->level,
             ])->values()->all(),
             'status' => $status === null ? null : [

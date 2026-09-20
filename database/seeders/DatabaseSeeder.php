@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
             CanonClanSeeder::class,
             CanonClanSectSeeder::class,
             CanonClanRelationSeeder::class,
+            CanonDisciplineSeeder::class,
+            CanonClanDisciplineSeeder::class,
         ]);
 
         Artisan::call('canon:import-lore');

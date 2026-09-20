@@ -88,7 +88,7 @@
             </div>
         </template>
         <p v-else class="muted">
-            Секта / фракция: {{ sheet.sect_name || '—' }}
+            Секта / фракция: {{ sheet.sect?.name || '—' }}
             · Клан: {{ sheet.clan?.name || '—' }}
             · Гавань: {{ sheet.haven_name || '—' }}
             · Допуск к лору: {{ loreClearanceLevelsLabel(sheet.lore_clearance_levels) }}

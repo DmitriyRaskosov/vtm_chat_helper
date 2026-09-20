@@ -18,8 +18,8 @@ class UpdateCharacterPlaceRequest extends FormRequest
     {
         return [
             'sect_id' => ['sometimes', 'nullable', 'integer', 'exists:canon_sects,id'],
-            'clan_entity_id' => ['present', 'nullable', 'integer', 'exists:world_entities,id'],
-            'haven_entity_id' => ['present', 'nullable', 'integer', 'exists:world_entities,id'],
+            'clan_id' => ['sometimes', 'nullable', 'integer', 'exists:canon_clans,id'],
+            'haven_entity_id' => ['sometimes', 'nullable', 'integer', 'exists:world_entities,id'],
             'lore_clearance_levels' => ['sometimes', 'array', 'min:1'],
             'lore_clearance_levels.*' => ['integer', 'min:0', 'max:5'],
         ];

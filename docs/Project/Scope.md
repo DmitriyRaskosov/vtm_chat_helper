@@ -142,10 +142,13 @@ MVP-срез — с чем работаем сейчас. Остальное **�
 
 ## Вехи
 
-- [x] Канон отделён (canon_sects, canon_clans, canon_clan_sects, canon_clan_relations, canon_lore_entries)
+- [x] Канон отделён - canon_sects, canon_clans, canon_clan_sects, canon_clan_relations, canon_lore_entries
+- [x] canon_disciplines, canon_clan_disciplines, canon_discipline_powers
 - [x] world_relations унифицирован, три контроллера слиты в WorldRelationController
-- [x] characters.clan_id → canon_clans
+- [x] characters.clan_id → canon_clans, characters.sect_id → canon_sects
 - [x] WorldEntityType::Clan и таблица clans удалены
+- [x] character_disciplines.discipline_id → canon_disciplines
+- [x] UI: кланы, секты, дисциплины через канон
 
 ---
 
@@ -159,13 +162,23 @@ MVP-срез — с чем работаем сейчас. Остальное **�
 - [x] UI выбора клана и секты в листе персонажа
 - [x] CharacterPlaceService пишет sect_id/clan_id напрямую
 
-на очереди:
-canon_disciplines — перенести дисциплины в канон (технический долг)
-сидеры: CanonDisciplineSeeder - дисциплины, CanonClanDisciplineSeeder - клановые дисциплины,  CanonDisciplinePowerSeeder - силы по уровням
-миграция: character_disciplines.discipline_id → FK на canon_disciplines.
-перевод catalog, CharacterSheetController::updateDisciplines, CharacterSheetReader на CanonDiscipline
-удаление модели Discipline и таблицы disciplines
-заполнить canon_clan_relations минимально
+## Заморожено (разморозить при необходимости)
 
-после:
+- RuleDocumentService и модели Discipline/DisciplinePower — перевести на canon_* при разморозке рулбука
+- Тесты WorldDirectoryTest — использовать sect_id вместо sect_entity_id
+- memory_*, canon_events, RAG — не в MVP
+
+на очереди:
+
 Copilot + канон. ContextAssembler станет подтягивать канон в промпт: canon_clans, canon_sects, canon_clan_relations, canon_lore_entries. 
+
+## Отложено (решение — вернуться позже)
+
+- [ ] CanonDisciplinePowerSeeder — силы по уровням
+      Решение: сначала Copilot + канон, потом понять, нужны ли силы вообще.
+      Если нужны — MVP-набор: 5 дисциплин × 5 уровней = 25 пауэров.
+      Если нет — оставить только level дисциплины, без character_powers.
+
+- [ ]  заполнить canon_clan_relations минимально
+
+- [ ] UI «Выучить силу» — зависит от решения выше.

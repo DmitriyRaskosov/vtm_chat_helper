@@ -34,7 +34,7 @@ class CharacterPower extends Model
      */
     public function discipline(): BelongsTo
     {
-        return $this->belongsTo(Discipline::class);
+        return $this->belongsTo(CanonDiscipline::class);
     }
 
     /**
@@ -42,7 +42,7 @@ class CharacterPower extends Model
      */
     public function power(): BelongsTo
     {
-        return $this->belongsTo(DisciplinePower::class, 'discipline_power_id');
+        return $this->belongsTo(CanonDisciplinePower::class, 'discipline_power_id');
     }
 
     protected function casts(): array

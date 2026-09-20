@@ -5,7 +5,7 @@
             <div>
                 <h3>Disciplines</h3>
                 <div v-for="row in disciplineRows" :key="row.discipline_id" class="trait-row">
-                    <span>{{ row.display_name }}</span>
+                    <span>{{ row.name }}</span>   
                     <TraitDots
                         :value="row.level"
                         :max="5"
@@ -21,7 +21,7 @@
                             :key="item.id"
                             :value="item.id"
                         >
-                            {{ item.display_name }}
+                            {{ item.name }}   
                         </option>
                     </select>
                 </label>
