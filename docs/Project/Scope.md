@@ -168,17 +168,15 @@ MVP-срез — с чем работаем сейчас. Остальное **�
 - Тесты WorldDirectoryTest — использовать sect_id вместо sect_entity_id
 - memory_*, canon_events, RAG — не в MVP
 
-на очереди:
+## MVP готов (21.09.2026)
 
-Copilot + канон. ContextAssembler станет подтягивать канон в промпт: canon_clans, canon_sects, canon_clan_relations, canon_lore_entries. 
+- [x] Copilot: синопсис → 3 драфта от NPC с клановой персонажностью
+- [x] DeepSeek API (замена Ollama)
+- [x] UI: панель рассказчика в чате
+- [x] Контекст: сцена + сообщения + клан + секта + слабость + лор
+- [x] Канон: canon_sects, canon_clans, canon_clan_relations, canon_lore_entries
+- [x] Клан/секта персонажа → канон
 
-## Отложено (решение — вернуться позже)
+## Дальнейшие шаги
 
-- [ ] CanonDisciplinePowerSeeder — силы по уровням
-      Решение: сначала Copilot + канон, потом понять, нужны ли силы вообще.
-      Если нужны — MVP-набор: 5 дисциплин × 5 уровней = 25 пауэров.
-      Если нет — оставить только level дисциплины, без character_powers.
-
-- [ ]  заполнить canon_clan_relations минимально
-
-- [ ] UI «Выучить силу» — зависит от решения выше.
+- Вынос MVP из всей рухляди в отдельный проект, сделав его стартовой точкой.
