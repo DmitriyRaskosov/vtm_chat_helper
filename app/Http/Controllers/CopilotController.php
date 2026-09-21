@@ -56,10 +56,10 @@ class CopilotController extends Controller
                 $characterId,
             );
         } catch (ConnectionException|RequestException) {
-            return response()->json(['message' => 'Ollama is unavailable.'], 503);
+            return response()->json(['message' => 'LLM provider is unavailable.'], 503);
         } catch (RuntimeException $e) {
-            if ($e->getMessage() === 'Ollama is unavailable.') {
-                return response()->json(['message' => 'Ollama is unavailable.'], 503);
+            if ($e->getMessage() === 'LLM provider is unavailable.') {
+                return response()->json(['message' => 'LLM provider is unavailable.'], 503);
             }
 
             return response()->json(['message' => $e->getMessage()], 502);

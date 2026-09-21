@@ -46,6 +46,23 @@ class NpcIdentityProvider implements ContextProvider
                 if (is_string($clanName) && $clanName !== '') {
                     $lines[] = "Clan: {$clanName}";
                 }
+                $clanWeakness = $character->clan?->weakness;
+                if (is_string($clanWeakness) && $clanWeakness !== '') {
+                    $lines[] = "Clan weakness: {$clanWeakness}";
+                }
+            }
+
+            if ($character->sect_id !== null) {
+                $character->loadMissing('sect');
+                $sectName = $character->sect?->name;
+                if (is_string($sectName) && $sectName !== '') {
+                    $lines[] = "Sect: {$sectName}";
+                }
+            }
+
+            $clan = $character->clan;
+            if ($clan !== null && is_string($clan->weakness) && $clan->weakness !== '') {
+                $lines[] = "Clan weakness: {$clan->weakness}";
             }
 
             if ($character->generation !== null) {
@@ -74,9 +91,15 @@ class NpcIdentityProvider implements ContextProvider
                         continue;
                     }
                     $disciplineIds[] = (int) $row->id;
-                    $lines[] = 'Discipline: '.$row->discipline->display_name.' '.$row->level;
+                    $lines[] = 'Discipline: '.$row->discipline->name.' '.$row->level;
                 }
             }
+            if ($character->sect_id !== null) {
+                $character->loadMissing('sect');
+                $lines[] = "Sect: {$character->sect?->name}";
+            }
+
+            $lines[] = "Clan weakness: {$clan->weakness}";
         }
 
         [$content, $truncated] = $this->trimmer->prefix('## NPC identity', $lines, $tokenBudget);

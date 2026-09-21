@@ -6,12 +6,9 @@ use App\Context\Providers\BiographyProvider;
 use App\Context\Providers\ClosingInstructionProvider;
 use App\Context\Providers\ContextProvider;
 use App\Context\Providers\DirectRelationsProvider;
-use App\Context\Providers\MemoryGraphProvider;
 use App\Context\Providers\NpcIdentityProvider;
 use App\Context\Providers\RecentMessagesProvider;
-use App\Context\Providers\RulesProvider;
 use App\Context\Providers\SceneProvider;
-use App\Context\Providers\StatusProvider;
 use App\Context\Providers\StorytellerPromptProvider;
 use App\Context\Providers\SystemPromptProvider;
 use App\Context\Providers\WorldLoreProvider;
@@ -35,14 +32,11 @@ class ContextAssembler
     public const USER_ORDER = [
         'npc_identity',
         'scene',
-        'status',
         'storyteller_prompt',
         'recent_messages',
         'direct_relations',
         'biography',
-        'memory_graph',
         'world_lore',
-        'rules',
         'closing',
     ];
 
@@ -52,9 +46,7 @@ class ContextAssembler
     private const OPTIONAL = [
         'direct_relations',
         'biography',
-        'memory_graph',
         'world_lore',
-        'rules',
     ];
 
     /**
@@ -67,28 +59,22 @@ class ContextAssembler
         SystemPromptProvider $system,
         NpcIdentityProvider $identity,
         SceneProvider $scene,
-        StatusProvider $status,
         StorytellerPromptProvider $prompt,
         private RecentMessagesProvider $recentMessages,
         DirectRelationsProvider $relations,
         BiographyProvider $biography,
-        MemoryGraphProvider $memory,
         WorldLoreProvider $world,
-        RulesProvider $rules,
         ClosingInstructionProvider $closing,
     ) {
         $this->providers = [
             $system->key() => $system,
             $identity->key() => $identity,
             $scene->key() => $scene,
-            $status->key() => $status,
             $prompt->key() => $prompt,
             $this->recentMessages->key() => $this->recentMessages,
             $relations->key() => $relations,
             $biography->key() => $biography,
-            $memory->key() => $memory,
             $world->key() => $world,
-            $rules->key() => $rules,
             $closing->key() => $closing,
         ];
     }
@@ -216,15 +202,10 @@ class ContextAssembler
      */
     private function requiredWithoutHistory(ContextAssembly $assembly, array &$timings): array
     {
-        $keys = $assembly->request->pass === ContextPass::Topics
-            ? ['system', 'npc_identity', 'scene', 'storyteller_prompt', 'closing']
-            : ['system', 'npc_identity', 'scene', 'status', 'storyteller_prompt', 'closing'];
+        $keys = ['system', 'npc_identity', 'scene', 'storyteller_prompt', 'closing'];
         $sections = [];
         foreach ($keys as $key) {
             $sections[$key] = $this->assembleTimed($key, $assembly, $this->sectionMax($key), $timings);
-        }
-        if (! isset($sections['status'])) {
-            $sections['status'] = ContextSection::omitted('status', ['reason' => 'not_in_pass']);
         }
         $sections['recent_messages'] = ContextSection::omitted('recent_messages', [
             'message_ids' => [],
@@ -324,7 +305,7 @@ class ContextAssembler
             $counts[$key] = $section->tokenEstimate;
         }
 
-        $statusRevision = $sections['status']->provenance['revision'] ?? null;
+        $statusRevision = null;
         $biographyVersion = $sections['biography']->provenance['biography_version'] ?? null;
         $contextRevision = $sections['scene']->provenance['context_revision'] ?? null;
 

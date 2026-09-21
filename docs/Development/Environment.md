@@ -15,6 +15,21 @@
 | `OLLAMA_CONTEXT_LENGTH` | `16384` | Размер runtime context window Ollama (`num_ctx`) |
 | `OLLAMA_MAX_OUTPUT_TOKENS` | `3000` | Максимум токенов генерации (`num_predict`) |
 
+## LLM (Copilot chat)
+
+| Переменная | По умолчанию | Описание |
+|------------|--------------|----------|
+| `LLM_DRIVER` | `ollama` | `ollama` — локальная Ollama; `deepseek` — внешний API |
+| `LLM_JSON_MODE` | `true` | JSON-ответы, если провайдер поддерживает |
+| `LLM_MAX_OUTPUT_TOKENS` | `3000` | Лимит генерации (перекрывается per-request) |
+| `LLM_TEMPERATURE` | `0.7` | Температура по умолчанию |
+| `DEEPSEEK_API_KEY` | — | **Только локальный `.env`**, не коммитить. Нужен при `LLM_DRIVER=deepseek` |
+| `DEEPSEEK_BASE_URL` | `https://api.deepseek.com/v1` | Base URL DeepSeek API |
+| `DEEPSEEK_CHAT_MODEL` | `deepseek-chat` | Модель чата |
+| `DEEPSEEK_TIMEOUT` | `120` | HTTP-таймаут (сек) |
+
+Конфиг: `config/llm.php`. Реализация: `app/Llm/DeepSeekChatProvider.php`, биндинг в `AppServiceProvider`. Embeddings и RAG по-прежнему через Ollama (`RAG_*`, `OLLAMA_*`).
+
 ## Copilot (опционально)
 
 | Переменная | По умолчанию | Описание |

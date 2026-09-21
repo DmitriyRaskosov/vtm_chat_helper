@@ -43,7 +43,7 @@ class NpcCopilotService
                 'temperature' => (float) config('copilot.topic_temperature', 0.2),
             ], []);
         } catch (\Throwable $e) {
-            throw new RuntimeException('Ollama is unavailable.', 0, $e);
+            throw new RuntimeException('LLM provider is unavailable.', 0, $e);
         }
 
         $topics = $this->parseTopics($topicTurn->content, $prompt);
@@ -65,7 +65,7 @@ class NpcCopilotService
         try {
             $raw = $this->completeWithTools($messages, $scene, $toolInvocations, $loopTokens);
         } catch (\Throwable $e) {
-            throw new RuntimeException('Ollama is unavailable.', 0, $e);
+            throw new RuntimeException('LLM provider is unavailable.', 0, $e);
         }
 
         $metadata['topics'] = $topics;
@@ -85,10 +85,17 @@ class NpcCopilotService
         return new CopilotDraftResult(
             $this->parseDrafts($raw, $draftCount),
             $metadata,
-            (string) config('ollama.chat_model'),
+            (string) config('llm.deepseek.chat_model'),
             ContextBuilder::VERSION,
             ContextBuilder::PROMPT_VERSION,
         );
+    }
+
+    private function resolveModelName(): string
+    {
+        return config('llm.driver') === 'deepseek'
+            ? (string) config('llm.deepseek.chat_model')
+            : (string) config('ollama.chat_model');
     }
 
     /**

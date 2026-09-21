@@ -162,7 +162,7 @@ class ExtractController extends Controller
                 ], 503);
             }
 
-            return response()->json(['message' => 'Ollama is unavailable.'], 503);
+            return response()->json(['message' => 'LLM provider is unavailable.'], 503);
         } catch (ExtractionParseException $e) {
             return response()->json(['message' => $e->getMessage()], 502);
         } catch (RuntimeException $e) {
@@ -170,8 +170,8 @@ class ExtractController extends Controller
                 throw $e;
             }
 
-            if ($e->getMessage() === 'Ollama is unavailable.') {
-                return response()->json(['message' => 'Ollama is unavailable.'], 503);
+            if ($e->getMessage() === 'LLM provider is unavailable.') {
+                return response()->json(['message' => 'LLM provider is unavailable.'], 503);
             }
 
             return response()->json(['message' => $e->getMessage()], 502);
@@ -204,7 +204,7 @@ class ExtractController extends Controller
         } catch (ExtractionParseException|ExtractionTokenLimitException $e) {
             return response()->json(['message' => $e->getMessage()], 502);
         } catch (ConnectionException|RequestException $e) {
-            return response()->json(['message' => 'Ollama is unavailable.'], 503);
+            return response()->json(['message' => 'LLM provider is unavailable.'], 503);
         } catch (InvalidArgumentException $e) {
             abort(422, $e->getMessage());
         }

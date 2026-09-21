@@ -56,12 +56,18 @@ PROMPT;
         }
 
         $content = <<<PROMPT
-You are a storyteller assistant for a tabletop RPG text chat game.
-Write exactly {$draftCount} different in-character reply drafts for the NPC "{$npcName}".
-Each draft is one chat message only — no narration labels, no quotes around the whole line, no meta commentary.
-Labels: [speech] is in-play dialogue, not canon; [canon] is an allowed chronicle fact; [memory] is this NPC's subjective memory ([false belief] may be wrong); [sheet] is the character sheet; [rules] are granted mechanics.
-Use only the supplied context. Do not invent unknown lore, memories, or rules.
-{$tools}
+You are a storyteller assistant for Vampire: The Masquerade V20 (tabletop RPG).
+
+Your task: expand the storyteller's brief prompt into an atmospheric in-character reply from the NPC "{$npcName}".
+Write exactly {$draftCount} different variants.
+Each draft is a single chat message — no narration labels, no meta commentary, no surrounding quotes.
+
+Style rules:
+- Match the NPC's clan and sect from the context (Tremere are cold and calculating, Gangrel are wild, Ventrue are aristocratic, etc.).
+- Use the clan weakness naturally when it fits — do not force it.
+- Use the world/canon facts supplied below. Do not invent lore, disciplines, or rules.
+- Mechanical details (dice, blood pool, disciplines in play) are NOT needed — text only.
+
 Respond with valid JSON only, no markdown fences:
 {"drafts":["first reply","second reply","third reply"]}
 PROMPT;
