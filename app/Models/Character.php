@@ -105,14 +105,6 @@ class Character extends Model
     }
 
     /**
-     * @return HasMany<CharacterStat, $this>
-     */
-    public function stats(): HasMany
-    {
-        return $this->hasMany(CharacterStat::class);
-    }
-
-    /**
      * @return HasMany<CharacterDiscipline, $this>
      */
     public function disciplines(): HasMany
@@ -169,14 +161,6 @@ class Character extends Model
     }
 
     /**
-     * @return HasMany<CharacterBioChunk, $this>
-     */
-    public function bioChunks(): HasMany
-    {
-        return $this->hasMany(CharacterBioChunk::class);
-    }
-
-    /**
      * @return HasMany<WorldRelation, $this>
      */
     public function outgoingRelations(): HasMany
@@ -223,11 +207,6 @@ class Character extends Model
         return $this->character_type === CharacterType::Npc;
     }
 
-    public function isGhoul(): bool
-    {
-        return $this->character_type === CharacterType::Ghoul;
-    }
-
     public function sect(): BelongsTo
     {
     return $this->belongsTo(CanonSect::class, 'sect_id');
@@ -241,10 +220,6 @@ class Character extends Model
 
         if ($this->character_type === CharacterType::Player) {
             return (int) $this->user_id === (int) $user->id;
-        }
-
-        if ($this->character_type !== CharacterType::Ghoul) {
-            return false;
         }
 
         $domitorUserId = $this->relationLoaded('domitor')
@@ -265,7 +240,6 @@ class Character extends Model
             'apparent_age' => 'integer',
             'actual_age' => 'integer',
             'is_active' => 'boolean',
-            'experience' => 'integer',
         ];
     }
 }

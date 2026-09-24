@@ -40,21 +40,7 @@ return new class extends Migration
             $table->unique(['lore_entry_id', 'entity_type', 'entity_id']);
             $table->index(['entity_type', 'entity_id']);
         });
-
-        Schema::create('canon_lore_chunks', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('lore_entry_id')
-                ->constrained('canon_lore_entries')
-                ->cascadeOnDelete();
-            $table->unsignedInteger('chunk_index');
-            $table->text('text');
-            $table->unsignedInteger('token_count');
-            $table->vector('embedding', (int) config('rag.dimensions', 1024));
-
-            $table->unique(['lore_entry_id', 'chunk_index'], 'canon_lore_chunks_entry_index_unique');
-        });
-
-        DB::statement('CREATE INDEX canon_lore_chunks_embedding_hnsw ON canon_lore_chunks USING hnsw (embedding vector_cosine_ops)');
+        
     }
 
     public function down(): void
