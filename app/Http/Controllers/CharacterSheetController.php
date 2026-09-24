@@ -7,11 +7,10 @@ use App\Character\CharacterBiographyService;
 use App\Character\CharacterIdentityService;
 use App\Character\CharacterPlaceService;
 use App\Character\CharacterSheetReader;
-//use App\Character\DisciplineService;
-//use App\Character\SheetCatalog;
-use App\Enums\CharacterBiographyStatus;
+use App\Character\DisciplineService;
 use App\Enums\CharacterType;
 use App\Enums\WorldEntityType;
+use App\Enums\CharacterBiographyStatus;
 use App\Http\Requests\StoreCharacterRequest;
 use App\Http\Requests\UpdateCharacterBiographyRequest;
 use App\Http\Requests\UpdateCharacterDisciplinesRequest;
@@ -25,6 +24,7 @@ use App\Models\CanonClan;
 use App\Models\CanonSect;
 use App\Scene\SceneParticipantService;
 use App\World\WorldEntityService;
+use App\World\MixedChronicleException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -34,29 +34,28 @@ use InvalidArgumentException;
 class CharacterSheetController extends Controller
 {
     public function __construct(
-        //private SheetCatalog $catalog,
         private CharacterSheetReader $reader,
         private WorldEntityService $entities,
         private CharacterIdentityService $identity,
-        //private DisciplineService $disciplines,
+        private DisciplineService $disciplines,
         private CharacterBiographyService $biographies,
         private CharacterPlaceService $place,
-        //private SceneParticipantService $participants,
+        private SceneParticipantService $participants,
     ) {}
 
     public function catalog(): JsonResponse
-{
+    {
     $disciplines = CanonDiscipline::query()
-    ->orderBy('name')
-    ->get(['id', 'slug', 'name', 'description', 'is_common'])
-    ->map(fn (CanonDiscipline $row): array => [
-        'id' => (int) $row->id,
-        'slug' => $row->slug,
-        'name' => $row->name,
-        'description' => $row->description,
-        'is_common' => (bool) $row->is_common,
-    ])
-    ->values();
+        ->orderBy('name')
+        ->get(['id', 'slug', 'name', 'description', 'is_common'])
+        ->map(fn (CanonDiscipline $row): array => [
+            'id' => (int) $row->id,
+            'slug' => $row->slug,
+            'name' => $row->name,
+            'description' => $row->description,
+            'is_common' => (bool) $row->is_common,
+        ])
+        ->values();
 
     $clans = CanonClan::query()
         ->where('is_playable', true)
@@ -96,14 +95,12 @@ class CharacterSheetController extends Controller
         ->values();
 
     return response()->json([
-        //'catalog' => $this->catalog->definition(),
-        //'traits' => $this->catalog->traits(),
         'disciplines' => $disciplines,
         'clans' => $clans,
         'bloodlines' => $bloodlines,
         'sects' => $sects,
     ]);
-}
+    }
 
     public function index(Request $request): JsonResponse
     {
@@ -123,10 +120,6 @@ class CharacterSheetController extends Controller
             if ($pcId === null) {
                 return response()->json(['characters' => []]);
             }
-
-            $query->where(function ($inner) use ($pcId): void {
-                $inner->whereKey($pcId)->orWhere('domitor_character_id', $pcId);
-            });
         }
 
         $characters = $query->orderBy('id')->get();
@@ -284,14 +277,6 @@ class CharacterSheetController extends Controller
     {
         $this->hideCharacter($character);
 
-        if ($character->character_type !== CharacterType::Ghoul) {
-            foreach ($character->ghouls as $ghoul) {
-                if ($ghoul->is_active) {
-                    $this->hideCharacter($ghoul);
-                }
-            }
-        }
-
         return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
     }
 
@@ -299,55 +284,15 @@ class CharacterSheetController extends Controller
     {
         $this->restoreCharacter($character);
 
-        if ($character->character_type !== CharacterType::Ghoul) {
-            foreach ($character->ghouls()->where('is_active', false)->get() as $ghoul) {
-                $this->restoreCharacter($ghoul);
-            }
-        }
-
         return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
     }
 
     /**
-     * @param  list<array<string, mixed>>  $rows
-     */
-    private function writeStats(Character $character, array $rows): void
-    {
-        foreach ($rows as $row) {
-            $category = CharacterStatCategory::from((string) $row['category']);
-            $key = (string) $row['stat_key'];
-            $value = (int) $row['value'];
-            $displayName = (string) ($row['display_name'] ?? $key);
-            $maximum = isset($row['maximum']) ? (int) $row['maximum'] : 5;
-            $sortOrder = (int) ($row['sort_order'] ?? 0);
-
-            if ($value === 0 && $category !== CharacterStatCategory::Attribute) {
-                $character->stats()
-                    ->where('category', $category)
-                    ->where('stat_key', $key)
-                    ->delete();
-
-                continue;
-            }
-
-            $stat = $this->stats->putStat(
-                $character,
-                $category,
-                $key,
-                $displayName,
-                $value,
-                $maximum,
-                $sortOrder,
-            );
-        }
-    }
-
-    /**
-     * @param  Collection<int, Character>  $ghouls
+     * @param  Collection<int, Character> 
      * @param  Collection<int|string, string>  $names
      * @return array<string, mixed>
      */
-    private function listItem(Character $character, $names, $ghouls): array
+    private function listItem(Character $character, $names): array
     {
         return [
             'id' => (int) $character->id,

@@ -6,7 +6,6 @@ use App\Enums\CharacterType;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneStatus;
 use App\Http\Requests\StoreMessageRequest;
-use App\Extractor\SceneExtractionDispatcher;
 use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\CopilotRequest;

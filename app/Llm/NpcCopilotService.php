@@ -4,9 +4,6 @@ namespace App\Llm;
 
 use App\Context\ContextBuilder;
 use App\Models\Scene;
-use App\Retrieval\RetrievalOrchestrator;
-use App\Retrieval\RetrievalScope;
-use App\Retrieval\Tools\RetrievalToolRegistry;
 use RuntimeException;
 
 class NpcCopilotService
@@ -14,8 +11,6 @@ class NpcCopilotService
     public function __construct(
         private ChatProvider $chat,
         private ContextBuilder $contextBuilder,
-        private RetrievalToolRegistry $tools,
-        private RetrievalOrchestrator $retrieval,
     ) {}
 
     public function drafts(
@@ -59,11 +54,12 @@ class NpcCopilotService
         );
         $messages = $context->messages;
         $metadata = $context->metadata;
-        $toolInvocations = [];
-        $loopTokens = 0;
-
         try {
-            $raw = $this->completeWithTools($messages, $scene, $toolInvocations, $loopTokens);
+            $replyOptions = [
+                'max_tokens' => (int) config('llm.max_output_tokens'),
+            ];
+            $turn = $this->chat->chatTurn($messages, $replyOptions, []);
+            $raw = $turn->content;
         } catch (\Throwable $e) {
             throw new RuntimeException('LLM provider is unavailable.', 0, $e);
         }
@@ -78,9 +74,6 @@ class NpcCopilotService
             'included_raw_message_ids' => $topicsContext->metadata['included_raw_message_ids'],
             'excluded_raw_message_count' => $topicsContext->metadata['excluded_raw_message_count'],
         ];
-        $metadata['tool_iterations'] = count(array_unique(array_column($toolInvocations, 'iteration')));
-        $metadata['tool_invocations'] = $toolInvocations;
-        $metadata['tool_loop_token_estimate'] = $loopTokens;
 
         return new CopilotDraftResult(
             $this->parseDrafts($raw, $draftCount),
@@ -95,69 +88,7 @@ class NpcCopilotService
     {
         return config('llm.driver') === 'deepseek'
             ? (string) config('llm.deepseek.chat_model')
-            : (string) config('ollama.chat_model');
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $messages
-     * @param  list<array<string, mixed>>  $toolInvocations
-     */
-    private function completeWithTools(array $messages, Scene $scene, array &$toolInvocations, int &$loopTokens): string
-    {
-        $enabled = (bool) config('copilot.tools.enabled');
-        $maxIterations = (int) config('copilot.tools.max_iterations', 2);
-        $maxLoopTokens = (int) config('copilot.tools.max_loop_tokens', 2000);
-        $definitions = $enabled ? $this->tools->ollamaDefinitions() : [];
-        $scope = RetrievalScope::fromScene($scene);
-        $iteration = 0;
-        $replyOptions = [
-            'num_predict' => (int) config('ollama.max_output_tokens'),
-        ];
-
-        while (true) {
-            $allowTools = $enabled && $iteration < $maxIterations && $loopTokens < $maxLoopTokens;
-            $turn = $this->chat->chatTurn($messages, $replyOptions, $allowTools ? $definitions : []);
-
-            if ($turn->toolCalls === []) {
-                return $turn->content;
-            }
-
-            if (! $allowTools) {
-                $messages[] = $turn->toAssistantMessage();
-                $messages[] = [
-                    'role' => 'user',
-                    'content' => 'Stop using tools. Respond with JSON drafts only.',
-                ];
-                $final = $this->chat->chatTurn($messages, $replyOptions, []);
-
-                return $final->content;
-            }
-
-            $iteration++;
-            $messages[] = $turn->toAssistantMessage();
-
-            foreach ($turn->toolCalls as $call) {
-                $invoked = $this->retrieval->invokeCall($call, $scope);
-                $loopTokens += $invoked['token_estimate'];
-                $toolInvocations[] = [
-                    'iteration' => $iteration,
-                    'name' => $call->name,
-                    'arguments' => $call->arguments,
-                    'ok' => $invoked['result']->ok,
-                    'count' => count($invoked['result']->items),
-                    'truncated' => $invoked['result']->truncated,
-                    'token_estimate' => $invoked['token_estimate'],
-                ];
-                $messages[] = [
-                    'role' => 'tool',
-                    'content' => $invoked['json'],
-                ];
-
-                if ($loopTokens >= $maxLoopTokens) {
-                    break;
-                }
-            }
-        }
+            : throw new RuntimeException('Unknown LLM driver: '.config('llm.driver'));
     }
 
     /**
