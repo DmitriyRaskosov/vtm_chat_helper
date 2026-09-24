@@ -7,8 +7,8 @@ use App\Character\CharacterBiographyService;
 use App\Character\CharacterIdentityService;
 use App\Character\CharacterPlaceService;
 use App\Character\CharacterSheetReader;
-use App\Character\DisciplineService;
-use App\Character\SheetCatalog;
+//use App\Character\DisciplineService;
+//use App\Character\SheetCatalog;
 use App\Enums\CharacterBiographyStatus;
 use App\Enums\CharacterType;
 use App\Enums\WorldEntityType;
@@ -24,7 +24,6 @@ use App\Models\WorldEntity;
 use App\Models\CanonClan;
 use App\Models\CanonSect;
 use App\Scene\SceneParticipantService;
-use App\World\MixedChronicleException;
 use App\World\WorldEntityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -35,14 +34,14 @@ use InvalidArgumentException;
 class CharacterSheetController extends Controller
 {
     public function __construct(
-        private SheetCatalog $catalog,
+        //private SheetCatalog $catalog,
         private CharacterSheetReader $reader,
         private WorldEntityService $entities,
         private CharacterIdentityService $identity,
-        private DisciplineService $disciplines,
+        //private DisciplineService $disciplines,
         private CharacterBiographyService $biographies,
         private CharacterPlaceService $place,
-        private SceneParticipantService $participants,
+        //private SceneParticipantService $participants,
     ) {}
 
     public function catalog(): JsonResponse
@@ -97,8 +96,8 @@ class CharacterSheetController extends Controller
         ->values();
 
     return response()->json([
-        'catalog' => $this->catalog->definition(),
-        'traits' => $this->catalog->traits(),
+        //'catalog' => $this->catalog->definition(),
+        //'traits' => $this->catalog->traits(),
         'disciplines' => $disciplines,
         'clans' => $clans,
         'bloodlines' => $bloodlines,
@@ -211,19 +210,6 @@ class CharacterSheetController extends Controller
             abort(422, $e->getMessage());
         } catch (MixedChronicleException $e) {
             abort(409, $e->getMessage());
-        }
-
-        return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
-    }
-
-    public function updateStats(UpdateCharacterStatsRequest $request, Character $character): JsonResponse
-    {
-        CharacterAccess::abortUnlessManagesSheet($request->user(), $character);
-
-        try {
-            $this->writeStats($character, $request->validated('stats'));
-        } catch (InvalidArgumentException $e) {
-            abort(422, $e->getMessage());
         }
 
         return response()->json(['character' => $this->reader->aggregate($character->refresh())]);

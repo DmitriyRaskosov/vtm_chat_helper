@@ -1,0 +1,126 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Enums\GameSessionStatus;
+use App\Enums\SceneStatus;
+use App\Http\Requests\StoreGameSessionRequest;
+use App\Models\Chronicle;
+use App\Models\GameSession;
+use App\Models\Scene;
+use App\Scene\SceneContextService;
+use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+
+class GameSessionController extends Controller
+{
+    public function __construct(private SceneContextService $contexts) {}
+
+    public function active(Request $request): JsonResponse
+    {
+        $validated = $request->validate([
+            'chronicle_id' => ['sometimes', 'integer', 'exists:chronicles,id'],
+        ]);
+        $chronicleId = Chronicle::resolveId(
+            isset($validated['chronicle_id']) ? (int) $validated['chronicle_id'] : null,
+        );
+
+        $gameSession = GameSession::query()
+            ->where('chronicle_id', $chronicleId)
+            ->active()
+            ->with('scenes')
+            ->first();
+
+        return response()->json([
+            'game_session' => $gameSession === null ? null : $this->serialize($gameSession),
+        ]);
+    }
+
+    public function store(StoreGameSessionRequest $request): JsonResponse
+    {
+        $gameSession = DB::transaction(function () use ($request): GameSession {
+            $now = now();
+            $requestedChronicleId = $request->validated('chronicle_id');
+            $chronicleId = Chronicle::resolveId(
+                $requestedChronicleId === null ? null : (int) $requestedChronicleId,
+            );
+
+            $activeSessionIds = GameSession::query()
+                ->where('chronicle_id', $chronicleId)
+                ->active()
+                ->lockForUpdate()
+                ->pluck('id');
+
+            if ($activeSessionIds->isNotEmpty()) {
+                Scene::query()
+                    ->whereIn('game_session_id', $activeSessionIds)
+                    ->where('status', '!=', SceneStatus::Closed)
+                    ->update([
+                        'status' => SceneStatus::Closed,
+                        'ended_at' => $now,
+                        'updated_at' => $now,
+                    ]);
+
+                $this->contexts->freezeMany(
+                    Scene::query()
+                        ->whereIn('game_session_id', $activeSessionIds)
+                        ->pluck('id')
+                        ->all(),
+                );
+
+                GameSession::query()
+                    ->whereIn('id', $activeSessionIds)
+                    ->update([
+                        'status' => GameSessionStatus::Archived,
+                        'updated_at' => $now,
+                    ]);
+            }
+
+            $session = GameSession::query()->create([
+                'chronicle_id' => $chronicleId,
+                'title' => $request->validated('title'),
+                'status' => GameSessionStatus::Active,
+                'created_by' => $request->user()->id,
+                'activated_at' => $now,
+            ]);
+
+            $session->scenes()->create([
+                'position' => 1,
+                'title' => 'Начальная сцена',
+                'status' => SceneStatus::Active,
+                'started_at' => $now,
+            ]);
+
+            return $session->load('scenes');
+        });
+
+        return response()->json(['game_session' => $this->serialize($gameSession)], 201);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function serialize(GameSession $gameSession): array
+    {
+        return [
+            'id' => $gameSession->id,
+            'chronicle_id' => $gameSession->chronicle_id,
+            'title' => $gameSession->title,
+            'status' => $gameSession->status->value,
+            'active_scene_id' => $gameSession->scenes
+                ->firstWhere('status', SceneStatus::Active)?->id,
+            'scenes' => $gameSession->scenes
+                ->map(fn (Scene $scene): array => [
+                    'id' => $scene->id,
+                    'title' => $scene->title,
+                    'description' => $scene->description,
+                    'position' => $scene->position,
+                    'status' => $scene->status->value,
+                    'started_at' => $scene->started_at?->toISOString(),
+                    'ended_at' => $scene->ended_at?->toISOString(),
+                ])
+                ->values(),
+        ];
+    }
+}

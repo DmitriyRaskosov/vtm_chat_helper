@@ -5,7 +5,6 @@ namespace App\Models;
 use App\Enums\WorldEntityAliasType;
 use App\Enums\WorldEntityStatus;
 use App\Enums\WorldEntityType;
-use App\World\CannotDeleteWorldEntityException;
 use Database\Factories\WorldEntityFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -81,54 +80,6 @@ class WorldEntity extends Model
     public function location(): HasOne
     {
         return $this->hasOne(Location::class, 'id', 'id');
-    }
-
-    /**
-     * @return HasOne<Faction, $this>
-     */
-    public function faction(): HasOne
-    {
-        return $this->hasOne(Faction::class, 'id', 'id');
-    }
-
-    /**
-     * @return HasOne<Coterie, $this>
-     */
-    public function coterie(): HasOne
-    {
-        return $this->hasOne(Coterie::class, 'id', 'id');
-    }
-
-    /**
-     * @return HasOne<Circle, $this>
-     */
-    public function circle(): HasOne
-    {
-        return $this->hasOne(Circle::class, 'id', 'id');
-    }
-
-    /**
-     * @return HasOne<Other, $this>
-     */
-    public function other(): HasOne
-    {
-        return $this->hasOne(Other::class, 'id', 'id');
-    }
-
-    /**
-     * @return HasOne<Item, $this>
-     */
-    public function item(): HasOne
-    {
-        return $this->hasOne(Item::class, 'id', 'id');
-    }
-
-    /**
-     * @return HasOne<Concept, $this>
-     */
-    public function concept(): HasOne
-    {
-        return $this->hasOne(Concept::class, 'id', 'id');
     }
 
     /**
