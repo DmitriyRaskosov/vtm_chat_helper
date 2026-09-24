@@ -17,13 +17,13 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+            WorldRelationTypeSeeder::class,
             CanonSectSeeder::class,
             CanonClanSeeder::class,
             CanonClanSectSeeder::class,
             CanonClanRelationSeeder::class,
             CanonDisciplineSeeder::class,
             CanonClanDisciplineSeeder::class,
-            WorldRelationTypeSeeder::class,
         ]);
 
         Artisan::call('canon:import-lore');
