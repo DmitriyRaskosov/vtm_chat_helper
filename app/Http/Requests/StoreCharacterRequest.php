@@ -23,7 +23,6 @@ class StoreCharacterRequest extends FormRequest
             'character_type' => ['required', Rule::enum(CharacterType::class)],
             'chronicle_id' => ['sometimes', 'integer', 'exists:chronicles,id'],
             'user_id' => ['required_if:character_type,player', 'nullable', 'integer', 'exists:users,id'],
-            'domitor_character_id' => ['required_if:character_type,ghoul', 'nullable', 'integer', 'exists:characters,id'],
             'clan_id' => ['sometimes', 'nullable', 'integer', 'exists:canon_clans,id'],
             'sire_character_id' => ['sometimes', 'nullable', 'integer', 'exists:characters,id'],
             'generation' => ['sometimes', 'nullable', 'integer', 'min:4', 'max:15'],

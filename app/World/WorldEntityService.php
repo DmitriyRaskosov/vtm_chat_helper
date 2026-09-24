@@ -4,6 +4,9 @@ namespace App\World;
 
 use App\Enums\CharacterType;
 use App\Enums\WorldEntityType;
+use App\Enums\WorldEntityStatus;
+use App\Enums\WorldEntityAliasType;
+use App\Enums\FactionStatus;
 use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\CanonClan;
@@ -78,6 +81,17 @@ class WorldEntityService
 
             return $entity->load($this->directoryRelations());
         });
+    }
+
+    /**
+    * @return array<string, mixed>
+    */
+    public function defaultTypedPayload(WorldEntityType $type): array
+    {
+        return match ($type) {
+            WorldEntityType::Faction => ['status' => FactionStatus::Active],
+            default => [],
+        };
     }
 
     /**
@@ -159,6 +173,11 @@ class WorldEntityService
                 Character::query()->whereKey($entity->id)->update(['is_active' => false]);
             }
 
+            foreach ($entity->aliases as $alias) {
+                $alias->normalized_alias = $alias->normalized_alias . '--archived-' . $entity->id;
+                $alias->save();
+            }
+
             return $entity->refresh();
         });
     }
@@ -173,6 +192,11 @@ class WorldEntityService
 
             if ($entity->entity_type === WorldEntityType::Character) {
                 Character::query()->whereKey($entity->id)->update(['is_active' => true]);
+            }
+
+            foreach ($entity->aliases as $alias) {
+                $alias->normalized_alias = preg_replace('/--archived-\d+$/', '', $alias->normalized_alias);
+                $alias->save();
             }
 
             return $entity->refresh();
@@ -374,8 +398,6 @@ class WorldEntityService
             );
         }
 
-        $domitorId = isset($typed['domitor_character_id']) ? (int) $typed['domitor_character_id'] : null;
-
         Character::query()->create([
             'id' => $entity->id,
             'chronicle_id' => $entity->chronicle_id,
@@ -384,7 +406,6 @@ class WorldEntityService
             'user_id' => $userId,
             'clan_id' => $clanId,
             'sire_character_id' => $sireId,
-            'domitor_character_id' => $domitorId,
             'generation' => $typed['generation'] ?? null,
             'apparent_age' => $typed['apparent_age'] ?? null,
             'actual_age' => $typed['actual_age'] ?? null,

@@ -16,7 +16,6 @@ export const healthDamageKinds = [
 
 export function typeLabel(type) {
     if (type === 'player') return 'игрок';
-    if (type === 'ghoul') return 'гуль';
     return 'НПС';
 }
 

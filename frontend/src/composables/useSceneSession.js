@@ -13,18 +13,12 @@ export function characterTypeLabel(type) {
     if (type === 'player') {
         return 'игрок';
     }
-    if (type === 'ghoul') {
-        return 'гуль';
-    }
     return 'НПС';
 }
 
 function sceneRoleFor(type) {
     if (type === 'player') {
         return 'player';
-    }
-    if (type === 'ghoul') {
-        return 'extra';
     }
     return 'npc';
 }
@@ -37,13 +31,6 @@ function flattenRoster(rows) {
             canonical_name: row.canonical_name,
             character_type: row.character_type,
         });
-        for (const ghoul of row.ghouls ?? []) {
-            out.push({
-                id: ghoul.id,
-                canonical_name: ghoul.canonical_name,
-                character_type: ghoul.character_type,
-            });
-        }
     }
     return out;
 }

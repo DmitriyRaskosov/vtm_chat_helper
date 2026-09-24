@@ -16,21 +16,11 @@
                     <select v-model="form.character_type">
                         <option value="player">Игрок</option>
                         <option value="npc">НПС</option>
-                        <option value="ghoul">Гуль</option>
                     </select>
                 </label>
                 <label v-if="form.character_type === 'player'">
                     User ID владельца
                     <input v-model.number="form.user_id" type="number" min="1" />
-                </label>
-                <label v-if="form.character_type === 'ghoul'">
-                    Домитор
-                    <select v-model.number="form.domitor_character_id">
-                        <option :value="null">—</option>
-                        <option v-for="row in vampires" :key="row.id" :value="row.id">
-                            {{ row.canonical_name }}
-                        </option>
-                    </select>
                 </label>
             </div>
             <button type="button" :disabled="saving || !form.canonical_name.trim()" @click="createCharacter">
@@ -55,22 +45,6 @@
                             Скрыть
                         </button>
                     </div>
-                    <ul v-if="row.ghouls?.length">
-                        <li v-for="ghoul in row.ghouls" :key="ghoul.id">
-                            <div class="character-row">
-                                <RouterLink :to="`/characters/${ghoul.id}`">{{ ghoul.canonical_name }}</RouterLink>
-                                <span class="muted"> · гуль</span>
-                                <button
-                                    v-if="auth.user.value?.is_storyteller"
-                                    class="link"
-                                    type="button"
-                                    @click="hideCharacter(ghoul.id)"
-                                >
-                                    Скрыть
-                                </button>
-                            </div>
-                        </li>
-                    </ul>
                 </li>
             </ul>
         </section>
@@ -107,19 +81,12 @@ const form = reactive({
     canonical_name: '',
     character_type: 'npc',
     user_id: null,
-    domitor_character_id: null,
 });
-
-const vampires = computed(() =>
-    characters.value.filter((row) => row.character_type !== 'ghoul'),
-);
+const roots = computed(() => characters.value);
 
 function typeLabel(type) {
     if (type === 'player') {
         return 'игрок';
-    }
-    if (type === 'ghoul') {
-        return 'гуль';
     }
     return 'НПС';
 }
@@ -145,9 +112,6 @@ async function createCharacter() {
         };
         if (form.character_type === 'player' && form.user_id) {
             payload.user_id = form.user_id;
-        }
-        if (form.character_type === 'ghoul' && form.domitor_character_id) {
-            payload.domitor_character_id = form.domitor_character_id;
         }
         const { data } = await api.post('/characters', payload);
         await router.push(`/characters/${data.character.id}`);

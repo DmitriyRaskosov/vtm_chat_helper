@@ -153,9 +153,6 @@ class CharacterSheetController extends Controller
         if (isset($validated['user_id'])) {
             $typed['user_id'] = (int) $validated['user_id'];
         }
-        if (isset($validated['domitor_character_id'])) {
-            $typed['domitor_character_id'] = (int) $validated['domitor_character_id'];
-        }
         if (isset($validated['clan_id'])) {
             $typed['clan_id'] = (int) $validated['clan_id'];
         }

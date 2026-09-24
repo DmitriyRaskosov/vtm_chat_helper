@@ -4,6 +4,7 @@ namespace App\World;
 
 use App\Enums\WorldEntityStatus;
 use App\Enums\WorldEntityType;
+use App\Enums\WorldEntityAliasType;
 use App\Models\Character;
 use App\Models\WorldEntity;
 use App\Models\WorldRelation;

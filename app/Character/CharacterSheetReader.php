@@ -17,22 +17,13 @@ class CharacterSheetReader
     {
         $character->load([
             'sect',
-            'status',
             'biography',
-            'domitor',
             'user',
             'clan',
             'sire',
         ]);
 
         $entity = WorldEntity::query()->findOrFail($character->id);
-
-        $status = $character->status;
-
-        $domitor = $character->domitor;
-        $domitorName = $domitor === null
-            ? null
-            : WorldEntity::query()->whereKey($domitor->id)->value('canonical_name');
 
         $biography = $character->biography;
         $sect = $this->relations->activeSect($character);
@@ -63,8 +54,6 @@ class CharacterSheetReader
             'sire_name' => $character->sire === null
                 ? null
                 : WorldEntity::query()->whereKey($character->sire->id)->value('canonical_name'),
-            'domitor_character_id' => $character->domitor_character_id === null ? null : (int) $character->domitor_character_id,
-            'domitor_name' => is_string($domitorName) ? $domitorName : null,
             'generation' => $character->generation,
             'nature' => $character->nature,
             'demeanor' => $character->demeanor,

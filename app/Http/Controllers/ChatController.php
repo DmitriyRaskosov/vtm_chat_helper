@@ -114,19 +114,6 @@ class ChatController extends Controller
         $message->load('user:id,name');
         $characterLookup = $this->characterLookup(collect([$message]));
 
-        if (config('rag.index_sync')) {
-            IndexRagMessageJob::dispatchSync($message->id);
-        } else {
-            IndexRagMessageJob::dispatch($message->id);
-        }
-
-        if ($request->user() !== null) {
-            app(SceneExtractionDispatcher::class)->maybeDispatchAfterMessage(
-                $scene->fresh(),
-                $request->user(),
-            );
-        }
-
         return response()->json(['message' => $this->serialize($message, $characterLookup)], 201);
     }
 
@@ -168,8 +155,7 @@ class ChatController extends Controller
             return true;
         }
 
-        return $character->character_type === CharacterType::Ghoul
-            && ! $character->isPlayableBy($user);
+        return false;
     }
 
     private function copilotMatchesMessage(
@@ -216,9 +202,8 @@ class ChatController extends Controller
         }
 
         $characters = Character::query()
-            ->with('domitor:id,user_id')
             ->whereIn('id', $ids)
-            ->get(['id', 'character_type', 'user_id', 'domitor_character_id'])
+            ->get(['id', 'character_type', 'user_id'])
             ->keyBy('id');
         $names = WorldEntity::query()->whereIn('id', $ids)->pluck('canonical_name', 'id');
         $user = auth()->user();
@@ -244,7 +229,7 @@ class ChatController extends Controller
             return true;
         }
 
-        return $lookup['type'] === CharacterType::Ghoul && ! $lookup['playable'];
+        return false;
     }
 
     private function resolveScene(?int $sceneId, ?int $chronicleId, bool $mustBeActive): Scene

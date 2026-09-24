@@ -2,20 +2,17 @@
 
 namespace App\Context\Providers;
 
-use App\Character\CharacterSheetReader;
 use App\Context\ContextAssembly;
 use App\Context\ContextSection;
 use App\Context\LineTrimmer;
 use App\Context\TokenEstimator;
 use App\Models\CharacterDiscipline;
-use App\Models\CharacterStat;
 
 class NpcIdentityProvider implements ContextProvider
 {
     public function __construct(
         private TokenEstimator $estimator,
         private LineTrimmer $trimmer,
-        private CharacterSheetReader $sheet,
     ) {}
 
     public function key(): string
@@ -79,12 +76,6 @@ class NpcIdentityProvider implements ContextProvider
             }
 
             if (! $assembly->request->compactIdentity) {
-                $sheet = $this->sheet->relevant($character);
-                foreach ($sheet->stats as $stat) {
-                    $statIds[] = (int) $stat->id;
-                    $lines[] = $this->formatStat($stat);
-                }
-
                 $character->loadMissing('disciplines.discipline');
                 foreach ($character->disciplines as $row) {
                     if (! $row instanceof CharacterDiscipline || $row->discipline === null) {
@@ -107,25 +98,9 @@ class NpcIdentityProvider implements ContextProvider
         return ContextSection::fromContent($this->key(), $content, $this->estimator, [
             'character_id' => $character?->id,
             'entity_id' => $entityId,
-            'stat_ids' => $statIds,
             'discipline_ids' => $disciplineIds,
             'compact' => $assembly->request->compactIdentity,
-        ], $truncated ? 'stats_tail' : null);
+        ], $truncated ? 'lines_tail' : null);
     }
 
-    private function formatStat(CharacterStat $stat): string
-    {
-        $label = is_string($stat->display_name) && $stat->display_name !== ''
-            ? $stat->display_name
-            : $stat->stat_key;
-        $range = $stat->maximum !== null ? $stat->value.'/'.$stat->maximum : (string) $stat->value;
-        $specs = $stat->specializations
-            ->where('is_active', true)
-            ->pluck('name')
-            ->filter()
-            ->implode(', ');
-        $suffix = $specs !== '' ? " ({$specs})" : '';
-
-        return $stat->category->value.' '.$label.': '.$range.$suffix;
-    }
 }
