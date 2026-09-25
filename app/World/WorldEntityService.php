@@ -174,8 +174,11 @@ class WorldEntityService
             }
 
             foreach ($entity->aliases as $alias) {
-                $alias->normalized_alias = $alias->normalized_alias . '--archived-' . $entity->id;
-                $alias->save();
+                $suffix = '--archived-' . $entity->id;
+                if (! str_ends_with($alias->normalized_alias, $suffix)) {
+                    $alias->normalized_alias = $alias->normalized_alias . $suffix;
+                    $alias->save();
+                }
             }
 
             return $entity->refresh();
@@ -195,7 +198,23 @@ class WorldEntityService
             }
 
             foreach ($entity->aliases as $alias) {
-                $alias->normalized_alias = preg_replace('/--archived-\d+$/', '', $alias->normalized_alias);
+                $cleaned = preg_replace('/--archived-\d+$/', '', $alias->normalized_alias);
+
+                if ($cleaned === $alias->normalized_alias) {
+                    continue;
+                }
+
+                $taken = WorldEntityAlias::query()
+                    ->where('chronicle_id', $alias->chronicle_id)
+                    ->where('normalized_alias', $cleaned)
+                    ->where('id', '!=', $alias->id)
+                    ->exists();
+
+                if ($taken) {
+                    continue;
+                }
+
+                $alias->normalized_alias = $cleaned;
                 $alias->save();
             }
 

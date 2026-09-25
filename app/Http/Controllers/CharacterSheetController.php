@@ -142,45 +142,48 @@ class CharacterSheetController extends Controller
     public function store(StoreCharacterRequest $request): JsonResponse
     {
         $validated = $request->validated();
-        $chronicle = Chronicle::query()->findOrFail(
-            Chronicle::resolveId(isset($validated['chronicle_id']) ? (int) $validated['chronicle_id'] : null),
-        );
 
-        $typed = [
-            'character_type' => CharacterType::from($validated['character_type']),
-        ];
-
-        if (isset($validated['user_id'])) {
-            $typed['user_id'] = (int) $validated['user_id'];
-        }
-        if (isset($validated['clan_id'])) {
-            $typed['clan_id'] = (int) $validated['clan_id'];
-        }
-        if (isset($validated['sire_character_id'])) {
-            $typed['sire_character_id'] = (int) $validated['sire_character_id'];
-        }
-        foreach (['generation', 'nature', 'demeanor', 'concept'] as $field) {
-            if (array_key_exists($field, $validated)) {
-                $typed[$field] = $validated[$field];
-            }
-        }
-
-        try {
-            $entity = $this->entities->create(
-                $chronicle,
-                WorldEntityType::Character,
-                $validated['canonical_name'],
-                typed: $typed,
+        return DB::transaction(function () use ($validated) {
+            $chronicle = Chronicle::query()->findOrFail(
+                Chronicle::resolveId(isset($validated['chronicle_id']) ? (int) $validated['chronicle_id'] : null),
             );
-        } catch (InvalidArgumentException $e) {
-            abort(422, $e->getMessage());
-        } catch (MixedChronicleException $e) {
-            abort(409, $e->getMessage());
-        }
 
-        $character = Character::query()->findOrFail($entity->id);
+            $typed = [
+                'character_type' => CharacterType::from($validated['character_type']),
+            ];
 
-        return response()->json(['character' => $this->reader->aggregate($character)], 201);
+            if (isset($validated['user_id'])) {
+                $typed['user_id'] = (int) $validated['user_id'];
+            }
+            if (isset($validated['clan_id'])) {
+                $typed['clan_id'] = (int) $validated['clan_id'];
+            }
+            if (isset($validated['sire_character_id'])) {
+                $typed['sire_character_id'] = (int) $validated['sire_character_id'];
+            }
+            foreach (['generation', 'nature', 'demeanor', 'concept'] as $field) {
+                if (array_key_exists($field, $validated)) {
+                    $typed[$field] = $validated[$field];
+                }
+            }
+
+            try {
+                $entity = $this->entities->create(
+                    $chronicle,
+                    WorldEntityType::Character,
+                    $validated['canonical_name'],
+                    typed: $typed,
+                );
+            } catch (InvalidArgumentException $e) {
+                abort(422, $e->getMessage());
+            } catch (MixedChronicleException $e) {
+                abort(409, $e->getMessage());
+            }
+
+            $character = Character::query()->findOrFail($entity->id);
+
+            return response()->json(['character' => $this->reader->aggregate($character)], 201);
+        });
     }
 
     public function show(Request $request, Character $character): JsonResponse
@@ -259,15 +262,17 @@ class CharacterSheetController extends Controller
     {
         CharacterAccess::abortUnlessManagesSheet($request->user(), $character);
 
-        try {
-            $this->place->apply($character, $request->validated());
-        } catch (InvalidArgumentException $e) {
-            abort(422, $e->getMessage());
-        } catch (MixedChronicleException $e) {
-            abort(409, $e->getMessage());
-        }
+        return DB::transaction(function () use ($request, $character) {
+            try {
+                $this->place->apply($character, $request->validated());
+            } catch (InvalidArgumentException $e) {
+                abort(422, $e->getMessage());
+            } catch (MixedChronicleException $e) {
+                abort(409, $e->getMessage());
+            }
 
-        return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
+            return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
+        });
     }
 
     public function archive(Character $character): JsonResponse
