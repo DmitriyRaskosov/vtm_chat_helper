@@ -6,5 +6,4 @@ enum WorldEntityAliasType: string
 {
     case Canonical = 'canonical';
     case Aka = 'aka';
-    case Former = 'former';
 }
