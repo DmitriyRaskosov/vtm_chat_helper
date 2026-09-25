@@ -62,11 +62,22 @@ Your task: expand the storyteller's brief prompt into an atmospheric in-characte
 Write exactly {$draftCount} different variants.
 Each draft is a single chat message — no narration labels, no meta commentary, no surrounding quotes.
 
+CRITICAL: The storyteller prompt is your PRIMARY task.
+Recent messages are scene context — for continuity, not for copying.
+Do NOT repeat, paraphrase, or extend previous NPC replies.
+Generate entirely FRESH text that addresses the storyteller prompt's current topic.
+Even if a previous NPC reply covered a similar theme, the new reply must be new.
+
 Style rules:
-- Match the NPC's clan and sect from the context (Tremere are cold and calculating, Gangrel are wild, Ventrue are aristocratic, etc.).
+- Match the NPC's clan and sect from the context, but show it through nuance, not stereotype.
 - Use the clan weakness naturally when it fits — do not force it.
 - Use the world/canon facts supplied below. Do not invent lore, disciplines, or rules.
 - Mechanical details (dice, blood pool, disciplines in play) are NOT needed — text only.
+
+Subtlety rules:
+- A clan is a tendency, not a caricature. A Ventrue can be warm, a Malkavian can have lucid moments, a Nosferatu can be gentle.
+- Show personality through choices and word choice, not through labels.
+- Avoid catchphrases ("Tremere are cold", "Malkavians are mad") in general. Let the reader infer the clan.
 
 Respond with valid JSON only, no markdown fences:
 {"drafts":["first reply","second reply","third reply"]}

@@ -6,6 +6,9 @@ use App\Context\ContextAssembly;
 use App\Context\ContextSection;
 use App\Context\LineTrimmer;
 use App\Context\TokenEstimator;
+use App\Models\CanonLoreEntry;
+use App\Models\SceneParticipant;
+use App\Models\WorldEntity;
 
 class WorldLoreProvider implements ContextProvider
 {
@@ -26,73 +29,64 @@ class WorldLoreProvider implements ContextProvider
             return ContextSection::omitted($this->key(), ['reason' => 'no_character']);
         }
 
-        $filters = config('retrieval.world_graphrag');
-        $bundle = $this->graph->expandForNpc($character, $assembly->request->retrievalQuery(), $assembly->scene);
-        $selfId = (int) $character->id;
-
         $lines = [];
-        $entityIds = [];
-        foreach ($bundle->entities as $entity) {
-            if (! $entity instanceof WorldGraphEntity || $entity->id === $selfId) {
-                continue;
-            }
-            $entityIds[] = $entity->id;
-            $seed = $entity->seed ? ', seed' : '';
-            $description = is_string($entity->shortDescription) && $entity->shortDescription !== ''
-                ? ': '.$entity->shortDescription
-                : '';
-            $lines[] = '[canon] '.$entity->canonicalName.' ('.$entity->entityType.', depth '.$entity->depth.$seed.')'.$description;
-        }
-
-        $relationIds = [];
-        $names = [];
-        foreach ($bundle->entities as $entity) {
-            if ($entity instanceof WorldGraphEntity) {
-                $names[$entity->id] = $entity->canonicalName;
-            }
-        }
-        $names[$selfId] = $assembly->entity?->canonical_name ?? $assembly->request->npcName;
-
-        foreach ($bundle->relations as $relation) {
-            if (! $relation instanceof WorldGraphRelation) {
-                continue;
-            }
-            $relationIds[] = $relation->id;
-            $source = $names[$relation->sourceEntityId] ?? '#'.$relation->sourceEntityId;
-            $target = $names[$relation->targetEntityId] ?? '#'.$relation->targetEntityId;
-            $note = is_string($relation->note) && $relation->note !== '' ? '; '.$relation->note : '';
-            $lines[] = '[canon] '.$source.' '.$relation->typeKey.' '.$target.' (w '.number_format($relation->weight, 2).')'.$note;
-        }
-
-        $eventIds = [];
-        foreach ($bundle->events as $event) {
-            $eventIds[] = (int) $event['id'];
-            $lines[] = '[canon] Event: '.$event['title'].' ('.$event['event_type'].', importance '.$event['importance'].')';
-        }
-
-        $affiliationIds = [];
-        foreach ($bundle->affiliations as $affiliation) {
-            $affiliationIds[] = (int) $affiliation['id'];
-            $who = $names[(int) $affiliation['character_id']] ?? '#'.$affiliation['character_id'];
-            $target = $names[(int) $affiliation['target_entity_id']] ?? '#'.$affiliation['target_entity_id'];
-            $lines[] = '[canon] '.$who.' affiliated with '.$target
-                .' ('.$affiliation['affiliation_type'].', loyalty '.$affiliation['loyalty'].')';
-        }
-
-        $loreChunkIds = [];
         $loreEntryIds = [];
-        foreach ($bundle->loreChunks as $chunk) {
-            $loreChunkIds[] = (int) $chunk['id'];
-            $loreEntryIds[] = (int) $chunk['lore_entry_id'];
-            $lines[] = '[canon] Known lore: '.$chunk['content'];
+        $presentIds = [];
+
+        // 1. Участники сцены (кроме самого NPC)
+        $participantIds = SceneParticipant::query()
+            ->where('scene_id', $assembly->scene->id)
+            ->where('character_id', '!=', $character->id)
+            ->pluck('character_id');
+
+        if ($participantIds->isNotEmpty()) {
+            $names = WorldEntity::query()
+                ->whereIn('id', $participantIds)
+                ->pluck('canonical_name', 'id');
+
+            foreach ($names as $id => $name) {
+                if (! is_string($name) || $name === '') {
+                    continue;
+                }
+                $presentIds[] = (int) $id;
+                $lines[] = '[scene] Present: '.$name;
+            }
+        }
+
+        // 2. Статьи канона, связанные с кланом и сектой
+        $canonRefs = [];
+        if ($character->clan_id !== null) {
+            $canonRefs[] = ['clan', (int) $character->clan_id];
+        }
+        if ($character->sect_id !== null) {
+            $canonRefs[] = ['sect', (int) $character->sect_id];
+        }
+
+        foreach ($canonRefs as [$type, $id]) {
+            $entries = CanonLoreEntry::query()
+                ->whereIn('id', function ($q) use ($type, $id) {
+                    $q->select('lore_entry_id')
+                        ->from('canon_lore_entry_entities')
+                        ->where('entity_type', $type)
+                        ->where('entity_id', $id);
+                })
+                ->orderBy('id')
+                ->limit(3)
+                ->get(['id', 'title', 'category', 'text']);
+
+            foreach ($entries as $entry) {
+                $loreEntryIds[] = (int) $entry->id;
+                $excerpt = mb_substr($entry->text, 0, 400);
+                if (mb_strlen($entry->text) > 400) {
+                    $excerpt .= '…';
+                }
+                $lines[] = '[canon] '.$entry->title.' ('.$entry->category.'): '.$excerpt;
+            }
         }
 
         if ($lines === []) {
             return ContextSection::omitted($this->key(), [
-                'character_id' => $selfId,
-                'chronicle_id' => (int) $assembly->chronicle->id,
-                'seed_ids' => $bundle->seedIds,
-                'filters' => $filters,
+                'character_id' => (int) $character->id,
                 'reason' => 'empty',
             ]);
         }
@@ -100,16 +94,9 @@ class WorldLoreProvider implements ContextProvider
         [$content, $truncated] = $this->trimmer->prefix('## World', $lines, $tokenBudget);
 
         return ContextSection::fromContent($this->key(), $content, $this->estimator, [
-            'character_id' => $selfId,
-            'chronicle_id' => (int) $assembly->chronicle->id,
-            'entity_ids' => $entityIds,
-            'relation_ids' => $relationIds,
-            'event_ids' => $eventIds,
-            'affiliation_ids' => $affiliationIds,
-            'lore_chunk_ids' => $loreChunkIds,
-            'lore_entry_ids' => array_values(array_unique($loreEntryIds)),
-            'seed_ids' => $bundle->seedIds,
-            'filters' => $filters,
-        ], $truncated ? 'lowest_score' : null);
+            'character_id' => (int) $character->id,
+            'lore_entry_ids' => $loreEntryIds,
+            'present_entity_ids' => $presentIds,
+        ], $truncated ? 'tail' : null);
     }
 }

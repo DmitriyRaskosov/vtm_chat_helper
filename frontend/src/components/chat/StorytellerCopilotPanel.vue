@@ -35,7 +35,7 @@
         <div v-if="drafts.length" class="draft-list">
             <button
                 v-for="(draft, index) in drafts"
-                :key="index"
+                :key="`${copilotRequestId}-${index}`"
                 type="button"
                 class="draft-card"
                 :class="{ selected: selectedDraftIndex === index }"

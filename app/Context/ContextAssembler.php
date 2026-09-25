@@ -11,6 +11,7 @@ use App\Context\Providers\RecentMessagesProvider;
 use App\Context\Providers\SceneProvider;
 use App\Context\Providers\StorytellerPromptProvider;
 use App\Context\Providers\SystemPromptProvider;
+use App\Context\Providers\WorldLoreProvider;
 use App\Models\Character;
 use App\Models\Scene;
 use App\Models\WorldEntity;
@@ -31,6 +32,7 @@ class ContextAssembler
     public const USER_ORDER = [
         'npc_identity',
         'scene',
+        'world_lore',
         'storyteller_prompt',
         'recent_messages',
         'direct_relations',
@@ -44,6 +46,7 @@ class ContextAssembler
     private const OPTIONAL = [
         'direct_relations',
         'biography',
+        'world_lore',
     ];
 
     /**
@@ -60,6 +63,7 @@ class ContextAssembler
         private RecentMessagesProvider $recentMessages,
         DirectRelationsProvider $relations,
         BiographyProvider $biography,
+        WorldLoreProvider $world,
         ClosingInstructionProvider $closing,
     ) {
         $this->providers = [
@@ -70,6 +74,7 @@ class ContextAssembler
             $this->recentMessages->key() => $this->recentMessages,
             $relations->key() => $relations,
             $biography->key() => $biography,
+            $world->key() => $world,
             $closing->key() => $closing,
         ];
     }
