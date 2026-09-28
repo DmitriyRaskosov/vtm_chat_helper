@@ -46,34 +46,7 @@
                     </select>
                 </label>
             </div>
-            <div>
-                <p class="muted">Допуск к лору (уровни 0–5)</p>
-                <div class="lore-checks">
-                    <label v-for="level in loreClearanceLevels" :key="level" class="check-row">
-                        <input v-model="place.lore_clearance_levels" type="checkbox" :value="level" />
-                        уровень {{ level }}
-                    </label>
-                </div>
-                <div class="sheet-actions">
-                    <button
-                        v-for="level in loreClearanceLevels"
-                        :key="'through-'+level"
-                        type="button"
-                        class="secondary"
-                        @click="place.lore_clearance_levels = setClearanceThrough(level, place.lore_clearance_levels)"
-                    >
-                        0–{{ level }}
-                    </button>
-                </div>
-            </div>
             <div class="place-create">
-                <div>
-                    <button class="link" type="button" @click="creating.sect = !creating.sect">Создать секту / фракцию…</button>
-                    <div v-if="creating.sect" class="place-create-row">
-                        <input v-model="createNames.sect" type="text" maxlength="120" placeholder="Камарилья" />
-                        <button type="button" class="secondary" @click="emit('create-entity', 'sect')">Добавить</button>
-                    </div>
-                </div>
                 <div>
                     <button class="link" type="button" @click="creating.haven = !creating.haven">Создать место…</button>
                     <div v-if="creating.haven" class="place-create-row">
@@ -91,13 +64,11 @@
             Секта / фракция: {{ sheet.sect?.name || '—' }}
             · Клан: {{ sheet.clan?.name || '—' }}
             · Гавань: {{ sheet.haven_name || '—' }}
-            · Допуск к лору: {{ loreClearanceLevelsLabel(sheet.lore_clearance_levels) }}
         </p>
     </section>
 </template>
 
 <script setup>
-import { loreClearanceLevels, loreClearanceLevelsLabel, setClearanceThrough } from '../../composables/useCharacterSheet';
 
 defineProps({
     sheet: { type: Object, required: true },

@@ -26,44 +26,18 @@
                     </select>
                 </label>
             </div>
-            <div>
-                <h3>Backgrounds</h3>
-                <div v-for="trait in backgroundTraits" :key="trait.key" class="trait-row">
-                    <span>{{ trait.display_name }}</span>
-                    <TraitDots
-                        :value="traitValue('background', trait.key)"
-                        :max="5"
-                        @pick="emit('set-trait', 'background', trait, $event)"
-                    />
-                </div>
-            </div>
-            <div>
-                <h3>Virtues</h3>
-                <div v-for="trait in virtueTraits" :key="trait.key" class="trait-row">
-                    <span>{{ trait.display_name }}</span>
-                    <TraitDots
-                        :value="traitValue('virtue', trait.key)"
-                        :max="5"
-                        @pick="emit('set-trait', 'virtue', trait, $event)"
-                    />
-                </div>
-            </div>
         </div>
     </section>
 </template>
 
 <script setup>
-import TraitDots from './TraitDots.vue';
 
 defineProps({
     disciplineRows: { type: Array, required: true },
     unusedDisciplines: { type: Array, required: true },
-    backgroundTraits: { type: Array, required: true },
-    virtueTraits: { type: Array, required: true },
-    traitValue: { type: Function, required: true },
 });
 
 const newDisciplineId = defineModel('newDisciplineId');
 
-const emit = defineEmits(['set-discipline', 'add-discipline', 'set-trait']);
+const emit = defineEmits(['set-discipline', 'add-discipline']);
 </script>
