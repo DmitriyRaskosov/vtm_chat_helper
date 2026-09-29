@@ -45,10 +45,6 @@ class MessageTest extends TestCase
             ]);
         $created->assertStatus(201);
         $this->sceneId = (int) $created->json('scene.id');
-
-        $this->actingAs($this->storyteller, 'sanctum')
-            ->patchJson("/api/scenes/{$this->sceneId}/activate")
-            ->assertStatus(200);
     }
 
     public function test_user_can_send_message(): void

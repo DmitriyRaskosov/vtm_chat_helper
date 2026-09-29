@@ -18,6 +18,7 @@ class CharacterSheetReader
         $character->load([
             'sect',
             'biography',
+            'traits',
             'user',
             'clan',
             'sire',
@@ -76,6 +77,13 @@ class CharacterSheetReader
                 'current_version' => (int) $biography->current_version,
                 'status' => $biography->status->value,
             ],
+            'traits' => $character->traits->map(fn ($trait): array => [
+                'id' => (int) $trait->id,
+                'key' => $trait->key,
+                'label' => $trait->label,
+                'value' => $trait->value,
+                'sort_order' => (int) $trait->sort_order,
+            ])->values()->all(),
         ];
     }
 }

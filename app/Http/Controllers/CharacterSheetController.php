@@ -7,6 +7,7 @@ use App\Character\CharacterBiographyService;
 use App\Character\CharacterIdentityService;
 use App\Character\CharacterPlaceService;
 use App\Character\CharacterSheetReader;
+use App\Character\CharacterTraitService;
 use App\Character\DisciplineService;
 use App\Enums\CharacterType;
 use App\Enums\WorldEntityType;
@@ -16,6 +17,7 @@ use App\Http\Requests\UpdateCharacterBiographyRequest;
 use App\Http\Requests\UpdateCharacterDisciplinesRequest;
 use App\Http\Requests\UpdateCharacterIdentityRequest;
 use App\Http\Requests\UpdateCharacterPlaceRequest;
+use App\Http\Requests\UpdateCharacterTraitsRequest;
 use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\CanonDiscipline;
@@ -40,6 +42,7 @@ class CharacterSheetController extends Controller
         private DisciplineService $disciplines,
         private CharacterBiographyService $biographies,
         private CharacterPlaceService $place,
+        private CharacterTraitService $traits,
         private SceneParticipantService $participants,
     ) {}
 
@@ -254,6 +257,15 @@ class CharacterSheetController extends Controller
                 abort(422, $e->getMessage());
             }
         }
+
+        return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
+    }
+
+    public function updateTraits(UpdateCharacterTraitsRequest $request, Character $character): JsonResponse
+    {
+        CharacterAccess::abortUnlessManagesSheet($request->user(), $character);
+
+        $this->traits->sync($character, $request->validated('traits') ?? []);
 
         return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
     }

@@ -7,6 +7,7 @@ use App\Context\Providers\ClosingInstructionProvider;
 use App\Context\Providers\ContextProvider;
 use App\Context\Providers\DirectRelationsProvider;
 use App\Context\Providers\NpcIdentityProvider;
+use App\Context\Providers\PersonalityProvider;
 use App\Context\Providers\RecentMessagesProvider;
 use App\Context\Providers\SceneProvider;
 use App\Context\Providers\StorytellerPromptProvider;
@@ -36,6 +37,7 @@ class ContextAssembler
         'storyteller_prompt',
         'recent_messages',
         'direct_relations',
+        'personality',
         'biography',
         'closing',
     ];
@@ -45,6 +47,7 @@ class ContextAssembler
      */
     private const OPTIONAL = [
         'direct_relations',
+        'personality',
         'biography',
         'world_lore',
     ];
@@ -63,6 +66,7 @@ class ContextAssembler
         private RecentMessagesProvider $recentMessages,
         DirectRelationsProvider $relations,
         BiographyProvider $biography,
+        PersonalityProvider $personality,
         WorldLoreProvider $world,
         ClosingInstructionProvider $closing,
     ) {
@@ -74,6 +78,7 @@ class ContextAssembler
             $this->recentMessages->key() => $this->recentMessages,
             $relations->key() => $relations,
             $biography->key() => $biography,
+            $personality->key() => $personality,
             $world->key() => $world,
             $closing->key() => $closing,
         ];

@@ -11,6 +11,44 @@ export function typeLabel(type) {
     return 'НПС';
 }
 
+export const TRAIT_PRESETS = [
+    {
+        key: 'appearance',
+        label: 'Внешность',
+        placeholder: 'Худой, в поношенном пальто. Бледные руки в перчатках.',
+    },
+    {
+        key: 'speech_style',
+        label: 'Манера речи',
+        placeholder: 'Говорит короткими фразами, часто замолкает на середине.',
+    },
+    {
+        key: 'tone',
+        label: 'Тон',
+        placeholder: 'Ровный, чуть насмешливый. Не повышает голос, даже когда злится.',
+    },
+    {
+        key: 'attitude',
+        label: 'Отношение',
+        placeholder: 'Держит дистанцию. Отвечает вопросами. Не доверяет, но не показывает.',
+    },
+    {
+        key: 'habits',
+        label: 'Привычки',
+        placeholder: 'Крутит кольцо на пальце. Барабанит по столу, когда думает.',
+    },
+    {
+        key: 'voice',
+        label: 'Голос',
+        placeholder: 'Тихий, с хрипотцой. Смеётся редко и коротко.',
+    },
+    {
+        key: 'distinctive_detail',
+        label: 'Отличительная деталь',
+        placeholder: 'Пахнет ладаном и старой бумагой.',
+    },
+];
+
 function optionalId(value) {
     return value === '' ? null : Number(value);
 }
@@ -48,9 +86,12 @@ export function useCharacterSheet() {
     const creating = reactive({ sect: false, haven: false });
     const createNames = reactive({ sect: '', haven: '' });
     const newDisciplineId = ref(null);
+    const traits = ref([]);
+    let traitSeq = 0;
     const flash = reactive({
         identity: false,
         biography: false,
+        traits: false,
         place: false,
     });
     const flashTimers = {};
@@ -89,6 +130,42 @@ export function useCharacterSheet() {
         }, 2000);
     }
 
+    function makeTraitRow(row = {}) {
+        traitSeq += 1;
+
+        return {
+            _id: traitSeq,
+            key: row.key ?? '',
+            label: row.label ?? '',
+            value: row.value ?? '',
+            sort_order: row.sort_order ?? 0,
+        };
+    }
+
+    function applyTraitsFromSheet(characterTraits) {
+        traits.value = (characterTraits ?? []).map((row) => makeTraitRow(row));
+    }
+
+    function addTraitPreset(preset) {
+        if (traits.value.some((row) => row.key === preset.key)) {
+            return;
+        }
+
+        traits.value.push(makeTraitRow({
+            key: preset.key,
+            label: preset.label,
+            value: '',
+        }));
+    }
+
+    function addCustomTrait() {
+        traits.value.push(makeTraitRow());
+    }
+
+    function removeTrait(index) {
+        traits.value.splice(index, 1);
+    }
+
     async function loadExtractorStatus() {
         if (!isStoryteller.value) {
             extractorEnabled.value = false;
@@ -124,6 +201,7 @@ export function useCharacterSheet() {
             clan_id: character.clan_id ?? '',
             haven_entity_id: character.haven_entity_id ?? '',
         });
+        applyTraitsFromSheet(character.traits);
     }
 
     async function runBiographyExtraction() {
@@ -198,6 +276,26 @@ export function useCharacterSheet() {
             error.value = e.response?.data?.message
                 ?? e.response?.data?.errors?.summary?.[0]
                 ?? 'Не удалось сохранить биографию.';
+        }
+    }
+
+    async function saveTraits() {
+        error.value = '';
+        try {
+            const payload = traits.value
+                .filter((row) => row.value.trim() !== '')
+                .map((row, index) => ({
+                    key: row.key.trim(),
+                    label: row.label.trim(),
+                    value: row.value.trim(),
+                    sort_order: index,
+                }));
+            const { data } = await api.put(`/characters/${sheet.value.id}/traits`, { traits: payload });
+            applySheet(data.character);
+            flashSaved('traits');
+        } catch (e) {
+            const firstError = Object.values(e.response?.data?.errors ?? {})[0]?.[0];
+            error.value = e.response?.data?.message ?? firstError ?? 'Не удалось сохранить черты.';
         }
     }
 
@@ -299,6 +397,8 @@ export function useCharacterSheet() {
         creating,
         createNames,
         newDisciplineId,
+        traits,
+        traitPresets: TRAIT_PRESETS,
         flash,
         sects,
         clans,
@@ -309,6 +409,10 @@ export function useCharacterSheet() {
         missingPlaceOption,
         saveIdentity,
         saveBiography,
+        saveTraits,
+        addTraitPreset,
+        addCustomTrait,
+        removeTrait,
         savePlace,
         createPlaceEntity,
         setDiscipline,

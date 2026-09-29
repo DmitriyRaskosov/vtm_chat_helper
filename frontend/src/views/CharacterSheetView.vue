@@ -32,6 +32,16 @@
             @extract="onBiographyExtract"
         />
 
+        <SheetTraitsSection
+            :traits="traits"
+            :presets="traitPresets"
+            :flash="flash.traits"
+            @save="saveTraits"
+            @add-preset="addTraitPreset"
+            @add-custom="addCustomTrait"
+            @remove="removeTrait"
+        />
+
         <SheetPlaceSection
             :sheet="sheet"
             :place="place"
@@ -58,6 +68,7 @@ import SheetAdvantagesSection from '../components/sheet/SheetAdvantagesSection.v
 import SheetBiographySection from '../components/sheet/SheetBiographySection.vue';
 import SheetHeaderSection from '../components/sheet/SheetHeaderSection.vue';
 import SheetPlaceSection from '../components/sheet/SheetPlaceSection.vue';
+import SheetTraitsSection from '../components/sheet/SheetTraitsSection.vue';
 import { useCharacterSheet } from '../composables/useCharacterSheet';
 
 const router = useRouter();
@@ -72,17 +83,22 @@ const {
     creating,
     createNames,
     newDisciplineId,
+    traits,
+    traitPresets,
     flash,
     sects,
     clans,
     havens,
-    backgroundTraits,
     disciplineRows,
     unusedDisciplines,
     formatSigned,
     missingPlaceOption,
     saveIdentity,
     saveBiography,
+    saveTraits,
+    addTraitPreset,
+    addCustomTrait,
+    removeTrait,
     savePlace,
     createPlaceEntity,
     setDiscipline,

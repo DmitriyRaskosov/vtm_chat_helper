@@ -43,6 +43,10 @@ CRUD + neighbors. Политика фракций и directory-рёбра — т
 
 30 статей лора в `resources/canon/lore/*.md`, импорт через `canon:import-lore`.
 
+### Tests
+
+- [x] Feature-тесты: Auth, Character, Scene, Message, Copilot (25 тестов)
+
 ## Заморожено
 
 Не удалено, но не развивается. Не подключать во фронт.
@@ -72,23 +76,9 @@ CRUD + neighbors. Политика фракций и directory-рёбра — т
 
 ## Пост-MVP (в порядке приоритета)
 
-1. **Частичная транзакционность `CharacterSheetController::store`.**
-   Сейчас при падении после создания `world_entity` остаётся orphaned запись + занятый alias.
+1. **RAG на `canon_lore_chunks`** — когда статей лора станет много (>50) и они перестанут влезать в контекст.
 
-2. **`WorldEntityAlias`: partial unique index WHERE entity active.**
-   Сейчас — костыль: при архивации alias переименовывается с суффиксом `--archived-{id}`.
-
-3. **Пройтись по `app/Enums/*`, удалить мёртвые константы.**
-   Начать с `FactionStatus` — `Covert` и `Defunct` не используются.
-   После — почистить check-constraint в миграциях и поле `status` в `factions`.
-
-5. **Вернуть `WorldLoreProvider`** — сцены, лор, отношения в контекст Copilot.
-
-6. **Силы дисциплин** (`canon_discipline_powers`) — если нужны. Заполнить сидером, добавить UI.
-
-7. **RAG на `canon_lore_chunks`** — когда статей лора станет много (>50) и они перестанут влезать в контекст.
-
-8. **Feature-тесты** на основные эндпоинты: auth, characters, scenes, messages, copilot.
+2. **Опционально: Силы дисциплин** (`canon_discipline_powers`) — если нужны. Заполнить сидером, добавить UI.
 
 ## Вехи
 
@@ -96,3 +86,5 @@ CRUD + neighbors. Политика фракций и directory-рёбра — т
 - [x] 24.09.2026 — MVP вынесен в чистый репозиторий `trpg_chat_helper`
 - [x] 24.09.2026 — 30 статей лора импортированы
 - [x] 24.09.2026 — E2E проверен в новом репозитории
+- [x] 25.09.2026 — Чистка кода, WorldLoreProvider вернулся - сцены, лор, отношения в контекст Copilot.
+- [x] 26.09.2026 — Чистка кода, появились тесты.

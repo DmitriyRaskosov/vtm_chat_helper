@@ -33,6 +33,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/characters/{character}/disciplines', [CharacterSheetController::class, 'updateDisciplines']);
 
     Route::put('/characters/{character}/biography', [CharacterSheetController::class, 'updateBiography']);
+    Route::put('/characters/{character}/traits', [CharacterSheetController::class, 'updateTraits']);
 
     Route::post('/copilot/drafts', [CopilotController::class, 'drafts'])->middleware('storyteller');
 

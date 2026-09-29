@@ -64,6 +64,13 @@ return [
                 'priority' => 50,
                 'truncation' => 'extra_edges',
             ],
+            'personality' => [
+                'min' => 0,
+                'max' => 300,
+                'required' => false,
+                'priority' => 42,
+                'truncation' => 'lines_tail',
+            ],
             'biography' => [
                 'min' => 0,
                 'max' => 500,

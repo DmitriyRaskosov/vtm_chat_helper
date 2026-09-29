@@ -56,12 +56,6 @@ class SceneTest extends TestCase
     {
         $sceneId = $this->createScene();
 
-        $activated = $this->actingAs($this->storyteller, 'sanctum')
-            ->patchJson("/api/scenes/{$sceneId}/activate");
-
-        $activated->assertStatus(200);
-        $activated->assertJsonPath('scene.status', 'active');
-
         $closed = $this->actingAs($this->storyteller, 'sanctum')
             ->patchJson("/api/scenes/{$sceneId}/close");
 

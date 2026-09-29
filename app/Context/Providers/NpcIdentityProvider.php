@@ -36,31 +36,6 @@ class NpcIdentityProvider implements ContextProvider
 
             $lines[] = 'Type: '.$character->character_type->value;
 
-            if ($character->clan_id !== null) {
-                $character->loadMissing('clan');
-                $clan = $character->clan;
-
-                if ($clan !== null) {
-                    $clanName = $clan->name;
-                    if (is_string($clanName) && $clanName !== '') {
-                        $lines[] = "Clan: {$clanName}";
-                    }
-
-                    $clanWeakness = $clan->weakness;
-                    if (is_string($clanWeakness) && $clanWeakness !== '') {
-                        $lines[] = "Clan weakness: {$clanWeakness}";
-                    }
-                }
-            }
-
-            if ($character->sect_id !== null) {
-                $character->loadMissing('sect');
-                $sectName = $character->sect?->name;
-                if (is_string($sectName) && $sectName !== '') {
-                    $lines[] = "Sect: {$sectName}";
-                }
-            }
-
             if ($character->generation !== null) {
                 $lines[] = 'Generation: '.$character->generation;
             }

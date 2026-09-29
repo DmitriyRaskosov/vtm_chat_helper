@@ -110,6 +110,14 @@ class Character extends Model
     }
 
     /**
+     * @return HasMany<CharacterTrait, $this>
+     */
+    public function traits(): HasMany
+    {
+        return $this->hasMany(CharacterTrait::class)->orderBy('sort_order');
+    }
+
+    /**
      * @return HasMany<CharacterBiographyVersion, $this>
      */
     public function biographyVersions(): HasMany
