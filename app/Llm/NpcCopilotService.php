@@ -101,8 +101,10 @@ class NpcCopilotService
 
         if ($json !== null) {
             $decoded = json_decode($json, true);
+
             if (is_array($decoded) && isset($decoded['topics']) && is_array($decoded['topics'])) {
                 $topics = [];
+
                 foreach ($decoded['topics'] as $item) {
                     if (! is_string($item)) {
                         continue;
@@ -112,7 +114,9 @@ class NpcCopilotService
                         $topics[] = $topic;
                     }
                 }
+
                 $topics = array_values(array_unique($topics));
+
                 if ($topics !== []) {
                     return array_slice($topics, 0, $maxCount);
                 }
@@ -122,7 +126,7 @@ class NpcCopilotService
         $fallback = trim($prompt);
 
         return $fallback !== '' ? [$fallback] : ['conversation'];
-    }
+    }  
 
     private function normalizeTopic(string $topic): ?string
     {
@@ -148,28 +152,62 @@ class NpcCopilotService
             $decoded = json_decode($json, true);
 
             if (is_array($decoded) && isset($decoded['drafts']) && is_array($decoded['drafts'])) {
-                $drafts = array_values(array_filter(
-                    array_map(fn ($item): string => is_string($item) ? trim($item) : '', $decoded['drafts']),
-                    fn (string $item): bool => $item !== '',
-                ));
+                $drafts = [];
+
+                foreach ($decoded['drafts'] as $item) {
+                    if (! is_string($item)) {
+                        continue;
+                    }
+                    $item = trim($item);
+
+                    // Nested JSON guard: model may wrap each draft as a JSON string
+                    if (str_starts_with($item, '{')) {
+                        $inner = json_decode($item, true);
+                        if (is_array($inner) && isset($inner['drafts']) && is_array($inner['drafts'])) {
+                            foreach ($inner['drafts'] as $sub) {
+                                if (is_string($sub) && trim($sub) !== '') {
+                                    $drafts[] = trim($sub);
+                                }
+                            }
+                            continue;
+                        }
+                    }
+
+                    if ($item !== '') {
+                        $drafts[] = $item;
+                    }
+                }
+
+                // Dedupe — model sometimes repeats the same draft
+                $drafts = array_values(array_unique($drafts));
 
                 if (count($drafts) >= $expected) {
                     return array_slice($drafts, 0, $expected);
+                }
+
+                if ($drafts !== []) {
+                    return $drafts;
                 }
             }
         }
 
         if (preg_match_all('/^\s*(?:\d+[\).\]]\s*|-\s*)(.+)$/m', $raw, $matches)) {
-            $drafts = array_values(array_filter(array_map(trim(...), $matches[1]), fn (string $s): bool => $s !== ''));
+            $drafts = array_values(array_unique(
+                array_filter(array_map(trim(...), $matches[1]), fn (string $s): bool => $s !== ''),
+            ));
 
             if (count($drafts) >= $expected) {
                 return array_slice($drafts, 0, $expected);
+            }
+
+            if ($drafts !== []) {
+                return $drafts;
             }
         }
 
         $trimmed = trim($raw);
         if ($trimmed !== '') {
-            return array_fill(0, $expected, $trimmed);
+            return [$trimmed];   // ← одиночный fallback, БЕЗ дублей
         }
 
         throw new RuntimeException('Could not parse draft replies from the model response.');

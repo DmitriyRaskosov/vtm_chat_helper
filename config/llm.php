@@ -10,7 +10,7 @@ return [
     /*
     | Request JSON-formatted responses when the provider supports it.
     */
-    'json_mode' => filter_var(env('LLM_JSON_MODE', true), FILTER_VALIDATE_BOOLEAN),
+    'json_mode' => filter_var(env('LLM_JSON_MODE', false), FILTER_VALIDATE_BOOLEAN),
 
     /*
     | Default output and temperature. Per-request options override these.

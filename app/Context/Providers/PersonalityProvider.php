@@ -41,7 +41,7 @@ class PersonalityProvider implements ContextProvider
                 continue;
             }
 
-            $lines[] = "{$trait->label}: {$value}";
+            $lines[] = "[behavior] {$trait->label}: {$trait->value}";
         }
 
         if ($lines === []) {

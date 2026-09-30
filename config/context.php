@@ -17,7 +17,7 @@ return [
         'sections' => [
             'system' => [
                 'min' => 1,
-                'max' => 400,
+                'max' => 1000,
                 'required' => true,
                 'priority' => 100,
                 'truncation' => 'none',
@@ -36,13 +36,6 @@ return [
                 'priority' => 85,
                 'truncation' => 'description',
             ],
-            'status' => [
-                'min' => 0,
-                'max' => 200,
-                'required' => true,
-                'priority' => 80,
-                'truncation' => 'effects_tail',
-            ],
             'storyteller_prompt' => [
                 'min' => 1,
                 'max' => 800,
@@ -52,7 +45,7 @@ return [
             ],
             'recent_messages' => [
                 'min' => 0,
-                'max' => 10000,
+                'max' => 4000,
                 'required' => true,
                 'priority' => 70,
                 'truncation' => 'oldest_whole_messages',
@@ -80,7 +73,7 @@ return [
             ],
             'memory_graph' => [
                 'min' => 0,
-                'max' => 600,
+                'max' => 0,
                 'required' => false,
                 'priority' => 30,
                 'truncation' => 'lowest_score',
@@ -90,13 +83,6 @@ return [
                 'max' => 700,
                 'required' => false,
                 'priority' => 25,
-                'truncation' => 'lowest_score',
-            ],
-            'rules' => [
-                'min' => 0,
-                'max' => 400,
-                'required' => false,
-                'priority' => 20,
                 'truncation' => 'lowest_score',
             ],
             'closing' => [
