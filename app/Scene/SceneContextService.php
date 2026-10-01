@@ -10,6 +10,7 @@ use App\Models\User;
 use App\World\MixedChronicleException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class SceneContextService
 {
@@ -49,7 +50,7 @@ class SceneContextService
 
             if ($context === null) {
                 if ($expectedRevision !== 0) {
-                    throw new SceneContextRevisionException($expectedRevision, 0);
+                    $this->conflict();
                 }
 
                 $context = SceneContext::query()->create([
@@ -58,11 +59,11 @@ class SceneContextService
                     'revision' => 0,
                 ])->refresh();
             } elseif ((int) $context->revision !== $expectedRevision) {
-                throw new SceneContextRevisionException($expectedRevision, (int) $context->revision);
+                $this->conflict();
             }
 
             if ($context->frozen_revision !== null) {
-                throw new SceneFrozenException;
+                $this->conflict();
             }
 
             $nextRevision = (int) $context->revision + 1;
@@ -136,7 +137,7 @@ class SceneContextService
     public function assertMutable(Scene $scene): void
     {
         if ($scene->status === SceneStatus::Closed) {
-            throw new SceneFrozenException;
+            $this->conflict();
         }
 
         $frozen = SceneContext::query()
@@ -145,8 +146,13 @@ class SceneContextService
             ->exists();
 
         if ($frozen) {
-            throw new SceneFrozenException;
+            $this->conflict();
         }
+    }
+
+    private function conflict(): never
+    {
+        throw new ConflictHttpException('Сцена закрыта или локация уже изменена');
     }
 
     private function normalize(int $chronicleId, string $field, mixed $raw): mixed

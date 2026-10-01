@@ -38,7 +38,7 @@ class SceneContextController extends Controller
                 (int) $request->validated('expected_revision'),
                 $request->user(),
             );
-        } catch (SceneContextRevisionException|SceneFrozenException|MixedChronicleException $e) {
+        } catch (MixedChronicleException $e) {
             abort(409, $e->getMessage());
         } catch (InvalidArgumentException $e) {
             abort(422, $e->getMessage());

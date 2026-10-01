@@ -25,11 +25,7 @@
             :sheet="sheet"
             :biography="biography"
             :flash="flash.biography"
-            :is-storyteller="isStoryteller"
-            :extractor-enabled="extractorEnabled"
-            :extracting="extracting"
             @save="saveBiography"
-            @extract="onBiographyExtract"
         />
 
         <SheetTraitsSection
@@ -62,7 +58,6 @@
 </template>
 
 <script setup>
-import { useRouter } from 'vue-router';
 import AppNav from '../components/layout/AppNav.vue';
 import SheetAdvantagesSection from '../components/sheet/SheetAdvantagesSection.vue';
 import SheetBiographySection from '../components/sheet/SheetBiographySection.vue';
@@ -70,8 +65,6 @@ import SheetHeaderSection from '../components/sheet/SheetHeaderSection.vue';
 import SheetPlaceSection from '../components/sheet/SheetPlaceSection.vue';
 import SheetTraitsSection from '../components/sheet/SheetTraitsSection.vue';
 import { useCharacterSheet } from '../composables/useCharacterSheet';
-
-const router = useRouter();
 
 const {
     sheet,
@@ -103,15 +96,5 @@ const {
     createPlaceEntity,
     setDiscipline,
     addDiscipline,
-    extractorEnabled,
-    extracting,
-    runBiographyExtraction,
 } = useCharacterSheet();
-
-async function onBiographyExtract() {
-    const runId = await runBiographyExtraction();
-    if (runId) {
-        router.push({ name: 'world', query: { tab: 'inbox', run: String(runId) } });
-    }
-}
 </script>

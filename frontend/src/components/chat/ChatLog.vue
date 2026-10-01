@@ -23,6 +23,13 @@ defineProps({
 const logEl = ref(null);
 
 defineExpose({
+    isAtBottom() {
+        const el = logEl.value;
+        if (!el) {
+            return true;
+        }
+        return el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+    },
     scrollToBottom() {
         if (logEl.value) {
             logEl.value.scrollTop = logEl.value.scrollHeight;

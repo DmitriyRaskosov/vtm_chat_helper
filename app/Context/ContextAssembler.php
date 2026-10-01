@@ -23,7 +23,7 @@ class ContextAssembler
 {
     public const VERSION = 'context-assembler-v2';
 
-    public const PROMPT_VERSION = 'npc-drafts-v7';
+    public const PROMPT_VERSION = 'npc-drafts-v8';
 
     public const TOPICS_PROMPT_VERSION = 'npc-topics-v1';
 

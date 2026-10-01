@@ -59,9 +59,6 @@ class SceneProvider implements ContextProvider
         if (is_string($context?->situation) && $context->situation !== '') {
             $lines[] = 'Situation: '.$context->situation;
         }
-        if (is_string($context?->storyteller_notes) && $context->storyteller_notes !== '') {
-            $lines[] = 'Storyteller notes: '.$context->storyteller_notes;
-        }
 
         $names = [];
         $characterIds = $participants->pluck('character_id')->map(fn ($id): int => (int) $id)->all();

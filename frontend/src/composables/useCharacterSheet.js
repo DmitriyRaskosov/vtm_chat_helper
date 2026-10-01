@@ -1,8 +1,4 @@
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
-
-export function extractionMemoryLabel(candidate) {
-    return `${candidate.text} · ${candidate.node_type}`;
-}
 import { useRoute } from 'vue-router';
 import { api, useAuth } from '../auth';
 
@@ -95,8 +91,6 @@ export function useCharacterSheet() {
         place: false,
     });
     const flashTimers = {};
-    const extractorEnabled = ref(false);
-    const extracting = ref(false);
     const sects = computed(() => catalog.value?.sects ?? []);
     const clans = computed(() => catalog.value?.clans ?? []);
     const bloodlines = computed(() => catalog.value?.bloodlines ?? []);
@@ -166,19 +160,6 @@ export function useCharacterSheet() {
         traits.value.splice(index, 1);
     }
 
-    async function loadExtractorStatus() {
-        if (!isStoryteller.value) {
-            extractorEnabled.value = false;
-            return;
-        }
-        try {
-            const { data } = await api.get('/extract/status');
-            extractorEnabled.value = Boolean(data.enabled);
-        } catch {
-            extractorEnabled.value = false;
-        }
-    }
-
     function applySheet(character) {
         sheet.value = character;
 
@@ -202,23 +183,6 @@ export function useCharacterSheet() {
             haven_entity_id: character.haven_entity_id ?? '',
         });
         applyTraitsFromSheet(character.traits);
-    }
-
-    async function runBiographyExtraction() {
-        if (!sheet.value?.id || extracting.value) {
-            return null;
-        }
-        extracting.value = true;
-        error.value = '';
-        try {
-            const { data } = await api.post('/extract', { character_id: sheet.value.id }, { timeout: 320000 });
-            return data.extraction_run_id ?? data.run?.id ?? null;
-        } catch (e) {
-            error.value = e.response?.data?.message ?? 'Не удалось разобрать биографию.';
-            return null;
-        } finally {
-            extracting.value = false;
-        }
     }
 
     async function load() {
@@ -249,7 +213,6 @@ export function useCharacterSheet() {
             if (sheetRes) {
                 applySheet(sheetRes.data.character);
             }
-            await loadExtractorStatus();
         } catch (e) {
             error.value = e.response?.data?.message ?? 'Не удалось загрузить лист.';
         }
@@ -417,8 +380,5 @@ export function useCharacterSheet() {
         createPlaceEntity,
         setDiscipline,
         addDiscipline,
-        extractorEnabled,
-        extracting,
-        runBiographyExtraction,
     };
 }

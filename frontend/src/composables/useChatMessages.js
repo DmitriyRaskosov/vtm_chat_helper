@@ -39,8 +39,11 @@ export function useChatMessages({ selectedSceneId, canPost, getLog }) {
             return;
         }
 
+        const stick = afterId === 0 || (getLog()?.isAtBottom?.() ?? true);
         merge(data.messages);
-        await scrollDown();
+        if (stick) {
+            await scrollDown();
+        }
     }
 
     async function send() {

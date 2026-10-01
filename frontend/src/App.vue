@@ -20,13 +20,11 @@ const isWide = computed(() => (
     (isStoryteller.value && route.name === 'chat')
     || route.name === 'characters'
     || route.name === 'character'
-    || route.name === 'world'
 ));
 
 const showScrollButtons = computed(() => (
     route.name === 'characters'
     || route.name === 'character'
-    || route.name === 'world'
 ));
 
 function scrollTop() {

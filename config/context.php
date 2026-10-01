@@ -31,7 +31,7 @@ return [
             ],
             'scene' => [
                 'min' => 1,
-                'max' => 200,
+                'max' => 300,
                 'required' => true,
                 'priority' => 85,
                 'truncation' => 'description',

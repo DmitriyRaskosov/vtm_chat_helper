@@ -137,6 +137,48 @@ class SceneTest extends TestCase
         ]);
     }
 
+    public function test_scene_context_rejects_stale_revision(): void
+    {
+        $sceneId = $this->createScene();
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->putJson("/api/scenes/{$sceneId}/context", [
+                'expected_revision' => 0,
+                'situation' => 'Темно',
+            ])
+            ->assertStatus(200);
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->putJson("/api/scenes/{$sceneId}/context", [
+                'expected_revision' => 0,
+                'situation' => 'Светло',
+            ])
+            ->assertStatus(409)
+            ->assertJsonPath('message', 'Сцена закрыта или локация уже изменена');
+
+        $this->assertDatabaseHas('scene_contexts', [
+            'scene_id' => $sceneId,
+            'situation' => 'Темно',
+        ]);
+    }
+
+    public function test_closed_scene_context_cannot_be_updated(): void
+    {
+        $sceneId = $this->createScene();
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->patchJson("/api/scenes/{$sceneId}/close")
+            ->assertStatus(200);
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->putJson("/api/scenes/{$sceneId}/context", [
+                'expected_revision' => 0,
+                'situation' => 'Темно',
+            ])
+            ->assertStatus(409)
+            ->assertJsonPath('message', 'Сцена закрыта или локация уже изменена');
+    }
+
     private function createScene(): int
     {
         $response = $this->actingAs($this->storyteller, 'sanctum')

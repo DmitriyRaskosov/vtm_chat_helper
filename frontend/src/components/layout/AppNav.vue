@@ -4,10 +4,6 @@
             <RouterLink to="/chat" :class="{ 'nav-current': current === 'chat' }">Чат</RouterLink>
             <span class="nav-sep">·</span>
             <RouterLink to="/characters" :class="{ 'nav-current': current === 'characters' }">Персонажи</RouterLink>
-            <template v-if="isStoryteller">
-                <span class="nav-sep">·</span>
-                <RouterLink to="/world" :class="{ 'nav-current': current === 'world' }">Мир</RouterLink>
-            </template>
         </h1>
         <span class="muted">
             {{ auth.user.value?.name }}
@@ -27,7 +23,7 @@ defineProps({
     current: {
         type: String,
         default: null,
-        validator: (value) => value == null || ['chat', 'characters', 'world'].includes(value),
+        validator: (value) => value == null || ['chat', 'characters'].includes(value),
     },
 });
 

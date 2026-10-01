@@ -22,6 +22,29 @@
         <p v-if="selectedScene?.description" class="muted scene-description">
             {{ selectedScene.description }}
         </p>
+        <div v-if="isStoryteller" class="scene-location">
+            <label for="scene-situation">
+                Локация сцены
+                <textarea
+                    id="scene-situation"
+                    v-model="sceneSituation"
+                    maxlength="2000"
+                    rows="3"
+                    :disabled="selectedScene?.status === 'closed'"
+                    placeholder="что персонажи могут воспринять и чем располагают — темнота, что видно, что под рукой, чего они не знают."
+                />
+            </label>
+            <div v-if="selectedScene?.status !== 'closed'" class="sheet-actions">
+                <button
+                    type="button"
+                    :disabled="sceneSituationSaving"
+                    @click="emit('save-situation')"
+                >
+                    Сохранить
+                </button>
+            </div>
+            <p v-if="sceneSituationError" class="error">{{ sceneSituationError }}</p>
+        </div>
         <p v-if="sceneError" class="error">{{ sceneError }}</p>
 
         <div v-if="isStoryteller" class="scene-management">
@@ -56,22 +79,6 @@
             >
                 Закрыть сцену
             </button>
-            <button
-                v-if="extractorEnabled && selectedScene"
-                type="button"
-                class="secondary"
-                :disabled="sceneLoading || extracting"
-                @click="emit('extract')"
-            >
-                {{ extracting ? 'Разбор…' : 'Разобрать' }}
-            </button>
-            <router-link
-                v-if="inboxCount > 0"
-                to="/world?tab=inbox"
-                class="inbox-badge"
-            >
-                {{ inboxCount }} {{ inboxCount === 1 ? 'окно ждёт' : 'окон ждут' }}
-            </router-link>
         </div>
 
         <div v-if="isStoryteller" class="scene-cast">
@@ -168,12 +175,12 @@ defineProps({
     participantBusy: { type: Boolean, required: true },
     participantError: { type: String, required: true },
     participantFlash: { type: String, required: true },
-    extractorEnabled: { type: Boolean, default: false },
-    extracting: { type: Boolean, default: false },
-    inboxCount: { type: Number, default: 0 },
+    sceneSituationSaving: { type: Boolean, required: true },
+    sceneSituationError: { type: String, required: true },
 });
 
 const selectedSceneId = defineModel('selectedSceneId');
+const sceneSituation = defineModel('sceneSituation', { type: String });
 const newSceneTitle = defineModel('newSceneTitle', { type: String });
 const addCharacterId = defineModel('addCharacterId');
 const newGameSessionTitle = defineModel('newGameSessionTitle', { type: String });
@@ -186,6 +193,6 @@ const emit = defineEmits([
     'add',
     'remove',
     'create-session',
-    'extract',
+    'save-situation',
 ]);
 </script>

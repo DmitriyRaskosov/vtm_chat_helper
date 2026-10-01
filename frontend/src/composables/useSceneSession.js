@@ -1,4 +1,4 @@
-import { computed, onUnmounted, ref } from 'vue';
+import { computed, onUnmounted, ref, watch } from 'vue';
 import { api } from '../auth';
 
 export function sceneStatusLabel(status) {
@@ -49,6 +49,10 @@ export function useSceneSession({ auth }) {
     const participantError = ref('');
     const participantFlash = ref('');
     const selectedNpcId = ref(null);
+    const sceneSituation = ref('');
+    const sceneSituationRevision = ref(0);
+    const sceneSituationSaving = ref(false);
+    const sceneSituationError = ref('');
     let boundMessages = null;
     let participantFlashTimer;
 
@@ -104,6 +108,62 @@ export function useSceneSession({ auth }) {
             ? preferredSceneId
             : gameSession.value.active_scene_id ?? gameSession.value.scenes[0]?.id ?? null;
     }
+
+    async function loadSceneSituation(sceneId = selectedSceneId.value) {
+        sceneSituationError.value = '';
+
+        if (!sceneId || auth.user.value?.is_storyteller !== true) {
+            sceneSituation.value = '';
+            sceneSituationRevision.value = 0;
+            return;
+        }
+
+        try {
+            const { data } = await api.get(`/scenes/${sceneId}/context`);
+            if (selectedSceneId.value !== sceneId) {
+                return;
+            }
+            sceneSituation.value = data.context?.situation ?? '';
+            sceneSituationRevision.value = Number(data.context?.revision ?? 0);
+        } catch (error) {
+            if (selectedSceneId.value !== sceneId) {
+                return;
+            }
+            sceneSituationError.value = error.response?.data?.message ?? 'Не удалось загрузить локацию сцены.';
+        }
+    }
+
+    async function saveSceneSituation() {
+        const sceneId = selectedSceneId.value;
+        if (!sceneId || selectedScene.value?.status === 'closed' || sceneSituationSaving.value) {
+            return;
+        }
+
+        sceneSituationSaving.value = true;
+        sceneSituationError.value = '';
+
+        try {
+            const { data } = await api.put(`/scenes/${sceneId}/context`, {
+                expected_revision: sceneSituationRevision.value,
+                situation: sceneSituation.value,
+            });
+            if (selectedSceneId.value !== sceneId) {
+                return;
+            }
+            sceneSituationRevision.value = Number(data.context?.revision ?? sceneSituationRevision.value);
+        } catch (error) {
+            if (selectedSceneId.value !== sceneId) {
+                return;
+            }
+            sceneSituationError.value = error.response?.data?.message ?? 'Не удалось сохранить локацию сцены.';
+        } finally {
+            sceneSituationSaving.value = false;
+        }
+    }
+
+    watch(selectedSceneId, (sceneId) => {
+        loadSceneSituation(sceneId);
+    });
 
     async function loadParticipants() {
         participants.value = [];
@@ -276,6 +336,9 @@ export function useSceneSession({ auth }) {
         participantError,
         participantFlash,
         selectedNpcId,
+        sceneSituation,
+        sceneSituationSaving,
+        sceneSituationError,
         scenes,
         selectedScene,
         canPost,
@@ -285,6 +348,7 @@ export function useSceneSession({ auth }) {
         sceneNpcs,
         bindMessages,
         loadGameSession,
+        saveSceneSituation,
         loadParticipants,
         addToScene,
         removeFromScene,

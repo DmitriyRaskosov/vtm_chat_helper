@@ -10,6 +10,7 @@ use App\World\MixedChronicleException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class SceneParticipantService
 {
@@ -98,7 +99,7 @@ class SceneParticipantService
 
             try {
                 $this->leave($scene, $character);
-            } catch (SceneFrozenException|InvalidArgumentException) {
+            } catch (ConflictHttpException|InvalidArgumentException) {
                 continue;
             }
         }

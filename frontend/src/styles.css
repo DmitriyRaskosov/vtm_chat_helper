@@ -83,6 +83,9 @@ a { color: var(--accent); }
 .scene-description {
     margin: 0.75rem 0 0;
 }
+.scene-location textarea:disabled {
+    opacity: 0.7;
+}
 .scene-management {
     display: flex;
     gap: 0.5rem;
@@ -254,41 +257,6 @@ button.link {
     gap: 0.25rem 0.5rem;
 }
 .character-row button.link { font-size: 0.85rem; }
-.world-list-row {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) auto;
-    gap: 0.25rem 0.75rem;
-    align-items: start;
-}
-.world-list-row-title {
-    display: flex;
-    flex-wrap: wrap;
-    align-items: baseline;
-    gap: 0.25rem 0.5rem;
-}
-.world-list-row-desc {
-    margin: 0.2rem 0 0;
-    font-size: 0.9rem;
-}
-.world-list-row-action {
-    margin: 0;
-    white-space: nowrap;
-}
-.world-faction-nested {
-    margin: 0.35rem 0 0 1rem;
-}
-.world-faction-nested summary {
-    cursor: pointer;
-    color: var(--muted);
-    font-size: 0.9rem;
-}
-.world-directory-details summary {
-    cursor: pointer;
-}
-.world-directory-details summary h2 {
-    display: inline;
-    margin: 0;
-}
 .scroll-float {
     position: fixed;
     right: 1rem;
@@ -460,43 +428,6 @@ button.link {
 }
 .place-create-row input { margin: 0; }
 .place-create-row button { margin: 0; white-space: nowrap; }
-.world-desc { grid-column: 1 / -1; }
-.alias-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.5rem;
-    align-items: flex-end;
-}
-.alias-row input { flex: 1; min-width: 10rem; }
-.extraction-mention-edit { margin-bottom: 1rem; }
-.world-politics { margin-top: 0.75rem; }
-.world-tabs {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    margin-bottom: 1rem;
-}
-.world-tabs button { margin: 0; }
-.world-tabs button.current {
-    border-color: var(--accent);
-    color: var(--accent);
-}
-.lore-checks {
-    max-height: 12rem;
-    overflow: auto;
-    border: 1px solid var(--line);
-    background: #141210;
-    padding: 0.5rem 0.7rem;
-    margin: 0.35rem 0 0.75rem;
-}
-.check-row {
-    display: flex;
-    align-items: baseline;
-    gap: 0.45rem;
-    margin: 0.25rem 0;
-    font-size: 0.9rem;
-}
-.check-row input { width: auto; }
 .play-bar input[type="number"],
 .merit-list input[type="number"] { width: 100%; }
 .play-bar button { margin-top: 0; }
