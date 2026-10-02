@@ -1,0 +1,415 @@
+<?php
+
+namespace App\Memory;
+
+use App\Enums\CharacterType;
+use App\Llm\ChatProvider;
+use App\Models\Character;
+use App\Models\Message;
+use App\Models\Scene;
+use App\Models\WorldEntity;
+use App\Rag\EmbeddingProvider;
+use Illuminate\Support\Facades\DB;
+use RuntimeException;
+
+class MemoryExtractionService
+{
+    private const MAX_MEMORIES_PER_NPC = 15;
+    private const MAX_MESSAGES_PER_CALL = 100;
+
+    private const ALLOWED_TYPES = [
+        'observation', 'dialogue', 'knowledge',
+        'emotion', 'relationship', 'event',
+    ];
+
+    public function __construct(
+        private ChatProvider $chat,
+        private EmbeddingProvider $embeddings,
+    ) {}
+
+    /**
+     * @return array{created: int, npcs: int, processed_messages: int, errors: list<string>}
+     */
+    public function extractFromScene(Scene $scene): array
+    {
+        $scene->loadMissing('gameSession');
+
+        $fromId = (int) ($scene->last_extracted_to_message_id ?? 0);
+
+        $messages = Message::query()
+            ->where('scene_id', $scene->id)
+            ->where('id', '>', $fromId)
+            ->orderBy('id')
+            ->limit(self::MAX_MESSAGES_PER_CALL)
+            ->get();
+
+        if ($messages->isEmpty()) {
+            return ['created' => 0, 'npcs' => 0, 'processed_messages' => 0, 'errors' => []];
+        }
+
+        $npcs = $this->resolveSceneNpcs($scene);
+
+        if ($npcs->isEmpty()) {
+            return ['created' => 0, 'npcs' => 0, 'processed_messages' => 0, 'errors' => []];
+        }
+
+        $formattedMessages = $this->formatMessages($messages);
+        $entityList = $this->buildEntityList($scene);
+        $allowedEntityIds = $this->allowedEntityIds($scene);
+
+        $created = 0;
+        $errors = [];
+        $lastMessageId = (int) $messages->last()->id;
+
+        foreach ($npcs as $npc) {
+            try {
+                $extracted = $this->extractForNpc(
+                    $npc,
+                    $formattedMessages,
+                    $entityList,
+                    $allowedEntityIds,
+                );
+
+                if ($extracted === []) {
+                    continue;
+                }
+
+                $contents = array_column($extracted, 'content');
+                $vectors = $this->embeddings->embedBatch($contents);
+
+                DB::transaction(function () use ($npc, $scene, $extracted, $vectors, $lastMessageId): void {
+                    foreach ($extracted as $index => $row) {
+                        $this->persistMemory($npc, $scene, $row, $vectors[$index], $lastMessageId);
+                    }
+                });
+
+                $created += count($extracted);
+            } catch (\Throwable $e) {
+                $errors[] = 'NPC '.$npc->id.' ('.$npc->id.'): '.$e->getMessage();
+            }
+        }
+
+        // Сдвигаем курсор ТОЛЬКО если что-то извлеклось.
+        // Иначе — следующий прогон повторит ту же сцену.
+        if ($created > 0 || $errors === []) {
+            $scene->update(['last_extracted_to_message_id' => $lastMessageId]);
+        }
+
+        return [
+            'created' => $created,
+            'npcs' => $npcs->count(),
+            'processed_messages' => $messages->count(),
+            'errors' => $errors,
+        ];
+    }
+
+    private function resolveSceneNpcs(Scene $scene): \Illuminate\Support\Collection
+    {
+        $ids = $scene->participants()
+            ->where('is_current', true)
+            ->pluck('character_id')
+            ->unique()
+            ->all();
+
+        if ($ids === []) {
+            return collect();
+        }
+
+        return Character::query()
+            ->whereIn('id', $ids)
+            ->where('character_type', CharacterType::Npc)
+            ->get();
+    }
+
+    private function formatMessages(\Illuminate\Support\Collection $messages): string
+    {
+        return $messages
+            ->map(fn (Message $m): string => $m->displayAuthor().': '.trim((string) $m->body))
+            ->implode("\n");
+    }
+
+    private function buildEntityList(Scene $scene): string
+    {
+        $ids = $scene->participants()
+            ->pluck('character_id')
+            ->unique()
+            ->all();
+
+        if ($ids === []) {
+            return '(none)';
+        }
+
+        $names = WorldEntity::query()
+            ->whereIn('id', $ids)
+            ->pluck('canonical_name', 'id');
+
+        $lines = [];
+        foreach ($names as $id => $name) {
+            $lines[] = "- {$id}: {$name}";
+        }
+
+        return implode("\n", $lines);
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function allowedEntityIds(Scene $scene): array
+    {
+        return $scene->participants()
+            ->pluck('character_id')
+            ->map(fn ($id): int => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    /**
+     * @param  list<int>  $allowedEntityIds
+     * @return list<array{type: string, content: string, importance: int, involved_entity_ids: list<int>}>
+     */
+    private function extractForNpc(Character $npc, string $messages, string $entityList, array $allowedEntityIds): array
+    {
+        $npc->loadMissing(['clan', 'sect', 'traits', 'biography']);
+
+        $name = WorldEntity::query()->whereKey($npc->id)->value('canonical_name') ?? 'NPC';
+        $clan = $npc->clan?->name ?? '—';
+        $sect = $npc->sect?->name ?? '—';
+
+        $traits = $npc->traits->map(fn ($t): string => "- {$t->label}: {$t->value}")->implode("\n");
+        if ($traits === '') {
+            $traits = '(нет)';
+        }
+
+        $bio = $npc->biography?->summary ?? '(нет)';
+
+        $userPrompt = <<<PROMPT
+# The NPC
+
+Name: {$name}
+Clan: {$clan}
+Sect: {$sect}
+
+Traits:
+{$traits}
+
+Biography summary: {$bio}
+
+# Available entity IDs (use ONLY these in involved_entity_ids)
+
+{$entityList}
+
+# Scene dialogue
+
+{$messages}
+
+# Task
+
+Extract memories for "{$name}" from the scene above.
+PROMPT;
+
+        try {
+            $turn = $this->chat->chatTurn(
+                [
+                    ['role' => 'system', 'content' => $this->systemPrompt()],
+                    ['role' => 'user', 'content' => $userPrompt],
+                ],
+                ['max_tokens' => 6000, 'temperature' => 0.3],
+                [],
+            );
+        } catch (\Throwable $e) {
+            throw new RuntimeException('LLM call failed: '.$e->getMessage(), 0, $e);
+        }
+
+        \Log::info('memory.extract', [
+            'npc_id' => $npc->id,
+            'raw_length' => strlen($turn->content),
+            'finish_reason' => $turn->finishReason,
+            'raw' => $turn->content,
+        ]);
+
+        return $this->parseMemories($turn->content, $allowedEntityIds);
+    }
+
+    private function systemPrompt(): string
+    {
+        return <<<'PROMPT'
+You extract long-term memories for a specific NPC in a Vampire: The Masquerade V20 game.
+
+# Rules
+
+1. Write from THIS NPC's subjective perspective. What did THIS NPC personally see, hear, learn, or feel?
+2. Write FACTS, not interpretations.
+   BAD: "он предал меня"
+   GOOD: "он сказал, что не придёт"
+   BAD: "он показал своё истинное лицо"
+   GOOD: "он отказался назвать имя информатора"
+2a. When quoting, preserve the KEY PHRASE verbatim.
+If the source says "держится на страхе", write "держится на страхе".
+Do not paraphrase into "держится на вере" or "держится на чём-то важном".
+3. Do NOT moralize. Do NOT find lessons. Do NOT write like a novel. This is a protocol, not a story.
+4. Be DIVERSE in memory types:
+   - observation: what they saw/heard/noticed
+   - dialogue: a phrase that stuck
+   - knowledge: a fact they learned about the world or people
+   - emotion: an inner feeling (fact about a feeling, not a judgment)
+   - relationship: a shift in relation to someone
+   - event: something that happened to them
+   Most memories should be NEUTRAL observations and dialogue. Do not make everything a trauma.
+5. One memory = one fact, 1-3 sentences max. No preambles. No "он почувствовал, что..." — write the fact.
+5a. A single long line of dialogue may contain MULTIPLE distinct facts.
+Extract EACH as a SEPARATE memory. Do not merge. Do not pick just one.
+
+Example — a long NPC reply containing three facts:
+Line: "Цепь не перекуёшь. Цепь держится не на звеньях — на страхе. А я уже разорвал. За разрывом — ничего."
+
+Wrong output (one memory, most facts lost):
+{"memories":[{"type":"observation","content":"Игорь сказал, что разорвал цепь","importance":6}]}
+
+Correct output (three memories):
+{"memories":[
+  {"type":"dialogue","content":"Игорь сказал: цепь держится не на звеньях — она держится на страхе.","importance":7},
+  {"type":"dialogue","content":"Игорь сказал, что уже разорвал цепь.","importance":6},
+  {"type":"knowledge","content":"По словам Игоря, за разрывом цепи — ничего.","importance":6}
+]}
+6. Only include what THIS NPC was present for or would know.
+7. Importance (1-10):
+   1-3 — routine: weather, casual greeting, passing detail
+   4-6 — noticeable: odd behavior, useful information, small exchange
+   7-9 — important: revealed secret, bond formed or broken, threat made
+   10 — life-changing (rare; use only for truly pivotal moments)
+8. involved_entity_ids: use ONLY ids from the provided list. Never invent ids.
+9. Write memory content in the SAME LANGUAGE as the scene dialogue.
+10. If nothing memorable happened, return an empty list.
+
+# Response format
+
+Return valid JSON only, no markdown fences:
+{"memories":[{"type":"observation","content":"...","importance":5,"involved_entity_ids":[5,7]}]}
+PROMPT;
+    }
+
+    /**
+     * @param  list<int>  $allowedEntityIds
+     * @return list<array{type: string, content: string, importance: int, involved_entity_ids: list<int>}>
+     */
+    private function parseMemories(string $raw, array $allowedEntityIds): array
+    {
+        $json = $this->extractJson($raw);
+        if ($json === null) {
+            return [];
+        }
+
+        $decoded = json_decode($json, true);
+        if (! is_array($decoded) || ! isset($decoded['memories']) || ! is_array($decoded['memories'])) {
+            return [];
+        }
+
+        $result = [];
+
+        foreach ($decoded['memories'] as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $content = trim((string) ($item['content'] ?? ''));
+            if ($content === '' || mb_strlen($content) > 500) {
+                continue;
+            }
+
+            $type = (string) ($item['type'] ?? 'observation');
+            if (! in_array($type, self::ALLOWED_TYPES, true)) {
+                $type = 'observation';
+            }
+
+            $importance = (int) ($item['importance'] ?? 5);
+            $importance = max(1, min(10, $importance));
+
+            $involved = [];
+            if (isset($item['involved_entity_ids']) && is_array($item['involved_entity_ids'])) {
+                foreach ($item['involved_entity_ids'] as $id) {
+                    if (! is_numeric($id)) {
+                        continue;
+                    }
+                    $id = (int) $id;
+                    if (in_array($id, $allowedEntityIds, true)) {
+                        $involved[] = $id;
+                    }
+                }
+            }
+
+            $result[] = [
+                'type' => $type,
+                'content' => $content,
+                'importance' => $importance,
+                'involved_entity_ids' => array_values(array_unique($involved)),
+            ];
+
+            if (count($result) >= self::MAX_MEMORIES_PER_NPC) {
+                break;
+            }
+        }
+
+        return $result;
+    }
+
+    private function extractJson(string $raw): ?string
+    {
+        $trimmed = trim($raw);
+
+        if (str_starts_with($trimmed, '{')) {
+            return $trimmed;
+        }
+
+        if (preg_match('/```(?:json)?\s*(\{.*\})\s*```/s', $raw, $matches)) {
+            return $matches[1];
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array{type: string, content: string, importance: int, involved_entity_ids: list<int>}  $row
+     * @param  list<float>  $vector
+     */
+    private function persistMemory(Character $npc, Scene $scene, array $row, array $vector, int $sourceMessageId): void
+    {
+        // Dedup: same character, same source message, same content
+        $exists = DB::table('character_memories')
+        ->where('character_id', $npc->id)
+        ->where('source_message_id', $sourceMessageId)
+        ->where('content', $row['content'])
+        ->exists();
+
+        if ($exists) {
+            return;
+        }
+
+        $pgArray = '{'.implode(',', $row['involved_entity_ids']).'}';
+
+        DB::statement(
+            'INSERT INTO character_memories
+                (character_id, chronicle_id, type, content, importance, involved_entity_ids, source_message_id, source_scene_id, embedding, created_at, updated_at)
+             VALUES (?, ?, ?, ?, ?, ?::bigint[], ?, ?, ?::vector, NOW(), NOW())',
+            [
+                $npc->id,
+                $npc->chronicle_id,
+                $row['type'],
+                $row['content'],
+                $row['importance'],
+                $pgArray,
+                $sourceMessageId,
+                $scene->id,
+                $this->formatVector($vector),
+            ],
+        );
+    }
+
+    /**
+     * @param  list<float>  $vector
+     */
+    private function formatVector(array $vector): string
+    {
+        return '['.implode(',', array_map(fn (float $v): string => (string) $v, $vector)).']';
+    }
+}

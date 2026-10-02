@@ -97,3 +97,22 @@ CRUD + neighbors. Политика фракций и directory-рёбра — т
 - [x] Проверено: silent-кейс, yes/no-вопрос, развёрнутый рассказ, дефолт
 - [x] Добавлен блок "ситуации" для сцены в окне рассказчика. Это описание локации, идёт в промпт.
 - [x] Рудиментарная вкладка "МИР" для добавления лора/локаций/etc старой версии проекта удалена. 
+
+## Память — работает (02.10.2026)
+
+- [x] character_memories с pgvector(1024) + HNSW
+- [x] EmbeddingProvider + OllamaEmbeddingProvider (qwen3-embedding:0.6b)
+- [x] MemoryExtractionService — инкрементально, per NPC, с source cursor
+- [x] MemoryRetrievalService — cosine + keyword boost + soft diversity penalty
+- [x] MemoryProvider в контексте
+- [x] Prompt-first retrievalQuery (topics только как supplement)
+
+## Известные ограничения
+
+- [ ] qwen3-embedding:0.6b слабая на русском (sim=0.10 для дословных совпадений).
+      Кандидаты на замену: bge-m3, multilingual-e5-large.
+      Требует пересчёта embeddings.
+- [ ] Extraction больших сцен (>30 сообщений) упирается в max_tokens=6000.
+      Решение: чанковать по 10 сообщений.
+- [ ] Extraction сейчас ручная (artisan command). Нужен автотриггер:
+      по закрытию сцены / cron / job.

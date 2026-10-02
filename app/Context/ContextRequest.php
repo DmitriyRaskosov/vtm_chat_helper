@@ -67,22 +67,25 @@ final readonly class ContextRequest
      */
     public function retrievalQuery(): string
     {
+        $parts = [];
+
+        $prompt = trim($this->prompt);
+        if ($prompt !== '') {
+            $parts[] = $prompt;
+        }
+
         $topics = [];
         foreach ($this->searchTopics as $topic) {
-            if (! is_string($topic)) {
-                continue;
-            }
-            $topic = trim($topic);
-            if ($topic !== '') {
-                $topics[] = $topic;
+            if (is_string($topic) && trim($topic) !== '') {
+                $topics[] = trim($topic);
             }
         }
-        $topics = array_values(array_unique($topics));
+        $topics = array_slice(array_values(array_unique($topics)), 0, 2);
 
-        if ($topics === []) {
-            return trim($this->prompt);
+        if ($topics !== []) {
+            $parts[] = implode('. ', $topics);
         }
 
-        return implode("\n", $topics);
+        return implode("\n", $parts);
     }
 }

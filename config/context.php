@@ -22,6 +22,13 @@ return [
                 'priority' => 100,
                 'truncation' => 'none',
             ],
+            'storyteller_prompt' => [
+                'min' => 1,
+                'max' => 800,
+                'required' => true,
+                'priority' => 95,
+                'truncation' => 'none',
+            ],
             'npc_identity' => [
                 'min' => 1,
                 'max' => 250,
@@ -36,19 +43,19 @@ return [
                 'priority' => 85,
                 'truncation' => 'description',
             ],
-            'storyteller_prompt' => [
-                'min' => 1,
-                'max' => 800,
-                'required' => true,
-                'priority' => 95,
-                'truncation' => 'none',
-            ],
             'recent_messages' => [
                 'min' => 0,
                 'max' => 4000,
                 'required' => true,
                 'priority' => 70,
                 'truncation' => 'oldest_whole_messages',
+            ],
+            'memory' => [
+                'min' => 0,
+                'max' => 400,
+                'required' => false,
+                'priority' => 60,
+                'truncation' => 'lowest_score',
             ],
             'direct_relations' => [
                 'min' => 0,
@@ -57,19 +64,19 @@ return [
                 'priority' => 50,
                 'truncation' => 'extra_edges',
             ],
-            'personality' => [
-                'min' => 0,
-                'max' => 300,
-                'required' => false,
-                'priority' => 42,
-                'truncation' => 'lines_tail',
-            ],
             'biography' => [
                 'min' => 0,
                 'max' => 500,
                 'required' => false,
                 'priority' => 45,
                 'truncation' => 'drop_full_text',
+            ],
+            'personality' => [
+                'min' => 0,
+                'max' => 300,
+                'required' => false,
+                'priority' => 42,
+                'truncation' => 'lines_tail',
             ],
             'memory_graph' => [
                 'min' => 0,

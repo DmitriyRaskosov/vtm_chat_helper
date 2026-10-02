@@ -12,6 +12,7 @@ final readonly class ChatTurn
         public string $content,
         public array $toolCalls = [],
         public array $rawToolCalls = [],
+        public ?string $finishReason = null,
     ) {}
 
     /**
