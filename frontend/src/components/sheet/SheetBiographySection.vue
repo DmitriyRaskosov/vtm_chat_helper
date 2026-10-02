@@ -1,6 +1,7 @@
 <template>
     <section class="card">
-        <h2>Биография</h2>
+        <details>
+        <summary>Биография</summary>
         <p v-if="sheet.biography?.current_version" class="muted">
             Версия {{ sheet.biography.current_version }}
         </p>
@@ -39,6 +40,7 @@
             <button type="button" @click="emit('save')">Сохранить биографию</button>
             <span v-if="flash" class="saved-flash">Сохранено!</span>
         </div>
+        </details>
     </section>
 </template>
 

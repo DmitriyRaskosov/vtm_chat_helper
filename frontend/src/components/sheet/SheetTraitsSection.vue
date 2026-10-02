@@ -1,6 +1,7 @@
 <template>
     <section class="card">
-        <h2>Черты личности</h2>
+        <details>
+        <summary>Черты личности</summary>
         <p class="muted">Короткие заметки для отыгрыша и Copilot.</p>
 
         <div class="trait-presets">
@@ -52,6 +53,7 @@
             <button type="button" @click="emit('save')">Сохранить черты</button>
             <span v-if="flash" class="saved-flash">Сохранено!</span>
         </div>
+        </details>
     </section>
 </template>
 

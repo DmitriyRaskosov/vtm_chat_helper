@@ -112,7 +112,7 @@ export function useSceneSession({ auth }) {
     async function loadSceneSituation(sceneId = selectedSceneId.value) {
         sceneSituationError.value = '';
 
-        if (!sceneId || auth.user.value?.is_storyteller !== true) {
+        if (!sceneId) {
             sceneSituation.value = '';
             sceneSituationRevision.value = 0;
             return;

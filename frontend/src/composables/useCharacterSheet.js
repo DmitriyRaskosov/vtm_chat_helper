@@ -328,6 +328,10 @@ export function useCharacterSheet() {
         newDisciplineId.value = null;
     }
 
+    async function removeDiscipline(disciplineId) {
+        await writeDisciplines(disciplineId, 0);
+    }
+
     async function writeDisciplines(disciplineId, level) {
         const next = disciplineRows.value
             .filter((row) => row.discipline_id !== disciplineId)
@@ -380,5 +384,6 @@ export function useCharacterSheet() {
         createPlaceEntity,
         setDiscipline,
         addDiscipline,
+        removeDiscipline,
     };
 }

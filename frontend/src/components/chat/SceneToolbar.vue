@@ -45,6 +45,7 @@
             </div>
             <p v-if="sceneSituationError" class="error">{{ sceneSituationError }}</p>
         </div>
+        <p v-else-if="sceneSituation" class="muted scene-description">{{ sceneSituation }}</p>
         <p v-if="sceneError" class="error">{{ sceneError }}</p>
 
         <div v-if="isStoryteller" class="scene-management">

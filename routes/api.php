@@ -35,6 +35,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/characters/{character}/biography', [CharacterSheetController::class, 'updateBiography']);
     Route::put('/characters/{character}/traits', [CharacterSheetController::class, 'updateTraits']);
 
+    Route::get('/scenes/{scene}/context', [SceneContextController::class, 'show']);
+
     Route::post('/copilot/drafts', [CopilotController::class, 'drafts'])->middleware('storyteller');
 
     Route::middleware('storyteller')->group(function () {
@@ -59,7 +61,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/game-sessions/{gameSession}/scenes', [SceneController::class, 'store']);
         Route::patch('/scenes/{scene}/activate', [SceneController::class, 'activate']);
         Route::patch('/scenes/{scene}/close', [SceneController::class, 'close']);
-        Route::get('/scenes/{scene}/context', [SceneContextController::class, 'show']);
         Route::put('/scenes/{scene}/context', [SceneContextController::class, 'update']);
         Route::get('/scenes/{scene}/participants', [SceneParticipantController::class, 'index']);
         Route::post('/scenes/{scene}/participants', [SceneParticipantController::class, 'store']);

@@ -18,6 +18,7 @@
                 :unused-disciplines="unusedDisciplines"
                 @set-discipline="setDiscipline"
                 @add-discipline="addDiscipline"
+                @remove-discipline="removeDiscipline"
             />
         </template>
 
@@ -96,5 +97,6 @@ const {
     createPlaceEntity,
     setDiscipline,
     addDiscipline,
+    removeDiscipline,
 } = useCharacterSheet();
 </script>
