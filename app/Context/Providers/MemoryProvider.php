@@ -7,7 +7,7 @@ use App\Context\ContextSection;
 use App\Context\LineTrimmer;
 use App\Context\TokenEstimator;
 use App\Memory\MemoryRetrievalService;
-
+use App\Models\Message;
 class MemoryProvider implements ContextProvider
 {
     private const LIMIT = 6;
@@ -23,6 +23,29 @@ class MemoryProvider implements ContextProvider
         return 'memory';
     }
 
+    private function buildMemoryQuery(ContextAssembly $assembly): string
+    {
+        $parts = [];
+
+        // 1. Последнее сообщение в сцене — что NPC собирается отвечать
+        $lastMessage = Message::query()
+            ->where('scene_id', $assembly->scene->id)
+            ->orderByDesc('id')
+            ->value('body');
+
+        if (is_string($lastMessage) && trim($lastMessage) !== '') {
+            $parts[] = trim($lastMessage);
+        }
+
+        // 2. Промпт из панели Copilot — инструкция мастера
+        $prompt = trim($assembly->request->prompt);
+        if ($prompt !== '') {
+            $parts[] = $prompt;
+        }
+
+        return implode("\n", $parts);
+    }
+
     public function assemble(ContextAssembly $assembly, int $tokenBudget): ContextSection
     {
         $character = $assembly->character;
@@ -30,7 +53,7 @@ class MemoryProvider implements ContextProvider
             return ContextSection::omitted($this->key(), ['reason' => 'no_character']);
         }
 
-        $query = $assembly->request->retrievalQuery();
+        $query = $this->buildMemoryQuery($assembly);
         if (trim($query) === '') {
             return ContextSection::omitted($this->key(), [
                 'character_id' => (int) $character->id,

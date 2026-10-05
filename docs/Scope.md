@@ -97,22 +97,43 @@ CRUD + neighbors. Политика фракций и directory-рёбра — т
 - [x] Проверено: silent-кейс, yes/no-вопрос, развёрнутый рассказ, дефолт
 - [x] Добавлен блок "ситуации" для сцены в окне рассказчика. Это описание локации, идёт в промпт.
 - [x] Рудиментарная вкладка "МИР" для добавления лора/локаций/etc старой версии проекта удалена. 
+- [x] 05.10.2026 — bge-m3 как эмбеддер (вместо qwen3-embedding:0.6b, sim вырос с 0.10 до 0.70)
+- [x] Keyword boost ослаблен до 0.05
+- [x] Similarity вес поднят до 0.65
 
-## Память — работает (02.10.2026)
+
+## Память — работает (05.10.2026)
 
 - [x] character_memories с pgvector(1024) + HNSW
-- [x] EmbeddingProvider + OllamaEmbeddingProvider (qwen3-embedding:0.6b)
-- [x] MemoryExtractionService — инкрементально, per NPC, с source cursor
-- [x] MemoryRetrievalService — cosine + keyword boost + soft diversity penalty
+- [x] EmbeddingProvider + OllamaEmbeddingProvider (bge-m3 как эмбеддер (sim 0.70 для релевантных пар))
+- [x] MemoryExtractionService — инкрементально, per NPC, с finish_reason tracked и source cursor
+- [x] MemoryRetrievalService — cosine 0.65 + importance 0.20 + recency 0.10 + keyword 0.05
+- [x] Soft diversity penalty (0.8^N)
 - [x] MemoryProvider в контексте
 - [x] Prompt-first retrievalQuery (topics только как supplement)
+- [x] Cross-NPC retrieval: каждый помнит свою версию событий
+- [x] Метакомментарии: NPC осознаёт память как «свою»
 
 ## Известные ограничения
 
-- [ ] qwen3-embedding:0.6b слабая на русском (sim=0.10 для дословных совпадений).
-      Кандидаты на замену: bge-m3, multilingual-e5-large.
-      Требует пересчёта embeddings.
-- [ ] Extraction больших сцен (>30 сообщений) упирается в max_tokens=6000.
-      Решение: чанковать по 10 сообщений.
-- [ ] Extraction сейчас ручная (artisan command). Нужен автотриггер:
-      по закрытию сцены / cron / job.
+- [ ] Extraction — ручной (artisan command)
+- [ ] Большие сцены (>30 сообщений) упираются в max_tokens (6000 сейчас)
+- [ ] Reranker не подключён (bge-reranker-v2-m3 требует отдельного сервиса)
+- [ ] RAG по лору не сделан (world_lore обрезает статьи)
+
+## Отложено:
+
+- [ ] Reranker bge-reranker-v2-m3 — требует отдельного сервиса TEI sidecar (отдельный Docker-контейнер)
+      Ollama не поддерживает нативно rerank API.
+      Вернуться, когда retrieval станет узким горлышком (>500 записей памяти и >10 НПС, мб >15).
+      Альтернатива: embedding-based rerank через bge-m3.
+- [ ] Автотриггер extraction (кнопка/сцена)
+- [ ] RAG по лору (canon_lore_chunks)
+- [ ] Чанкование extraction для больших сцен
+
+## Пост-MVP приоритет
+
+1. Автотриггер extraction (кнопка/сцена/Cron)
+2. RAG по лору (canon_lore_chunks)
+3. Чанкование extraction для больших сцен
+4. Prune старых записей

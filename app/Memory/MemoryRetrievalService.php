@@ -42,6 +42,18 @@ class MemoryRetrievalService
             [$pgVector, $npc->id, $npc->chronicle_id, $pgVector, self::CANDIDATE_LIMIT],
         );
 
+        if (app()->environment('local')) {
+            $topSims = array_map(
+                fn ($r) => ['id' => (int) $r->id, 'sim' => round((float) $r->similarity, 4)],
+                array_slice($rows, 0, 10),
+            );
+            \Log::info('memory.retrieve.similarity', [
+                'query' => $query,
+                'keywords' => $this->extractKeywords($query),
+                'top_10_by_cosine' => $topSims,
+            ]);
+        }
+    
         if ($rows === []) {
             return collect();
         }
@@ -76,10 +88,10 @@ class MemoryRetrievalService
             }
             $keywordBoost = $queryWords === [] ? 0 : ($hits / count($queryWords));
 
-            $score = 0.40 * $similarity
-                + 0.25 * ($importance / 10)
+            $score = 0.65 * $similarity // Semantic — главный сигнал.
+                + 0.20 * ($importance / 10)
                 + 0.10 * $recency
-                + 0.25 * $keywordBoost;   // ← теперь keyword важнее
+                + 0.05 * $keywordBoost;  // Keyword — подстраховка.
 
             if ($recentlyShown) {
                 $score *= 0.7;
