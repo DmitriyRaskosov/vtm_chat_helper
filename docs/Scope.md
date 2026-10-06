@@ -102,17 +102,18 @@ CRUD + neighbors. Политика фракций и directory-рёбра — т
 - [x] Similarity вес поднят до 0.65
 
 
-## Память — работает (05.10.2026)
+## Удалено (06.10.2026)
 
-- [x] character_memories с pgvector(1024) + HNSW
-- [x] EmbeddingProvider + OllamaEmbeddingProvider (bge-m3)
-- [x] MemoryExtractionService — инкрементально, per NPC, с finish_reason tracked и source cursor
-- [x] MemoryRetrievalService — cosine 0.65 + importance 0.20 + recency 0.10 + keyword 0.05
-- [x] Soft diversity penalty (0.8^N)
-- [x] MemoryProvider в контексте
-- [x] Prompt-first retrievalQuery (topics только как supplement)
-- [x] Cross-NPC retrieval: каждый помнит свою версию событий
-- [x] Метакомментарии: NPC осознаёт память как «свою»
+- [x] character_memories таблица + модель
+- [x] MemoryExtractionService, MemoryRetrievalService
+- [x] MemoryProvider
+- [x] ExtractSceneMemoryJob, ExtractSceneMemoryCommand
+- [x] config/memory.php
+- [x] ReembedMemoriesCommand → diary:reembed
+
+Причина: заменено на character_diary_entries (L0 + L1).
+Memory давала гранулярные факты, но провоцировала fusion и галлюцинации.
+Дневник решает это архитектурно — нарратив от первого лица.
 
 ## Известные ограничения
 
@@ -140,22 +141,6 @@ CRUD + neighbors. Политика фракций и directory-рёбра — т
 2. RAG по лору (canon_lore_chunks)
 3. Чанкование extraction для больших сцен
 
-## Дневник (06.10.2026)
-
-- [x] character_diary_entries — миграция + модель + HNSW
-- [x] DiaryWriterService (L0) — запись от первого лица, лимит 120 слов
-- [x] WriteDiaryJob + автотриггер (порог 15)
-- [x] DiarySummarizerService (L1) — сжатие ≥3×, лимит 150 слов
-- [x] SummarizeSceneDiaryJob — при закрытии сцены, только если L0 ≥ 3
-- [x] Anti-anchor правило — не повторять signature-выражения
-- [x] Trait-примеры работают как паттерны, не как цитаты
-- [x] Voice (Абрахам-библиотекарь) сохранён в обеих уровнях
-
-## Проверено
-
-- L0: 1–3 абзаца, ~100 слов, голос NPC, конкретные события.
-- L1: 4 предложения, ~95 слов, паттерн без verbatim, свежие формулировки.
-
 ## Осталось сделать (шаг 4+)
 
 - [ ] DiaryRetrievalService — последняя + top-2 по семантике
@@ -165,3 +150,21 @@ CRUD + neighbors. Политика фракций и directory-рёбра — т
 - [ ] Переименовать config/memory.php → config/diary.php (старую удалить)
 - [ ] Замена MemoryProvider на DiaryProvider в ContextAssembler
 - [ ] Тест E2E: NPC ссылается на прошлые ночи через дневник
+
+## Дневник — E2E полный (06.10.2026)
+
+- [x] L0: автотриггер по порогу 15, остаток при закрытии сцены
+- [x] L1: всегда, если есть хоть один L0
+- [x] SummarizeSceneDiaryJob: writer → summarizer последовательно
+- [x] Retrieval: последняя + top-2 семантики, L1 приоритетнее L0
+- [x] Anti-anchor + trait examples + quote discipline
+- [x] E2E: 33 сообщения → 3 L0 → 1 L1 → ссылка в Copilot
+- [x] Старая memory удалена полностью
+- L0: 1–3 абзаца, ~100 слов, голос NPC, конкретные события.
+- L1: 4 предложения, ~95 слов, паттерн без verbatim, свежие формулировки.
+
+## Осталось по дневнику (низкий приоритет)
+
+- [ ] UI просмотра дневника мастером
+- [ ] Retry если finish_reason=length в L1
+- [ ] Решение для сцен >30 L0 (сейчас summarizer берёт только 30)

@@ -77,16 +77,6 @@ class DiarySummarizerService
             return false;
         }
 
-        if ($l0Entries->count() < 3) {
-            Log::info('diary.summarize.too_few_entries', [
-                'npc_id' => $npc->id,
-                'scene_id' => $scene->id,
-                'l0_count' => $l0Entries->count(),
-            ]);
-
-            return false;
-        }
-
         $existingL1 = CharacterDiaryEntry::query()
             ->where('character_id', $npc->id)
             ->where('scene_id', $scene->id)

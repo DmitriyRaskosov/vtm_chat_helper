@@ -14,7 +14,6 @@ return [
     'write_timeout' => (int) env('DIARY_WRITE_TIMEOUT', 540),
 
     'summarize' => [
-        'max_l0_entries' => 30,
         'max_output_tokens' => 1500,
     ],
 ];
