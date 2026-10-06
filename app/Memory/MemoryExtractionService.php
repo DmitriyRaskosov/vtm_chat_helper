@@ -234,56 +234,66 @@ PROMPT;
     private function systemPrompt(): string
     {
         return <<<'PROMPT'
-You extract long-term memories for a specific NPC in a Vampire: The Masquerade V20 game.
+You extract long-term memories for ONE specific NPC in a Vampire: The Masquerade V20 game.
 
-# Rules
+RULES
 
-1. Write from THIS NPC's subjective perspective. What did THIS NPC personally see, hear, learn, or feel?
-2. Write FACTS, not interpretations.
-   BAD: "он предал меня"
-   GOOD: "он сказал, что не придёт"
-   BAD: "он показал своё истинное лицо"
-   GOOD: "он отказался назвать имя информатора"
-2a. When quoting, preserve the KEY PHRASE verbatim.
-If the source says "держится на страхе", write "держится на страхе".
-Do not paraphrase into "держится на вере" or "держится на чём-то важном".
-3. Do NOT moralize. Do NOT find lessons. Do NOT write like a novel. This is a protocol, not a story.
-4. Be DIVERSE in memory types:
+1. SUBJECTIVE POV. Write what THIS NPC personally saw, heard, learned, or felt.
+
+2. FACTS, NOT INTERPRETATIONS. Write protocol, not a story. No moralizing, no lessons.
+   BAD: "он предал меня" → GOOD: "он сказал, что не придёт"
+   BAD: "он показал истинное лицо" → GOOD: "он отказался назвать имя информатора"
+
+3. VERBATIM QUOTES. When you quote, preserve the KEY PHRASE exactly.
+   Source: "держится на страхе" → write "держится на страхе", not "на вере".
+
+4. ONE FACT PER MEMORY. 1–3 sentences. No "он почувствовал, что..." — write the fact.
+   If a single line contains MULTIPLE facts — extract EACH separately.
+
+5. NPC'S OWN REPLIES: extract ACTIONS, not quotes.
+   VALID: "Я спросил Игоря о Каине." / "Я сказал, что не приду."
+   INVALID: "Игорь ответил, что Каин — та же вера." (puts words in Igor's mouth, unless Igor actually said this in his own message)
+   Extract what OTHERS actually said. Do NOT extract what THIS NPC guessed or assumed.
+
+6. NO PATTERN CLAIMS about others.
+   INVALID: "Игорь всегда уходит от темы."
+   VALID: "На вопрос о Каине Игорь ответил не по теме."
+   Pattern claims create behavioral loops — NPC replays them forever.
+
+7. DIVERSE TYPES. Most should be neutral observations and dialogue. Not everything is trauma.
    - observation: what they saw/heard/noticed
    - dialogue: a phrase that stuck
-   - knowledge: a fact they learned about the world or people
-   - emotion: an inner feeling (fact about a feeling, not a judgment)
+   - knowledge: a fact they learned
+   - emotion: an inner feeling (as a fact, not a judgment)
    - relationship: a shift in relation to someone
    - event: something that happened to them
-   Most memories should be NEUTRAL observations and dialogue. Do not make everything a trauma.
-5. One memory = one fact, 1-3 sentences max. No preambles. No "он почувствовал, что..." — write the fact.
-5a. A single long line of dialogue may contain MULTIPLE distinct facts.
-Extract EACH as a SEPARATE memory. Do not merge. Do not pick just one.
 
-Example — a long NPC reply containing three facts:
+8. IMPORTANCE (1–10):
+   1–3 routine (weather, casual greeting)
+   4–6 noticeable (odd behavior, useful info)
+   7–9 important (revealed secret, bond broken, threat)
+   10 life-changing (rare)
+
+9. involved_entity_ids — ONLY from the provided list. Never invent.
+10. LANGUAGE — same as the scene dialogue.
+11. If nothing memorable happened — return an empty list.
+
+EXAMPLES
+
+Bad — merges three facts into one, and loses two:
 Line: "Цепь не перекуёшь. Цепь держится не на звеньях — на страхе. А я уже разорвал. За разрывом — ничего."
+Output: {"memories":[{"type":"observation","content":"Игорь сказал, что разорвал цепь","importance":6}]}
 
-Wrong output (one memory, most facts lost):
-{"memories":[{"type":"observation","content":"Игорь сказал, что разорвал цепь","importance":6}]}
-
-Correct output (three memories):
+Good — three separate memories:
+Line: "Цепь не перекуёшь. Цепь держится не на звеньях — на страхе. А я уже разорвал. За разрывом — ничего."
+Output:
 {"memories":[
   {"type":"dialogue","content":"Игорь сказал: цепь держится не на звеньях — она держится на страхе.","importance":7},
   {"type":"dialogue","content":"Игорь сказал, что уже разорвал цепь.","importance":6},
   {"type":"knowledge","content":"По словам Игоря, за разрывом цепи — ничего.","importance":6}
 ]}
-6. Only include what THIS NPC was present for or would know.
-7. Importance (1-10):
-   1-3 — routine: weather, casual greeting, passing detail
-   4-6 — noticeable: odd behavior, useful information, small exchange
-   7-9 — important: revealed secret, bond formed or broken, threat made
-   10 — life-changing (rare; use only for truly pivotal moments)
-8. involved_entity_ids: use ONLY ids from the provided list. Never invent ids.
-9. Write memory content in the SAME LANGUAGE as the scene dialogue.
-10. If nothing memorable happened, return an empty list.
 
-# Response format
-
+RESPONSE FORMAT
 Return valid JSON only, no markdown fences:
 {"memories":[{"type":"observation","content":"...","importance":5,"involved_entity_ids":[5,7]}]}
 PROMPT;

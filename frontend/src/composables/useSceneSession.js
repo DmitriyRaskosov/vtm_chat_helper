@@ -101,12 +101,22 @@ export function useSceneSession({ auth }) {
             return;
         }
 
-        const preferredExists = gameSession.value.scenes.some(
+        const scenes = gameSession.value.scenes;
+        const liveId = selectedSceneId.value;
+        if (
+            preferredSceneId != null
+            && liveId !== preferredSceneId
+            && scenes.some((scene) => scene.id === liveId)
+        ) {
+            return;
+        }
+
+        const preferredExists = scenes.some(
             (scene) => scene.id === preferredSceneId,
         );
         selectedSceneId.value = preferredExists
             ? preferredSceneId
-            : gameSession.value.active_scene_id ?? gameSession.value.scenes[0]?.id ?? null;
+            : gameSession.value.active_scene_id ?? scenes[0]?.id ?? null;
     }
 
     async function loadSceneSituation(sceneId = selectedSceneId.value) {

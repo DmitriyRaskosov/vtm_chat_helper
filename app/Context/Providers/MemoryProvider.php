@@ -27,18 +27,26 @@ class MemoryProvider implements ContextProvider
     {
         $parts = [];
 
-        // 1. Последнее сообщение в сцене — что NPC собирается отвечать
-        $lastMessage = Message::query()
-            ->where('scene_id', $assembly->scene->id)
-            ->orderByDesc('id')
-            ->value('body');
+        $prompt = trim($assembly->request->prompt);
 
-        if (is_string($lastMessage) && trim($lastMessage) !== '') {
-            $parts[] = trim($lastMessage);
+        // Последнее сообщение добавляем ТОЛЬКО если промпт явно ссылается на него
+        if ($prompt !== '' && preg_match('/последн/iu', $prompt) === 1) {
+            $npcId = $assembly->character?->id;
+
+            $lastMessage = Message::query()
+                ->where('scene_id', $assembly->scene->id)
+                ->when($npcId !== null, fn ($q) => $q->where(function ($sub) use ($npcId) {
+                    $sub->whereNull('author_character_id')
+                        ->orWhere('author_character_id', '!=', $npcId);
+                }))
+                ->orderByDesc('id')
+                ->value('body');
+
+            if (is_string($lastMessage) && trim($lastMessage) !== '') {
+                $parts[] = trim($lastMessage);
+            }
         }
 
-        // 2. Промпт из панели Copilot — инструкция мастера
-        $prompt = trim($assembly->request->prompt);
         if ($prompt !== '') {
             $parts[] = $prompt;
         }

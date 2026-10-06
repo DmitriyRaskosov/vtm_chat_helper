@@ -105,7 +105,7 @@ CRUD + neighbors. Политика фракций и directory-рёбра — т
 ## Память — работает (05.10.2026)
 
 - [x] character_memories с pgvector(1024) + HNSW
-- [x] EmbeddingProvider + OllamaEmbeddingProvider (bge-m3 как эмбеддер (sim 0.70 для релевантных пар))
+- [x] EmbeddingProvider + OllamaEmbeddingProvider (bge-m3)
 - [x] MemoryExtractionService — инкрементально, per NPC, с finish_reason tracked и source cursor
 - [x] MemoryRetrievalService — cosine 0.65 + importance 0.20 + recency 0.10 + keyword 0.05
 - [x] Soft diversity penalty (0.8^N)
@@ -135,5 +135,22 @@ CRUD + neighbors. Политика фракций и directory-рёбра — т
 
 1. Автотриггер extraction (кнопка/сцена/Cron)
 2. RAG по лору (canon_lore_chunks)
+- [ ] Дневник NPC — отдельный слой от памяти
+      Память = что NPC слышал/видел (внешнее).
+      Дневник = что NPC делал/думал/решал (внутреннее).
+      Сейчас всё в character_memories. Разделение — после reply-фикса.
 3. Чанкование extraction для больших сцен
 4. Prune старых записей
+
+## TODO 06.10.2026
+
+1. Промпты для `DiaryWriterService` и `SummarizeSceneDiaryService`.
+   - Write diary entry (L0) в голосе NPC.
+   - Summarize scene (L1) из L0 записей.
+2. Миграция character_diary_entries + модель.
+3. DiaryWriterService + DiaryRetrievalService + DiaryProvider.
+4. Правка SystemPromptProvider: убрать MEMORY блоки, добавить DIARY блок.
+5. Правка ChatController: L0 триггер.
+6. Правка SceneController::close: L1 триггер.
+7. Удалить character_memories + связанные сервисы/джобы/провайдеры.
+8. Тест на чистых персонажах: разные голоса, разные дневники.

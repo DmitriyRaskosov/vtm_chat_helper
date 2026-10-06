@@ -103,10 +103,21 @@ class MemoryRetrievalService
                 'content' => (string) $row->content,
                 'importance' => $importance,
                 'score' => $score,
+                'similarity' => $similarity,
             ];
         }
 
         if ($scored === []) {
+            return collect();
+        }
+
+        // Если топ-кандидат слишком далёк от запроса — память нерелевантна.
+        $topSimilarity = max(array_map(fn ($s) => $s['similarity'], $scored));
+        if ($topSimilarity < 0.45) {
+            \Log::info('memory.retrieve.below_threshold', [
+                'query' => $query,
+                'top_similarity' => $topSimilarity,
+            ]);
             return collect();
         }
 

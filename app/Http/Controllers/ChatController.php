@@ -13,8 +13,10 @@ use App\Models\Message;
 use App\Models\Scene;
 use App\Models\User;
 use App\Models\WorldEntity;
+use App\Jobs\WriteDiaryJob;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -113,6 +115,8 @@ class ChatController extends Controller
 
         $message->load('user:id,name');
         $characterLookup = $this->characterLookup(collect([$message]));
+
+        $this->maybeDispatchDiaryWrite($scene);
 
         return response()->json(['message' => $this->serialize($message, $characterLookup)], 201);
     }
@@ -265,5 +269,33 @@ class ChatController extends Controller
         );
 
         return $scene;
+    }
+    private function maybeDispatchDiaryWrite(Scene $scene): void
+    {
+        $threshold = (int) config('diary.write_threshold', 15);
+        if ($threshold <= 0) {
+            return;
+        }
+    
+        $lastExtracted = (int) Scene::query()
+            ->whereKey($scene->id)
+            ->value('last_extracted_to_message_id');
+    
+        $pending = Message::query()
+            ->where('scene_id', $scene->id)
+            ->where('id', '>', $lastExtracted)
+            ->count();
+    
+        if ($pending < $threshold) {
+            return;
+        }
+    
+        WriteDiaryJob::dispatch($scene->id);
+    
+        \Log::info('diary.write.dispatched', [
+            'scene_id' => $scene->id,
+            'pending' => $pending,
+            'threshold' => $threshold,
+        ]);
     }
 }

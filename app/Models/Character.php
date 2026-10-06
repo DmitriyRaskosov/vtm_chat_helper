@@ -107,6 +107,14 @@ class Character extends Model
     }
 
     /**
+     * @return HasMany<CharacterDiaryEntry, $this>
+     */
+    public function diaryEntries(): HasMany
+    {
+        return $this->hasMany(CharacterDiaryEntry::class)->orderBy('created_at');
+    }
+
+    /**
      * @return HasOne<CharacterBiography, $this>
      */
     public function biography(): HasOne
