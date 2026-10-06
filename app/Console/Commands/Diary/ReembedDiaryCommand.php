@@ -1,19 +1,19 @@
 <?php
 
-namespace App\Console\Commands\Memory;
+namespace App\Console\Commands\Diary;
 
-use App\Models\CharacterMemory;
+use App\Models\CharacterDiaryEntry;
 use App\Rag\EmbeddingProvider;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
-class ReembedMemoriesCommand extends Command
+class ReembedDiaryCommand extends Command
 {
-    protected $signature = 'memory:reembed
+    protected $signature = 'diary:reembed
                             {--chunk=50 : How many records to process per batch}
                             {--dry-run : Show what would be done without writing}';
 
-    protected $description = 'Recompute embeddings for all character_memories with the current embedding model.';
+    protected $description = 'Recompute embeddings for all character_diary_entries with the current embedding model.';
 
     public function handle(EmbeddingProvider $embeddings): int
     {
@@ -22,13 +22,14 @@ class ReembedMemoriesCommand extends Command
 
         $this->info("Embedding model: {$embeddings->model()} ({$embeddings->dimensions()}d)");
 
-        $total = CharacterMemory::query()->count();
+        $total = CharacterDiaryEntry::query()->count();
         if ($total === 0) {
-            $this->info('No memories to reembed.');
+            $this->info('No diary entries to reembed.');
+
             return self::SUCCESS;
         }
 
-        $this->info("Total memories: {$total}");
+        $this->info("Total entries: {$total}");
         $this->info("Chunk size: {$chunkSize}");
 
         if ($dryRun) {
@@ -39,30 +40,32 @@ class ReembedMemoriesCommand extends Command
         $failed = 0;
         $startedAt = now();
 
-        CharacterMemory::query()
+        CharacterDiaryEntry::query()
             ->orderBy('id')
-            ->chunkById($chunkSize, function ($memories) use ($embeddings, $dryRun, &$processed, &$failed): void {
-                $contents = $memories->pluck('content')->all();
+            ->chunkById($chunkSize, function ($entries) use ($embeddings, $dryRun, &$processed, &$failed): void {
+                $texts = $entries->pluck('entry')->all();
 
                 try {
-                    $vectors = $embeddings->embedBatch($contents);
+                    $vectors = $embeddings->embedBatch($texts);
                 } catch (\Throwable $e) {
                     $this->error('Batch failed: '.$e->getMessage());
-                    $failed += $memories->count();
+                    $failed += $entries->count();
+
                     return;
                 }
 
-                foreach ($memories as $index => $memory) {
+                foreach ($entries as $index => $entry) {
                     $vector = $vectors[$index] ?? null;
                     if ($vector === null) {
                         $failed++;
+
                         continue;
                     }
 
                     if (! $dryRun) {
                         DB::statement(
-                            'UPDATE character_memories SET embedding = ?::vector, updated_at = NOW() WHERE id = ?',
-                            [$this->formatVector($vector), $memory->id],
+                            'UPDATE character_diary_entries SET embedding = ?::vector, updated_at = NOW() WHERE id = ?',
+                            [$this->formatVector($vector), $entry->id],
                         );
                     }
 

@@ -101,11 +101,6 @@ class Character extends Model
         return $this->hasMany(CharacterPower::class);
     }
 
-    public function memories(): HasMany
-    {
-        return $this->hasMany(CharacterMemory::class);
-    }
-
     /**
      * @return HasMany<CharacterDiaryEntry, $this>
      */

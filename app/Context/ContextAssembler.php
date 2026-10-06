@@ -13,7 +13,7 @@ use App\Context\Providers\SceneProvider;
 use App\Context\Providers\StorytellerPromptProvider;
 use App\Context\Providers\SystemPromptProvider;
 use App\Context\Providers\WorldLoreProvider;
-use App\Context\Providers\MemoryProvider;
+use App\Context\Providers\DiaryProvider;
 use App\Models\Character;
 use App\Models\Scene;
 use App\Models\WorldEntity;
@@ -37,7 +37,7 @@ class ContextAssembler
         'world_lore',
         'storyteller_prompt',
         'recent_messages',
-        'memory',
+        'diary',
         'direct_relations',
         'personality',
         'biography',
@@ -52,7 +52,7 @@ class ContextAssembler
         'personality',
         'biography',
         'world_lore',
-        'memory',
+        'diary',
     ];
 
     /**
@@ -71,7 +71,7 @@ class ContextAssembler
         BiographyProvider $biography,
         PersonalityProvider $personality,
         WorldLoreProvider $world,
-        MemoryProvider $memory,
+        DiaryProvider $diary,
         ClosingInstructionProvider $closing,
     ) {
         $this->providers = [
@@ -84,7 +84,7 @@ class ContextAssembler
             $biography->key() => $biography,
             $personality->key() => $personality,
             $world->key() => $world,
-            $memory->key() => $memory,
+            $diary->key() => $diary,
             $closing->key() => $closing,
         ];
     }

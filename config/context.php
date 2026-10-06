@@ -50,9 +50,9 @@ return [
                 'priority' => 70,
                 'truncation' => 'oldest_whole_messages',
             ],
-            'memory' => [
+            'diary' => [
                 'min' => 0,
-                'max' => 400,
+                'max' => 1200,
                 'required' => false,
                 'priority' => 60,
                 'truncation' => 'lowest_score',
@@ -77,13 +77,6 @@ return [
                 'required' => false,
                 'priority' => 42,
                 'truncation' => 'lines_tail',
-            ],
-            'memory_graph' => [
-                'min' => 0,
-                'max' => 0,
-                'required' => false,
-                'priority' => 30,
-                'truncation' => 'lowest_score',
             ],
             'world_lore' => [
                 'min' => 0,
