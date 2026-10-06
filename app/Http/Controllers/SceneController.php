@@ -8,6 +8,7 @@ use App\Http\Requests\StoreSceneRequest;
 use App\Models\GameSession;
 use App\Models\Scene;
 use App\Scene\SceneContextService;
+use App\Jobs\SummarizeSceneDiaryJob;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -68,11 +69,6 @@ class SceneController extends Controller
                 409,
                 'Only scenes in the active game session can be activated.',
             );
-            abort_if(
-                $lockedScene->status === SceneStatus::Closed,
-                409,
-                'A closed scene cannot be activated.',
-            );
 
             Scene::query()
                 ->where('game_session_id', $lockedScene->game_session_id)
@@ -88,6 +84,8 @@ class SceneController extends Controller
                 'started_at' => $lockedScene->started_at ?? now(),
                 'ended_at' => null,
             ]);
+
+            $this->contexts->unfreeze($lockedScene);
 
             return $lockedScene->refresh();
         });
@@ -120,6 +118,8 @@ class SceneController extends Controller
 
             return $lockedScene->refresh();
         });
+
+        SummarizeSceneDiaryJob::dispatch($scene->id);
 
         return response()->json(['scene' => $this->serialize($scene)]);
     }

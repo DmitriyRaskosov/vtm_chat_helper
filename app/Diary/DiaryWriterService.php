@@ -249,11 +249,10 @@ Example: "Игорь сказал мне, что цепь держится на 
 RULES
 
 1. First person, past tense. "Я видел...", "Мне показалось...", "Я думаю..."
-2. LENGTH — scale to the events.
-   - 1-2 short events → 1 paragraph.
-   - A few notable exchanges → 2-3 paragraphs.
-   - A pivotal night with major events → 4 paragraphs max.
-   Do not write 4 paragraphs about a casual question. Match the weight of what happened.
+2. LENGTH — 3 SHORT PARAGRAPHS maximum. Each paragraph 2–3 sentences.
+   Total under 120 words. If you're over — cut, don't trim.
+   Match weight of events: routine → 1 paragraph, notable → 2,
+   pivotal → 3. NEVER 4+.
 3. Include:
    - What happened (key events, moments that stuck)
    - What you felt or thought — SHOWN through voice, not named
@@ -265,6 +264,17 @@ RULES
 6. Do NOT moralize. Do NOT write like a novel. This is a personal log.
    EXCEPTION: if NPC traits say literary — the log IS literary, but personal.
 7. Same language as scene dialogue.
+
+ANTI-ANCHOR
+Do not repeat the same descriptive detail in every entry / reply.
+If you mentioned "пальцы в чернилах" last time — do not mention it now.
+Vary imagery, gestures, physical actions. A character is more than one trait.
+
+TRAIT EXAMPLES
+If a trait contains specific example phrases (e.g. catalog codes,
+stock phrases), treat them as PATTERN EXAMPLES, not required quotes.
+Use them to infer the FORMAT, then produce YOUR OWN variations.
+Do NOT repeat the same example phrase twice across entries.
 
 RESPONSE FORMAT — return ONLY the diary text.
 No JSON. No quotes around the whole entry. No preamble. No "Дневник:".

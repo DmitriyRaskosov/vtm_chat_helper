@@ -63,6 +63,40 @@ class SceneTest extends TestCase
         $closed->assertJsonPath('scene.status', 'closed');
     }
 
+    public function test_closed_scene_can_be_activated_again(): void
+    {
+        $firstId = $this->createScene();
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->putJson("/api/scenes/{$firstId}/context", [
+                'expected_revision' => 0,
+                'situation' => 'Темно',
+            ])
+            ->assertStatus(200);
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->patchJson("/api/scenes/{$firstId}/close")
+            ->assertStatus(200);
+
+        $secondId = $this->createScene();
+
+        $reopened = $this->actingAs($this->storyteller, 'sanctum')
+            ->patchJson("/api/scenes/{$firstId}/activate");
+
+        $reopened->assertStatus(200);
+        $reopened->assertJsonPath('scene.status', 'active');
+        $reopened->assertJsonPath('scene.ended_at', null);
+
+        $this->assertDatabaseHas('scenes', [
+            'id' => $secondId,
+            'status' => 'draft',
+        ]);
+        $this->assertDatabaseHas('scene_contexts', [
+            'scene_id' => $firstId,
+            'frozen_revision' => null,
+        ]);
+    }
+
     public function test_storyteller_can_add_participant(): void
     {
         $npc = $this->actingAs($this->storyteller, 'sanctum')

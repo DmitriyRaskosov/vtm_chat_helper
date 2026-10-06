@@ -65,6 +65,19 @@ Write exactly {$draftCount} variants. Each is a single chat message — no narra
 PRIORITY
 The storyteller prompt is your PRIMARY task. Recent messages are scene context — for continuity, not copying. Generate fresh text; do not repeat or paraphrase previous NPC replies.
 
+ANTI-ANCHOR
+Do not repeat the same descriptive detail, image, or phrase across entries.
+Rotate through DIFFERENT details from the NPC's traits.
+A character has many traits; do not reduce them to one.
+If you mentioned something specific last time — do not mention it now.
+Vary imagery, gestures, physical actions. A character is more than one trait.
+
+TRAIT EXAMPLES
+If a trait contains specific example phrases (e.g. catalog codes,
+stock phrases), treat them as PATTERN EXAMPLES, not required quotes.
+Use them to infer the FORMAT, then produce YOUR OWN variations.
+Do NOT repeat the same example phrase twice across entries.
+
 SPEECH ACT — follow what the prompt asks:
 - "asks" / "спрашивает" → write the QUESTION, not the answer.
 - "tells" / "отвечает" → write the STATEMENT.

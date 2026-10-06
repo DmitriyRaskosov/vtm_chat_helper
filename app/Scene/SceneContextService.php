@@ -115,6 +115,23 @@ class SceneContextService
         });
     }
 
+    public function unfreeze(Scene $scene): void
+    {
+        DB::transaction(function () use ($scene): void {
+            $context = SceneContext::query()
+                ->where('scene_id', $scene->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($context === null || $context->frozen_revision === null) {
+                return;
+            }
+
+            $context->frozen_revision = null;
+            $context->save();
+        });
+    }
+
     /**
      * @param  list<int>  $sceneIds
      */

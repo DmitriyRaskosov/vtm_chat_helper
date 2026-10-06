@@ -63,7 +63,7 @@
                 Создать и открыть
             </button>
             <button
-                v-if="selectedScene?.status === 'draft'"
+                v-if="selectedScene?.status === 'draft' || selectedScene?.status === 'closed'"
                 type="button"
                 class="secondary"
                 :disabled="sceneLoading"

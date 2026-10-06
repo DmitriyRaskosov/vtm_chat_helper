@@ -133,24 +133,35 @@ CRUD + neighbors. Политика фракций и directory-рёбра — т
 
 ## Пост-MVP приоритет
 
-1. Автотриггер extraction (кнопка/сцена/Cron)
+1. Дневник NPC — отдельный слой от памяти
+- [ ] Память = что NPC слышал/видел (внешнее).
+- [ ] Дневник = что NPC делал/думал/решал (внутреннее).
+- [ ] Сейчас всё в character_memories. Разделение — после reply-фикса.
 2. RAG по лору (canon_lore_chunks)
-- [ ] Дневник NPC — отдельный слой от памяти
-      Память = что NPC слышал/видел (внешнее).
-      Дневник = что NPC делал/думал/решал (внутреннее).
-      Сейчас всё в character_memories. Разделение — после reply-фикса.
 3. Чанкование extraction для больших сцен
-4. Prune старых записей
 
-## TODO 06.10.2026
+## Дневник (06.10.2026)
 
-1. Промпты для `DiaryWriterService` и `SummarizeSceneDiaryService`.
-   - Write diary entry (L0) в голосе NPC.
-   - Summarize scene (L1) из L0 записей.
-2. Миграция character_diary_entries + модель.
-3. DiaryWriterService + DiaryRetrievalService + DiaryProvider.
-4. Правка SystemPromptProvider: убрать MEMORY блоки, добавить DIARY блок.
-5. Правка ChatController: L0 триггер.
-6. Правка SceneController::close: L1 триггер.
-7. Удалить character_memories + связанные сервисы/джобы/провайдеры.
-8. Тест на чистых персонажах: разные голоса, разные дневники.
+- [x] character_diary_entries — миграция + модель + HNSW
+- [x] DiaryWriterService (L0) — запись от первого лица, лимит 120 слов
+- [x] WriteDiaryJob + автотриггер (порог 15)
+- [x] DiarySummarizerService (L1) — сжатие ≥3×, лимит 150 слов
+- [x] SummarizeSceneDiaryJob — при закрытии сцены, только если L0 ≥ 3
+- [x] Anti-anchor правило — не повторять signature-выражения
+- [x] Trait-примеры работают как паттерны, не как цитаты
+- [x] Voice (Абрахам-библиотекарь) сохранён в обеих уровнях
+
+## Проверено
+
+- L0: 1–3 абзаца, ~100 слов, голос NPC, конкретные события.
+- L1: 4 предложения, ~95 слов, паттерн без verbatim, свежие формулировки.
+
+## Осталось сделать (шаг 4+)
+
+- [ ] DiaryRetrievalService — последняя + top-2 по семантике
+- [ ] DiaryProvider в ContextAssembler
+- [ ] Обновить SystemPromptProvider: DIARY блок, убрать MEMORY блоки
+- [ ] Удалить character_memories + Memory* сервисы/джобы/провайдеры
+- [ ] Переименовать config/memory.php → config/diary.php (старую удалить)
+- [ ] Замена MemoryProvider на DiaryProvider в ContextAssembler
+- [ ] Тест E2E: NPC ссылается на прошлые ночи через дневник
