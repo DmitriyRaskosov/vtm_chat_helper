@@ -94,43 +94,12 @@ class DiarySummarizerService
             return false;
         }
 
-        $npc->loadMissing(['clan', 'sect', 'traits']);
-
-        $name = WorldEntity::query()->whereKey($npc->id)->value('canonical_name') ?? 'NPC';
-        $clan = $npc->clan?->name ?? '—';
-        $sect = $npc->sect?->name ?? '—';
-
-        $traits = $npc->traits
-            ->map(fn ($t): string => "- {$t->label}: {$t->value}")
-            ->implode("\n");
-        if ($traits === '') {
-            $traits = '(нет)';
-        }
-
-        $entriesText = $l0Entries
-            ->map(fn (CharacterDiaryEntry $e, int $i): string => '[entry '.($i + 1)."]\n".trim($e->entry))
-            ->implode("\n\n");
-
         try {
-            $turn = $this->chat->chatTurn(
-                [
-                    ['role' => 'system', 'content' => $this->prompts->get('diary.summarizer.system')],
-                    ['role' => 'user', 'content' => $this->prompts->get('diary.summarizer.user', [
-                        'name' => $name,
-                        'clan' => $clan,
-                        'sect' => $sect,
-                        'traits' => $traits,
-                        'entriesText' => $entriesText,
-                    ])],
-                ],
-                ['max_tokens' => 500, 'temperature' => 0.4],
-                [],
-            );
+            $entry = $this->generateSummaryText($npc, $l0Entries);
         } catch (\Throwable $e) {
             throw new RuntimeException('LLM call failed: '.$e->getMessage(), 0, $e);
         }
 
-        $entry = trim($turn->content);
         if ($entry === '') {
             throw new RuntimeException('LLM returned empty L1 entry.');
         }
@@ -140,7 +109,6 @@ class DiarySummarizerService
             'scene_id' => $scene->id,
             'l0_count' => $l0Entries->count(),
             'entry_length' => mb_strlen($entry),
-            'finish_reason' => $turn->finishReason,
         ]);
 
         $vector = $this->embeddings->embed($entry);
@@ -166,6 +134,46 @@ class DiarySummarizerService
         return true;
     }
 
+    /**
+     * @param  \Illuminate\Support\Collection<int, CharacterDiaryEntry>  $l0Entries
+     */
+    private function generateSummaryText(Character $npc, \Illuminate\Support\Collection $l0Entries): string
+    {
+        $npc->loadMissing(['clan', 'sect', 'traits']);
+
+        $name = WorldEntity::query()->whereKey($npc->id)->value('canonical_name') ?? 'NPC';
+        $clan = $npc->clan?->name ?? '—';
+        $sect = $npc->sect?->name ?? '—';
+
+        $traits = $npc->traits
+            ->map(fn ($t): string => "- {$t->label}: {$t->value}")
+            ->implode("\n");
+        if ($traits === '') {
+            $traits = '(нет)';
+        }
+
+        $entriesText = $l0Entries
+            ->map(fn (CharacterDiaryEntry $e, int $i): string => '[entry '.($i + 1)."]\n".trim($e->entry))
+            ->implode("\n\n");
+
+        $turn = $this->chat->chatTurn(
+            [
+                ['role' => 'system', 'content' => $this->prompts->get('diary.summarizer.system')],
+                ['role' => 'user', 'content' => $this->prompts->get('diary.summarizer.user', [
+                    'name' => $name,
+                    'clan' => $clan,
+                    'sect' => $sect,
+                    'traits' => $traits,
+                    'entriesText' => $entriesText,
+                ])],
+            ],
+            ['max_tokens' => 500, 'temperature' => 0.4],
+            [],
+        );
+
+        return trim($turn->content);
+    }
+
     private function resolveSceneNpcs(Scene $scene): \Illuminate\Support\Collection
     {
         $ids = $scene->participants()
@@ -189,5 +197,53 @@ class DiarySummarizerService
     private function formatVector(array $vector): string
     {
         return '['.implode(',', array_map(fn (float $v): string => (string) $v, $vector)).']';
+    }
+
+    public function regenerateSummary(CharacterDiaryEntry $entry): bool
+    {
+        if ((int) $entry->level !== 1) {
+            return false;
+        }
+
+        $character = Character::query()->find($entry->character_id);
+        $scene = $entry->scene_id !== null ? Scene::query()->find($entry->scene_id) : null;
+
+        if ($character === null || $scene === null) {
+            return false;
+        }
+
+        $l0Entries = CharacterDiaryEntry::query()
+            ->where('character_id', $character->id)
+            ->where('scene_id', $scene->id)
+            ->where('level', 0)
+            ->orderBy('created_at')
+            ->limit(self::MAX_L0_ENTRIES)
+            ->get();
+
+        if ($l0Entries->isEmpty()) {
+            return false;
+        }
+
+        $newEntry = $this->generateSummaryText($character, $l0Entries);
+
+        if ($newEntry === '') {
+            return false;
+        }
+
+        $vector = $this->embeddings->embed($newEntry);
+
+        DB::statement(
+            'UPDATE character_diary_entries
+            SET entry = ?, embedding = ?::vector, updated_at = NOW()
+            WHERE id = ?',
+            [$newEntry, $this->formatVector($vector), $entry->id],
+        );
+
+        Log::info('diary.regenerate.summary_done', [
+            'entry_id' => $entry->id,
+            'npc_id' => $entry->character_id,
+        ]);
+
+        return true;
     }
 }

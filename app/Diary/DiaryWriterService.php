@@ -83,6 +83,61 @@ class DiaryWriterService
         ];
     }
 
+    public function regenerateEntry(CharacterDiaryEntry $entry): bool
+    {
+        if ((int) $entry->level !== 0) {
+            return false;
+        }
+
+        $character = Character::query()->find($entry->character_id);
+        $scene = $entry->scene_id !== null ? Scene::query()->find($entry->scene_id) : null;
+
+        if ($character === null || $scene === null) {
+            return false;
+        }
+
+        $fromId = (int) ($entry->from_message_id ?? 0);
+        $toId = (int) ($entry->to_message_id ?? 0);
+
+        if ($fromId === 0 || $toId === 0) {
+            return false;
+        }
+
+        $messages = Message::query()
+            ->where('scene_id', $scene->id)
+            ->where('id', '>=', $fromId)
+            ->where('id', '<=', $toId)
+            ->orderBy('id')
+            ->get();
+
+        if ($messages->isEmpty()) {
+            return false;
+        }
+
+        $formattedMessages = $this->formatMessages($messages);
+        $newEntry = $this->generateEntryText($character, $formattedMessages, $fromId, $toId, $entry->id);
+
+        if ($newEntry === '') {
+            return false;
+        }
+
+        $vector = $this->embeddings->embed($newEntry);
+
+        DB::statement(
+            'UPDATE character_diary_entries
+             SET entry = ?, embedding = ?::vector, updated_at = NOW()
+             WHERE id = ?',
+            [$newEntry, $this->formatVector($vector), $entry->id],
+        );
+
+        Log::info('diary.regenerate.entry_done', [
+            'entry_id' => $entry->id,
+            'npc_id' => $entry->character_id,
+        ]);
+
+        return true;
+    }
+
     private function writeForNpc(
         Character $npc,
         Scene $scene,
@@ -90,54 +145,18 @@ class DiaryWriterService
         int $fromMessageId,
         int $toMessageId,
     ): void {
-        $npc->loadMissing(['clan', 'sect', 'traits', 'biography']);
-
-        $name = WorldEntity::query()->whereKey($npc->id)->value('canonical_name') ?? 'NPC';
-        $clan = $npc->clan?->name ?? '—';
-        $sect = $npc->sect?->name ?? '—';
-
-        $traits = $npc->traits
-            ->map(fn ($t): string => "- {$t->label}: {$t->value}")
-            ->implode("\n");
-        if ($traits === '') {
-            $traits = '(нет)';
-        }
-
-        $bio = $npc->biography?->summary ?? '(нет)';
-
-        $previousEntry = CharacterDiaryEntry::query()
-            ->where('character_id', $npc->id)
-            ->orderByDesc('created_at')
-            ->value('entry');
-
-        $previousEntryOrNone = is_string($previousEntry) && trim($previousEntry) !== ''
-            ? trim($previousEntry)
-            : '(нет — это первая запись)';
-
         try {
-            $turn = $this->chat->chatTurn(
-                [
-                    ['role' => 'system', 'content' => $this->prompts->get('diary.writer.system')],
-                    ['role' => 'user', 'content' => $this->prompts->get('diary.writer.user', [
-                        'name' => $name,
-                        'clan' => $clan,
-                        'sect' => $sect,
-                        'traits' => $traits,
-                        'bio' => $bio,
-                        'previousEntryOrNone' => $previousEntryOrNone,
-                        'fromMessageId' => $fromMessageId,
-                        'toMessageId' => $toMessageId,
-                        'formattedMessages' => $formattedMessages,
-                    ])],
-                ],
-                ['max_tokens' => 2500, 'temperature' => 0.7],
-                [],
+            $entry = $this->generateEntryText(
+                $npc,
+                $formattedMessages,
+                $fromMessageId,
+                $toMessageId,
+                excludeEntryId: null,
             );
         } catch (\Throwable $e) {
             throw new RuntimeException('LLM call failed: '.$e->getMessage(), 0, $e);
         }
 
-        $entry = trim($turn->content);
         if ($entry === '') {
             throw new RuntimeException('LLM returned empty diary entry.');
         }
@@ -146,7 +165,6 @@ class DiaryWriterService
             'npc_id' => $npc->id,
             'scene_id' => $scene->id,
             'entry_length' => mb_strlen($entry),
-            'finish_reason' => $turn->finishReason,
         ]);
 
         $vector = $this->embeddings->embed($entry);
@@ -165,6 +183,61 @@ class DiaryWriterService
                 $this->formatVector($vector),
             ],
         );
+    }
+
+    private function generateEntryText(
+        Character $npc,
+        string $formattedMessages,
+        int $fromMessageId,
+        int $toMessageId,
+        ?int $excludeEntryId = null,
+    ): string {
+        $npc->loadMissing(['clan', 'sect', 'traits', 'biography']);
+
+        $name = WorldEntity::query()->whereKey($npc->id)->value('canonical_name') ?? 'NPC';
+        $clan = $npc->clan?->name ?? '—';
+        $sect = $npc->sect?->name ?? '—';
+
+        $traits = $npc->traits
+            ->map(fn ($t): string => "- {$t->label}: {$t->value}")
+            ->implode("\n");
+        if ($traits === '') {
+            $traits = '(нет)';
+        }
+
+        $bio = $npc->biography?->summary ?? '(нет)';
+
+        $previousEntry = CharacterDiaryEntry::query()
+            ->where('character_id', $npc->id)
+            ->when($excludeEntryId !== null, fn ($q) => $q->where('id', '!=', $excludeEntryId))
+            ->where('created_at', '<', now())
+            ->orderByDesc('created_at')
+            ->value('entry');
+
+        $previousEntryOrNone = is_string($previousEntry) && trim($previousEntry) !== ''
+            ? trim($previousEntry)
+            : '(нет — это первая запись)';
+
+        $turn = $this->chat->chatTurn(
+            [
+                ['role' => 'system', 'content' => $this->prompts->get('diary.writer.system')],
+                ['role' => 'user', 'content' => $this->prompts->get('diary.writer.user', [
+                    'name' => $name,
+                    'clan' => $clan,
+                    'sect' => $sect,
+                    'traits' => $traits,
+                    'bio' => $bio,
+                    'previousEntryOrNone' => $previousEntryOrNone,
+                    'fromMessageId' => $fromMessageId,
+                    'toMessageId' => $toMessageId,
+                    'formattedMessages' => $formattedMessages,
+                ])],
+            ],
+            ['max_tokens' => 2500, 'temperature' => 0.7],
+            [],
+        );
+
+        return trim($turn->content);
     }
 
     private function resolveSceneNpcs(Scene $scene): \Illuminate\Support\Collection

@@ -71,5 +71,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/diary-entries/{diaryEntry}', [DiaryEntryController::class, 'show']);
         Route::patch('/diary-entries/{diaryEntry}', [DiaryEntryController::class, 'update']);
         Route::delete('/diary-entries/{diaryEntry}', [DiaryEntryController::class, 'destroy']);
+        Route::post('/diary-entries/{diaryEntry}/regenerate', [DiaryEntryController::class, 'regenerate']);
     });
 });

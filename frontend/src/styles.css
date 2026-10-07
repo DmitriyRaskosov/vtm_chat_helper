@@ -488,6 +488,7 @@ summary {
 }
 
 .diary-actions .danger {
+    margin-left: auto;
     color: #c84c4c;
 }
 

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UpdateDiaryEntryRequest;
 use App\Models\Character;
 use App\Models\CharacterDiaryEntry;
+use App\Diary\DiarySummarizerService;
+use App\Diary\DiaryWriterService;
 use App\Rag\EmbeddingProvider;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -71,6 +73,30 @@ class DiaryEntryController extends Controller
         $diaryEntry->delete();
 
         return response()->noContent();
+    }
+
+    public function regenerate(
+    CharacterDiaryEntry $diaryEntry,
+    DiaryWriterService $writer,
+    DiarySummarizerService $summarizer,
+    ): JsonResponse {
+        $level = (int) $diaryEntry->level;
+
+        $ok = match ($level) {
+            0 => $writer->regenerateEntry($diaryEntry),
+            1 => $summarizer->regenerateSummary($diaryEntry),
+            default => false,
+        };
+
+        if (! $ok) {
+            abort(422, 'Не удалось пересоздать запись. Проверьте источник.');
+        }
+
+        $diaryEntry->refresh()->loadMissing('scene:id,title,game_session_id');
+
+        return response()->json([
+            'entry' => $this->serializeFull($diaryEntry),
+        ]);
     }
 
     /**

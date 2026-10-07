@@ -32,6 +32,14 @@
                     <div class="diary-actions">
                         <button type="button" class="link" @click="open(entry)">Открыть</button>
                         <button type="button" class="link" @click="startEdit(entry)">Редактировать</button>
+                        <button
+                            type="button"
+                            class="link"
+                            :disabled="regeneratingId !== null"
+                            @click="regenerate(entry)"
+                        >
+                            {{ regeneratingId === entry.id ? 'Пересоздаём…' : 'Пересоздать' }}
+                        </button>
                         <button type="button" class="link danger" @click="remove(entry)">Удалить</button>
                     </div>
                 </article>
@@ -49,7 +57,9 @@
 
                 <div v-if="!editing" class="diary-body">
                     <p class="diary-full">{{ activeEntry.entry }}</p>
-                    <button type="button" @click="startEdit(activeEntry)">Редактировать</button>
+                    <div class="sheet-actions">
+                        <button type="button" @click="startEdit(activeEntry)">Редактировать</button>
+                    </div>
                 </div>
 
                 <div v-else class="diary-body">
@@ -84,6 +94,7 @@ const activeEntry = ref(null);
 const editing = ref(false);
 const editText = ref('');
 const saving = ref(false);
+const regeneratingId = ref(null);
 
 async function load() {
     loading.value = true;
@@ -165,6 +176,27 @@ async function remove(entry) {
         if (activeEntry.value?.id === entry.id) close();
     } catch (e) {
         error.value = e.response?.data?.message ?? 'Не удалось удалить.';
+    }
+}
+
+async function regenerate(entry) {
+    if (!entry.id) return;
+    if (!confirm('Пересоздать запись? Текущий текст будет заменён.')) return;
+
+    regeneratingId.value = entry.id;
+    error.value = '';
+    try {
+        const { data } = await api.post(`/diary-entries/${entry.id}/regenerate`);
+        const updated = data.entry;
+        const idx = entries.value.findIndex((e) => e.id === updated.id);
+        if (idx !== -1) entries.value[idx] = { ...entries.value[idx], ...updated };
+        if (activeEntry.value?.id === updated.id) {
+            activeEntry.value = updated;
+        }
+    } catch (e) {
+        error.value = e.response?.data?.message ?? 'Не удалось пересоздать.';
+    } finally {
+        regeneratingId.value = null;
     }
 }
 
