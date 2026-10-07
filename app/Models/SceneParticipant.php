@@ -18,6 +18,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'is_current',
     'entered_at',
     'left_at',
+    'entered_message_id',
+    'left_message_id',
+    'last_diary_message_id',
 ])]
 class SceneParticipant extends Model
 {
@@ -59,6 +62,9 @@ class SceneParticipant extends Model
             'is_current' => 'boolean',
             'entered_at' => 'datetime',
             'left_at' => 'datetime',
+            'entered_message_id' => 'integer',
+            'left_message_id' => 'integer',
+            'last_diary_message_id' => 'integer',
         ];
     }
 }

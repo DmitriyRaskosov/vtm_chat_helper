@@ -3,6 +3,8 @@
 namespace App\Scene;
 
 use App\Enums\SceneParticipantRole;
+use App\Jobs\WriteFinalDiaryJob;
+use App\Models\Message;
 use App\Models\Character;
 use App\Models\Scene;
 use App\Models\SceneParticipant;
@@ -17,10 +19,10 @@ class SceneParticipantService
     public function __construct(private SceneContextService $contexts) {}
 
     public function enter(
-        Scene $scene,
-        Character $character,
-        SceneParticipantRole $role,
-        bool $visible = true,
+    Scene $scene,
+    Character $character,
+    SceneParticipantRole $role,
+    bool $visible = true,
     ): SceneParticipant {
         $scene->loadMissing('gameSession');
 
@@ -47,6 +49,12 @@ class SceneParticipantService
                 return $current;
             }
 
+            $lastMessageId = Message::query()
+                ->where('scene_id', $lockedScene->id)
+                ->max('id');
+
+            $enteredMessageId = $lastMessageId === null ? null : (int) $lastMessageId;
+
             return SceneParticipant::query()->create([
                 'scene_id' => $lockedScene->id,
                 'chronicle_id' => $character->chronicle_id,
@@ -55,13 +63,15 @@ class SceneParticipantService
                 'visible' => $visible,
                 'is_current' => true,
                 'entered_at' => now(),
+                'entered_message_id' => $enteredMessageId,
+                'last_diary_message_id' => $enteredMessageId,  // всё до входа не считаем
             ])->refresh();
         });
     }
 
     public function leave(Scene $scene, Character $character): SceneParticipant
     {
-        return DB::transaction(function () use ($scene, $character): SceneParticipant {
+        $participant = DB::transaction(function () use ($scene, $character): SceneParticipant {
             $lockedScene = Scene::query()->lockForUpdate()->findOrFail($scene->id);
             $this->contexts->assertMutable($lockedScene);
 
@@ -76,12 +86,24 @@ class SceneParticipantService
                 throw new InvalidArgumentException('Character is not a current participant of this scene.');
             }
 
+            $lastMessageId = Message::query()
+                ->where('scene_id', $lockedScene->id)
+                ->max('id');
+
             $current->is_current = false;
             $current->left_at = now();
+            $current->left_message_id = $lastMessageId === null ? null : (int) $lastMessageId;
             $current->save();
 
             return $current->refresh();
         });
+
+        // Финальный L0 для ушедшего NPC — вне транзакции
+        if ($participant->left_message_id !== null) {
+            WriteFinalDiaryJob::dispatch($scene->id, $character->id);
+        }
+
+        return $participant;
     }
 
     public function leaveMutableScenes(Character $character): void

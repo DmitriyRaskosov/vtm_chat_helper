@@ -9,6 +9,7 @@ use App\Models\CharacterDiaryEntry;
 use App\Models\Message;
 use App\Models\Scene;
 use App\Models\WorldEntity;
+use App\Models\SceneParticipant;
 use App\Prompt\PromptRepository;
 use App\Rag\EmbeddingProvider;
 use Illuminate\Support\Facades\DB;
@@ -32,35 +33,23 @@ class DiaryWriterService
     {
         $scene->loadMissing('gameSession');
 
-        $fromId = (int) ($scene->last_extracted_to_message_id ?? 0);
-
-        $messages = Message::query()
-            ->where('scene_id', $scene->id)
-            ->where('id', '>', $fromId)
-            ->orderBy('id')
-            ->limit(self::MAX_MESSAGES_PER_CALL)
-            ->get();
-
-        if ($messages->isEmpty()) {
-            return ['created' => 0, 'npcs' => 0, 'processed_messages' => 0, 'errors' => []];
-        }
-
         $npcs = $this->resolveSceneNpcs($scene);
         if ($npcs->isEmpty()) {
             return ['created' => 0, 'npcs' => 0, 'processed_messages' => 0, 'errors' => []];
         }
 
-        $formattedMessages = $this->formatMessages($messages);
-        $toMessageId = (int) $messages->last()->id;
-        $fromMessageId = (int) $messages->first()->id;
-
         $created = 0;
         $errors = [];
+        $processedMessages = 0;
 
         foreach ($npcs as $npc) {
             try {
-                $this->writeForNpc($npc, $scene, $formattedMessages, $fromMessageId, $toMessageId);
-                $created++;
+                $result = $this->writeForNpc($npc, $scene);
+
+                if ($result['created']) {
+                    $created++;
+                    $processedMessages += $result['processed_messages'];
+                }
             } catch (\Throwable $e) {
                 $errors[] = 'NPC '.$npc->id.': '.$e->getMessage();
                 Log::error('diary.write.npc_failed', [
@@ -71,16 +60,136 @@ class DiaryWriterService
             }
         }
 
-        if ($created > 0 || $errors === []) {
-            $scene->update(['last_extracted_to_message_id' => $toMessageId]);
-        }
-
         return [
             'created' => $created,
             'npcs' => $npcs->count(),
-            'processed_messages' => $messages->count(),
+            'processed_messages' => $processedMessages,
             'errors' => $errors,
         ];
+    }
+
+    /**
+     * @return array{created: bool, processed_messages: int}
+     */
+    private function writeForNpc(Character $npc, Scene $scene): array
+    {
+        $participant = SceneParticipant::query()
+            ->where('scene_id', $scene->id)
+            ->where('character_id', $npc->id)
+            ->where('is_current', true)
+            ->first();
+
+        if ($participant === null) {
+            return ['created' => false, 'processed_messages' => 0];
+        }
+
+        return $this->writeEntryForParticipant($npc, $scene, $participant);
+    }
+
+    /**
+     * @return array{created: bool, processed_messages: int}
+     */
+    private function writeEntryForParticipant(
+        Character $npc,
+        Scene $scene,
+        SceneParticipant $participant,
+        ?int $upperBoundMessageId = null,
+    ): array {
+        $fromId = (int) ($participant->last_diary_message_id ?? 0);
+        $minId = (int) ($participant->entered_message_id ?? 0);
+
+        $query = Message::query()
+            ->where('scene_id', $scene->id)
+            ->where('id', '>', $fromId)
+            ->where('id', '>=', $minId)
+            ->orderBy('id')
+            ->limit(self::MAX_MESSAGES_PER_CALL);
+
+        if ($upperBoundMessageId !== null) {
+            $query->where('id', '<=', $upperBoundMessageId);
+        }
+
+        $messages = $query->get();
+
+        if ($messages->isEmpty()) {
+            return ['created' => false, 'processed_messages' => 0];
+        }
+
+        $formattedMessages = $this->formatMessages($messages);
+        $fromMessageId = (int) $messages->first()->id;
+        $toMessageId = (int) $messages->last()->id;
+
+        try {
+            $entry = $this->generateEntryText(
+                $npc,
+                $formattedMessages,
+                $fromMessageId,
+                $toMessageId,
+                excludeEntryId: null,
+            );
+        } catch (\Throwable $e) {
+            throw new RuntimeException('LLM call failed: '.$e->getMessage(), 0, $e);
+        }
+
+        if ($entry === '') {
+            throw new RuntimeException('LLM returned empty diary entry.');
+        }
+
+        Log::info('diary.write.npc_done', [
+            'npc_id' => $npc->id,
+            'scene_id' => $scene->id,
+            'from_message_id' => $fromMessageId,
+            'to_message_id' => $toMessageId,
+            'entry_length' => mb_strlen($entry),
+        ]);
+
+        $vector = $this->embeddings->embed($entry);
+
+        DB::statement(
+            'INSERT INTO character_diary_entries
+                (character_id, chronicle_id, scene_id, level, from_message_id, to_message_id, entry, embedding, created_at, updated_at)
+            VALUES (?, ?, ?, 0, ?, ?, ?, ?::vector, NOW(), NOW())',
+            [
+                $npc->id,
+                $npc->chronicle_id,
+                $scene->id,
+                $fromMessageId,
+                $toMessageId,
+                $entry,
+                $this->formatVector($vector),
+            ],
+        );
+
+        $participant->update(['last_diary_message_id' => $toMessageId]);
+
+        return ['created' => true, 'processed_messages' => $messages->count()];
+    }
+
+    public function writeFinalForNpc(Scene $scene, Character $character): bool
+    {
+        if ((int) $character->character_type->value !== 'npc') {
+            return false;
+        }
+
+        $participant = SceneParticipant::query()
+            ->where('scene_id', $scene->id)
+            ->where('character_id', $character->id)
+            ->whereNotNull('left_message_id')
+            ->orderByDesc('id')
+            ->first();
+
+        if ($participant === null) {
+            return false;
+        }
+
+        $result = $this->writeEntryForParticipant(
+            $character,
+            $scene,
+            $participant,
+            upperBoundMessageId: (int) $participant->left_message_id,
+        );
+
+        return $result['created'];
     }
 
     public function regenerateEntry(CharacterDiaryEntry $entry): bool
@@ -136,53 +245,6 @@ class DiaryWriterService
         ]);
 
         return true;
-    }
-
-    private function writeForNpc(
-        Character $npc,
-        Scene $scene,
-        string $formattedMessages,
-        int $fromMessageId,
-        int $toMessageId,
-    ): void {
-        try {
-            $entry = $this->generateEntryText(
-                $npc,
-                $formattedMessages,
-                $fromMessageId,
-                $toMessageId,
-                excludeEntryId: null,
-            );
-        } catch (\Throwable $e) {
-            throw new RuntimeException('LLM call failed: '.$e->getMessage(), 0, $e);
-        }
-
-        if ($entry === '') {
-            throw new RuntimeException('LLM returned empty diary entry.');
-        }
-
-        Log::info('diary.write.npc_done', [
-            'npc_id' => $npc->id,
-            'scene_id' => $scene->id,
-            'entry_length' => mb_strlen($entry),
-        ]);
-
-        $vector = $this->embeddings->embed($entry);
-
-        DB::statement(
-            'INSERT INTO character_diary_entries
-                (character_id, chronicle_id, scene_id, level, from_message_id, to_message_id, entry, embedding, created_at, updated_at)
-             VALUES (?, ?, ?, 0, ?, ?, ?, ?::vector, NOW(), NOW())',
-            [
-                $npc->id,
-                $npc->chronicle_id,
-                $scene->id,
-                $fromMessageId,
-                $toMessageId,
-                $entry,
-                $this->formatVector($vector),
-            ],
-        );
     }
 
     private function generateEntryText(

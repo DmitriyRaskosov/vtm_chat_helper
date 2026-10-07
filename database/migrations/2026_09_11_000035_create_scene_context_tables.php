@@ -47,7 +47,9 @@ return new class extends Migration
             $table->timestamp('entered_at');
             $table->timestamp('left_at')->nullable();
             $table->timestamps();
-
+            $table->unsignedBigInteger('entered_message_id')->nullable();
+            $table->unsignedBigInteger('left_message_id')->nullable();
+            $table->unsignedBigInteger('last_diary_message_id')->nullable();
             $table->index(['scene_id', 'is_current'], 'scene_participants_scene_current_index');
         });
 

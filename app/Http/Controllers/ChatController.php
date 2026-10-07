@@ -273,26 +273,27 @@ class ChatController extends Controller
     private function maybeDispatchDiaryWrite(Scene $scene): void
     {
         $threshold = (int) config('diary.write_threshold', 15);
-        if ($threshold <= 0) {
-            return;
-        }
+        if ($threshold <= 0) return;
     
-        $lastExtracted = (int) Scene::query()
-            ->whereKey($scene->id)
-            ->value('last_extracted_to_message_id');
+        $participants = SceneParticipant::query()
+            ->where('scene_id', $scene->id)
+            ->where('is_current', true)
+            ->get();
+    
+        if ($participants->isEmpty()) return;
+    
+        $minCursor = $participants->min(fn ($p) => (int) ($p->last_diary_message_id ?? 0));
     
         $pending = Message::query()
             ->where('scene_id', $scene->id)
-            ->where('id', '>', $lastExtracted)
+            ->where('id', '>', $minCursor)
             ->count();
     
-        if ($pending < $threshold) {
-            return;
-        }
+        if ($pending < $threshold) return;
     
         WriteDiaryJob::dispatch($scene->id);
     
-        \Log::info('diary.write.dispatched', [
+        Log::info('diary.write.dispatched', [
             'scene_id' => $scene->id,
             'pending' => $pending,
             'threshold' => $threshold,
