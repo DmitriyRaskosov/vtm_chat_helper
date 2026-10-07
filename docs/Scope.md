@@ -1,172 +1,123 @@
 # Scope
 
-MVP-срез и то, что заморожено. Живой документ — обновлять при изменении границ.
+Живой документ. Обновлять при изменении границ.
 
-## Что такое MVP
+## Что такое проект
 
 Чат для VtM V20 с Copilot-помощником рассказчика.
 Мастер пишет синопсис → Copilot разворачивает в 3 варианта реплики NPC → мастер отправляет в чат.
+NPC ведут долговременный дневник, который подмешивается в контекст.
 
-**Не в MVP:** механика (кубы, статы, здоровье), RAG, extraction, память, рулбук, события мира, streaming.
+**Не в проекте:** механика (кубы, статы, здоровье), рулбук, world events, streaming.
 
-## MVP — что работает (24.09.2026)
+## Что работает сейчас (07.10.2026)
 
-### Auth
-Регистрация, логин, логаут, /user.
-
-### Game
-Хроники, сессии, сцены, участники сцены, контекст сцены.
-
-### Chat
-Сообщения (мастер, игрок, NPC), отправка от NPC через Copilot.
+### Auth / Game / Chat
+- Регистрация, логин, логаут, /user.
+- Хроники, сессии, сцены, участники, контекст сцены.
+- Сообщения от мастера, игрока, NPC.
 
 ### Copilot
 - `POST /api/copilot/drafts` — синопсис → 3 драфта.
-- Провайдер: DeepSeek (`deepseek-chat`).
-- Контекст: NPC (имя, клан, секта, слабость, дисциплины, биография),
-  сцена, промпт мастера, последние сообщения.
-- Провайдеры контекста: SystemPrompt, NpcIdentity, Scene, StorytellerPrompt,
-  RecentMessages, DirectRelations, Biography, ClosingInstruction.
+- DeepSeek (`deepseek-chat`).
+- Промпты вынесены в `resources/prompts/` + `PromptRepository`.
+- Контекст: NPC-identity, сцена, лор, storyteller-промпт, recent_messages, direct_relations, personality, biography, diary, closing.
+- Anti-anchor, quote discipline, speech act, trait examples, length rules.
 
-### Characters (подмножество листа)
-Создание, чтение, идентичность, дисциплины, биография, место (клан/секта/гавань),
-архивация/восстановление.
+### Дневник
+- `character_diary_entries` с pgvector HNSW.
+- L0 (каждые 15 сообщений или при закрытии), L1 (сводка сцены при close).
+- bge-m3 (1024 dim, sim ~0.70 на релевантных парах).
+- Retrieval: последняя + top-2 семантики, L1 приоритетнее L0.
+- UI: список, открыть, редактировать, удалить, пересоздать.
+
+### Characters
+- Создание, чтение, идентичность, дисциплины, биография, traits, место (клан/секта/гавань), архив.
 
 ### World
-`world_entities`, `world_relations`, `world_relation_types`, альясы.
-CRUD + neighbors. Политика фракций и directory-рёбра — тот же `/world/relations`.
-Экран «Мир» из UI убран; API сущностей и отношений остаётся, потому что лист создаёт гавань и Copilot читает отношения.
+- `world_entities`, `world_relations`, `world_relation_types`, альясы. CRUD + neighbors.
+- Экран «Мир» из UI убран, API сущностей и отношений остаётся (гавань, отношения для Copilot).
 
-### Canon (справочники, read-only, сиды)
-`canon_sects`, `canon_clans`, `canon_clan_sects`, `canon_clan_relations`,
-`canon_disciplines`, `canon_clan_disciplines`, `canon_discipline_powers` (пусто),
-`canon_lore_entries`, `canon_lore_entry_entities`.
-
-30 статей лора в `resources/canon/lore/*.md`, импорт через `canon:import-lore`.
+### Canon
+- `canon_sects`, `canon_clans`, `canon_clan_sects`, `canon_clan_relations`,
+  `canon_disciplines`, `canon_clan_disciplines`, `canon_discipline_powers` (пусто),
+  `canon_lore_entries`, `canon_lore_entry_entities`.
+- 30 статей лора в `resources/canon/lore/*.md`, импорт `canon:import-lore`.
 
 ### Tests
+- 25 feature-тестов: Auth, Character, Scene, Message, Copilot.
 
-- [x] Feature-тесты: Auth, Character, Scene, Message, Copilot (25 тестов)
+## Заморожено (не удалено, не развивается)
 
-## Заморожено
-
-Не удалено, но не развивается. Не подключать во фронт.
-
-### Механика
-- Stats, health, merits, experience, status — вырезаны из контроллеров и UI.
-- `CanonDisciplinePower` — таблица есть, сидов нет, UI нет.
-- `CharacterPower` — таблица есть, логики нет.
-
-### Инфраструктура
+- Механика: stats, health, merits, experience, status. По сути - все броски кубов из чарлиста.
+- `CanonDisciplinePower`, `CharacterPower`.
 - RAG: `LoreChunk`, `MessageEmbedding`, `RagSearchController`.
 - Extraction: `Extractor/*`, `ExtractionRun`, `ExtractController`.
-- Memory: `CharacterMemoryNode`, `MemoryGraphRag`.
 - Rulebook: `RuleDocument*`, `Ruleset`.
 - World events: `WorldEvent*`.
 - Старый lore (не canon): `LoreEntry`, `LoreChunk`.
 
-### Проводник контекста
-- `WorldLoreProvider` — вырезан из `ContextAssembler` (тянул retrieval, memory, events).
-  Вернуть, когда будет упрощённый вариант на `canon_lore_entries` + `world_relations`.
-
 ## Правила
 
-- **Миграции:** создают только схему. Сиды — отдельно. FK — в `Schema::create` той таблицы, которая ссылается.
-- **MVP-правки:** только активные роуты и их потребители. Замороженное не расширять.
-- **Канон vs хроника:** `canon_*` — read-only, заполняется сидами. Всё остальное — данные игры.
+- **Миграции:** только схема. Сиды — отдельно. FK в `Schema::create` той таблицы, что ссылается.
+- **Правки:** только активные роуты и их потребители. Замороженное не расширять.
+- **Канон vs хроника:** `canon_*` — read-only, сиды. Всё остальное — данные игры.
 
-## Пост-MVP (в порядке приоритета)
+## TODO — приоритет 1 (до ваншота)
 
-1. **RAG на `canon_lore_chunks`** — когда статей лора станет много (>50) и они перестанут влезать в контекст.
+### Проблема A. NPC ушёл со сцены — финальный L0
+- [ ] Миграция: `scene_participants.entered_message_id`, `left_message_id` (nullable bigint).
+- [ ] `DiaryWriterService::writeForScene` — фильтр сообщений по окну присутствия каждого NPC.
+- [ ] Триггер при `leave`: `WriteFinalDiaryForNpcJob` — финальный L0 для ушедшего.
+- [ ] Feature-тест: NPC входит на 5, уходит на 42 → L0 покрывает сообщения 5–42.
 
-2. **Опционально: Силы дисциплин** (`canon_discipline_powers`) — если нужны. Заполнить сидером, добавить UI.
+### Проблема B. OOC-сообщения
+- [ ] Миграция: `messages.is_ooc BOOLEAN DEFAULT false`.
+- [ ] UI: toggle «IC / OOC» в `ChatComposer`, OOC — приглушённый стиль.
+- [ ] `DiaryWriterService` — фильтр `where('is_ooc', false)`.
+- [ ] `RecentMessagesProvider` — решить, подавать ли OOC в контекст Copilot.
+- [ ] Feature-тест: OOC-сообщения не попадают в дневник.
+
+### Проблема C. RAG по сообщениям сцены
+- [ ] Миграция: `message_embeddings` (message_id, chronicle_id, scene_id, embedding, model).
+- [ ] `MessageEmbedderService` + job — эмбеддить при `POST /messages` (батчем, асинхронно).
+- [ ] `SceneRecallProvider` — если сцена >50 сообщений → top-3 семантически близких за пределами `recent_messages`.
+- [ ] Секция `[scene recall]` — «не цитируй дословно, используй как контекст».
+- [ ] `embedBatch` для экономии вызовов; обрезка очень длинных (>20k символов) до 5000+2000.
+
+## TODO — приоритет 2 (после ваншота)
+
+- [ ] Feature-тесты на дневник (3 теста: L0 создаётся, L1 создаётся, retrieval работает).
+- [ ] Переименовать `scenes.last_extracted_to_message_id` → `last_diary_to_message_id`.
+- [ ] `writeForScene` — цикл по батчам при >60 необработанных сообщений.
+- [ ] Проблема D: игровое время (`chronicles.current_in_game_date`, `in_game_date` в дневнике, кнопка «+5 мин / +1 час»).
+- [ ] Наполнение канона: 30 → 50+ статей.
+- [ ] Ручное создание записей в дневнике через UI.
+- [ ] Метрики SkyrimNET: `importance`, `emotion`, `tags`, `location` в дневник.
+- [ ] Слот для пустых трейтов персонажа.
+- [ ] Retry если `finish_reason=length` в L1.
+
+## Отложено по триггеру
+
+- [ ] RAG по лору (`canon_lore_chunks`) — когда статей >50.
+- [ ] Иерархия L2 дневника — когда записей на NPC >100.
+- [ ] Prune дневника — когда записей >1000.
+- [ ] UI промптов (read-only) — если понадобится.
+- [ ] Reranker `bge-reranker-v2-m3` — когда >500 записей. Требует TEI sidecar.
+- [ ] HippoRAG / RAPTOR — только при масштабе >500 сцен.
+
+## Может, никогда
+
+- Memory вернуть — только если дневник чего-то не покрывает.
+- Streaming, Voice/TTS, WebSockets.
 
 ## Вехи
 
-- [x] 21.09.2026 — MVP заработал end-to-end в старом проекте
-- [x] 24.09.2026 — MVP вынесен в чистый репозиторий `trpg_chat_helper`
-- [x] 24.09.2026 — 30 статей лора импортированы
-- [x] 24.09.2026 — E2E проверен в новом репозитории
-- [x] 25.09.2026 — Чистка кода, WorldLoreProvider вернулся - сцены, лор, отношения в контекст Copilot.
-- [x] 26.09.2026 — Чистка кода, появились тесты.
-- [x] LENGTH-блок в system prompt — длина драфтов следует трейтам NPC
-- [x] [behavior] префикс в PersonalityProvider — трейты как директивы
-- [x] Убраны дубли про клан/subtlety — карикатура побеждена архитектурно
-- [x] PRIMARY DIRECTIVE: сначала - ответ на вопрос, потом - стиль
-- [x] Style: максимум одна метафора, стабильное обращение (не путаются ты/вы)
-- [x] Проверено: silent-кейс, yes/no-вопрос, развёрнутый рассказ, дефолт
-- [x] Добавлен блок "ситуации" для сцены в окне рассказчика. Это описание локации, идёт в промпт.
-- [x] Рудиментарная вкладка "МИР" для добавления лора/локаций/etc старой версии проекта удалена. 
-- [x] 05.10.2026 — bge-m3 как эмбеддер (вместо qwen3-embedding:0.6b, sim вырос с 0.10 до 0.70)
-- [x] Keyword boost ослаблен до 0.05
-- [x] Similarity вес поднят до 0.65
-
-
-## Удалено (06.10.2026)
-
-- [x] character_memories таблица + модель
-- [x] MemoryExtractionService, MemoryRetrievalService
-- [x] MemoryProvider
-- [x] ExtractSceneMemoryJob, ExtractSceneMemoryCommand
-- [x] config/memory.php
-- [x] ReembedMemoriesCommand → diary:reembed
-
-Причина: заменено на character_diary_entries (L0 + L1).
-Memory давала гранулярные факты, но провоцировала fusion и галлюцинации.
-Дневник решает это архитектурно — нарратив от первого лица.
-
-## Известные ограничения
-
-- [ ] Extraction — ручной (artisan command)
-- [ ] Большие сцены (>30 сообщений) упираются в max_tokens (6000 сейчас)
-- [ ] Reranker не подключён (bge-reranker-v2-m3 требует отдельного сервиса)
-- [ ] RAG по лору не сделан (world_lore обрезает статьи)
-
-## Отложено:
-
-- [ ] Reranker bge-reranker-v2-m3 — требует отдельного сервиса TEI sidecar (отдельный Docker-контейнер)
-      Ollama не поддерживает нативно rerank API.
-      Вернуться, когда retrieval станет узким горлышком (>500 записей памяти и >10 НПС, мб >15).
-      Альтернатива: embedding-based rerank через bge-m3.
-- [ ] Автотриггер extraction (кнопка/сцена)
-- [ ] RAG по лору (canon_lore_chunks)
-- [ ] Чанкование extraction для больших сцен
-
-## Пост-MVP приоритет
-
-1. Дневник NPC — отдельный слой от памяти
-- [ ] Память = что NPC слышал/видел (внешнее).
-- [ ] Дневник = что NPC делал/думал/решал (внутреннее).
-- [ ] Сейчас всё в character_memories. Разделение — после reply-фикса.
-2. RAG по лору (canon_lore_chunks)
-3. Чанкование extraction для больших сцен
-
-## Осталось сделать (шаг 4+)
-
-- [ ] DiaryRetrievalService — последняя + top-2 по семантике
-- [ ] DiaryProvider в ContextAssembler
-- [ ] Обновить SystemPromptProvider: DIARY блок, убрать MEMORY блоки
-- [ ] Удалить character_memories + Memory* сервисы/джобы/провайдеры
-- [ ] Переименовать config/memory.php → config/diary.php (старую удалить)
-- [ ] Замена MemoryProvider на DiaryProvider в ContextAssembler
-- [ ] Тест E2E: NPC ссылается на прошлые ночи через дневник
-
-## Дневник — E2E полный (06.10.2026)
-
-- [x] L0: автотриггер по порогу 15, остаток при закрытии сцены
-- [x] L1: всегда, если есть хоть один L0
-- [x] SummarizeSceneDiaryJob: writer → summarizer последовательно
-- [x] Retrieval: последняя + top-2 семантики, L1 приоритетнее L0
-- [x] Anti-anchor + trait examples + quote discipline
-- [x] E2E: 33 сообщения → 3 L0 → 1 L1 → ссылка в Copilot
-- [x] Старая memory удалена полностью
-- L0: 1–3 абзаца, ~100 слов, голос NPC, конкретные события.
-- L1: 4 предложения, ~95 слов, паттерн без verbatim, свежие формулировки.
-
-## Осталось по дневнику (низкий приоритет)
-
-- [ ] UI просмотра дневника мастером
-- [ ] Retry если finish_reason=length в L1
-- [ ] Решение для сцен >30 L0 (сейчас summarizer берёт только 30)
-- [ ] writeForScene: цикл по батчам при >60 необработанных сообщений
-      Триггер: сцены >60 сообщений без промежуточного extraction
+- [x] MVP end-to-end в старом проекте.
+- [x] вынесен в чистый репозиторий, 30 статей лора.
+- [x] WorldLoreProvider вернулся (сцены, лор, отношения).
+- [x] 25 feature-тестов.
+- [x] LENGTH, anti-anchor, quote discipline, speech act.
+- [x] bge-m3 (sim 0.10 → 0.70).
+- [x] дневник L0 + L1 E2E, memory удалена, промпты в `resources/prompts/`.
+- [x] UI дневника (просмотр, редактирование, удаление, пересоздание).
