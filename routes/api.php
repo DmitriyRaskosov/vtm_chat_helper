@@ -12,6 +12,7 @@ use App\Http\Controllers\SceneController;
 use App\Http\Controllers\SceneParticipantController;
 use App\Http\Controllers\WorldEntityController;
 use App\Http\Controllers\WorldRelationController;
+use App\Http\Controllers\DiaryEntryController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [RegisterController::class, 'store']);
@@ -65,5 +66,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/scenes/{scene}/participants', [SceneParticipantController::class, 'index']);
         Route::post('/scenes/{scene}/participants', [SceneParticipantController::class, 'store']);
         Route::patch('/scenes/{scene}/participants/{character}', [SceneParticipantController::class, 'leave']);
+
+        Route::get('/characters/{character}/diary', [DiaryEntryController::class, 'index']);
+        Route::get('/diary-entries/{diaryEntry}', [DiaryEntryController::class, 'show']);
+        Route::patch('/diary-entries/{diaryEntry}', [DiaryEntryController::class, 'update']);
+        Route::delete('/diary-entries/{diaryEntry}', [DiaryEntryController::class, 'destroy']);
     });
 });

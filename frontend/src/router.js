@@ -5,6 +5,7 @@ import RegisterView from './views/RegisterView.vue';
 import ChatView from './views/ChatView.vue';
 import CharacterListView from './views/CharacterListView.vue';
 import CharacterSheetView from './views/CharacterSheetView.vue';
+import DiaryView from './views/DiaryView.vue';
 
 const router = createRouter({
     history: createWebHistory(),
@@ -16,6 +17,7 @@ const router = createRouter({
         { path: '/characters', name: 'characters', component: CharacterListView, meta: { auth: true } },
         { path: '/characters/:id', name: 'character', component: CharacterSheetView, meta: { auth: true } },
         { path: '/world', redirect: '/chat' },
+        { path: '/characters/:id/diary', name: 'character-diary', component: DiaryView, meta: { auth: true, storyteller: true } },
     ],
 });
 

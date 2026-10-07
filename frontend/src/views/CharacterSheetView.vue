@@ -4,6 +4,10 @@
 
         <p v-if="error" class="error">{{ error }}</p>
 
+        <div v-if="isStoryteller" class="sheet-top-links">
+            <RouterLink :to="`/characters/${sheet.id}/diary`" class="link">Дневник</RouterLink>
+        </div>
+
         <SheetHeaderSection
             :identity="identity"
             :sheet="sheet"
@@ -66,6 +70,7 @@ import SheetHeaderSection from '../components/sheet/SheetHeaderSection.vue';
 import SheetPlaceSection from '../components/sheet/SheetPlaceSection.vue';
 import SheetTraitsSection from '../components/sheet/SheetTraitsSection.vue';
 import { useCharacterSheet } from '../composables/useCharacterSheet';
+import { RouterLink } from 'vue-router';
 
 const {
     sheet,
