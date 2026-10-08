@@ -602,3 +602,105 @@ summary {
 .composer .composer-row button[type="submit"] {
     align-self: stretch;
 }
+/* === Message actions === */
+
+.chat-controls {
+    display: flex;
+    gap: 1rem;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.85rem;
+    /* убеждаемся, что это не flex-row */
+    width: 100%;
+}
+
+.toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    cursor: pointer;
+    user-select: none;
+}
+
+.msg-actions {
+    display: flex;
+    gap: 0.5rem;
+    margin-top: 0.35rem;
+    opacity: 0;
+    transition: opacity 0.15s;
+    font-size: 0.75rem;
+}
+
+.msg:hover .msg-actions,
+.msg-deleted .msg-actions {
+    opacity: 1;
+}
+
+.msg-action {
+    background: transparent;
+    border: 1px solid var(--border, #3a3a3a);
+    color: var(--fg, #e0e0e0);
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: border-color 0.15s;
+}
+
+.msg-action:hover {
+    border-color: var(--accent, #c86432);
+}
+
+.msg-action.danger {
+    color: #c84c4c;
+    border-color: #7a3030;
+}
+
+.msg.msg-deleted {
+    opacity: 0.55;
+}
+
+.msg.msg-deleted .msg-body {
+    text-decoration: line-through;
+}
+
+.deleted-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    margin-right: 0.5rem;
+    border-radius: 3px;
+    background: rgba(200, 76, 76, 0.15);
+    color: #c84c4c;
+    font-size: 0.7rem;
+    font-style: normal;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    vertical-align: middle;
+}
+
+/* === Stale diary entry === */
+
+.diary-entry.diary-entry-stale {
+    border-left-color: #d68a2b;
+    background: rgba(214, 138, 43, 0.06);
+}
+
+.stale-badge {
+    display: inline-block;
+    padding: 1px 6px;
+    margin-left: 0.5rem;
+    border-radius: 3px;
+    background: rgba(214, 138, 43, 0.15);
+    color: #d68a2b;
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    vertical-align: middle;
+    text-decoration: none;
+}
+
+.chat-column {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-width: 0;
+}

@@ -18,10 +18,14 @@
                     v-for="entry in entries"
                     :key="entry.id"
                     class="diary-entry"
-                    :class="{ 'diary-entry-l1': entry.level === 1 }"
+                    :class="{
+                        'diary-entry-l1': entry.level === 1,
+                        'diary-entry-stale': entry.is_stale,
+                    }"
                 >
                     <header class="diary-entry-header">
                         <span class="diary-level">L{{ entry.level }}</span>
+                        <span v-if="entry.is_stale" class="stale-badge">ИСТОЧНИК ИЗМЕНЁН</span>
                         <span v-if="entry.scene_title" class="muted">{{ entry.scene_title }}</span>
                         <span class="muted">{{ formatDate(entry.created_at) }}</span>
                         <span class="muted">{{ entry.word_count }} сл.</span>
@@ -51,6 +55,7 @@
                 <header class="diary-modal-header">
                     <h2>
                         L{{ activeEntry.level }} · {{ activeEntry.scene_title || 'без сцены' }}
+                        <span v-if="activeEntry.is_stale" class="stale-badge">ИСТОЧНИК ИЗМЕНЁН</span>
                     </h2>
                     <button type="button" class="link" @click="close">Закрыть</button>
                 </header>

@@ -31,7 +31,6 @@ class ChatController extends Controller
             'scene_id' => ['sometimes', 'integer', 'exists:scenes,id'],
             'chronicle_id' => ['sometimes', 'integer', 'exists:chronicles,id'],
             'after_id' => ['sometimes', 'integer', 'min:0'],
-            'include_deleted' => ['sometimes', 'boolean'],
         ]);
     
         $afterId = $request->integer('after_id');

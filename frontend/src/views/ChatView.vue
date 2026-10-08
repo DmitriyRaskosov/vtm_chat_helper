@@ -33,8 +33,23 @@
         />
 
         <div :class="{ stage: isStoryteller }">
-            <div>
-                <ChatLog ref="chatLog" :messages="messages" />
+            <div class="chat-column">
+                <div class="chat-controls">
+                    <label class="toggle">
+                        <input v-model="showDeleted" type="checkbox" />
+                        Показать удалённые
+                    </label>
+                </div>
+
+                <ChatLog
+                    ref="chatLog"
+                    :messages="messages"
+                    :is-storyteller="isStoryteller"
+                    @toggle-ooc="toggleOoc"
+                    @delete="deleteMessage"
+                    @restore="restoreMessage"
+                />
+
                 <ChatComposer
                     v-model:body="body"
                     v-model:is-ooc="isOoc"
@@ -111,11 +126,15 @@ const {
     messages,
     body,
     isOoc,
+    showDeleted,
     lastId,
     merge,
     scrollDown,
     load,
     send,
+    toggleOoc,
+    deleteMessage,
+    restoreMessage,
 } = useChatMessages({
     selectedSceneId,
     canPost,

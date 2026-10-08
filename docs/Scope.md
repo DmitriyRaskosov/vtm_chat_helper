@@ -131,7 +131,7 @@ NPC ведут долговременный дневник, который по�
 - [x] Миграция `create_chronicles` больше не вставляет данные
 - [x] Demo теперь id=1, ручных DELETE не нужно
 
-## Soft-delete + edit (08.10.2026)
+## Soft-delete + edit + UI (08.10.2026)
 
 - [x] messages.deleted_at (SoftDeletes), partial index на активные
 - [x] character_diary_entries.is_stale + partial index
@@ -143,3 +143,14 @@ NPC ведут долговременный дневник, который по�
 - [x] serialize отдаёт is_ooc, is_deleted, is_stale
 - [x] Тесты soft-delete и OOC (MessageEditTest, 8 тестов)
 - [x] Итого: 44 теста (Auth, Character, Scene, Message, Copilot, Diary, MessageEdit)
+- [x] Кнопки у сообщений: toggle OOC, delete, restore
+- [x] Toggle «Показать удалённые» (только storyteller)
+- [x] Удалённые сообщения — серые, зачёркнутые, бейдж УДАЛЕНО
+- [x] Stale-метка в дневнике (оранжевая рамка + бейдж)
+- [x] Права: storyteller — что угодно; игрок — только свои
+- [x] Тесты: 8 (MessageEditTest)
+
+## Известные нюансы
+
+- `include_deleted` в query — не валидируется через rule 'boolean',
+  используется `$request->boolean()`. Стандартный паттерн для флагов.
