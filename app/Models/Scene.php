@@ -20,7 +20,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'status',
     'started_at',
     'ended_at',
-    'last_extracted_to_message_id',
 ])]
 class Scene extends Model
 {
@@ -82,7 +81,6 @@ class Scene extends Model
             'status' => SceneStatus::class,
             'started_at' => 'datetime',
             'ended_at' => 'datetime',
-            'last_extracted_to_message_id' => 'integer',
         ];
     }
 }

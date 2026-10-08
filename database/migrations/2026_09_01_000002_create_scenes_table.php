@@ -18,7 +18,6 @@ return new class extends Migration
             $table->string('status', 20)->default('draft');
             $table->timestamp('started_at')->nullable();
             $table->timestamp('ended_at')->nullable();
-            $table->unsignedBigInteger('last_extracted_to_message_id')->nullable();
             $table->timestamps();
 
             $table->unique(['game_session_id', 'position']);

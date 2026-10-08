@@ -11,6 +11,7 @@ use App\Models\Chronicle;
 use App\Models\CopilotRequest;
 use App\Models\Message;
 use App\Models\Scene;
+use App\Models\SceneParticipant;
 use App\Models\User;
 use App\Models\WorldEntity;
 use App\Jobs\WriteDiaryJob;
