@@ -15,8 +15,10 @@ use App\Models\SceneParticipant;
 use App\Models\User;
 use App\Models\WorldEntity;
 use App\Jobs\WriteDiaryJob;
-use Illuminate\Http\JsonResponse;
+use App\Messages\MessageEditService;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -29,20 +31,28 @@ class ChatController extends Controller
             'scene_id' => ['sometimes', 'integer', 'exists:scenes,id'],
             'chronicle_id' => ['sometimes', 'integer', 'exists:chronicles,id'],
             'after_id' => ['sometimes', 'integer', 'min:0'],
+            'include_deleted' => ['sometimes', 'boolean'],
         ]);
+    
         $afterId = $request->integer('after_id');
         $scene = $this->resolveScene(
             isset($validated['scene_id']) ? (int) $validated['scene_id'] : null,
             isset($validated['chronicle_id']) ? (int) $validated['chronicle_id'] : null,
             false,
         );
-
-        $messages = Message::query()
+    
+        $query = Message::query()
             ->with('user:id,name')
-            ->where('scene_id', $scene->id)
-            ->when($afterId > 0, fn ($query) => $query->where('id', '>', $afterId))
+            ->where('scene_id', $scene->id);
+    
+        if ($request->boolean('include_deleted')) {
+            $query->withTrashed();
+        }
+    
+        $messages = $query
+            ->when($afterId > 0, fn ($q) => $q->where('id', '>', $afterId))
             ->orderBy('id')
-            ->get();
+            ->get();    
 
         $characterLookup = $this->characterLookup($messages);
 
@@ -123,6 +133,47 @@ class ChatController extends Controller
         return response()->json(['message' => $this->serialize($message, $characterLookup)], 201);
     }
 
+    public function toggleOoc(
+        Request $request,
+        Message $message,
+        MessageEditService $service,
+    ): JsonResponse {
+        $validated = $request->validate([
+            'is_ooc' => ['required', 'boolean'],
+        ]);
+
+        $updated = $service->toggleOoc($message, $request->user(), (bool) $validated['is_ooc']);
+
+        $characterLookup = $this->characterLookup(collect([$updated]));
+
+        return response()->json([
+            'message' => $this->serialize($updated, $characterLookup),
+        ]);
+    }
+
+    public function destroy(
+        Message $message,
+        MessageEditService $service,
+    ): Response {
+        $service->softDelete($message, request()->user());
+
+        return response()->noContent();
+    }
+
+    public function restore(
+        Message $message,
+        MessageEditService $service,
+    ): JsonResponse {
+        $service->restore($message, request()->user());
+
+        $message->refresh();
+        $characterLookup = $this->characterLookup(collect([$message]));
+
+        return response()->json([
+            'message' => $this->serialize($message, $characterLookup),
+        ]);
+    }
+
     /**
      * @param  array<string, mixed>  $validated
      * @return array{0: int|null, 1: string|null}
@@ -192,6 +243,7 @@ class ChatController extends Controller
             'npc_name' => $message->npc_name,
             'author_character_id' => $characterId,
             'is_ooc' => (bool) $message->is_ooc,
+            'is_deleted' => $message->trashed(),
             'created_at' => $message->created_at?->timezone(config('app.timezone'))->format('H:i'),
         ];
     }

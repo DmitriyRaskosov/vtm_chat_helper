@@ -130,3 +130,16 @@ NPC ведут долговременный дневник, который по�
 - [x] `WithoutModelEvents` убран из DatabaseSeeder (hooks работают)
 - [x] Миграция `create_chronicles` больше не вставляет данные
 - [x] Demo теперь id=1, ручных DELETE не нужно
+
+## Soft-delete + edit (08.10.2026)
+
+- [x] messages.deleted_at (SoftDeletes), partial index на активные
+- [x] character_diary_entries.is_stale + partial index
+- [x] MessageEditService: toggleOoc, softDelete, restore
+- [x] Помечает L0/L1 (from <= id <= to) как stale при изменении источника
+- [x] Endpoints: PATCH /messages/{id}/ooc, DELETE /messages/{id}, POST /messages/{id}/restore
+- [x] Права: storyteller — что угодно; игрок — только свои
+- [x] DiaryRetrievalService пропускает is_stale
+- [x] serialize отдаёт is_ooc, is_deleted, is_stale
+- [x] Тесты soft-delete и OOC (MessageEditTest, 8 тестов)
+- [x] Итого: 44 теста (Auth, Character, Scene, Message, Copilot, Diary, MessageEdit)

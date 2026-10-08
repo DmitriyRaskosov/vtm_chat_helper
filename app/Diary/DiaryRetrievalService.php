@@ -26,6 +26,7 @@ class DiaryRetrievalService
     {
         $all = CharacterDiaryEntry::query()
             ->where('character_id', $npc->id)
+            ->where('is_stale', false)
             ->orderBy('created_at')
             ->get();
 

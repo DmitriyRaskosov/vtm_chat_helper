@@ -26,6 +26,7 @@ return new class extends Migration
             $table->unsignedBigInteger('to_message_id')->nullable();
             $table->text('entry');
             $table->timestamps();
+            $table->boolean('is_stale')->default(false);
 
             $table->index(['character_id', 'created_at']);
             $table->index(['chronicle_id', 'level']);
@@ -39,6 +40,12 @@ return new class extends Migration
         DB::statement(
             'CREATE INDEX character_diary_entries_embedding_idx
              ON character_diary_entries USING hnsw (embedding vector_cosine_ops)'
+        );
+
+        DB::statement(
+            'CREATE INDEX character_diary_entries_stale_idx
+            ON character_diary_entries (character_id)
+            WHERE is_stale = true'
         );
     }
 

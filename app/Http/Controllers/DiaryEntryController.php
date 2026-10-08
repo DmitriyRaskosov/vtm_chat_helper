@@ -114,6 +114,7 @@ class DiaryEntryController extends Controller
             'level' => (int) $entry->level,
             'from_message_id' => $entry->from_message_id === null ? null : (int) $entry->from_message_id,
             'to_message_id' => $entry->to_message_id === null ? null : (int) $entry->to_message_id,
+            'is_stale' => (bool) $entry->is_stale,
             'preview' => mb_substr($text, 0, 300),
             'word_count' => count(preg_split('/\s+/u', $text, -1, PREG_SPLIT_NO_EMPTY) ?: []),
             'created_at' => $entry->created_at?->toIso8601String(),

@@ -17,10 +17,17 @@ return new class extends Migration
             $table->unsignedInteger('token_estimate');
             $table->string('token_estimator_version', 32);
             $table->boolean('is_ooc')->default(false);
+            $table->softDeletes();
             $table->timestamps();
 
             $table->index(['scene_id', 'is_ooc']);
         });
+
+        DB::statement(
+            'CREATE INDEX messages_scene_active_idx
+            ON messages (scene_id)
+            WHERE deleted_at IS NULL'
+        );
     }
 
     public function down(): void

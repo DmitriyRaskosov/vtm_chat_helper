@@ -25,6 +25,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/messages', [ChatController::class, 'index']);
     Route::post('/messages', [ChatController::class, 'store']);
 
+    Route::patch('/messages/{message}/ooc', [ChatController::class, 'toggleOoc']);
+    Route::delete('/messages/{message}', [ChatController::class, 'destroy']);
+    Route::post('/messages/{message}/restore', [ChatController::class, 'restore'])
+    ->withTrashed();
+
     Route::get('/character-sheet/catalog', [CharacterSheetController::class, 'catalog']);
 
     Route::get('/characters', [CharacterSheetController::class, 'index']);

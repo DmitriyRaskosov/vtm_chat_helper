@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'from_message_id',
     'to_message_id',
     'entry',
+    'is_stale',
 ])]
 class CharacterDiaryEntry extends Model
 {
@@ -23,6 +24,7 @@ class CharacterDiaryEntry extends Model
             'level' => 'integer',
             'from_message_id' => 'integer',
             'to_message_id' => 'integer',
+            'is_stale' => 'boolean',
         ];
     }
 
