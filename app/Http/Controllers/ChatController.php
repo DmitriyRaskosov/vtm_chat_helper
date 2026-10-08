@@ -103,6 +103,7 @@ class ChatController extends Controller
                 'npc_name' => $npcName,
                 'author_character_id' => $authorCharacterId,
                 'copilot_request_id' => $copilotRequest?->id,
+                'is_ooc' => (bool) ($validated['is_ooc'] ?? false),
             ]);
 
             if ($copilotRequest !== null) {
@@ -172,7 +173,7 @@ class ChatController extends Controller
     }
 
     /**
-     * @return array{id: int, scene_id: int, body: string, author: string, mine: bool, created_at: string, npc_name: string|null, author_character_id: int|null}
+     * @return array{id: int, scene_id: int, body: string, author: string, mine: bool, created_at: string, npc_name: string|null, author_character_id: int|null, is_ooc: bool}
      */
     private function serialize(Message $message, array $characterLookup = []): array
     {
@@ -190,6 +191,7 @@ class ChatController extends Controller
             'mine' => ! $isNpc && $message->user_id === auth()->id(),
             'npc_name' => $message->npc_name,
             'author_character_id' => $characterId,
+            'is_ooc' => (bool) $message->is_ooc,
             'created_at' => $message->created_at?->timezone(config('app.timezone'))->format('H:i'),
         ];
     }

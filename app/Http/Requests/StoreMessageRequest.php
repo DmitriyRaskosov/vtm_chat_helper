@@ -32,6 +32,7 @@ class StoreMessageRequest extends FormRequest
     {
         return [
             'body' => ['required', 'string', 'max:4000'],
+            'is_ooc' => ['sometimes', 'boolean'],
             'npc_name' => ['prohibited'],
             'character_id' => ['sometimes', 'nullable', 'integer', 'exists:characters,id'],
             'scene_id' => ['sometimes', 'integer', 'exists:scenes,id'],

@@ -100,6 +100,7 @@ class DiaryWriterService
 
         $query = Message::query()
             ->where('scene_id', $scene->id)
+            ->where('is_ooc', false)
             ->where('id', '>', $fromId)
             ->where('id', '>=', $minId)
             ->orderBy('id')
@@ -214,6 +215,7 @@ class DiaryWriterService
 
         $messages = Message::query()
             ->where('scene_id', $scene->id)
+            ->where('is_ooc', false)
             ->where('id', '>=', $fromId)
             ->where('id', '<=', $toId)
             ->orderBy('id')

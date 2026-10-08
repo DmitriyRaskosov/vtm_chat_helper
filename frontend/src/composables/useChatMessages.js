@@ -4,6 +4,7 @@ import { api } from '../auth';
 export function useChatMessages({ selectedSceneId, canPost, getLog }) {
     const messages = ref([]);
     const body = ref('');
+    const isOoc = ref(false);
 
     function lastId() {
         return messages.value.at(-1)?.id ?? 0;
@@ -54,6 +55,7 @@ export function useChatMessages({ selectedSceneId, canPost, getLog }) {
         const { data } = await api.post('/messages', {
             body: text,
             scene_id: selectedSceneId.value,
+            is_ooc: isOoc.value, // ← передаём флаг
         });
         merge([data.message]);
         body.value = '';
@@ -63,6 +65,7 @@ export function useChatMessages({ selectedSceneId, canPost, getLog }) {
     return {
         messages,
         body,
+        isOoc,
         lastId,
         merge,
         scrollDown,

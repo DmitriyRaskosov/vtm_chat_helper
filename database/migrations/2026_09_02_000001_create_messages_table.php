@@ -16,7 +16,10 @@ return new class extends Migration
             $table->string('npc_name', 64)->nullable();
             $table->unsignedInteger('token_estimate');
             $table->string('token_estimator_version', 32);
+            $table->boolean('is_ooc')->default(false);
             $table->timestamps();
+
+            $table->index(['scene_id', 'is_ooc']);
         });
     }
 

@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'copilot_request_id',
     'token_estimate',
     'token_estimator_version',
+    'is_ooc',
 ])]
 class Message extends Model
 {
@@ -41,6 +42,11 @@ class Message extends Model
         }
 
         return $this->user?->name ?? 'Аноним';
+    }
+
+    public function isOoc(): bool
+    {
+        return (bool) $this->is_ooc;
     }
 
     /**
@@ -86,5 +92,12 @@ class Message extends Model
             $message->token_estimate = $estimator->estimate((string) $message->body);
             $message->token_estimator_version = $estimator->version();
         });
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'is_ooc' => 'boolean',
+        ];
     }
 }

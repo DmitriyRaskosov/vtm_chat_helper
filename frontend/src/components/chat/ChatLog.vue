@@ -4,9 +4,12 @@
             v-for="message in messages"
             :key="message.id"
             class="msg"
-            :class="{ mine: message.mine }"
+            :class="{ mine: message.mine, 'msg-ooc': message.is_ooc }"
         >
-            <div class="meta">{{ message.author }} · {{ message.created_at }}</div>
+            <div class="meta">
+                <span v-if="message.is_ooc" class="ooc-badge">OOC</span>
+                {{ message.author }} · {{ message.created_at }}
+            </div>
             <div>{{ message.body }}</div>
         </article>
         <p v-if="!messages.length" class="muted">Пока пусто. Напишите первое сообщение.</p>

@@ -37,6 +37,7 @@
                 <ChatLog ref="chatLog" :messages="messages" />
                 <ChatComposer
                     v-model:body="body"
+                    v-model:is-ooc="isOoc"
                     :can-post="canPost"
                     :placeholder="composerPlaceholder"
                     @send="send"
@@ -109,6 +110,7 @@ const {
 const {
     messages,
     body,
+    isOoc,
     lastId,
     merge,
     scrollDown,
@@ -126,8 +128,12 @@ const composerPlaceholder = computed(() => {
     if (!gameSession.value) {
         return 'Нет активной игровой сессии';
     }
-
-    return canPost.value ? 'Сообщение…' : 'Сцена доступна только для чтения';
+    if (!canPost.value) {
+        return 'Сцена доступна только для чтения';
+    }
+    return isOoc.value
+        ? 'Вопрос мастеру, уточнение, мета-обсуждение…'
+        : 'Реплика в сцене…';
 });
 
 let timer;

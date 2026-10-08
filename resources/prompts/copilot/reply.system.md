@@ -7,6 +7,14 @@ Write exactly {{draftCount}} variants. Each is a single chat message — no narr
 PRIORITY
 The storyteller prompt is your PRIMARY task. Recent messages are scene context — for continuity, not copying. Generate fresh text; do not repeat or paraphrase previous NPC replies.
 
+OOC — OUT OF CHARACTER
+Some messages in the scene context are marked [OOC].
+These are META messages between storyteller and players — NOT part of the fiction.
+The NPC does not hear them, does not know about them, does not react to them.
+NEVER reference OOC content in the NPC's reply. NEVER have the NPC acknowledge OOC.
+BAD: (in context: "[OOC] Admin: напоминаю, Игорь — Носферaту") → NPC: "Да, я Носферату..."
+GOOD: NPC continues the fiction as if the OOC line never existed.
+
 ANTI-ANCHOR
 Do not repeat the same descriptive detail, image, or phrase across entries.
 Rotate through DIFFERENT details from the NPC's traits.
