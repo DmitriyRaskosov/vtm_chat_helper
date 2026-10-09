@@ -21,14 +21,19 @@
             </button>
         </div>
 
-        <div v-if="traits.length === 0" class="muted">Пока нет черт.</div>
-
-        <div v-for="(trait, index) in traits" :key="trait._id" class="trait-row">
-            <div class="trait-row-header">
+        <div v-for="(trait, index) in traits" :key="trait._id" class="personality-trait">
+            <div class="personality-trait-header">
                 <strong>{{ trait.label || 'Свой трейт' }}</strong>
-                <button type="button" class="link" @click="emit('remove', index)">Удалить</button>
+                <button
+                    v-if="!isPreset(trait.key)"
+                    type="button"
+                    class="link"
+                    @click="emit('remove', index)"
+                >
+                    Удалить
+                </button>
             </div>
-            <div v-if="!trait.key" class="trait-custom-meta">
+            <div v-if="!trait.key" class="personality-trait-meta">
                 <label>
                     Ключ
                     <input v-model="trait.key" type="text" maxlength="64" placeholder="custom_trait" />
@@ -38,11 +43,11 @@
                     <input v-model="trait.label" type="text" maxlength="120" placeholder="Название" />
                 </label>
             </div>
-            <label>
-                {{ trait.key ? trait.label : 'Значение' }}
+            <label class="personality-trait-field">
+                <span class="personality-trait-field-label">{{ trait.key ? 'Текст' : 'Значение' }}</span>
                 <textarea
                     v-model="trait.value"
-                    rows="2"
+                    rows="6"
                     maxlength="2000"
                     :placeholder="traitPlaceholder(trait)"
                 />
@@ -65,6 +70,10 @@ const props = defineProps({
 });
 
 const emit = defineEmits(['save', 'add-preset', 'add-custom', 'remove']);
+
+function isPreset(key) {
+    return props.presets.some((row) => row.key === key);
+}
 
 function traitPlaceholder(trait) {
     if (!trait.key) {

@@ -14,7 +14,7 @@ return [
     /*
     | Model context window (input + reserved output) for ContextAssembler budget checks.
     */
-    'context_length' => (int) env('LLM_CONTEXT_LENGTH', 16384),
+    'context_length' => (int) env('LLM_CONTEXT_LENGTH', 32768),
 
     /*
     | Default output and temperature. Per-request options override these.

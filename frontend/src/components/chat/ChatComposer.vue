@@ -4,6 +4,9 @@
         :class="{ 'composer-ooc': isOoc }"
         @submit.prevent="emit('send')"
     >
+        <div v-if="myCharacterName" class="composer-as">
+            Вы пишете за: <strong>{{ myCharacterName }}</strong>
+        </div>
         <div class="composer-row">
             <button
                 type="button"
@@ -32,6 +35,7 @@
 defineProps({
     canPost: { type: Boolean, required: true },
     placeholder: { type: String, required: true },
+    myCharacterName: { type: String, default: null },
 });
 
 const body = defineModel('body', { type: String });

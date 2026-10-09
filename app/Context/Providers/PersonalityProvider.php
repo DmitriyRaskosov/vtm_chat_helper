@@ -36,6 +36,10 @@ class PersonalityProvider implements ContextProvider
 
         $lines = [];
         foreach ($character->traits as $trait) {
+            if ($trait->key === 'title') {
+                continue;
+            }
+
             $value = trim($trait->value);
             if ($value === '') {
                 continue;

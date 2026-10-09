@@ -59,16 +59,17 @@ class SceneParticipantController extends Controller
     private function serialize(SceneParticipant $participant): array
     {
         $name = WorldEntity::query()->whereKey($participant->character_id)->value('canonical_name');
-        $characterType = Character::query()
+        $character = Character::query()
             ->whereKey($participant->character_id)
-            ->value('character_type');
-
+            ->first(['id', 'character_type', 'user_id']);
+    
         return [
             'id' => (int) $participant->id,
             'scene_id' => (int) $participant->scene_id,
             'character_id' => (int) $participant->character_id,
             'character_name' => is_string($name) && $name !== '' ? $name : null,
-            'character_type' => $characterType,
+            'character_type' => $character?->character_type,
+            'user_id' => $character?->user_id === null ? null : (int) $character->user_id,
             'role' => $participant->role->value,
             'visible' => (bool) $participant->visible,
             'is_current' => (bool) $participant->is_current,

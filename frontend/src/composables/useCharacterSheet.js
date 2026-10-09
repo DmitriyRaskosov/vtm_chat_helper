@@ -43,6 +43,11 @@ export const TRAIT_PRESETS = [
         label: 'Отличительная деталь',
         placeholder: 'Пахнет ладаном и старой бумагой.',
     },
+    {
+        key: 'title',
+        label: 'Титул',
+        placeholder: 'Князь Камарильи, Священник Шабаша — как представляют на сцене, не путать с именем.',
+    },
 ];
 
 function optionalId(value) {
@@ -136,8 +141,40 @@ export function useCharacterSheet() {
         };
     }
 
+    function isPresetTraitKey(key) {
+        return TRAIT_PRESETS.some((preset) => preset.key === key);
+    }
+
     function applyTraitsFromSheet(characterTraits) {
-        traits.value = (characterTraits ?? []).map((row) => makeTraitRow(row));
+        const fromApi = characterTraits ?? [];
+        const byKey = new Map();
+        for (const row of fromApi) {
+            const key = row.key ?? '';
+            if (key !== '') {
+                byKey.set(key, row);
+            }
+        }
+
+        const rows = TRAIT_PRESETS.map((preset, index) => {
+            const saved = byKey.get(preset.key);
+
+            return makeTraitRow({
+                key: preset.key,
+                label: preset.label,
+                value: saved?.value ?? '',
+                sort_order: index,
+            });
+        });
+
+        for (const row of fromApi) {
+            const key = row.key ?? '';
+            if (key === '' || isPresetTraitKey(key)) {
+                continue;
+            }
+            rows.push(makeTraitRow(row));
+        }
+
+        traits.value = rows;
     }
 
     function addTraitPreset(preset) {
@@ -157,6 +194,11 @@ export function useCharacterSheet() {
     }
 
     function removeTrait(index) {
+        const row = traits.value[index];
+        if (row && isPresetTraitKey(row.key)) {
+            row.value = '';
+            return;
+        }
         traits.value.splice(index, 1);
     }
 

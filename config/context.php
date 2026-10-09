@@ -6,7 +6,7 @@ return [
     ],
 
     'copilot' => [
-        'max_input_tokens' => (int) env('CONTEXT_COPILOT_MAX_INPUT_TOKENS', 12000),
+        'max_input_tokens' => (int) env('CONTEXT_COPILOT_MAX_INPUT_TOKENS', 16000),
     ],
 
     'topic' => [
@@ -31,14 +31,14 @@ return [
             ],
             'npc_identity' => [
                 'min' => 1,
-                'max' => 250,
+                'max' => 400,
                 'required' => true,
                 'priority' => 90,
                 'truncation' => 'stats_tail',
             ],
             'scene' => [
                 'min' => 1,
-                'max' => 300,
+                'max' => 400,
                 'required' => true,
                 'priority' => 85,
                 'truncation' => 'description',
@@ -66,14 +66,14 @@ return [
             ],
             'biography' => [
                 'min' => 0,
-                'max' => 500,
+                'max' => 2000,
                 'required' => false,
                 'priority' => 45,
                 'truncation' => 'drop_full_text',
             ],
             'personality' => [
                 'min' => 0,
-                'max' => 300,
+                'max' => 1800,
                 'required' => false,
                 'priority' => 42,
                 'truncation' => 'lines_tail',

@@ -55,6 +55,7 @@
                     v-model:is-ooc="isOoc"
                     :can-post="canPost"
                     :placeholder="composerPlaceholder"
+                    :my-character-name="myCharacterName"
                     @send="send"
                 />
             </div>
@@ -92,6 +93,7 @@ const {
     gameSession,
     newGameSessionTitle,
     selectedSceneId,
+    myCharacterId,
     newSceneTitle,
     sceneLoading,
     sceneError,
@@ -139,6 +141,7 @@ const {
     selectedSceneId,
     canPost,
     getLog: () => chatLog.value,
+    myCharacterId,
 });
 
 bindMessages(messages);
@@ -153,6 +156,12 @@ const composerPlaceholder = computed(() => {
     return isOoc.value
         ? 'Вопрос мастеру, уточнение, мета-обсуждение…'
         : 'Реплика в сцене…';
+});
+
+const myCharacterName = computed(() => {
+    if (!myCharacterId.value) return null;
+    const pc = currentParticipants.value.find((p) => p.character_id === myCharacterId.value);
+    return pc?.character_name ?? null;
 });
 
 let timer;

@@ -61,6 +61,19 @@ export function useSceneSession({ auth }) {
         () => scenes.value.find((scene) => scene.id === selectedSceneId.value) ?? null,
     );
     const canPost = computed(() => selectedScene.value?.status === 'active');
+    const myCharacterId = computed(() => {
+        const user = auth.user.value;
+        if (!user) {
+            return null;
+        }
+    
+        const pc = currentParticipants.value.find(
+            (p) => p.character_type === 'player'
+                && Number(p.user_id) === Number(user.id),
+        );
+    
+        return pc?.character_id ?? null;
+    });
     const canEditParticipants = computed(() => (
         auth.user.value?.is_storyteller === true
         && selectedScene.value != null
@@ -382,6 +395,7 @@ export function useSceneSession({ auth }) {
         scenes,
         selectedScene,
         canPost,
+        myCharacterId,
         canEditParticipants,
         currentParticipants,
         availableToAdd,

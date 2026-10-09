@@ -1,7 +1,7 @@
 import { nextTick, ref, watch } from 'vue';
 import { api } from '../auth';
 
-export function useChatMessages({ selectedSceneId, canPost, getLog }) {
+export function useChatMessages({ selectedSceneId, canPost, getLog, myCharacterId }) {
     const messages = ref([]);
     const body = ref('');
     const isOoc = ref(false);
@@ -68,11 +68,18 @@ export function useChatMessages({ selectedSceneId, canPost, getLog }) {
         if (!text || !canPost.value) {
             return;
         }
-        const { data } = await api.post('/messages', {
+    
+        const payload = {
             body: text,
             scene_id: selectedSceneId.value,
             is_ooc: isOoc.value,
-        });
+        };
+    
+        if (myCharacterId?.value) {
+            payload.character_id = myCharacterId.value;
+        }
+    
+        const { data } = await api.post('/messages', payload);
         merge([data.message]);
         body.value = '';
         await scrollDown();
