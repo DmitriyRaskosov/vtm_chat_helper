@@ -112,7 +112,7 @@ async function generateDrafts() {
         }
     } catch (error) {
         copilotError.value =
-            error.response?.data?.message ?? 'Не удалось сгенерировать черновики. Проверьте Ollama.';
+            error.response?.data?.message ?? 'Не удалось сгенерировать черновики. Проверьте DeepSeek API и сеть.';
     } finally {
         copilotLoading.value = false;
     }
