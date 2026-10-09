@@ -59,7 +59,7 @@ final readonly class ContextRequest
             return (int) config('copilot.topic_max_output_tokens', 384);
         }
 
-        return (int) config('ollama.max_output_tokens', 3000);
+        return (int) config('llm.max_output_tokens');
     }
 
     /**

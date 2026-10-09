@@ -2,8 +2,7 @@
 
 return [
     /*
-    | Which chat provider to use for Copilot and extractor.
-    | Options: 'ollama', 'deepseek'
+    | Chat provider for Copilot and diary LLM text (cloud API).
     */
     'driver' => env('LLM_DRIVER', 'deepseek'),
 
@@ -11,6 +10,11 @@ return [
     | Request JSON-formatted responses when the provider supports it.
     */
     'json_mode' => filter_var(env('LLM_JSON_MODE', false), FILTER_VALIDATE_BOOLEAN),
+
+    /*
+    | Model context window (input + reserved output) for ContextAssembler budget checks.
+    */
+    'context_length' => (int) env('LLM_CONTEXT_LENGTH', 16384),
 
     /*
     | Default output and temperature. Per-request options override these.

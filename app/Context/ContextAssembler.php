@@ -92,7 +92,7 @@ class ContextAssembler
     public function assemble(ContextRequest $request): ContextBuild
     {
         $budget = $request->maxInputTokens();
-        $contextLength = (int) config('ollama.context_length', 16384);
+        $contextLength = (int) config('llm.context_length');
         $maxOutputTokens = $request->maxOutputTokens();
         $assembly = $this->resolve($request);
         $timings = [];
@@ -333,8 +333,8 @@ class ContextAssembler
             'token_estimator_version' => $this->estimator->version(),
             'history_limit' => $historyLimit,
             'draft_count' => $assembly->request->draftCount,
-            'ollama_context_length' => $contextLength,
-            'ollama_max_output_tokens' => $maxOutputTokens,
+            'model_context_length' => $contextLength,
+            'max_output_tokens' => $maxOutputTokens,
             'scene_id' => (int) $assembly->scene->id,
             'game_session_id' => (int) $assembly->gameSession->id,
             'chronicle_id' => (int) $assembly->chronicle->id,

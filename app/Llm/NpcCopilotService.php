@@ -70,7 +70,7 @@ class NpcCopilotService
             'input_token_budget' => $topicsContext->metadata['input_token_budget'],
             'input_token_estimate' => $topicsContext->metadata['input_token_estimate'],
             'history_limit' => $topicsContext->metadata['history_limit'],
-            'ollama_max_output_tokens' => $topicsContext->metadata['ollama_max_output_tokens'],
+            'max_output_tokens' => $topicsContext->metadata['max_output_tokens'],
             'included_raw_message_ids' => $topicsContext->metadata['included_raw_message_ids'],
             'excluded_raw_message_count' => $topicsContext->metadata['excluded_raw_message_count'],
         ];
