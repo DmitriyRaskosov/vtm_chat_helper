@@ -24,7 +24,7 @@ return [
             ],
             'storyteller_prompt' => [
                 'min' => 1,
-                'max' => 800,
+                'max' => 1500,
                 'required' => true,
                 'priority' => 95,
                 'truncation' => 'none',

@@ -18,7 +18,8 @@
         <textarea
             id="copilot-prompt"
             v-model="copilotPrompt"
-            maxlength="2000"
+            maxlength="6000"
+            rows="8"
             placeholder="Что происходит, тон, на что ответить…"
         />
 
@@ -48,7 +49,7 @@
 
         <template v-if="selectedDraft !== null">
             <label for="draft-edit">Редактирование</label>
-            <textarea id="draft-edit" v-model="editedDraft" maxlength="4000" />
+            <textarea id="draft-edit" v-model="editedDraft" maxlength="6000" rows="10" />
             <button type="button" :disabled="!canSendNpc" @click="sendAsNpc">Отправить в чат от НПС</button>
         </template>
     </aside>
@@ -136,6 +137,7 @@ async function sendAsNpc() {
         });
         emit('sent', data.message);
         resetDrafts();
+        copilotPrompt.value = '';
     } catch (error) {
         copilotError.value =
             error.response?.data?.message ?? 'Не удалось отправить выбранный черновик.';

@@ -82,7 +82,7 @@
             </button>
         </div>
 
-        <div v-if="isStoryteller" class="scene-cast">
+        <div class="scene-cast">
             <div>
                 <span class="muted">На сцене</span>
                 <ul v-if="currentParticipants.length" class="scene-cast-list">

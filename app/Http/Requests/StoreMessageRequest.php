@@ -31,7 +31,7 @@ class StoreMessageRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'body' => ['required', 'string', 'max:4000'],
+            'body' => ['required', 'string', 'max:8000'],
             'is_ooc' => ['sometimes', 'boolean'],
             'npc_name' => ['prohibited'],
             'character_id' => ['sometimes', 'nullable', 'integer', 'exists:characters,id'],

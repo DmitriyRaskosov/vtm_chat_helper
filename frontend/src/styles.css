@@ -704,3 +704,24 @@ summary {
     gap: 0.5rem;
     min-width: 0;
 }
+
+/* === Storyteller Copilot panel === */
+
+.storyteller-panel textarea {
+    min-height: 120px;
+}
+
+.storyteller-panel #draft-edit {
+    min-height: 200px;
+}
+
+.storyteller-panel .draft-list {
+    max-height: 500px;
+    overflow-y: auto;
+    padding-right: 0.25rem;
+}
+
+.storyteller-panel .draft-card {
+    /* чуть выше, чтобы влезало больше текста */
+    min-height: 80px;
+}

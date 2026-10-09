@@ -42,6 +42,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/characters/{character}/traits', [CharacterSheetController::class, 'updateTraits']);
 
     Route::get('/scenes/{scene}/context', [SceneContextController::class, 'show']);
+    Route::get('/scenes/{scene}/participants', [SceneParticipantController::class, 'index']);
 
     Route::post('/copilot/drafts', [CopilotController::class, 'drafts'])->middleware('storyteller');
 
@@ -68,7 +69,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/scenes/{scene}/activate', [SceneController::class, 'activate']);
         Route::patch('/scenes/{scene}/close', [SceneController::class, 'close']);
         Route::put('/scenes/{scene}/context', [SceneContextController::class, 'update']);
-        Route::get('/scenes/{scene}/participants', [SceneParticipantController::class, 'index']);
         Route::post('/scenes/{scene}/participants', [SceneParticipantController::class, 'store']);
         Route::patch('/scenes/{scene}/participants/{character}', [SceneParticipantController::class, 'leave']);
 

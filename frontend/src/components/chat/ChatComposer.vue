@@ -17,7 +17,7 @@
 
             <textarea
                 v-model="body"
-                maxlength="4000"
+                maxlength="8000"
                 required
                 :disabled="!canPost"
                 :placeholder="isOoc ? 'Вопрос мастеру, мета-обсуждение…' : placeholder"

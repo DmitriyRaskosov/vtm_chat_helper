@@ -180,18 +180,48 @@ export function useSceneSession({ auth }) {
         selectedNpcId.value = null;
         addCharacterId.value = null;
         participantError.value = '';
-
-        if (!selectedSceneId.value || !auth.user.value?.is_storyteller) {
+    
+        const sceneId = selectedSceneId.value;
+        if (!sceneId) {
+            chronicleCharacters.value = [];
             return;
         }
-
-        const [participantsRes, charactersRes] = await Promise.all([
-            api.get(`/scenes/${selectedSceneId.value}/participants`),
-            api.get('/characters'),
-        ]);
-        participants.value = participantsRes.data.participants ?? [];
-        chronicleCharacters.value = flattenRoster(charactersRes.data.characters ?? []);
-        selectedNpcId.value = sceneNpcs.value[0]?.character_id ?? null;
+    
+        // Участники — видят все (игрок и storyteller).
+        try {
+            const { data } = await api.get(`/scenes/${sceneId}/participants`);
+            if (selectedSceneId.value !== sceneId) {
+                return;
+            }
+            participants.value = data.participants ?? [];
+        } catch (error) {
+            if (selectedSceneId.value === sceneId) {
+                participantError.value = error.response?.data?.message
+                    ?? 'Не удалось загрузить участников сцены.';
+            }
+            chronicleCharacters.value = [];
+            return;
+        }
+    
+        // Полный список персонажей хроники — только storyteller'у (для блока «Добавить»).
+        if (auth.user.value?.is_storyteller !== true) {
+            chronicleCharacters.value = [];
+            return;
+        }
+    
+        try {
+            const { data } = await api.get('/characters');
+            if (selectedSceneId.value !== sceneId) {
+                return;
+            }
+            chronicleCharacters.value = flattenRoster(data.characters ?? []);
+            selectedNpcId.value = sceneNpcs.value[0]?.character_id ?? null;
+        } catch (error) {
+            if (selectedSceneId.value === sceneId) {
+                participantError.value = error.response?.data?.message
+                    ?? 'Не удалось загрузить список персонажей.';
+            }
+        }
     }
 
     async function addToScene() {

@@ -27,7 +27,7 @@ class CopilotDraftsRequest extends FormRequest
                         ->where('is_active', true);
                 }),
             ],
-            'prompt' => ['required', 'string', 'max:2000'],
+            'prompt' => ['required', 'string', 'max:6000'],
             'scene_id' => ['sometimes', 'integer', 'exists:scenes,id'],
             'chronicle_id' => ['sometimes', 'integer', 'exists:chronicles,id'],
         ];
