@@ -64,38 +64,13 @@ NPC ведут долговременный дневник, который по�
 - **Канон vs хроника:** `canon_*` — read-only, сиды. Всё остальное — данные игры.
 - **Разное:** Не использовать `DB::table(...)->insert(...)` внутри миграций. Исключение: миграции данных (data migrations), когда нужно перенести существующие строки. В текущем проекте таких нет.
 
-## TODO — приоритет 1 (до ваншота)
-
-### Проблема A. NPC ушёл со сцены — финальный L0
-- [ ] Миграция: `scene_participants.entered_message_id`, `left_message_id` (nullable bigint).
-- [ ] `DiaryWriterService::writeForScene` — фильтр сообщений по окну присутствия каждого NPC.
-- [ ] Триггер при `leave`: `WriteFinalDiaryForNpcJob` — финальный L0 для ушедшего.
-- [ ] Feature-тест: NPC входит на 5, уходит на 42 → L0 покрывает сообщения 5–42.
-
-### Проблема B. OOC-сообщения
-- [ ] Миграция: `messages.is_ooc BOOLEAN DEFAULT false`.
-- [ ] UI: toggle «IC / OOC» в `ChatComposer`, OOC — приглушённый стиль.
-- [ ] `DiaryWriterService` — фильтр `where('is_ooc', false)`.
-- [ ] `RecentMessagesProvider` — решить, подавать ли OOC в контекст Copilot.
-- [ ] Feature-тест: OOC-сообщения не попадают в дневник.
-
-### Проблема C. RAG по сообщениям сцены
-- [ ] Миграция: `message_embeddings` (message_id, chronicle_id, scene_id, embedding, model).
-- [ ] `MessageEmbedderService` + job — эмбеддить при `POST /messages` (батчем, асинхронно).
-- [ ] `SceneRecallProvider` — если сцена >50 сообщений → top-3 семантически близких за пределами `recent_messages`.
-- [ ] Секция `[scene recall]` — «не цитируй дословно, используй как контекст».
-- [ ] `embedBatch` для экономии вызовов; обрезка очень длинных (>20k символов) до 5000+2000.
-
 ## TODO — приоритет 2 (после ваншота)
 
-- [ ] Feature-тесты на дневник (3 теста: L0 создаётся, L1 создаётся, retrieval работает).
-- [ ] Переименовать `scenes.last_extracted_to_message_id` → `last_diary_to_message_id`.
 - [ ] `writeForScene` — цикл по батчам при >60 необработанных сообщений.
 - [ ] Проблема D: игровое время (`chronicles.current_in_game_date`, `in_game_date` в дневнике, кнопка «+5 мин / +1 час»).
 - [ ] Наполнение канона: 30 → 50+ статей.
 - [ ] Ручное создание записей в дневнике через UI.
 - [ ] Метрики SkyrimNET: `importance`, `emotion`, `tags`, `location` в дневник.
-- [ ] Слот для пустых трейтов персонажа.
 - [ ] Retry если `finish_reason=length` в L1.
 
 ## Отложено по триггеру
@@ -219,3 +194,11 @@ NPC ведут долговременный дневник, который по�
 - [ ] Cache hit 25-30% — вырастет, когда промпт застынет
 - [ ] Ручное создание записей в дневнике
 - [ ] Метрики SkyrimNET (importance, emotion, tags)
+
+## Seeders (10.10.2026)
+
+- [x] DatabaseSeeder — канон + ChronicleSeeder (пустая хроника)
+- [x] ChronicleSeeder — «Моя первая хроника», idempotent
+- [x] DemoSeeder — НЕ вызывается автоматически
+- [x] demo:reset — TRUNCATE + DemoSeeder, для разработки
+- [x] Клон репо получает чистый проект: логин/регистрация → пустая хроника
