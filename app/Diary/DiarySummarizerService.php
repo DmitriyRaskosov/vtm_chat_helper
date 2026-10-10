@@ -78,6 +78,28 @@ class DiarySummarizerService
         if ($l0Entries->isEmpty()) {
             return false;
         }
+        $l0Entries = CharacterDiaryEntry::query()
+            ->where('character_id', $npc->id)
+            ->where('scene_id', $scene->id)
+            ->where('level', 0)
+            ->where('is_stale', false)   // ← НОВОЕ
+            ->orderBy('created_at')
+            ->limit(self::MAX_L0_ENTRIES)
+            ->get();
+
+        if ($l0Entries->isEmpty()) {
+            return false;
+        }
+
+        // Нечего синтезировать из одной L0 — пропускаем.
+        if ($l0Entries->count() < 2) {
+            Log::info('diary.summarize.skipped_single_l0', [
+                'npc_id' => $npc->id,
+                'scene_id' => $scene->id,
+            ]);
+
+            return false;
+        }
 
         $existingL1 = CharacterDiaryEntry::query()
             ->where('character_id', $npc->id)
@@ -167,7 +189,10 @@ class DiarySummarizerService
                     'entriesText' => $entriesText,
                 ])],
             ],
-            ['max_tokens' => 500, 'temperature' => 0.4],
+            [
+                'max_tokens' => (int) config('diary.summarize.max_output_tokens', 1500),
+                'temperature' => 0.4,
+            ],
             [],
         );
 

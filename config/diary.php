@@ -14,6 +14,11 @@ return [
     'write_timeout' => (int) env('DIARY_WRITE_TIMEOUT', 540),
 
     'summarize' => [
+        /*
+        * Максимум токенов для L1-сводки сцены.
+        * ~2.5 токена на русское слово: 1500 хватает на ~600 слов
+        * с запасом от hard-limit 300 слов в промпте.
+        */
         'max_output_tokens' => 1500,
     ],
 ];

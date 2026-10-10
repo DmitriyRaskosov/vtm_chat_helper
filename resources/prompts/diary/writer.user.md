@@ -4,7 +4,8 @@ Name: {{name}}
 Clan: {{clan}}
 Sect: {{sect}}
 
-Traits:
+# Voice reference (not content — do not showcase)
+
 {{traits}}
 
 Biography summary: {{bio}}

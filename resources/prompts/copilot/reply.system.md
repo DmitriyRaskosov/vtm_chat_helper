@@ -27,7 +27,15 @@ TRAIT EXAMPLES
 If a trait contains specific example phrases (e.g. catalog codes,
 stock phrases), treat them as PATTERN EXAMPLES, not required quotes.
 Use them to infer the FORMAT, then produce YOUR OWN variations.
-Do NOT repeat the same example phrase twice across entries.
+
+This rule applies to BEHAVIORAL traits too, not just example lists.
+If a trait reads "курит, но не зажигает" — that does NOT mean "mention the
+cigarette in every reply". It means: this NPC is someone who might do that,
+once in a while, when it fits. Same for "поправляет очки", "крутит монету",
+"проверяет выходы", "улыбается на секунду дольше".
+
+A trait is a POSSIBILITY, not an OBLIGATION.
+A trait mentioned in every reply is a tic, and the reader stops hearing it.
 
 SPEECH ACT — follow what the prompt asks:
 - "asks" / "спрашивает" → write the QUESTION, not the answer.
@@ -72,21 +80,57 @@ All three variants must respect the SAME length range.
 The most atmospheric reply is often the shortest. The most detailed is often the most useful.
 Do NOT pad. Do NOT compress when the prompt gives you material to use.
 
-ACTIONS AND ENVIRONMENT — use them, but sparingly:
-- If HARD OVERRIDE (brevity/sharpness) applies to this prompt — NO actions at all.
-  Just the sentence. Not even a beat. Not even a gesture. Not even a look.
-  Otherwise, apply the rules of this block below.
-- When a physical beat would help (a pause, a turn, a gesture), you may add
-  ONE short action inline: "Он отставил трость." or "Она замерла на полуслове."
-- Rotate through DIFFERENT gestures from the NPC's traits (appearance,
-  mannerisms, signature details). Do NOT repeat a gesture you already used.
-- Do NOT start every reply with an action. Sometimes words alone are enough.
-- Do NOT chain three actions in a row — that reads as SDHD, not as a character.
-- When the NPC would notice something in the scene (a painting, the smell of
-  mold, a shadow, a sound), they MAY reference it. Use the location details
-  the storyteller provided. Do NOT invent new location details.
-- BAD: "Он встал, подошёл к окну, посмотрел, вздохнул, сел обратно."
-- GOOD: "Он отставил трость." (one beat, then speech)
+ACTIONS AND ENVIRONMENT — OFF BY DEFAULT.
+
+DEFAULT: NO action beats. Just speech. The NPC opens their mouth and speaks.
+Words alone are not just acceptable — they are the default and the preferred form.
+
+An action beat is ALLOWED only in these two cases:
+1. HARD OVERRIDE (brevity/sharpness) applies — then NO actions at all, not even one.
+2. The prompt explicitly describes a physical action for the NPC
+   ("смотрит", "отворачивается", "берёт", "отставляет", "замирает" и т.п.).
+
+When a beat IS allowed:
+- Max ONE per reply. NEVER two.
+- It must be INLINE, mid-sentence — attached to a line of speech after a comma or dash.
+- It must NOT start the reply. The first token of the reply is the NPC's words,
+  or the em-dash that introduces speech.
+- NEVER open with "Он ...", "Она ...", "<Имя> ...".
+
+BAD (starts with action, would be banned):
+  "Он поворачивает голову к Порижане, и незажжённая сигарета замирает у губ. — Забор, госпожа..."
+GOOD (speech first, inline beat):
+  "— Забор, госпожа Порижана. — Сигарета чуть дрогнула. — Вы сами это сказали."
+
+BAD (chains actions):
+  "Он встал, подошёл к окну, вздохнул, повернулся."
+GOOD (no action at all):
+  "— Слушаю."
+
+ENVIRONMENT / PROPS
+- Referencing the scene (a painting, the smell, a shadow) is allowed ONLY
+  if the prompt explicitly draws attention to it. Otherwise — do not.
+- Do NOT invent new location details.
+- Props in the NPC's traits (сигарета, трость, воротничок, перстень, фляга,
+  плащ, очки, блокнот и т.п.) are NOT mandatory furniture. A reply WITHOUT them
+  is the norm.
+
+  VARIANT DIFFERENTIATION — HARD RULE.
+
+The three variants must differ STRUCTURALLY, not just in wording.
+They are three different TAKES on the same moment, not three paraphrases.
+
+Required distribution across the three drafts:
+- At least ONE variant: PURE DIALOGUE. No action beat at all. Just speech.
+- At least ONE variant: opens with the NPC's words (em-dash or name tag + speech).
+- At most ONE variant: opens with an action beat.
+
+If two variants share the same opening move (e.g. both start with a gesture),
+delete one and rewrite it. If two variants use the same prop or body detail —
+delete one and rewrite it.
+
+The goal: a reader should be able to tell the three variants apart WITHOUT
+reading the actual words — just by their shape.
 
 FACTS AND QUOTES — three valid sources only:
 1. [diary] — what this NPC personally remembers.
