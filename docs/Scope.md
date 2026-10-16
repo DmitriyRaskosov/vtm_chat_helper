@@ -7,8 +7,9 @@
 Чат для VtM V20 с Copilot-помощником рассказчика.
 Мастер пишет синопсис → Copilot разворачивает в 3 варианта реплики NPC → мастер отправляет в чат.
 NPC ведут долговременный дневник, который подмешивается в контекст.
+Проект уже не MVP, скорее Early Access с ограниченным и постоянно дополняющимся функционалом.
 
-**Не в проекте:** механика (кубы, статы, здоровье), рулбук, world events, streaming.
+**Не в проекте:** механика (кубы, статы, здоровье), рулбук, world events.
 
 ## Что работает сейчас (07.10.2026)
 
@@ -47,45 +48,12 @@ NPC ведут долговременный дневник, который по�
 ### Tests
 - 25 feature-тестов: Auth, Character, Scene, Message, Copilot.
 
-## Заморожено (не удалено, не развивается)
-
-- Механика: stats, health, merits, experience, status. По сути - все броски кубов из чарлиста.
-- `CanonDisciplinePower`, `CharacterPower`.
-- RAG: `LoreChunk`, `MessageEmbedding`, `RagSearchController`.
-- Extraction: `Extractor/*`, `ExtractionRun`, `ExtractController`.
-- Rulebook: `RuleDocument*`, `Ruleset`.
-- World events: `WorldEvent*`.
-- Старый lore (не canon): `LoreEntry`, `LoreChunk`.
-
 ## Правила
 
 - **Миграции:** только схема. Данные — в сидерах. FK в `Schema::create` той таблицы, что ссылается.
 - **Правки:** только активные роуты и их потребители. Замороженное не расширять.
 - **Канон vs хроника:** `canon_*` — read-only, сиды. Всё остальное — данные игры.
 - **Разное:** Не использовать `DB::table(...)->insert(...)` внутри миграций. Исключение: миграции данных (data migrations), когда нужно перенести существующие строки. В текущем проекте таких нет.
-
-## TODO — приоритет 2 (после ваншота)
-
-- [ ] `writeForScene` — цикл по батчам при >60 необработанных сообщений.
-- [ ] Проблема D: игровое время (`chronicles.current_in_game_date`, `in_game_date` в дневнике, кнопка «+5 мин / +1 час»).
-- [ ] Наполнение канона: 30 → 50+ статей.
-- [ ] Ручное создание записей в дневнике через UI.
-- [ ] Метрики SkyrimNET: `importance`, `emotion`, `tags`, `location` в дневник.
-- [ ] Retry если `finish_reason=length` в L1.
-
-## Отложено по триггеру
-
-- [ ] RAG по лору (`canon_lore_chunks`) — когда статей >50.
-- [ ] Иерархия L2 дневника — когда записей на NPC >100.
-- [ ] Prune дневника — когда записей >1000.
-- [ ] UI промптов (read-only) — если понадобится.
-- [ ] Reranker `bge-reranker-v2-m3` — когда >500 записей. Требует TEI sidecar.
-- [ ] HippoRAG / RAPTOR — только при масштабе >500 сцен.
-
-## Может, никогда
-
-- Memory вернуть — только если дневник чего-то не покрывает.
-- Streaming, Voice/TTS, WebSockets.
 
 ## Вехи
 
@@ -97,89 +65,43 @@ NPC ведут долговременный дневник, который по�
 - [x] bge-m3 (sim 0.10 → 0.70).
 - [x] дневник L0 + L1 E2E, memory удалена, промпты в `resources/prompts/`.
 - [x] UI дневника (просмотр, редактирование, удаление, пересоздание).
-
-## Demo stand (08.10.2026)
-
 - [x] `DemoSeeder` — 3 NPC (Абрахам, Ханна, Август), сцена, 15 сообщений
 - [x] `php artisan demo:reset` — быстрый сброс без migrate:fresh
 - [x] `WithoutModelEvents` убран из DatabaseSeeder (hooks работают)
 - [x] Миграция `create_chronicles` больше не вставляет данные
 - [x] Demo теперь id=1, ручных DELETE не нужно
-
-## Soft-delete + edit + UI (08.10.2026)
-
-- [x] messages.deleted_at (SoftDeletes), partial index на активные
-- [x] character_diary_entries.is_stale + partial index
-- [x] MessageEditService: toggleOoc, softDelete, restore
-- [x] Помечает L0/L1 (from <= id <= to) как stale при изменении источника
-- [x] Endpoints: PATCH /messages/{id}/ooc, DELETE /messages/{id}, POST /messages/{id}/restore
-- [x] Права: storyteller — что угодно; игрок — только свои
-- [x] DiaryRetrievalService пропускает is_stale
-- [x] serialize отдаёт is_ooc, is_deleted, is_stale
-- [x] Тесты soft-delete и OOC (MessageEditTest, 8 тестов)
-- [x] Итого: 44 теста (Auth, Character, Scene, Message, Copilot, Diary, MessageEdit)
-- [x] Кнопки у сообщений: toggle OOC, delete, restore
-- [x] Toggle «Показать удалённые» (только storyteller)
-- [x] Удалённые сообщения — серые, зачёркнутые, бейдж УДАЛЕНО
-- [x] Stale-метка в дневнике (оранжевая рамка + бейдж)
-- [x] Права: storyteller — что угодно; игрок — только свои
-- [x] Тесты: 8 (MessageEditTest)
+- [x] Retrieval: L1 + L0 в одном пуле, семантика по storyteller prompt, из пула исключаются записи с from_message_id >= min(id) окна recent_messages (устранение дублей с секцией recent).
 
 ## Ваншот (08.10.2026) — прошёл
 
 Проведён полный игровой тест. Механики работали, дневник работал.
+
+## TODO
+- [ ] Переход с хаотичного добавления фич на управляемую архитектуру.
+- [ ] `writeForScene` — цикл по батчам при >60 необработанных сообщений.
+- [ ] Проблема D: игровое время (`chronicles.current_in_game_date`, `in_game_date` в дневнике, кнопка «+5 мин / +1 час»).
+- [ ] Наполнение канона: 30 → 50+ статей.
+- [ ] Ручное создание записей в дневнике через UI.
+- [ ] Метрики SkyrimNET: `importance`, `emotion`, `tags`, `location` в дневник.
+- [ ] Retry если `finish_reason=length` в L1.
+- [ ] Группа 4 (свой/чужой): только базово. Тонкая настройка альянсов — потом.
+- [ ] UI - добавить функционал простого рисования и прикреплять фотографии. В будущем - поменять дизайн UI целиком.
+
+## TODO, но отложено
+
+- [ ] RAG по лору (`canon_lore_chunks`) — когда статей >50.
+- [ ] Иерархия L2 дневника — когда записей на NPC >100.
+- [ ] Prune дневника — когда записей >1000.
+- [ ] UI промптов (read-only) — если понадобится.
+- [ ] Reranker `bge-reranker-v2-m3` — когда >500 записей. Требует TEI sidecar.
+- [ ] HippoRAG / RAPTOR — только при масштабе >500 сцен.
 
 ### Заметки
 
 - DeepSeek имеет собственные знания лора VtM — использует, когда БД не покрывает.
 - Локация пока не используется NPC — возможно, уйдёт само после группы 2.
 
-## Известные нюансы
+### Известные нюансы
 
 - `include_deleted` в query — не валидируется через rule 'boolean',
   используется `$request->boolean()`. Стандартный паттерн для флагов.
-
-  ### Группа 1. UX-блокеры — ЗАКРЫТО (09.10.2026)
-
-- [x] Игроки видят список участников сцены
-- [x] Промпт очищается после отправки драфта
-- [x] Лимит промпта: 2000 → 6000 символов
-- [x] Лимит body: 4000 → 8000
-- [x] storyteller_prompt.max: 800 → 1500 токенов
-- [x] Большие textarea (8–10 строк), скролл драфтов
-
-### Группа 2. Длина ответов — ЗАКРЫТО (10.10.2026)
-
-- [x] HARD OVERRIDE работает: «коротко/резко/едко» → 1 предложение, ≤15 слов
-- [x] Промпт «развёрнуто» → 6–10 предложений
-- [x] ACONS подчиняется override
-- [x] Убран «expand» из TASK (он перебивал LENGTH)
-- [x] Титулы: `title` trait + `SceneProvider` с сектой/кланом
-- [x] PC-flow: `myCharacterId` в composer, `character_id` в сообщении
-
-### Группа 3. Контекст — ЗАКРЫТО (10.10.2026)
-
-- [x] Лимиты подняты: biography 1200→2000, personality 1000→1800, npc_identity 400
-- [x] max_input_tokens: 12000 → 14000
-- [x] context_length: 16384 → 32768
-- [x] Проверено: Порижана (biggest NPC) влезает целиком (8704 / 14000)
-
-### Осталось
-
-- [ ] Группа 4 (свой/чужой): только базово. Тонкая настройка альянсов — потом.
-- [ ] UI - добавить функционал простого рисования и прикреплять фотографии. В будущем - поменять дизайн UI целиком.
-- [ ] L1 слишком сжимает — поднять лимит до 250-300 слов, max_tokens summarizer 500 → 1000
-- [ ] Ручное создание записей в дневнике
-- [ ] Метрики SkyrimNET (importance, emotion, tags)
-
-## Seeders (10.10.2026)
-
-- [x] DatabaseSeeder — канон + ChronicleSeeder (пустая хроника)
-- [x] ChronicleSeeder — «Моя первая хроника», idempotent
-- [x] DemoSeeder — НЕ вызывается автоматически
-- [x] demo:reset — TRUNCATE + DemoSeeder, для разработки
-- [x] Клон репо получает чистый проект: логин/регистрация → пустая хроника
-
-## 14.10
-
-- [x] Retrieval: L1 + L0 в одном пуле, семантика по storyteller prompt, из пула исключаются записи с from_message_id >= min(id) окна recent_messages (устранение дублей с секцией recent).
