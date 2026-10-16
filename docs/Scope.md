@@ -46,7 +46,8 @@ NPC ведут долговременный дневник, который по�
 - 30 статей лора в `resources/canon/lore/*.md`, импорт `canon:import-lore`.
 
 ### Tests
-- 25 feature-тестов: Auth, Character, Scene, Message, Copilot.
+- 54 feature-теста: Auth (5), Character (6), CharacterTrait (2), Scene (8), Message (3), MessageEdit (8), Copilot (4), Diary (16), Smoke (2).
+- 1 unit-тест — пустой `ExampleTest` (удаляется в задаче 003).
 
 ## Правила
 
@@ -65,7 +66,7 @@ NPC ведут долговременный дневник, который по�
 - [x] bge-m3 (sim 0.10 → 0.70).
 - [x] дневник L0 + L1 E2E, memory удалена, промпты в `resources/prompts/`.
 - [x] UI дневника (просмотр, редактирование, удаление, пересоздание).
-- [x] `DemoSeeder` — 3 NPC (Абрахам, Ханна, Август), сцена, 15 сообщений
+- [x] `DemoSeeder` — рассказчик `admin`, «Demo Chronicle», «Demo Session», сцена «Встреча на пустыре», 5 NPC-участников (Абрахам Леру, Август Сент-Клер, Гидеон Эш, Ильзе Фогель, Порижана); сообщений не создаёт
 - [x] `php artisan demo:reset` — быстрый сброс без migrate:fresh
 - [x] `WithoutModelEvents` убран из DatabaseSeeder (hooks работают)
 - [x] Миграция `create_chronicles` больше не вставляет данные
