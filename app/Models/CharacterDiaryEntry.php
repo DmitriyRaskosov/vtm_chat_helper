@@ -15,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'to_message_id',
     'entry',
     'is_stale',
+    'importance',
+    'emotion',
 ])]
 class CharacterDiaryEntry extends Model
 {
@@ -25,6 +27,8 @@ class CharacterDiaryEntry extends Model
             'from_message_id' => 'integer',
             'to_message_id' => 'integer',
             'is_stale' => 'boolean',
+            'importance' => 'float',
+            'emotion' => \App\Enums\DiaryEmotion::class,
         ];
     }
 

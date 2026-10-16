@@ -7,12 +7,11 @@ use App\Models\CharacterDiaryEntry;
 use App\Rag\EmbeddingProvider;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Log;
 
 class DiaryRetrievalService
 {
     private const MIN_SIMILARITY = 0.45;
-    private const MAX_ENTRIES = 3;
+    public const MAX_ENTRIES = 3;
     private const CANDIDATE_LIMIT = 30;
 
     public function __construct(
@@ -22,21 +21,62 @@ class DiaryRetrievalService
     /**
      * @return Collection<int, CharacterDiaryEntry>
      */
-    public function retrieve(Character $npc, string $query, int $limit = self::MAX_ENTRIES): Collection
-    {
+    public function retrieve(
+        Character $npc,
+        string $query,
+        int $limit = self::MAX_ENTRIES,
+        ?int $recentFirstMessageId = null,
+        ?int $currentSceneId = null,
+    ): Collection {
+        return $this->retrieveWithDiagnostics(
+            $npc,
+            $query,
+            $limit,
+            $recentFirstMessageId,
+            $currentSceneId,
+        )['selected'];
+    }
+
+    /**
+     * @return array{selected: Collection<int, CharacterDiaryEntry>, stats: array<string, int>}
+     */
+    public function retrieveWithDiagnostics(
+        Character $npc,
+        string $query,
+        int $limit = self::MAX_ENTRIES,
+        ?int $recentFirstMessageId = null,
+        ?int $currentSceneId = null,
+    ): array {
         $all = CharacterDiaryEntry::query()
             ->where('character_id', $npc->id)
-            ->where('is_stale', false)
             ->orderBy('created_at')
             ->get();
 
-        if ($all->isEmpty()) {
-            return collect();
+        $stats = [
+            'total_entries' => $all->count(),
+            'stale' => $all->where('is_stale', true)->count(),
+            'filtered_by_recent' => 0,
+            'kept_by_current_scene' => 0,
+            'in_pool' => 0,
+            'selected' => 0,
+        ];
+
+        $active = $all->where('is_stale', false)->values();
+        if ($active->isEmpty()) {
+            return ['selected' => collect(), 'stats' => $stats];
         }
 
-        $pool = $this->buildPool($all);
+        $pool = $this->buildPool($active, $recentFirstMessageId, $currentSceneId);
+        $stats['filtered_by_recent'] = $active->count() - $pool->count();
+        $stats['in_pool'] = $pool->count();
+        $stats['kept_by_current_scene'] = $this->countKeptByCurrentScene(
+            $pool,
+            $recentFirstMessageId,
+            $currentSceneId,
+        );
+
         if ($pool->isEmpty()) {
-            return collect();
+            return ['selected' => collect(), 'stats' => $stats];
         }
 
         $lastEntry = $pool->sortByDesc('id')->first();
@@ -60,32 +100,78 @@ class DiaryRetrievalService
             }
         }
 
-        return $result->take($limit)->values();
+        $selected = $result->take($limit)->values();
+        $stats['selected'] = $selected->count();
+
+        return ['selected' => $selected, 'stats' => $stats];
     }
 
     /**
-     * Один пул записей на сцену: если есть L1 — берём только его,
-     * иначе все L0 этой сцены.
-     *
+     * Формула блендинга similarity с importance.
+     * importance = null → boost = 1.0 (старые записи работают как раньше).
+     * importance = 1.0 → boost = 1.0 (не может быть выше).
+     * importance = 0.0 → boost = 0.7 (штраф за неважное).
+     */
+    public static function blendScore(float $similarity, ?float $importance): float
+    {
+        if ($importance === null) {
+            return $similarity;
+        }
+
+        $importance = max(0.0, min(1.0, $importance));
+
+        return $similarity * (0.7 + 0.3 * $importance);
+    }
+
+    /**
      * @param  Collection<int, CharacterDiaryEntry>  $all
      * @return Collection<int, CharacterDiaryEntry>
      */
-    private function buildPool(Collection $all): Collection
-    {
-        $pool = collect();
-
-        foreach ($all->groupBy('scene_id') as $entries) {
-            $l1 = $entries->firstWhere('level', 1);
-            if ($l1 !== null) {
-                $pool->push($l1);
-                continue;
-            }
-            foreach ($entries->where('level', 0) as $l0) {
-                $pool->push($l0);
-            }
+    private function buildPool(
+        Collection $all,
+        ?int $recentFirstMessageId,
+        ?int $currentSceneId,
+    ): Collection {
+        if ($recentFirstMessageId === null) {
+            return $all->values();
         }
 
-        return $pool;
+        return $all
+            ->filter(function (CharacterDiaryEntry $entry) use ($recentFirstMessageId, $currentSceneId): bool {
+                $isCurrentScene = $currentSceneId !== null
+                    && $entry->scene_id !== null
+                    && (int) $entry->scene_id === $currentSceneId;
+
+                if ($isCurrentScene) {
+                    return true;
+                }
+
+                $from = (int) ($entry->from_message_id ?? 0);
+
+                return $from < $recentFirstMessageId;
+            })
+            ->values();
+    }
+
+    /**
+     * @param  Collection<int, CharacterDiaryEntry>  $pool
+     */
+    private function countKeptByCurrentScene(
+        Collection $pool,
+        ?int $recentFirstMessageId,
+        ?int $currentSceneId,
+    ): int {
+        if ($recentFirstMessageId === null || $currentSceneId === null) {
+            return 0;
+        }
+
+        return $pool
+            ->filter(function (CharacterDiaryEntry $entry) use ($recentFirstMessageId, $currentSceneId): bool {
+                return $entry->scene_id !== null
+                    && (int) $entry->scene_id === $currentSceneId
+                    && (int) ($entry->from_message_id ?? 0) >= $recentFirstMessageId;
+            })
+            ->count();
     }
 
     /**
@@ -103,7 +189,9 @@ class DiaryRetrievalService
         $pgArray = '{'.implode(',', $poolIds).'}';
 
         $rows = DB::select(
-            'SELECT id, 1 - (embedding <=> ?::vector) AS similarity
+            'SELECT id,
+                    1 - (embedding <=> ?::vector) AS similarity,
+                    importance
              FROM character_diary_entries
              WHERE id = ANY(?::bigint[])
              ORDER BY embedding <=> ?::vector
@@ -111,21 +199,27 @@ class DiaryRetrievalService
             [$pgVector, $pgArray, $pgVector, self::CANDIDATE_LIMIT],
         );
 
-        $ids = [];
+        $scored = [];
         foreach ($rows as $row) {
             $sim = (float) $row->similarity;
             if ($sim < self::MIN_SIMILARITY) {
                 break;
             }
-            $ids[] = (int) $row->id;
-            if (count($ids) >= $limit) {
-                break;
-            }
+
+            $importance = $row->importance === null ? null : (float) $row->importance;
+            $scored[] = [
+                'id' => (int) $row->id,
+                'final' => self::blendScore($sim, $importance),
+            ];
         }
 
-        if ($ids === []) {
+        if ($scored === []) {
             return collect();
         }
+
+        usort($scored, fn (array $a, array $b): int => $b['final'] <=> $a['final']);
+
+        $ids = array_slice(array_column($scored, 'id'), 0, $limit);
 
         $models = CharacterDiaryEntry::query()->whereIn('id', $ids)->get()->keyBy('id');
 

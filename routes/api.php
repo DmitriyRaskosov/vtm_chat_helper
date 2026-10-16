@@ -73,6 +73,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::patch('/scenes/{scene}/participants/{character}', [SceneParticipantController::class, 'leave']);
 
         Route::get('/characters/{character}/diary', [DiaryEntryController::class, 'index']);
+        Route::post('/characters/{character}/diary/preview', [DiaryEntryController::class, 'preview']);
         Route::get('/diary-entries/{diaryEntry}', [DiaryEntryController::class, 'show']);
         Route::patch('/diary-entries/{diaryEntry}', [DiaryEntryController::class, 'update']);
         Route::delete('/diary-entries/{diaryEntry}', [DiaryEntryController::class, 'destroy']);

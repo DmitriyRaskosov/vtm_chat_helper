@@ -23,6 +23,17 @@
             placeholder="Что происходит, тон, на что ответить…"
         />
 
+        <div class="preview-row">
+            <button
+                type="button"
+                class="secondary"
+                :disabled="selectedNpcId === null"
+                @click="openPreview"
+            >
+                Показать память НПС
+            </button>
+        </div>
+
         <button
             type="button"
             :disabled="copilotLoading || !canGenerate || !canPost"
@@ -52,6 +63,64 @@
             <textarea id="draft-edit" v-model="editedDraft" maxlength="6000" rows="10" />
             <button type="button" :disabled="!canSendNpc" @click="sendAsNpc">Отправить в чат от НПС</button>
         </template>
+
+        <div v-if="previewOpen" class="diary-backdrop" @click.self="closePreview">
+            <div class="diary-modal card">
+                <header class="diary-modal-header">
+                    <h2>Что уйдёт в промпт НПС</h2>
+                    <button type="button" class="link" @click="closePreview">Закрыть</button>
+                </header>
+
+                <p v-if="previewLoading" class="muted">Считаем…</p>
+                <p v-else-if="previewError" class="error">{{ previewError }}</p>
+                <template v-else-if="previewData">
+                    <p class="muted">
+                        Сцена: {{ previewData.scene_id ?? 'не указана' }}
+                        <span v-if="previewData.recent_first_message_id">
+                            · recent начинается с #{{ previewData.recent_first_message_id }}
+                        </span>
+                    </p>
+
+                    <ul class="preview-stats">
+                        <li>Всего записей: <strong>{{ previewData.stats.total_entries }}</strong></li>
+                        <li>Stale (исключено): <strong>{{ previewData.stats.stale }}</strong></li>
+                        <li>Покрыто recent-окном: <strong>{{ previewData.stats.filtered_by_recent }}</strong></li>
+                        <li
+                            v-if="previewData.stats.kept_by_current_scene"
+                            class="muted"
+                        >
+                            Из них оставлено как голос текущей сцены:
+                            <strong>{{ previewData.stats.kept_by_current_scene }}</strong>
+                        </li>
+                        <li>В пуле: <strong>{{ previewData.stats.in_pool }}</strong></li>
+                        <li>Отобрано: <strong>{{ previewData.stats.selected }}</strong></li>
+                        <li>
+                            Токенов: <strong>{{ previewData.stats ? previewData.tokens_estimate : 0 }}</strong> / {{ previewData.budget }}
+                            <span v-if="previewData.truncated" class="stale-badge">ОБРЕЗАНО</span>
+                        </li>
+                    </ul>
+
+                    <h3>Отрендеренный блок</h3>
+                    <pre class="preview-content">{{ previewData.rendered || '(пусто)' }}</pre>
+
+                    <details v-if="previewData.selected.length" class="preview-details">
+                        <summary>Отобранные записи ({{ previewData.selected.length }})</summary>
+                        <ul>
+                            <li v-for="e in previewData.selected" :key="e.id" class="preview-entry">
+                                <div class="preview-entry-header">
+                                    <strong>{{ e.label }}</strong>
+                                    <span class="muted">
+                                        #{{ e.id }} · L{{ e.level }}
+                                        <template v-if="e.from_message_id">· msg {{ e.from_message_id }}–{{ e.to_message_id }}</template>
+                                    </span>
+                                </div>
+                                <p>{{ e.excerpt }}<span v-if="e.excerpt.length >= 200">…</span></p>
+                            </li>
+                        </ul>
+                    </details>
+                </template>
+            </div>
+        </div>
     </aside>
 </template>
 
@@ -76,6 +145,11 @@ const selectedDraftIndex = ref(null);
 const editedDraft = ref('');
 const copilotLoading = ref(false);
 const copilotError = ref('');
+
+const previewOpen = ref(false);
+const previewLoading = ref(false);
+const previewError = ref('');
+const previewData = ref(null);
 
 const canGenerate = computed(() => selectedNpcId.value !== null && copilotPrompt.value.trim() !== '');
 const selectedDraft = computed(() =>
@@ -142,6 +216,34 @@ async function sendAsNpc() {
         copilotError.value =
             error.response?.data?.message ?? 'Не удалось отправить выбранный черновик.';
     }
+}
+
+async function openPreview() {
+    if (selectedNpcId.value === null) {
+        return;
+    }
+
+    previewOpen.value = true;
+    previewLoading.value = true;
+    previewError.value = '';
+    previewData.value = null;
+
+    try {
+        const { data } = await api.post(`/characters/${selectedNpcId.value}/diary/preview`, {
+            scene_id: props.selectedSceneId,
+            prompt: copilotPrompt.value.trim(),
+        });
+        previewData.value = data;
+    } catch (error) {
+        previewError.value =
+            error.response?.data?.message ?? 'Не удалось получить preview дневника.';
+    } finally {
+        previewLoading.value = false;
+    }
+}
+
+function closePreview() {
+    previewOpen.value = false;
 }
 
 defineExpose({ resetDrafts });

@@ -22,10 +22,13 @@
                         'diary-entry-l1': entry.level === 1,
                         'diary-entry-stale': entry.is_stale,
                     }"
+                    :style="{ borderLeftColor: emotionColor(entry.emotion) }"
                 >
                     <header class="diary-entry-header">
                         <span class="diary-level">L{{ entry.level }}</span>
                         <span v-if="entry.is_stale" class="stale-badge">ИСТОЧНИК ИЗМЕНЁН</span>
+                        <span v-if="entry.emotion" class="diary-emotion">{{ entry.emotion }}</span>
+                        <span v-if="entry.importance !== null" class="muted">importance: {{ entry.importance.toFixed(2) }}</span>
                         <span v-if="entry.scene_title" class="muted">{{ entry.scene_title }}</span>
                         <span class="muted">{{ formatDate(entry.created_at) }}</span>
                         <span class="muted">{{ entry.word_count }} сл.</span>
@@ -54,7 +57,10 @@
             <div class="diary-modal card">
                 <header class="diary-modal-header">
                     <h2>
-                        L{{ activeEntry.level }} · {{ activeEntry.scene_title || 'без сцены' }}
+                        L{{ activeEntry.level }}
+                        <template v-if="activeEntry.emotion"> · <span class="diary-emotion">{{ activeEntry.emotion }}</span></template>
+                        <template v-if="activeEntry.importance !== null"> · importance: {{ activeEntry.importance.toFixed(2) }}</template>
+                        · {{ activeEntry.scene_title || 'без сцены' }}
                         <span v-if="activeEntry.is_stale" class="stale-badge">ИСТОЧНИК ИЗМЕНЁН</span>
                     </h2>
                     <button type="button" class="link" @click="close">Закрыть</button>
@@ -219,5 +225,36 @@ function formatDate(iso) {
     });
 }
 
+const EMOTION_COLORS = {
+    neutral: '#888888',
+    joy: '#eab308',
+    sadness: '#3b82f6',
+    anger: '#dc2626',
+    fear: '#7c3aed',
+    trust: '#16a34a',
+    contempt: '#78350f',
+    resolve: '#1e40af',
+    hunger: '#9f1239',
+    satisfaction: '#ea580c',
+};
+
+function emotionColor(emotion) {
+    if (!emotion) return 'transparent';
+    return EMOTION_COLORS[emotion] ?? '#888888';
+}
+
 onMounted(load);
 </script>
+
+<style scoped>
+.diary-entry {
+    border-left: 3px solid transparent;
+    padding-left: 12px;
+}
+
+.diary-emotion {
+    font-weight: 600;
+    font-variant: small-caps;
+    letter-spacing: 0.03em;
+}
+</style>

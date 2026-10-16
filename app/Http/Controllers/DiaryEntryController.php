@@ -3,10 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\UpdateDiaryEntryRequest;
+use App\Http\Requests\PreviewDiaryRequest;
 use App\Models\Character;
 use App\Models\CharacterDiaryEntry;
 use App\Diary\DiarySummarizerService;
 use App\Diary\DiaryWriterService;
+use App\Diary\DiaryPreviewService;
 use App\Rag\EmbeddingProvider;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -38,6 +40,17 @@ class DiaryEntryController extends Controller
         return response()->json([
             'entry' => $this->serializeFull($diaryEntry),
         ]);
+    }
+
+    public function preview(
+    PreviewDiaryRequest $request,
+    Character $character,
+    DiaryPreviewService $previewer,
+    ): JsonResponse {
+        $sceneId = $request->has('scene_id') ? (int) $request->validated('scene_id') : null;
+        $prompt = (string) ($request->validated('prompt') ?? '');
+
+        return response()->json($previewer->preview($character, $sceneId, $prompt));
     }
 
     public function update(
@@ -115,6 +128,8 @@ class DiaryEntryController extends Controller
             'from_message_id' => $entry->from_message_id === null ? null : (int) $entry->from_message_id,
             'to_message_id' => $entry->to_message_id === null ? null : (int) $entry->to_message_id,
             'is_stale' => (bool) $entry->is_stale,
+            'importance' => $entry->importance === null ? null : (float) $entry->importance,
+            'emotion' => $entry->emotion?->value,
             'preview' => mb_substr($text, 0, 300),
             'word_count' => count(preg_split('/\s+/u', $text, -1, PREG_SPLIT_NO_EMPTY) ?: []),
             'created_at' => $entry->created_at?->toIso8601String(),

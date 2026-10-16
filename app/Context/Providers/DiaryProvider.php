@@ -4,9 +4,11 @@ namespace App\Context\Providers;
 
 use App\Context\ContextAssembly;
 use App\Context\ContextSection;
+use App\Context\DiaryRenderer;
 use App\Context\LineTrimmer;
 use App\Context\TokenEstimator;
 use App\Diary\DiaryRetrievalService;
+use App\Models\Message;
 
 class DiaryProvider implements ContextProvider
 {
@@ -31,9 +33,16 @@ class DiaryProvider implements ContextProvider
         }
 
         $query = trim($assembly->request->prompt);
+        $recentFirstMessageId = $this->resolveRecentFirstMessageId($assembly);
 
         try {
-            $entries = $this->diary->retrieve($character, $query, self::LIMIT);
+            $entries = $this->diary->retrieve(
+                $character,
+                $query,
+                self::LIMIT,
+                $recentFirstMessageId,
+                (int) $assembly->scene->id,
+            );
         } catch (\Throwable $e) {
             return ContextSection::omitted($this->key(), [
                 'character_id' => (int) $character->id,
@@ -49,33 +58,24 @@ class DiaryProvider implements ContextProvider
             ]);
         }
 
-        $lines = [];
-        $ids = [];
-        $isFirst = true;
-
-        foreach ($entries as $entry) {
-            $ids[] = (int) $entry->id;
-            $label = $isFirst ? '[diary — most recent]' : '[diary — earlier]';
-            $paragraphs = preg_split('/\n\s*\n/u', trim($entry->entry)) ?: [];
-            $first = true;
-
-            foreach ($paragraphs as $p) {
-                $p = trim((string) $p);
-                if ($p === '') {
-                    continue;
-                }
-                $lines[] = $first ? $label.' '.$p : $p;
-                $first = false;
-            }
-
-            $isFirst = false;
-        }
-
-        [$content, $truncated] = $this->trimmer->prefix('## Diary', $lines, $tokenBudget);
+        $built = DiaryRenderer::buildLines($entries);
+        [$content, $truncated] = $this->trimmer->prefix('## Diary', $built['lines'], $tokenBudget);
 
         return ContextSection::fromContent($this->key(), $content, $this->estimator, [
             'character_id' => (int) $character->id,
-            'diary_ids' => $ids,
+            'diary_ids' => $built['ids'],
         ], $truncated ? 'lowest_score' : null);
+    }
+
+    private function resolveRecentFirstMessageId(ContextAssembly $assembly): ?int
+    {
+        $id = Message::query()
+            ->where('scene_id', $assembly->scene->id)
+            ->orderByDesc('id')
+            ->limit($assembly->request->historyLimit())
+            ->pluck('id')
+            ->min();
+
+        return $id === null ? null : (int) $id;
     }
 }

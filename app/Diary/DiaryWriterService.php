@@ -10,6 +10,7 @@ use App\Models\Message;
 use App\Models\Scene;
 use App\Models\WorldEntity;
 use App\Models\SceneParticipant;
+use App\Diary\DiaryMetadataParser;
 use App\Prompt\PromptRepository;
 use App\Rag\EmbeddingProvider;
 use Illuminate\Support\Facades\DB;
@@ -121,7 +122,7 @@ class DiaryWriterService
         $toMessageId = (int) $messages->last()->id;
 
         try {
-            $entry = $this->generateEntryText(
+            $raw = $this->generateEntryText(
                 $npc,
                 $formattedMessages,
                 $fromMessageId,
@@ -132,8 +133,14 @@ class DiaryWriterService
             throw new RuntimeException('LLM call failed: '.$e->getMessage(), 0, $e);
         }
 
-        if ($entry === '') {
+        if ($raw === '') {
             throw new RuntimeException('LLM returned empty diary entry.');
+        }
+
+        $parsed = DiaryMetadataParser::parse($raw);
+        $entry = $parsed['entry'];
+        if ($entry === '') {
+            throw new RuntimeException('LLM returned empty diary entry after parsing.');
         }
 
         Log::info('diary.write.npc_done', [
@@ -142,14 +149,16 @@ class DiaryWriterService
             'from_message_id' => $fromMessageId,
             'to_message_id' => $toMessageId,
             'entry_length' => mb_strlen($entry),
+            'importance' => $parsed['importance'],
+            'emotion' => $parsed['emotion']?->value,
         ]);
 
         $vector = $this->embeddings->embed($entry);
 
         DB::statement(
             'INSERT INTO character_diary_entries
-                (character_id, chronicle_id, scene_id, level, from_message_id, to_message_id, entry, embedding, created_at, updated_at)
-            VALUES (?, ?, ?, 0, ?, ?, ?, ?::vector, NOW(), NOW())',
+                (character_id, chronicle_id, scene_id, level, from_message_id, to_message_id, entry, importance, emotion, embedding, created_at, updated_at)
+            VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?::vector, NOW(), NOW())',
             [
                 $npc->id,
                 $npc->chronicle_id,
@@ -157,6 +166,8 @@ class DiaryWriterService
                 $fromMessageId,
                 $toMessageId,
                 $entry,
+                $parsed['importance'],
+                $parsed['emotion']?->value,
                 $this->formatVector($vector),
             ],
         );
@@ -226,8 +237,14 @@ class DiaryWriterService
         }
 
         $formattedMessages = $this->formatMessages($messages);
-        $newEntry = $this->generateEntryText($character, $formattedMessages, $fromId, $toId, $entry->id);
+        $raw = $this->generateEntryText($character, $formattedMessages, $fromId, $toId, $entry->id);
 
+        if ($raw === '') {
+            return false;
+        }
+
+        $parsed = DiaryMetadataParser::parse($raw);
+        $newEntry = $parsed['entry'];
         if ($newEntry === '') {
             return false;
         }
@@ -236,9 +253,15 @@ class DiaryWriterService
 
         DB::statement(
             'UPDATE character_diary_entries
-             SET entry = ?, embedding = ?::vector, updated_at = NOW()
+             SET entry = ?, importance = ?, emotion = ?, embedding = ?::vector, updated_at = NOW()
              WHERE id = ?',
-            [$newEntry, $this->formatVector($vector), $entry->id],
+            [
+                $newEntry,
+                $parsed['importance'],
+                $parsed['emotion']?->value,
+                $this->formatVector($vector),
+                $entry->id,
+            ],
         );
 
         Log::info('diary.regenerate.entry_done', [

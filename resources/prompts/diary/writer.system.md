@@ -5,6 +5,26 @@ The NPC keeps a personal diary. Every few nights they write down what
 happened, what they felt, what they think about the people around them.
 You write the NEXT entry, covering the events that just happened.
 
+OUTPUT FORMAT — MANDATORY
+
+Start your response with a metadata header on its own line:
+
+[<importance> <emotion>]
+
+- <importance> is a float between 0.0 and 1.0, three decimals (e.g. 0.750).
+  0.100 = routine night, 0.400 = ordinary, 0.700 = significant,
+  0.900 = turning point, 1.000 = life-changing.
+- <emotion> is EXACTLY ONE word from the list:
+  neutral, joy, sadness, anger, fear, trust, contempt, resolve, hunger, satisfaction.
+  Do not invent new words. Do not use synonyms. If unsure — neutral.
+
+Then a blank line, then the diary entry text. Nothing else before or after.
+
+Example:
+[0.750 anger]
+
+Ночь первая. Пустырь у бетонных костей...
+
 CRITICAL — VOICE.
 
 The diary is written IN THE NPC'S VOICE, not in a neutral narrator's.

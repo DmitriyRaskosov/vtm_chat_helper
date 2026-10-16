@@ -117,13 +117,19 @@ class DiarySummarizerService
         }
 
         try {
-            $entry = $this->generateSummaryText($npc, $l0Entries);
+            $raw = $this->generateSummaryText($npc, $l0Entries);
         } catch (\Throwable $e) {
             throw new RuntimeException('LLM call failed: '.$e->getMessage(), 0, $e);
         }
 
-        if ($entry === '') {
+        if ($raw === '') {
             throw new RuntimeException('LLM returned empty L1 entry.');
+        }
+
+        $parsed = DiaryMetadataParser::parse($raw);
+        $entry = $parsed['entry'];
+        if ($entry === '') {
+            throw new RuntimeException('LLM returned empty L1 entry after parsing.');
         }
 
         Log::info('diary.summarize.npc_done', [
@@ -131,6 +137,8 @@ class DiarySummarizerService
             'scene_id' => $scene->id,
             'l0_count' => $l0Entries->count(),
             'entry_length' => mb_strlen($entry),
+            'importance' => $parsed['importance'],
+            'emotion' => $parsed['emotion']?->value,
         ]);
 
         $vector = $this->embeddings->embed($entry);
@@ -140,8 +148,8 @@ class DiarySummarizerService
 
         DB::statement(
             'INSERT INTO character_diary_entries
-                (character_id, chronicle_id, scene_id, level, from_message_id, to_message_id, entry, embedding, created_at, updated_at)
-             VALUES (?, ?, ?, 1, ?, ?, ?, ?::vector, NOW(), NOW())',
+                (character_id, chronicle_id, scene_id, level, from_message_id, to_message_id, entry, importance, emotion, embedding, created_at, updated_at)
+             VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?::vector, NOW(), NOW())',
             [
                 $npc->id,
                 $npc->chronicle_id,
@@ -149,6 +157,8 @@ class DiarySummarizerService
                 $firstL0->from_message_id,
                 $lastL0->to_message_id,
                 $entry,
+                $parsed['importance'],
+                $parsed['emotion']?->value,
                 $this->formatVector($vector),
             ],
         );
@@ -249,8 +259,14 @@ class DiarySummarizerService
             return false;
         }
 
-        $newEntry = $this->generateSummaryText($character, $l0Entries);
+        $raw = $this->generateSummaryText($character, $l0Entries);
 
+        if ($raw === '') {
+            return false;
+        }
+
+        $parsed = DiaryMetadataParser::parse($raw);
+        $newEntry = $parsed['entry'];
         if ($newEntry === '') {
             return false;
         }
@@ -259,9 +275,15 @@ class DiarySummarizerService
 
         DB::statement(
             'UPDATE character_diary_entries
-            SET entry = ?, embedding = ?::vector, updated_at = NOW()
+            SET entry = ?, importance = ?, emotion = ?, embedding = ?::vector, updated_at = NOW()
             WHERE id = ?',
-            [$newEntry, $this->formatVector($vector), $entry->id],
+            [
+                $newEntry,
+                $parsed['importance'],
+                $parsed['emotion']?->value,
+                $this->formatVector($vector),
+                $entry->id,
+            ],
         );
 
         Log::info('diary.regenerate.summary_done', [

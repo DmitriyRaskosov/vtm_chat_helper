@@ -44,6 +44,12 @@ alwaysApply: true
 - world_*, characters, scenes, messages — данные хроники.
 - Не смешивай.
 
+## Тесты и окружение
+- Тесты, artisan, composer, миграции и PHPUnit/Pest — только в стеке проекта: **Laravel Sail / Docker** (`compose.yaml`, PHP 8.4, PostgreSQL в контейнере).
+- Не считать «успехом» запуск `php artisan test` на хостовой PHP, если версия не совпадает с проектом; предпочитать: `docker compose exec laravel.test php artisan test` (или `./vendor/bin/sail test`).
+- В тестах — тот же `QUEUE_CONNECTION`, БД testing и зависимости, что в контейнере; не подменять окружение обходными путями без просьбы.
+- **Исключение:** эмбеддинг-модель (Ollama `bge-m3` и т.п.) по задумке **не в контейнере приложения** — ходит на хост/`host.docker.internal`; в тестах retrieval/diary при необходимости мокать `EmbeddingProvider` / HTTP, а не требовать локальный Ollama в CI без договорённости.
+
 ## PHP
 - PHP 8.4, Laravel 13.
 - Строгая типизация, enums вместо строковых констант.
