@@ -179,7 +179,7 @@ class DiaryWriterService
 
     public function writeFinalForNpc(Scene $scene, Character $character): bool
     {
-        if ((int) $character->character_type->value !== 'npc') {
+        if ($character->character_type !== CharacterType::Npc) {
             return false;
         }
 
