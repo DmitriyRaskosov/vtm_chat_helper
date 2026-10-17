@@ -117,6 +117,7 @@ class AccessMatrixTest extends TestCase
                 'player_foreign' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
+            // ScenePolicy::view сейчас true (одна хроника); после 044 (multi-chronicle) player_foreign → 403.
             self::forRoles('scenes.context.show', 'GET', 'scenes/{scene}/context', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_ALLOWED,
@@ -129,6 +130,7 @@ class AccessMatrixTest extends TestCase
                 'player_foreign' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
+            // ScenePolicy::view сейчас true (одна хроника); после 044 (multi-chronicle) player_foreign → 403.
             self::forRoles('scenes.participants.index', 'GET', 'scenes/{scene}/participants', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_ALLOWED,

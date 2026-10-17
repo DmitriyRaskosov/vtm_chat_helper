@@ -51,8 +51,10 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/characters/{character}/place', [CharacterSheetController::class, 'updatePlace'])
         ->can('updatePlace', 'character');
 
-    Route::get('/scenes/{scene}/context', [SceneContextController::class, 'show']);
-    Route::get('/scenes/{scene}/participants', [SceneParticipantController::class, 'index']);
+    Route::get('/scenes/{scene}/context', [SceneContextController::class, 'show'])
+        ->can('view', 'scene');
+    Route::get('/scenes/{scene}/participants', [SceneParticipantController::class, 'index'])
+        ->can('view', 'scene');
 
     Route::post('/copilot/drafts', [CopilotController::class, 'drafts']);
 

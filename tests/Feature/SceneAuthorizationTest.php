@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Models\Chronicle;
 use App\Models\GameSession;
+use App\Models\Scene;
 use App\Models\User;
 use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
@@ -57,6 +58,14 @@ class SceneAuthorizationTest extends TestCase
             ->assertJsonPath('message', 'Только рассказчик.');
     }
 
+    public function test_guest_cannot_view_scene_context_or_participants(): void
+    {
+        $scene = $this->createScene();
+
+        $this->getJson("/api/scenes/{$scene->id}/context")->assertStatus(401);
+        $this->getJson("/api/scenes/{$scene->id}/participants")->assertStatus(401);
+    }
+
     public function test_player_cannot_access_character_diary(): void
     {
         $npcId = $this->createNpc();
@@ -66,6 +75,16 @@ class SceneAuthorizationTest extends TestCase
             ->getJson("/api/characters/{$npcId}/diary")
             ->assertStatus(403)
             ->assertJsonPath('message', 'Только рассказчик.');
+    }
+
+    private function createScene(): Scene
+    {
+        $gameSession = GameSession::factory()->active()->create([
+            'chronicle_id' => $this->chronicle->id,
+            'created_by' => $this->storyteller->id,
+        ]);
+
+        return Scene::factory()->active()->forGameSession($gameSession)->create();
     }
 
     private function createNpc(): int
