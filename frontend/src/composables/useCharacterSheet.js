@@ -1,6 +1,5 @@
-import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { useRoute } from 'vue-router';
-import { api, isStoryteller, useAuth } from '../auth';
+import { computed, reactive, ref, unref } from 'vue';
+import { api, isStoryteller } from '../auth';
 import { useFlash } from './useFlash';
 import { apiErrorMessage } from '../utils/apiError';
 import { characterTypeLabel } from '../utils/labels';
@@ -54,9 +53,7 @@ function optionalId(value) {
     return value === '' ? null : Number(value);
 }
 
-export function useCharacterSheet() {
-    const auth = useAuth();
-    const route = useRoute();
+export function useCharacterSheet(characterId) {
     const sheet = ref(null);
     const catalog = ref(null);
     const error = ref('');
@@ -220,7 +217,7 @@ export function useCharacterSheet() {
         error.value = '';
         try {
             const requests = [
-                api.get(`/characters/${route.params.id}`),
+                api.get(`/characters/${unref(characterId)}`),
                 catalog.value
                     ? Promise.resolve({ data: { catalog: catalog.value, disciplines: catalog.value.disciplineList } })
                     : api.get('/character-sheet/catalog'),
@@ -346,10 +343,8 @@ export function useCharacterSheet() {
         }
     }
 
-    watch(() => route.params.id, load);
-    onMounted(load);
-
     return {
+        load,
         sheet,
         error,
         isStoryteller,

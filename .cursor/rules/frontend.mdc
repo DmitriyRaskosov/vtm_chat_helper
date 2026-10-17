@@ -6,8 +6,6 @@ alwaysApply: false
 
 # Frontend (черновик)
 
-<!-- TODO(034): после задачи 034 зафиксировать правило «view без прямых вызовов API». -->
-
 ## Утилиты и composables (этап 2)
 
 - Метки типа персонажа: `frontend/src/utils/labels.js` — `PLAYER_LABEL`, `NPC_LABEL`, `characterTypeLabel(type)`. Composable `useSceneSession` / `useCharacterSheet` реэкспортируют для старых импортов.
@@ -23,10 +21,11 @@ alwaysApply: false
 
 ## Базовое
 - Vue 3 Composition API, только `<script setup>`.
-- Логика экранов и вызовы API — в `frontend/src/composables/`. View и компоненты — разметка и привязка.
+- Логика экранов и вызовы API — в `frontend/src/composables/`. View и компоненты (`views/`, `components/`) не импортируют `api` и не вызывают HTTP напрямую — только composables.
+- Экранные composables (034): `useDiary`, `useCharacterList`, `useCopilotPanel`; лист — `useCharacterSheet(characterId)` + `load()` из view при смене id.
 - HTTP — только через экземпляр axios из `frontend/src/auth.js`. Новые экземпляры axios не создавать.
 - Двусторонние привязки — `defineModel`, не ручные пары prop/emit.
-- Composable не регистрирует `onMounted`/`watch(route)` внутри себя, если это не требуется задачей (существующий `useCharacterSheet` — долг этапа 2).
+- Composable не регистрирует `onMounted`/`watch(route)` внутри себя, если это не требуется задачей (`useDiary` следит за переданным `characterId`; привязка к роутеру — в view).
 
 ## Запреты
 - Новые npm-зависимости — только с явного разрешения.

@@ -63,10 +63,15 @@ import SheetBiographySection from '../components/sheet/SheetBiographySection.vue
 import SheetHeaderSection from '../components/sheet/SheetHeaderSection.vue';
 import SheetPlaceSection from '../components/sheet/SheetPlaceSection.vue';
 import SheetTraitsSection from '../components/sheet/SheetTraitsSection.vue';
+import { computed, onMounted, watch } from 'vue';
+import { RouterLink, useRoute } from 'vue-router';
 import { useCharacterSheet } from '../composables/useCharacterSheet';
-import { RouterLink } from 'vue-router';
+
+const route = useRoute();
+const characterId = computed(() => route.params.id);
 
 const {
+    load,
     sheet,
     error,
     isStoryteller,
@@ -93,5 +98,8 @@ const {
     setDiscipline,
     addDiscipline,
     removeDiscipline,
-} = useCharacterSheet();
+} = useCharacterSheet(characterId);
+
+watch(characterId, load);
+onMounted(load);
 </script>

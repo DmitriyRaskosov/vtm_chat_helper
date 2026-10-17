@@ -2,7 +2,7 @@
 
 - **Stage:** 2
 - **Part:** 3
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 033
 - **Risk:** med (поведение экранов дневника и Copilot)
 - **Разрешённые зависимости:** нет
