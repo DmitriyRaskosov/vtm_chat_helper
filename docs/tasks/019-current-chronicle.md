@@ -2,7 +2,7 @@
 
 - **Stage:** 2
 - **Part:** 1
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 034a
 - **Risk:** med (меняет контракт API: параметр `chronicle_id` перестаёт приниматься)
 - **Разрешённые зависимости:** нет

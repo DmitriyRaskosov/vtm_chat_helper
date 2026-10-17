@@ -39,7 +39,7 @@ class CharacterVisibilityTest extends TestCase
             ->assertStatus(200);
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->getJson('/api/characters?chronicle_id='.$this->chronicle->id);
+            ->getJson('/api/characters');
 
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'characters');
@@ -103,7 +103,7 @@ class CharacterVisibilityTest extends TestCase
             ->assertStatus(200);
 
         $response = $this->actingAs($player, 'sanctum')
-            ->getJson('/api/characters?chronicle_id='.$this->chronicle->id);
+            ->getJson('/api/characters');
 
         $response->assertStatus(200);
         $response->assertJsonCount(2, 'characters');
@@ -123,7 +123,7 @@ class CharacterVisibilityTest extends TestCase
         $this->createCharacter('Чужой NPC');
 
         $response = $this->actingAs($player, 'sanctum')
-            ->getJson('/api/characters?chronicle_id='.$this->chronicle->id);
+            ->getJson('/api/characters');
 
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'characters');
@@ -138,7 +138,7 @@ class CharacterVisibilityTest extends TestCase
         $player = User::factory()->create();
 
         $response = $this->actingAs($player, 'sanctum')
-            ->getJson('/api/characters?chronicle_id='.$this->chronicle->id);
+            ->getJson('/api/characters');
 
         $response->assertStatus(200);
         $response->assertJsonPath('characters', []);
@@ -151,7 +151,6 @@ class CharacterVisibilityTest extends TestCase
             ->postJson('/api/characters', [
                 'canonical_name' => $name,
                 'character_type' => 'npc',
-                'chronicle_id' => $this->chronicle->id,
             ]);
         $response->assertStatus(201);
 
@@ -164,7 +163,6 @@ class CharacterVisibilityTest extends TestCase
             ->postJson('/api/characters', [
                 'canonical_name' => $name,
                 'character_type' => 'player',
-                'chronicle_id' => $this->chronicle->id,
                 'user_id' => $player->id,
             ]);
         $response->assertStatus(201);

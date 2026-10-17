@@ -21,7 +21,7 @@ class StoreCharacterRequest extends FormRequest
         return [
             'canonical_name' => ['required', 'string', 'max:120'],
             'character_type' => ['required', Rule::enum(CharacterType::class)],
-            'chronicle_id' => ['sometimes', 'integer', 'exists:chronicles,id'],
+            'chronicle_id' => ['prohibited'],
             'user_id' => [
                 Rule::requiredIf(fn (): bool => $this->enum('character_type', CharacterType::class) === CharacterType::Player),
                 'nullable',

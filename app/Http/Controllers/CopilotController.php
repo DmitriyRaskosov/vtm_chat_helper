@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Chronicle\CurrentChronicle;
 use App\Enums\SceneStatus;
 use App\Http\Requests\CopilotDraftsRequest;
 use App\Llm\NpcCopilotService;
 use App\Models\Character;
-use App\Models\Chronicle;
 use App\Models\CopilotRequest;
 use App\Models\Scene;
 use App\Models\WorldEntity;
@@ -17,13 +17,15 @@ use RuntimeException;
 
 class CopilotController extends Controller
 {
+    public function __construct(private CurrentChronicle $currentChronicle) {}
+
     public function drafts(CopilotDraftsRequest $request, NpcCopilotService $copilot): JsonResponse
     {
         $sceneId = $request->validated('scene_id') ?? null;
-        $chronicleId = $request->validated('chronicle_id') ?? null;
+        $chronicleId = null;
 
         if ($sceneId === null) {
-            $chronicleId = Chronicle::resolveId($chronicleId === null ? null : (int) $chronicleId);
+            $chronicleId = $this->currentChronicle->id();
         }
 
         $scene = Scene::query()

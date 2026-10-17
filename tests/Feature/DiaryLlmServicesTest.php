@@ -66,7 +66,6 @@ class DiaryLlmServicesTest extends TestCase
             ->postJson('/api/characters', [
                 'canonical_name' => 'Абрахам',
                 'character_type' => 'npc',
-                'chronicle_id' => $this->chronicle->id,
             ]);
         $npcResponse->assertStatus(201);
 
@@ -186,7 +185,6 @@ class DiaryLlmServicesTest extends TestCase
             ->postJson('/api/characters', [
                 'canonical_name' => 'Второй NPC',
                 'character_type' => 'npc',
-                'chronicle_id' => $this->chronicle->id,
             ]);
         $secondNpcResponse->assertStatus(201);
         $secondNpc = Character::query()->findOrFail($secondNpcResponse->json('character.id'));
@@ -222,7 +220,6 @@ class DiaryLlmServicesTest extends TestCase
             ->postJson('/api/characters', [
                 'canonical_name' => 'Третий NPC',
                 'character_type' => 'npc',
-                'chronicle_id' => $this->chronicle->id,
             ]);
         $secondNpcResponse->assertStatus(201);
         $secondNpc = Character::query()->findOrFail($secondNpcResponse->json('character.id'));
@@ -294,7 +291,6 @@ class DiaryLlmServicesTest extends TestCase
             ->postJson('/api/characters', [
                 'canonical_name' => 'Игрок-персонаж',
                 'character_type' => 'player',
-                'chronicle_id' => $this->chronicle->id,
                 'user_id' => $playerUser->id,
             ]);
         $playerResponse->assertStatus(201);

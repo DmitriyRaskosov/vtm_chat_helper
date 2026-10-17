@@ -25,19 +25,6 @@ class Chronicle extends Model
     /** @use HasFactory<ChronicleFactory> */
     use HasFactory;
 
-    public static function resolveId(?int $chronicleId): int
-    {
-        if ($chronicleId !== null) {
-            return $chronicleId;
-        }
-
-        $id = static::query()->orderBy('id')->value('id');
-
-        abort_if($id === null, 409, 'There is no available chronicle.');
-
-        return (int) $id;
-    }
-
     /**
      * @param  Builder<Chronicle>  $query
      * @return Builder<Chronicle>

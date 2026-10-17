@@ -23,7 +23,6 @@ class WorldEntityDeleteTest extends TestCase
             ->postJson('/api/characters', [
                 'canonical_name' => 'Для удаления',
                 'character_type' => 'npc',
-                'chronicle_id' => $chronicle->id,
             ]);
 
         $response->assertStatus(201);

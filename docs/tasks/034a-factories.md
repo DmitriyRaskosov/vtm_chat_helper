@@ -2,7 +2,7 @@
 
 - **Stage:** 2
 - **Part:** 1
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 018p
 - **Risk:** med (общий PK `world_entities` ↔ `characters`)
 - **Разрешённые зависимости:** нет

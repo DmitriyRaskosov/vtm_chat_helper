@@ -36,7 +36,7 @@ class StoreMessageRequest extends FormRequest
             'npc_name' => ['prohibited'],
             'character_id' => ['sometimes', 'nullable', 'integer', 'exists:characters,id'],
             'scene_id' => ['sometimes', 'integer', 'exists:scenes,id'],
-            'chronicle_id' => ['sometimes', 'integer', 'exists:chronicles,id'],
+            'chronicle_id' => ['prohibited'],
             'copilot_request_id' => [
                 'sometimes',
                 'nullable',

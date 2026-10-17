@@ -9,6 +9,7 @@ use App\Character\CharacterPlaceService;
 use App\Character\CharacterSheetReader;
 use App\Character\CharacterTraitService;
 use App\Character\DisciplineService;
+use App\Chronicle\CurrentChronicle;
 use App\Enums\CharacterBiographyStatus;
 use App\Enums\CharacterType;
 use App\Enums\WorldEntityType;
@@ -22,7 +23,6 @@ use App\Models\CanonClan;
 use App\Models\CanonDiscipline;
 use App\Models\CanonSect;
 use App\Models\Character;
-use App\Models\Chronicle;
 use App\Models\Scene;
 use App\Models\SceneParticipant;
 use App\Models\WorldEntity;
@@ -46,6 +46,7 @@ class CharacterSheetController extends Controller
         private CharacterPlaceService $place,
         private CharacterTraitService $traits,
         private SceneParticipantService $participants,
+        private CurrentChronicle $currentChronicle,
     ) {}
 
     public function catalog(): JsonResponse
@@ -109,9 +110,10 @@ class CharacterSheetController extends Controller
 
     public function index(Request $request): JsonResponse
     {
-        $chronicleId = Chronicle::resolveId(
-            $request->filled('chronicle_id') ? $request->integer('chronicle_id') : null,
-        );
+        $request->validate([
+            'chronicle_id' => ['prohibited'],
+        ]);
+        $chronicleId = $this->currentChronicle->id();
         $user = $request->user();
 
         $query = Character::query()->where('chronicle_id', $chronicleId)->where('is_active', true);
@@ -151,9 +153,7 @@ class CharacterSheetController extends Controller
         $validated = $request->validated();
 
         return DB::transaction(function () use ($validated) {
-            $chronicle = Chronicle::query()->findOrFail(
-                Chronicle::resolveId(isset($validated['chronicle_id']) ? (int) $validated['chronicle_id'] : null),
-            );
+            $chronicle = $this->currentChronicle->get();
 
             $typed = [
                 'character_type' => CharacterType::from($validated['character_type']),

@@ -47,7 +47,6 @@ class DirectRelationsProviderTest extends TestCase
             ->postJson('/api/characters', [
                 'canonical_name' => 'Виктор',
                 'character_type' => 'npc',
-                'chronicle_id' => $chronicle->id,
             ]);
         $sourceResponse->assertStatus(201);
         $sourceCharacter = Character::query()->findOrFail($sourceResponse->json('character.id'));
@@ -57,7 +56,6 @@ class DirectRelationsProviderTest extends TestCase
             ->postJson('/api/characters', [
                 'canonical_name' => 'Мария',
                 'character_type' => 'npc',
-                'chronicle_id' => $chronicle->id,
             ]);
         $targetResponse->assertStatus(201);
         $targetEntity = WorldEntity::query()->findOrFail($targetResponse->json('character.id'));

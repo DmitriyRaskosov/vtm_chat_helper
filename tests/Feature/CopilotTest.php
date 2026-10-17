@@ -50,7 +50,6 @@ class CopilotTest extends TestCase
             ->postJson('/api/characters', [
                 'canonical_name' => 'Иван',
                 'character_type' => 'npc',
-                'chronicle_id' => $this->chronicle->id,
             ]);
         $npc->assertStatus(201);
         $this->npcId = (int) $npc->json('character.id');

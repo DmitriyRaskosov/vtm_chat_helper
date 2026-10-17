@@ -33,7 +33,6 @@ class CharacterTraitTest extends TestCase
             ->postJson('/api/characters', [
                 'canonical_name' => 'Иван',
                 'character_type' => 'npc',
-                'chronicle_id' => $this->chronicle->id,
             ]);
         $create->assertStatus(201);
         $this->characterId = (int) $create->json('character.id');

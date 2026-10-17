@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Chronicle\CurrentChronicle;
 use App\Enums\CharacterType;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneStatus;
@@ -9,7 +10,6 @@ use App\Http\Requests\StoreMessageRequest;
 use App\Jobs\WriteDiaryJob;
 use App\Messages\MessageEditService;
 use App\Models\Character;
-use App\Models\Chronicle;
 use App\Models\CopilotRequest;
 use App\Models\Message;
 use App\Models\Scene;
@@ -25,18 +25,19 @@ use Illuminate\Support\Facades\Log;
 
 class ChatController extends Controller
 {
+    public function __construct(private CurrentChronicle $currentChronicle) {}
+
     public function index(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'scene_id' => ['sometimes', 'integer', 'exists:scenes,id'],
-            'chronicle_id' => ['sometimes', 'integer', 'exists:chronicles,id'],
+            'chronicle_id' => ['prohibited'],
             'after_id' => ['sometimes', 'integer', 'min:0'],
         ]);
 
         $afterId = $request->integer('after_id');
         $scene = $this->resolveScene(
             isset($validated['scene_id']) ? (int) $validated['scene_id'] : null,
-            isset($validated['chronicle_id']) ? (int) $validated['chronicle_id'] : null,
             false,
         );
 
@@ -66,10 +67,8 @@ class ChatController extends Controller
     {
         $validated = $request->validated();
         $sceneId = $validated['scene_id'] ?? null;
-        $chronicleId = $validated['chronicle_id'] ?? null;
         $scene = $this->resolveScene(
             $sceneId === null ? null : (int) $sceneId,
-            $chronicleId === null ? null : (int) $chronicleId,
             true,
         );
         $scene->loadMissing('gameSession');
@@ -290,10 +289,11 @@ class ChatController extends Controller
         return false;
     }
 
-    private function resolveScene(?int $sceneId, ?int $chronicleId, bool $mustBeActive): Scene
+    private function resolveScene(?int $sceneId, bool $mustBeActive): Scene
     {
+        $chronicleId = null;
         if ($sceneId === null) {
-            $chronicleId = Chronicle::resolveId($chronicleId);
+            $chronicleId = $this->currentChronicle->id();
         }
 
         $query = Scene::query()->whereHas(

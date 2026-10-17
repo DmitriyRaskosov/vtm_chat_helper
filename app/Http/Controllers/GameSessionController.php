@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Chronicle\CurrentChronicle;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneStatus;
 use App\Http\Requests\StoreGameSessionRequest;
-use App\Models\Chronicle;
 use App\Models\GameSession;
 use App\Models\Scene;
 use App\Scene\SceneContextService;
@@ -15,16 +15,17 @@ use Illuminate\Support\Facades\DB;
 
 class GameSessionController extends Controller
 {
-    public function __construct(private SceneContextService $contexts) {}
+    public function __construct(
+        private SceneContextService $contexts,
+        private CurrentChronicle $currentChronicle,
+    ) {}
 
     public function active(Request $request): JsonResponse
     {
-        $validated = $request->validate([
-            'chronicle_id' => ['sometimes', 'integer', 'exists:chronicles,id'],
+        $request->validate([
+            'chronicle_id' => ['prohibited'],
         ]);
-        $chronicleId = Chronicle::resolveId(
-            isset($validated['chronicle_id']) ? (int) $validated['chronicle_id'] : null,
-        );
+        $chronicleId = $this->currentChronicle->id();
 
         $gameSession = GameSession::query()
             ->where('chronicle_id', $chronicleId)
@@ -41,10 +42,7 @@ class GameSessionController extends Controller
     {
         $gameSession = DB::transaction(function () use ($request): GameSession {
             $now = now();
-            $requestedChronicleId = $request->validated('chronicle_id');
-            $chronicleId = Chronicle::resolveId(
-                $requestedChronicleId === null ? null : (int) $requestedChronicleId,
-            );
+            $chronicleId = $this->currentChronicle->id();
 
             $activeSessionIds = GameSession::query()
                 ->where('chronicle_id', $chronicleId)

@@ -63,7 +63,6 @@ class DiaryTest extends TestCase
             ->postJson('/api/characters', [
                 'canonical_name' => 'Абрахам',
                 'character_type' => 'npc',
-                'chronicle_id' => $this->chronicle->id,
             ]);
         $npcResponse->assertStatus(201);
 

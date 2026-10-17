@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\GameSessionStatus;
+use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\GameSession;
 use App\Models\User;
@@ -102,7 +103,6 @@ class SceneTest extends TestCase
             ->postJson('/api/characters', [
                 'canonical_name' => 'Иван',
                 'character_type' => 'npc',
-                'chronicle_id' => $this->chronicle->id,
             ]);
         $npc->assertStatus(201);
         $npcId = $npc->json('character.id');
@@ -135,19 +135,15 @@ class SceneTest extends TestCase
             'created_by' => $this->storyteller->id,
         ]);
 
-        $npc = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
-                'canonical_name' => 'Чужой',
-                'character_type' => 'npc',
-                'chronicle_id' => $otherChronicle->id,
-            ]);
-        $npc->assertStatus(201);
+        $otherNpc = Character::factory()
+            ->forChronicle($otherChronicle)
+            ->create(['canonical_name' => 'Чужой']);
 
         $sceneId = $this->createScene();
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
             ->postJson("/api/scenes/{$sceneId}/participants", [
-                'character_id' => $npc->json('character.id'),
+                'character_id' => $otherNpc->id,
                 'role' => 'npc',
             ]);
 
