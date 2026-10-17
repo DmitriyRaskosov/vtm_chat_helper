@@ -86,8 +86,9 @@ flowchart TD
 3. `DeepSeekChatProvider` → разбор JSON → 3 черновика → запись `CopilotRequest` с метаданными сборки (включённые и отброшенные секции, токены).
 
 **Дневник:**
-- каждые N сообщений (`config/diary.php`) — `WriteDiaryJob` → `DiaryWriterService::writeForScene` (L0 по каждому NPC сцены, сдвиг `last_diary_message_id`);
-- уход NPC из сцены — `WriteFinalDiaryJob` → `writeFinalForNpc`;
+- каждые N сообщений (`config/diary.php`, ключ `write_threshold`) — только порог dispatch `WriteDiaryJob` в `ChatController`; прямой вызов `DiaryWriterService::writeForScene` порог не проверяет и пишет всё накопленное после курсора участника;
+- `WriteDiaryJob` → `DiaryWriterService::writeForScene` (L0 по каждому NPC сцены, сдвиг `last_diary_message_id`);
+- уход NPC из сцены — `WriteFinalDiaryJob` → `writeFinalForNpc` (только `CharacterType::Npc`; у PC финальная L0 не ведётся);
 - закрытие сцены — `SummarizeSceneDiaryJob` → дописать L0 + L1-сводка;
 - чтение — `DiaryProvider` → `DiaryRetrievalService`: последняя запись + до двух семантически близких, из пула исключены записи, попадающие в окно recent messages.
 - задачи `ShouldBeUnique`, выполняются воркером (`worker`).

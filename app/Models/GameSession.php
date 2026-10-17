@@ -10,7 +10,12 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property GameSessionStatus $status
+ * @property Carbon|null $activated_at
+ */
 #[Fillable(['chronicle_id', 'title', 'status', 'created_by', 'activated_at'])]
 class GameSession extends Model
 {

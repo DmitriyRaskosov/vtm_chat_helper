@@ -132,11 +132,13 @@ class WorldEntityService
      */
     private function createTypedRecord(WorldEntity $entity, array $typed): void
     {
-        match ($entity->entity_type) {
-            WorldEntityType::Location => $this->insertLocation($entity, $typed),
-            WorldEntityType::Character => $this->insertCharacter($entity, $typed),
-            default => throw new InvalidArgumentException('Unsupported entity type.'),
-        };
+        if ($entity->entity_type === WorldEntityType::Location) {
+            $this->insertLocation($entity, $typed);
+
+            return;
+        }
+
+        $this->insertCharacter($entity, $typed);
     }
 
     /**

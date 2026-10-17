@@ -70,10 +70,6 @@ class MessageEditService
      */
     private function markDiaryStale(Message $message, string $reason): void
     {
-        if ($message->scene_id === null) {
-            return;
-        }
-
         $affected = DB::table('character_diary_entries')
             ->where('scene_id', $message->scene_id)
             ->whereIn('level', [0, 1])

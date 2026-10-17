@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\CharacterType;
+use App\Enums\WorldEntityType;
 use Database\Factories\CharacterFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -11,6 +12,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property CharacterType $character_type
+ */
 #[Fillable([
     'id',
     'chronicle_id',
@@ -45,6 +49,9 @@ class Character extends Model
         return $this->belongsTo(User::class);
     }
 
+    /**
+     * @return BelongsTo<CanonClan, $this>
+     */
     public function clan(): BelongsTo
     {
         return $this->belongsTo(CanonClan::class, 'clan_id');
@@ -136,7 +143,7 @@ class Character extends Model
     public function outgoingRelations(): HasMany
     {
         return $this->hasMany(WorldRelation::class, 'source_id')
-            ->where('source_type', 'character');
+            ->where('source_type', WorldEntityType::Character->value);
     }
 
     /**
@@ -145,7 +152,7 @@ class Character extends Model
     public function incomingRelations(): HasMany
     {
         return $this->hasMany(WorldRelation::class, 'target_id')
-            ->where('target_type', 'character');
+            ->where('target_type', WorldEntityType::Character->value);
     }
 
     public function isNpc(): bool
@@ -153,6 +160,9 @@ class Character extends Model
         return $this->character_type === CharacterType::Npc;
     }
 
+    /**
+     * @return BelongsTo<CanonSect, $this>
+     */
     public function sect(): BelongsTo
     {
         return $this->belongsTo(CanonSect::class, 'sect_id');

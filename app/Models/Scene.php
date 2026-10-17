@@ -11,7 +11,13 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property SceneStatus $status
+ * @property Carbon|null $started_at
+ * @property Carbon|null $ended_at
+ */
 #[Fillable([
     'game_session_id',
     'position',

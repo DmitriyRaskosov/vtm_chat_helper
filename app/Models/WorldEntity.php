@@ -13,6 +13,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 
+/**
+ * @property WorldEntityType $entity_type
+ * @property WorldEntityStatus $status
+ */
 #[Fillable([
     'chronicle_id',
     'entity_type',
@@ -68,12 +72,8 @@ class WorldEntity extends Model
      */
     public function outgoingRelations(): HasMany
     {
-        $type = $this->entity_type instanceof WorldEntityType
-            ? $this->entity_type->value
-            : (string) $this->entity_type;
-
         return $this->hasMany(WorldRelation::class, 'source_id')
-            ->where('source_type', $type);
+            ->where('source_type', $this->entity_type->value);
     }
 
     /**
@@ -81,12 +81,8 @@ class WorldEntity extends Model
      */
     public function incomingRelations(): HasMany
     {
-        $type = $this->entity_type instanceof WorldEntityType
-            ? $this->entity_type->value
-            : (string) $this->entity_type;
-
         return $this->hasMany(WorldRelation::class, 'target_id')
-            ->where('target_type', $type);
+            ->where('target_type', $this->entity_type->value);
     }
 
     protected function casts(): array

@@ -14,6 +14,8 @@ use InvalidArgumentException;
 
 /**
  * @property WorldRelationKind $relation
+ * @property WorldEntityType $source_type
+ * @property WorldEntityType $target_type
  */
 #[Fillable([
     'chronicle_id',
@@ -89,17 +91,17 @@ class WorldRelation extends Model
         return $this->valid_to === null;
     }
 
-    public function endpointType(WorldEntity $entity): string
+    public function endpointType(WorldEntity $entity): WorldEntityType
     {
-        $type = $entity->entity_type;
-
-        return $type instanceof WorldEntityType ? $type->value : (string) $type;
+        return $entity->entity_type;
     }
 
     protected function casts(): array
     {
         return [
             'chronicle_id' => 'integer',
+            'source_type' => WorldEntityType::class,
+            'target_type' => WorldEntityType::class,
             'source_id' => 'integer',
             'target_id' => 'integer',
             'relation' => WorldRelationKind::class,

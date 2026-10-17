@@ -2,7 +2,6 @@
 
 namespace App\World;
 
-use App\Enums\WorldEntityType;
 use App\Enums\WorldRelationKind;
 use App\Models\WorldEntity;
 use App\Models\WorldRelation;
@@ -43,8 +42,6 @@ final class WorldRelationService
 
     private function entityTypeValue(WorldEntity $entity): string
     {
-        $type = $entity->entity_type;
-
-        return $type instanceof WorldEntityType ? $type->value : (string) $type;
+        return $entity->entity_type->value;
     }
 }

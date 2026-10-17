@@ -27,7 +27,7 @@ class CharacterDiscipline extends Model
     }
 
     /**
-     * @return BelongsTo<Discipline, $this>
+     * @return BelongsTo<CanonDiscipline, $this>
      */
     public function discipline(): BelongsTo
     {

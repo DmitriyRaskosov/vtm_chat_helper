@@ -27,15 +27,10 @@ final class CharacterAccess
             return false;
         }
 
-        if ($character->character_type === CharacterType::Npc) {
-            return $user->isStoryteller();
-        }
-
-        if ($character->character_type === CharacterType::Player) {
-            return $character->isPlayableBy($user);
-        }
-
-        return false;
+        return match ($character->character_type) {
+            CharacterType::Npc => $user->isStoryteller(),
+            CharacterType::Player => $character->isPlayableBy($user),
+        };
     }
 
     public static function abortUnlessManagesSheet(?User $user, Character $character): void

@@ -6,6 +6,7 @@ use App\Context\ContextAssembly;
 use App\Context\ContextSection;
 use App\Context\LineTrimmer;
 use App\Context\TokenEstimator;
+use App\Enums\WorldEntityType;
 use App\Models\WorldEntity;
 use App\Models\WorldRelation;
 use App\World\WorldRelationService;
@@ -37,7 +38,7 @@ class DirectRelationsProvider implements ContextProvider
 
         $incomingCharacter = WorldRelation::query()
             ->active()
-            ->where('target_type', 'character')
+            ->where('target_type', WorldEntityType::Character->value)
             ->where('target_id', $character->id)
             ->whereNotIn('id', $neighbors->pluck('id'))
             ->with(['source', 'target'])

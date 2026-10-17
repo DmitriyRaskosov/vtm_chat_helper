@@ -32,8 +32,8 @@ final class DiaryMetadataParser
             return ['entry' => $raw, 'importance' => null, 'emotion' => null];
         }
 
-        $importanceRaw = $m[1] ?? '';
-        if ($importanceRaw === '' || ! is_numeric($importanceRaw)) {
+        $importanceRaw = $m[1];
+        if (! is_numeric($importanceRaw)) {
             return ['entry' => $raw, 'importance' => null, 'emotion' => null];
         }
 

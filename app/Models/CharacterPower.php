@@ -30,7 +30,7 @@ class CharacterPower extends Model
     }
 
     /**
-     * @return BelongsTo<Discipline, $this>
+     * @return BelongsTo<CanonDiscipline, $this>
      */
     public function discipline(): BelongsTo
     {
@@ -38,7 +38,7 @@ class CharacterPower extends Model
     }
 
     /**
-     * @return BelongsTo<DisciplinePower, $this>
+     * @return BelongsTo<CanonDisciplinePower, $this>
      */
     public function power(): BelongsTo
     {

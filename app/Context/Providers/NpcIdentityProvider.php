@@ -6,7 +6,6 @@ use App\Context\ContextAssembly;
 use App\Context\ContextSection;
 use App\Context\LineTrimmer;
 use App\Context\TokenEstimator;
-use App\Models\CharacterDiscipline;
 
 class NpcIdentityProvider implements ContextProvider
 {
@@ -52,7 +51,7 @@ class NpcIdentityProvider implements ContextProvider
             if (! $assembly->request->compactIdentity) {
                 $character->loadMissing('disciplines.discipline');
                 foreach ($character->disciplines as $row) {
-                    if (! $row instanceof CharacterDiscipline || $row->discipline === null) {
+                    if ($row->discipline === null) {
                         continue;
                     }
                     $disciplineIds[] = (int) $row->id;

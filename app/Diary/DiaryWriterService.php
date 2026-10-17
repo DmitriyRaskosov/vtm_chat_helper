@@ -3,6 +3,8 @@
 namespace App\Diary;
 
 use App\Enums\CharacterType;
+use App\Http\Controllers\ChatController;
+use App\Jobs\WriteDiaryJob;
 use App\Llm\ChatProvider;
 use App\Models\Character;
 use App\Models\CharacterDiaryEntry;
@@ -28,6 +30,11 @@ class DiaryWriterService
     ) {}
 
     /**
+     * Writes all in-scene messages after each NPC participant's diary cursor (up to
+     * {@see self::MAX_MESSAGES_PER_CALL} per NPC). Does not read `write_threshold` from
+     * config — that gate applies only in {@see ChatController::maybeDispatchDiaryWrite}
+     * before dispatching {@see WriteDiaryJob}.
+     *
      * @return array{created: int, npcs: int, processed_messages: int, errors: list<string>}
      */
     public function writeForScene(Scene $scene): array
@@ -177,9 +184,13 @@ class DiaryWriterService
         return ['created' => true, 'processed_messages' => $messages->count()];
     }
 
+    /**
+     * Final L0 slice when an NPC leaves the scene (up to `left_message_id`).
+     * Player characters ({@link CharacterType::Player}) are skipped: PC diary is not a product feature.
+     */
     public function writeFinalForNpc(Scene $scene, Character $character): bool
     {
-        if ($character->character_type !== CharacterType::Npc) {
+        if (! $character->isNpc()) {
             return false;
         }
 
