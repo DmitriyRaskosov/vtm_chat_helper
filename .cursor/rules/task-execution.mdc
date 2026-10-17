@@ -41,8 +41,9 @@ alwaysApply: false
 2. `sail artisan test` — все тесты зелёные.
 3. Если в задаче менялся `frontend/`: `cd frontend; npm run build` — без ошибок.
 4. Если в проекте уже есть `phpstan.neon` (после задачи 002): `sail php vendor/bin/phpstan analyse` — без новых ошибок.
-5. Если задача перегенерирует `phpstan-baseline.neon`: до правок зафиксировать размер (`rg -c "message:" phpstan-baseline.neon`); после — `sail php vendor/bin/phpstan analyse --generate-baseline=phpstan-baseline.neon`, затем снова `sail php vendor/bin/phpstan analyse`. **Размер baseline не должен вырастать** относительно значения «до»; рост = регрессия (появились новые находки), задача не закрывается — разобрать причину и устранить или откатить baseline. В отчёте строка `baseline: <до> → <после>`.
-6. Все пункты Definition of Done задачи проверены по одному. Grep-проверки из DoD выполнены и их вывод приведён.
+5. Если задача перегенерирует `phpstan-baseline.neon`: до правок зафиксировать размер и после сравнивать **только в контейнере** — `docker compose exec laravel.test grep -c 'message:' phpstan-baseline.neon` (не встроенный grep агента: он может дать неверный count). После — `sail php vendor/bin/phpstan analyse --generate-baseline=phpstan-baseline.neon`, затем снова `sail php vendor/bin/phpstan analyse`. **Размер baseline не должен вырастать** относительно значения «до»; рост = регрессия (появились новые находки), задача не закрывается — разобрать причину и устранить или откатить baseline. В отчёте строка `baseline: <до> → <после>`.
+6. Даже без регенерации baseline: если в отчёте указывается его размер — та же команда в контейнере.
+7. Все пункты Definition of Done задачи проверены по одному. Grep-проверки из DoD выполнены и их вывод приведён.
 
 ## 5. Отчёт (строго в этом формате)
 
