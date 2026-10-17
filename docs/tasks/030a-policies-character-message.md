@@ -57,6 +57,8 @@
   (или аналогичный метод). CharacterAccess::canSpeakAs() и 
   canManageSheet() — тоже в CharacterPolicy. После 030a grep 
   "CharacterAccess|CharacterSceneGuard" по app/ должен быть пустым.
+9. CopilotRequestForbiddenException (403, из 025b) → MessagePolicy::create 
+  (или CopilotPolicy). После переноса исключение удалить.
 
 ## Definition of Done
 

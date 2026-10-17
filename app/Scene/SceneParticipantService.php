@@ -2,10 +2,10 @@
 
 namespace App\Scene;
 
+use App\Diary\DiaryScheduler;
 use App\Enums\SceneParticipantRole;
 use App\Exceptions\ConflictException;
 use App\Exceptions\InvalidInputException;
-use App\Jobs\WriteFinalDiaryJob;
 use App\Models\Character;
 use App\Models\Message;
 use App\Models\Scene;
@@ -17,7 +17,10 @@ use Illuminate\Support\Facades\DB;
 
 class SceneParticipantService
 {
-    public function __construct(private SceneContextService $contexts) {}
+    public function __construct(
+        private SceneContextService $contexts,
+        private DiaryScheduler $diaryScheduler,
+    ) {}
 
     public function enter(
         Scene $scene,
@@ -101,7 +104,7 @@ class SceneParticipantService
 
         // Финальный L0 для ушедшего NPC — вне транзакции
         if ($participant->left_message_id !== null) {
-            WriteFinalDiaryJob::dispatch($scene->id, $character->id);
+            $this->diaryScheduler->scheduleFinal($scene, $character);
         }
 
         return $participant;

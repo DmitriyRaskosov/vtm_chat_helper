@@ -140,27 +140,6 @@ parameters:
 			count: 1
 			path: app/Diary/DiaryWriterService.php
 
-		# debt: 025b — abort_unless Copilot NPC в ChatController
-		-
-			message: '#^Call to function abort_unless\(\) with arguments false, 422 and ''Selected Copilot…'' will always evaluate to false\.$#'
-			identifier: function.impossibleType
-			count: 1
-			path: app/Http/Controllers/ChatController.php
-
-		# debt: 025b — array_key_exists int/string в ChatController
-		-
-			message: '#^Call to function array_key_exists\(\) with int and string will always evaluate to false\.$#'
-			identifier: function.impossibleType
-			count: 1
-			path: app/Http/Controllers/ChatController.php
-
-		# debt: 025b — неверный тип второго аргумента array_key_exists в ChatController
-		-
-			message: '#^Parameter \#2 \$array of function array_key_exists expects array, string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: app/Http/Controllers/ChatController.php
-
 		# debt: 027 — Eloquent Model::$title в DiaryEntryController
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'

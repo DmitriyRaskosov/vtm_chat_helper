@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Diary\DiaryScheduler;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneStatus;
 use App\Http\Requests\StoreSceneRequest;
-use App\Jobs\SummarizeSceneDiaryJob;
 use App\Models\GameSession;
 use App\Models\Scene;
 use App\Scene\SceneContextService;
@@ -17,6 +17,7 @@ class SceneController extends Controller
 {
     public function __construct(
         private SceneContextService $contexts,
+        private DiaryScheduler $diaryScheduler,
     ) {}
 
     public function store(StoreSceneRequest $request, GameSession $gameSession): JsonResponse
@@ -119,7 +120,7 @@ class SceneController extends Controller
             return $lockedScene->refresh();
         });
 
-        SummarizeSceneDiaryJob::dispatch($scene->id);
+        $this->diaryScheduler->scheduleSummary($scene);
 
         return response()->json(['scene' => $this->serialize($scene)]);
     }
