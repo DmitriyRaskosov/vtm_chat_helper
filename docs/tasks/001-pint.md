@@ -1,7 +1,7 @@
 # 001 — Pint: конфиг и разовое форматирование
 
 - **Stage:** 1
-- **Status:** todo
+- **Status:** done
 - **Depends on:** —
 - **Risk:** low
 - **Разрешённые зависимости:** нет (`laravel/pint` уже в `require-dev`)

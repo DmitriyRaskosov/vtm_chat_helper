@@ -35,9 +35,13 @@
 
 - [ ] `rg "=== '(npc|player)'|!== '(npc|player)'|== '(npc|player)'" app` → пусто
 - [ ] `rg "required_if:[a-z_]+,(player|npc)" app` → пусто
-- [ ] в baseline нет записей `debt: 013`; общее число записей уменьшилось (до/после — в отчёте)
+- [ ] в baseline нет записей `debt: 013`
 - [ ] у каждой исправленной находки есть тест или обоснование в отчёте, почему тест не нужен
 - [ ] `sail artisan test` — зелёные; `sail pint --test` — чисто; `phpstan analyse` — OK
+- [ ] до работы зафиксирован размер baseline (`rg -c "message:" phpstan-baseline.neon`)
+- [ ] `sail php vendor/bin/phpstan analyse --generate-baseline=phpstan-baseline.neon`, затем `sail php vendor/bin/phpstan analyse` — OK
+- [ ] размер baseline не вырос относительно «до»; если вырос — задача не закрывается, разобрать причину
+- [ ] в отчёте: `baseline: <до> → <после>` (например `baseline: 185 → 142`)
 
 ## Report
 

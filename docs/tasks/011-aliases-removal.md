@@ -45,6 +45,10 @@
 - [ ] дифф схемы: исчезли `world_entity_aliases` и её индексы; добавлен `world_entities_chronicle_name_unique`
 - [ ] `sail artisan migrate:fresh --seed` — без ошибок (демо-имена уникальны)
 - [ ] `sail artisan test` — зелёные; `sail pint --test` — чисто; phpstan — без новых ошибок
+- [ ] до работы зафиксирован размер baseline (`rg -c "message:" phpstan-baseline.neon`)
+- [ ] `sail php vendor/bin/phpstan analyse --generate-baseline=phpstan-baseline.neon`, затем `sail php vendor/bin/phpstan analyse` — OK
+- [ ] размер baseline не вырос относительно «до»; если вырос — задача не закрывается, разобрать причину
+- [ ] в отчёте: `baseline: <до> → <после>` (например `baseline: 185 → 142`)
 
 ## Report
 

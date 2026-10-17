@@ -54,6 +54,10 @@
 - [ ] `sail artisan migrate:fresh --seed` — без ошибок
 - [ ] дифф схемы: исчезла только таблица `world_relation_types` (и её индексы/последовательность); `world_relations_active_unique` и CHECK `world_relations` на месте
 - [ ] `sail artisan test` — зелёные; `sail pint --test` — чисто; phpstan — без новых ошибок (записи baseline `debt: 009` удалены)
+- [ ] до работы зафиксирован размер baseline (`rg -c "message:" phpstan-baseline.neon`)
+- [ ] `sail php vendor/bin/phpstan analyse --generate-baseline=phpstan-baseline.neon`, затем `sail php vendor/bin/phpstan analyse` — OK
+- [ ] размер baseline не вырос относительно «до»; если вырос — задача не закрывается, разобрать причину
+- [ ] в отчёте: `baseline: <до> → <после>` (например `baseline: 185 → 142`)
 
 ## Report
 

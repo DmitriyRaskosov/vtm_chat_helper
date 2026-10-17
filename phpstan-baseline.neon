@@ -1,0 +1,1111 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Enums\\CharacterType\:\:Npc will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Character/CharacterAccess.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Enums\\CharacterType\:\:Player will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Character/CharacterAccess.php
+
+		-
+			message: '#^Property App\\Models\\CharacterBiography\:\:\$status \(string\) does not accept App\\Enums\\CharacterBiographyStatus\:\:Approved\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Character/CharacterBiographyService.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 1
+			path: app/Character/CharacterBiographyService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Enums\\CharacterBiographyStatus will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Character/CharacterBiographyService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Enums\\CharacterBiographyStatus\:\:Approved will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Character/CharacterBiographyService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>status" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Character/CharacterBiographyService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Character\:\:\$experience\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Character/CharacterIdentityService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Character/CharacterIdentityService.php
+
+		-
+			message: '#^Property App\\Character\\CharacterPlaceService\:\:\$identity is never read, only written\.$#'
+			identifier: property.onlyWritten
+			count: 1
+			path: app/Character/CharacterPlaceService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between int and '''' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: app/Character/CharacterPlaceService.php
+
+		-
+			message: '#^Parameter \$stats of method App\\Character\\CharacterSheet\:\:__construct\(\) has invalid type App\\Character\\CharacterStat\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Character/CharacterSheet.php
+
+		-
+			message: '#^Property App\\Character\\CharacterSheet\:\:\$stats has unknown class App\\Character\\CharacterStat as its type\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Character/CharacterSheet.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Character/CharacterSheetReader.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Character/CharacterSheetReader.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$nickname\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Character/CharacterSheetReader.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$slug\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Character/CharacterSheetReader.php
+
+		-
+			message: '#^Access to property \$name on an unknown class App\\Models\\Discipline\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Character/CharacterSheetReader.php
+
+		-
+			message: '#^Access to property \$slug on an unknown class App\\Models\\Discipline\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Character/CharacterSheetReader.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: app/Character/CharacterSheetReader.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\CharacterDiscipline\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Character/CharacterSheetReader.php
+
+		-
+			message: '#^Offset ''label'' on array\{key\?\: string, label\: string, value\: string, sort_order\?\: int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Character/CharacterTraitService.php
+
+		-
+			message: '#^Offset ''value'' on array\{key\?\: string, label\: string, value\: string, sort_order\?\: int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Character/CharacterTraitService.php
+
+		-
+			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Context/ContextRequest.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Context/Providers/BiographyProvider.php
+
+		-
+			message: '#^Call to function array_key_exists\(\) with ''fear''\|''loyalty''\|''obligation''\|''trust'' and array\{\} will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Context/Providers/DirectRelationsProvider.php
+
+		-
+			message: '#^Call to function is_array\(\) with string\|null will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Context/Providers/DirectRelationsProvider.php
+
+		-
+			message: '#^Offset ''rank''\|''role'' on array\{\} in isset\(\) does not exist\.$#'
+			identifier: isset.offset
+			count: 1
+			path: app/Context/Providers/DirectRelationsProvider.php
+
+		-
+			message: '#^Offset ''stance'' on array\{\} in isset\(\) does not exist\.$#'
+			identifier: isset.offset
+			count: 1
+			path: app/Context/Providers/DirectRelationsProvider.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 4
+			path: app/Context/Providers/DirectRelationsProvider.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>canonical_name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Context/Providers/DirectRelationsProvider.php
+
+		-
+			message: '#^Access to property \$name on an unknown class App\\Models\\Discipline\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Context/Providers/NpcIdentityProvider.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Context/Providers/NpcIdentityProvider.php
+
+		-
+			message: '#^Instanceof between App\\Models\\CharacterDiscipline and App\\Models\\CharacterDiscipline will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: app/Context/Providers/NpcIdentityProvider.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: app/Context/Providers/SceneProvider.php
+
+		-
+			message: '#^Offset 1 on array\{non\-falsy\-string, non\-empty\-string, non\-falsy\-string\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Diary/DiaryMetadataParser.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-string and '''' will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Diary/DiaryMetadataParser.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Diary/DiaryPreviewService.php
+
+		-
+			message: '#^Method App\\Diary\\DiaryRetrievalService\:\:retrieveWithDiagnostics\(\) should return array\{selected\: Illuminate\\Support\\Collection\<int, App\\Models\\CharacterDiaryEntry\>, stats\: array\<string, int\>\} but returns array\{selected\: Illuminate\\Support\\Collection\<int, App\\Models\\CharacterDiaryEntry\|null\>, stats\: array\{total_entries\: int\<0, max\>, stale\: int\<0, max\>, filtered_by_recent\: int, kept_by_current_scene\: int, in_pool\: int\<0, max\>, selected\: int\<0, max\>\}\}\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Diary/DiaryRetrievalService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Diary/DiarySummarizerService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Diary/DiarySummarizerService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Diary/DiaryWriterService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\CharacterType\:\:Npc will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Diary/DiaryWriterService.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: app/Diary/DiaryWriterService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Diary/DiaryWriterService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>summary" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Diary/DiaryWriterService.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: app/Http/Controllers/CharacterSheetController.php
+
+		-
+			message: '#^Dead catch \- App\\World\\MixedChronicleException is already caught above\.$#'
+			identifier: catch.alreadyCaught
+			count: 3
+			path: app/Http/Controllers/CharacterSheetController.php
+
+		-
+			message: '#^PHPDoc tag @param has invalid value \(Collection\<int, Character\>\)\: Unexpected token "\\n     \* ", expected variable at offset 45 on line 2$#'
+			identifier: phpDoc.parseError
+			count: 1
+			path: app/Http/Controllers/CharacterSheetController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Character\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/CharacterSheetController.php
+
+		-
+			message: '#^Call to function abort_unless\(\) with arguments false, 422 and ''Selected Copilot…'' will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Http/Controllers/ChatController.php
+
+		-
+			message: '#^Call to function array_key_exists\(\) with int and string will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Http/Controllers/ChatController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\ChatController\:\:characterLookup\(\) should return array\<int, array\{name\: string, type\: App\\Enums\\CharacterType, playable\: bool\}\> but returns array\<int, array\{name\: string, type\: string, playable\: bool\}\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/ChatController.php
+
+		-
+			message: '#^Parameter \#2 \$array of function array_key_exists expects array, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/ChatController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\SceneStatus\:\:Active will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/ChatController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Enums\\CharacterType\:\:Npc will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Http/Controllers/ChatController.php
+
+		-
+			message: '#^Call to function abort_if\(\) with arguments true, 409 and ''Copilot requires an…'' will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Http/Controllers/CopilotController.php
+
+		-
+			message: '#^Result of \|\| is always true\.$#'
+			identifier: booleanOr.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/CopilotController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\SceneStatus\:\:Active will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/CopilotController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/DiaryEntryController.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Http/Controllers/DiaryEntryController.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: app/Http/Controllers/GameSessionController.php
+
+		-
+			message: '#^Cannot call method toISOString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Http/Controllers/GameSessionController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,App\\Models\\Scene\>\:\:map\(\) contains unresolvable type\.$#'
+			identifier: argument.unresolvableType
+			count: 1
+			path: app/Http/Controllers/GameSessionController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>revision" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/SceneContextController.php
+
+		-
+			message: '#^Call to function abort_unless\(\) with arguments false, 409 and ''Only scenes in the…'' will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 2
+			path: app/Http/Controllers/SceneController.php
+
+		-
+			message: '#^Call to function abort_unless\(\) with arguments false, 409 and ''Scenes can only be…'' will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Http/Controllers/SceneController.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Http/Controllers/SceneController.php
+
+		-
+			message: '#^Cannot call method toISOString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Http/Controllers/SceneController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\SceneStatus\:\:Closed will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/SceneController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Enums\\GameSessionStatus\:\:Active will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 3
+			path: app/Http/Controllers/SceneController.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Http/Controllers/SceneParticipantController.php
+
+		-
+			message: '#^Cannot call method toISOString\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 2
+			path: app/Http/Controllers/SceneParticipantController.php
+
+		-
+			message: '#^Using nullsafe method call on non\-nullable type string\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Controllers/SceneParticipantController.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments string, array\{App\\Enums\\WorldEntityType\:\:Faction, App\\Enums\\WorldEntityType\:\:Coterie, App\\Enums\\WorldEntityType\:\:Circle, App\\Enums\\WorldEntityType\:\:Other, App\\Enums\\WorldEntityType\:\:Location, App\\Enums\\WorldEntityType\:\:Item, App\\Enums\\WorldEntityType\:\:Concept\} and true will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Http/Controllers/WorldEntityController.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 2
+			path: app/Http/Controllers/WorldEntityController.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<non\-empty\-string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: app/Http/Controllers/WorldEntityController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\WorldEntityStatus\:\:Active will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/WorldEntityController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Enums\\WorldEntityAliasType\:\:Aka will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Http/Controllers/WorldEntityController.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: app/Http/Controllers/WorldEntityController.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments string, array\{App\\Enums\\WorldEntityType\:\:Faction, App\\Enums\\WorldEntityType\:\:Coterie, App\\Enums\\WorldEntityType\:\:Circle, App\\Enums\\WorldEntityType\:\:Other, App\\Enums\\WorldEntityType\:\:Location, App\\Enums\\WorldEntityType\:\:Item, App\\Enums\\WorldEntityType\:\:Concept\} and true will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 1
+			path: app/Http/Controllers/WorldRelationController.php
+
+		-
+			message: '#^Call to function in_array\(\) with arguments string\|null, array\{App\\Enums\\WorldEntityType\:\:Faction, App\\Enums\\WorldEntityType\:\:Coterie, App\\Enums\\WorldEntityType\:\:Circle, App\\Enums\\WorldEntityType\:\:Other, App\\Enums\\WorldEntityType\:\:Location, App\\Enums\\WorldEntityType\:\:Item, App\\Enums\\WorldEntityType\:\:Concept\} and true will always evaluate to false\.$#'
+			identifier: function.impossibleType
+			count: 2
+			path: app/Http/Controllers/WorldRelationController.php
+
+		-
+			message: '#^Call to method getMessage\(\) on an unknown class App\\World\\WorldRelationException\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Http/Controllers/WorldRelationController.php
+
+		-
+			message: '#^Call to method getMessage\(\) on an unknown class App\\World\\WorldRelationTypeException\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Http/Controllers/WorldRelationController.php
+
+		-
+			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
+			identifier: method.nonObject
+			count: 3
+			path: app/Http/Controllers/WorldRelationController.php
+
+		-
+			message: '#^Caught class App\\World\\WorldRelationException not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Http/Controllers/WorldRelationController.php
+
+		-
+			message: '#^Caught class App\\World\\WorldRelationTypeException not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Http/Controllers/WorldRelationController.php
+
+		-
+			message: '#^Dead catch \- App\\World\\MixedChronicleException is already caught above\.$#'
+			identifier: catch.alreadyCaught
+			count: 1
+			path: app/Http/Controllers/WorldRelationController.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 5
+			path: app/Http/Controllers/WorldRelationController.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\WorldEntityType\:\:Faction will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Http/Controllers/WorldRelationController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Enums\\WorldEntityStatus\:\:Active will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 4
+			path: app/Http/Controllers/WorldRelationController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string\|null and App\\Enums\\WorldEntityType\:\:Faction will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: app/Http/Controllers/WorldRelationController.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 2
+			path: app/Http/Controllers/WorldRelationController.php
+
+		-
+			message: '#^Using nullsafe property access on non\-nullable type App\\Models\\WorldEntity\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 4
+			path: app/Http/Controllers/WorldRelationController.php
+
+		-
+			message: '#^Variable \$existed on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.variable
+			count: 1
+			path: app/Http/Controllers/WorldRelationController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>entity_type" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Requests/UpdateWorldEntityRequest.php
+
+		-
+			message: '#^Cannot access property \$value on string\.$#'
+			identifier: property.nonObject
+			count: 1
+			path: app/Http/Resources/UserResource.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Llm/DeepseekChatProvider.php
+
+		-
+			message: '#^Method App\\Llm\\NpcCopilotService\:\:resolveModelName\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: app/Llm/NpcCopilotService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between int\<0, max\> and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Messages/MessageEditService.php
+
+		-
+			message: '#^PHPDoc tag @use has invalid type Database\\Factories\\CharacterFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/Character.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Enums\\CharacterType\:\:Npc will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Models/Character.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Enums\\CharacterType\:\:Player will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Models/Character.php
+
+		-
+			message: '#^Type Database\\Factories\\CharacterFactory in generic type Illuminate\\Database\\Eloquent\\Factories\\HasFactory\<Database\\Factories\\CharacterFactory\> in PHPDoc tag @use is not subtype of template type TFactory of Illuminate\\Database\\Eloquent\\Factories\\Factory of trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/Character.php
+
+		-
+			message: '#^PHPDoc tag @use has invalid type Database\\Factories\\CharacterBiographyFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/CharacterBiography.php
+
+		-
+			message: '#^Type Database\\Factories\\CharacterBiographyFactory in generic type Illuminate\\Database\\Eloquent\\Factories\\HasFactory\<Database\\Factories\\CharacterBiographyFactory\> in PHPDoc tag @use is not subtype of template type TFactory of Illuminate\\Database\\Eloquent\\Factories\\Factory of trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/CharacterBiography.php
+
+		-
+			message: '#^PHPDoc tag @use has invalid type Database\\Factories\\CharacterBiographyVersionFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/CharacterBiographyVersion.php
+
+		-
+			message: '#^Type Database\\Factories\\CharacterBiographyVersionFactory in generic type Illuminate\\Database\\Eloquent\\Factories\\HasFactory\<Database\\Factories\\CharacterBiographyVersionFactory\> in PHPDoc tag @use is not subtype of template type TFactory of Illuminate\\Database\\Eloquent\\Factories\\Factory of trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/CharacterBiographyVersion.php
+
+		-
+			message: '#^Method App\\Models\\CharacterDiscipline\:\:discipline\(\) has invalid return type App\\Models\\Discipline\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/CharacterDiscipline.php
+
+		-
+			message: '#^Method App\\Models\\CharacterDiscipline\:\:discipline\(\) should return Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\<App\\Models\\Discipline, \$this\(App\\Models\\CharacterDiscipline\)\> but returns Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\<App\\Models\\CanonDiscipline, \$this\(App\\Models\\CharacterDiscipline\)\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/CharacterDiscipline.php
+
+		-
+			message: '#^PHPDoc tag @use has invalid type Database\\Factories\\CharacterDisciplineFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/CharacterDiscipline.php
+
+		-
+			message: '#^Type App\\Models\\Discipline in generic type Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\<App\\Models\\Discipline, \$this\(App\\Models\\CharacterDiscipline\)\> in PHPDoc tag @return is not subtype of template type TRelatedModel of Illuminate\\Database\\Eloquent\\Model of class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/CharacterDiscipline.php
+
+		-
+			message: '#^Type Database\\Factories\\CharacterDisciplineFactory in generic type Illuminate\\Database\\Eloquent\\Factories\\HasFactory\<Database\\Factories\\CharacterDisciplineFactory\> in PHPDoc tag @use is not subtype of template type TFactory of Illuminate\\Database\\Eloquent\\Factories\\Factory of trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/CharacterDiscipline.php
+
+		-
+			message: '#^Method App\\Models\\CharacterPower\:\:discipline\(\) has invalid return type App\\Models\\Discipline\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/CharacterPower.php
+
+		-
+			message: '#^Method App\\Models\\CharacterPower\:\:discipline\(\) should return Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\<App\\Models\\Discipline, \$this\(App\\Models\\CharacterPower\)\> but returns Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\<App\\Models\\CanonDiscipline, \$this\(App\\Models\\CharacterPower\)\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/CharacterPower.php
+
+		-
+			message: '#^Method App\\Models\\CharacterPower\:\:power\(\) has invalid return type App\\Models\\DisciplinePower\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/CharacterPower.php
+
+		-
+			message: '#^Method App\\Models\\CharacterPower\:\:power\(\) should return Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\<App\\Models\\DisciplinePower, \$this\(App\\Models\\CharacterPower\)\> but returns Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\<App\\Models\\CanonDisciplinePower, \$this\(App\\Models\\CharacterPower\)\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/CharacterPower.php
+
+		-
+			message: '#^PHPDoc tag @use has invalid type Database\\Factories\\CharacterPowerFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/CharacterPower.php
+
+		-
+			message: '#^Type App\\Models\\Discipline in generic type Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\<App\\Models\\Discipline, \$this\(App\\Models\\CharacterPower\)\> in PHPDoc tag @return is not subtype of template type TRelatedModel of Illuminate\\Database\\Eloquent\\Model of class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/CharacterPower.php
+
+		-
+			message: '#^Type App\\Models\\DisciplinePower in generic type Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\<App\\Models\\DisciplinePower, \$this\(App\\Models\\CharacterPower\)\> in PHPDoc tag @return is not subtype of template type TRelatedModel of Illuminate\\Database\\Eloquent\\Model of class Illuminate\\Database\\Eloquent\\Relations\\BelongsTo\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/CharacterPower.php
+
+		-
+			message: '#^Type Database\\Factories\\CharacterPowerFactory in generic type Illuminate\\Database\\Eloquent\\Factories\\HasFactory\<Database\\Factories\\CharacterPowerFactory\> in PHPDoc tag @use is not subtype of template type TFactory of Illuminate\\Database\\Eloquent\\Factories\\Factory of trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/CharacterPower.php
+
+		-
+			message: '#^PHPDoc tag @use has invalid type Database\\Factories\\ChronicleFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/Chronicle.php
+
+		-
+			message: '#^Type Database\\Factories\\ChronicleFactory in generic type Illuminate\\Database\\Eloquent\\Factories\\HasFactory\<Database\\Factories\\ChronicleFactory\> in PHPDoc tag @use is not subtype of template type TFactory of Illuminate\\Database\\Eloquent\\Factories\\Factory of trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/Chronicle.php
+
+		-
+			message: '#^PHPDoc tag @use has invalid type Database\\Factories\\GameSessionFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/GameSession.php
+
+		-
+			message: '#^Type Database\\Factories\\GameSessionFactory in generic type Illuminate\\Database\\Eloquent\\Factories\\HasFactory\<Database\\Factories\\GameSessionFactory\> in PHPDoc tag @use is not subtype of template type TFactory of Illuminate\\Database\\Eloquent\\Factories\\Factory of trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/GameSession.php
+
+		-
+			message: '#^PHPDoc tag @use has invalid type Database\\Factories\\LocationFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/Location.php
+
+		-
+			message: '#^Type Database\\Factories\\LocationFactory in generic type Illuminate\\Database\\Eloquent\\Factories\\HasFactory\<Database\\Factories\\LocationFactory\> in PHPDoc tag @use is not subtype of template type TFactory of Illuminate\\Database\\Eloquent\\Factories\\Factory of trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/Location.php
+
+		-
+			message: '#^PHPDoc tag @use has invalid type Database\\Factories\\MessageFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between int\<0, max\> and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: '#^Type Database\\Factories\\MessageFactory in generic type Illuminate\\Database\\Eloquent\\Factories\\HasFactory\<Database\\Factories\\MessageFactory\> in PHPDoc tag @use is not subtype of template type TFactory of Illuminate\\Database\\Eloquent\\Factories\\Factory of trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Models/Message.php
+
+		-
+			message: '#^PHPDoc tag @use has invalid type Database\\Factories\\SceneFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/Scene.php
+
+		-
+			message: '#^Type Database\\Factories\\SceneFactory in generic type Illuminate\\Database\\Eloquent\\Factories\\HasFactory\<Database\\Factories\\SceneFactory\> in PHPDoc tag @use is not subtype of template type TFactory of Illuminate\\Database\\Eloquent\\Factories\\Factory of trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/Scene.php
+
+		-
+			message: '#^PHPDoc tag @use has invalid type Database\\Factories\\SceneContextFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/SceneContext.php
+
+		-
+			message: '#^Type Database\\Factories\\SceneContextFactory in generic type Illuminate\\Database\\Eloquent\\Factories\\HasFactory\<Database\\Factories\\SceneContextFactory\> in PHPDoc tag @use is not subtype of template type TFactory of Illuminate\\Database\\Eloquent\\Factories\\Factory of trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/SceneContext.php
+
+		-
+			message: '#^PHPDoc tag @use has invalid type Database\\Factories\\SceneParticipantFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/SceneParticipant.php
+
+		-
+			message: '#^Type Database\\Factories\\SceneParticipantFactory in generic type Illuminate\\Database\\Eloquent\\Factories\\HasFactory\<Database\\Factories\\SceneParticipantFactory\> in PHPDoc tag @use is not subtype of template type TFactory of Illuminate\\Database\\Eloquent\\Factories\\Factory of trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/SceneParticipant.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Enums\\UserRole\:\:Storyteller will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Models/User.php
+
+		-
+			message: '#^Class App\\Models\\WorldEvent not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/WorldEntity.php
+
+		-
+			message: '#^Instanceof between string and App\\Enums\\WorldEntityType will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 2
+			path: app/Models/WorldEntity.php
+
+		-
+			message: '#^Instantiated class App\\Models\\CannotDeleteWorldEntityException not found\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/WorldEntity.php
+
+		-
+			message: '#^Method App\\Models\\WorldEntity\:\:event\(\) has invalid return type App\\Models\\WorldEvent\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/WorldEntity.php
+
+		-
+			message: '#^Method App\\Models\\WorldEntity\:\:event\(\) should return Illuminate\\Database\\Eloquent\\Relations\\HasOne\<App\\Models\\WorldEvent, \$this\(App\\Models\\WorldEntity\)\> but returns Illuminate\\Database\\Eloquent\\Relations\\HasOne\<Illuminate\\Database\\Eloquent\\Model, \$this\(App\\Models\\WorldEntity\)\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Models/WorldEntity.php
+
+		-
+			message: '#^PHPDoc tag @use has invalid type Database\\Factories\\WorldEntityFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/WorldEntity.php
+
+		-
+			message: '#^Parameter \#1 \$related of method Illuminate\\Database\\Eloquent\\Model\:\:hasOne\(\) expects class\-string\<Illuminate\\Database\\Eloquent\\Model\>, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Models/WorldEntity.php
+
+		-
+			message: '#^Throwing object of an unknown class App\\Models\\CannotDeleteWorldEntityException\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/WorldEntity.php
+
+		-
+			message: '#^Type App\\Models\\WorldEvent in generic type Illuminate\\Database\\Eloquent\\Relations\\HasOne\<App\\Models\\WorldEvent, \$this\(App\\Models\\WorldEntity\)\> in PHPDoc tag @return is not subtype of template type TRelatedModel of Illuminate\\Database\\Eloquent\\Model of class Illuminate\\Database\\Eloquent\\Relations\\HasOne\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/WorldEntity.php
+
+		-
+			message: '#^Type Database\\Factories\\WorldEntityFactory in generic type Illuminate\\Database\\Eloquent\\Factories\\HasFactory\<Database\\Factories\\WorldEntityFactory\> in PHPDoc tag @use is not subtype of template type TFactory of Illuminate\\Database\\Eloquent\\Factories\\Factory of trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/WorldEntity.php
+
+		-
+			message: '#^PHPDoc tag @use has invalid type Database\\Factories\\WorldEntityAliasFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/WorldEntityAlias.php
+
+		-
+			message: '#^Type Database\\Factories\\WorldEntityAliasFactory in generic type Illuminate\\Database\\Eloquent\\Factories\\HasFactory\<Database\\Factories\\WorldEntityAliasFactory\> in PHPDoc tag @use is not subtype of template type TFactory of Illuminate\\Database\\Eloquent\\Factories\\Factory of trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/WorldEntityAlias.php
+
+		-
+			message: '#^Instanceof between string and App\\Enums\\WorldEntityType will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: app/Models/WorldRelation.php
+
+		-
+			message: '#^PHPDoc tag @use has invalid type Database\\Factories\\WorldRelationFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/WorldRelation.php
+
+		-
+			message: '#^Type Database\\Factories\\WorldRelationFactory in generic type Illuminate\\Database\\Eloquent\\Factories\\HasFactory\<Database\\Factories\\WorldRelationFactory\> in PHPDoc tag @use is not subtype of template type TFactory of Illuminate\\Database\\Eloquent\\Factories\\Factory of trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/WorldRelation.php
+
+		-
+			message: '#^PHPDoc tag @use has invalid type Database\\Factories\\WorldRelationTypeFactory\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Models/WorldRelationType.php
+
+		-
+			message: '#^Parameter \#1 \$array \(array\{\}\|string\) to function array_values is empty, call has no effect\.$#'
+			identifier: arrayValues.empty
+			count: 2
+			path: app/Models/WorldRelationType.php
+
+		-
+			message: '#^Type Database\\Factories\\WorldRelationTypeFactory in generic type Illuminate\\Database\\Eloquent\\Factories\\HasFactory\<Database\\Factories\\WorldRelationTypeFactory\> in PHPDoc tag @use is not subtype of template type TFactory of Illuminate\\Database\\Eloquent\\Factories\\Factory of trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory\.$#'
+			identifier: generics.notSubtype
+			count: 1
+			path: app/Models/WorldRelationType.php
+
+		-
+			message: '#^Parameter \#1 \$array \(non\-empty\-list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: app/Rag/OllamaEmbeddingProvider.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Enums\\SceneStatus\:\:Closed will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Scene/SceneContextService.php
+
+		-
+			message: '#^Call to an undefined method App\\Models\\WorldEntity\:\:circle\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/World/WorldEntityService.php
+
+		-
+			message: '#^Call to an undefined method App\\Models\\WorldEntity\:\:coterie\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/World/WorldEntityService.php
+
+		-
+			message: '#^Call to an undefined method App\\World\\WorldEntityService\:\:assertSectFaction\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/World/WorldEntityService.php
+
+		-
+			message: '#^Call to static method query\(\) on an unknown class App\\World\\Location\.$#'
+			identifier: class.notFound
+			count: 2
+			path: app/World/WorldEntityService.php
+
+		-
+			message: '#^Instanceof between string and App\\Enums\\WorldEntityType will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 4
+			path: app/World/WorldEntityService.php
+
+		-
+			message: '#^Match arm comparison between App\\Enums\\WorldEntityType\:\:Circle and App\\Enums\\WorldEntityType\:\:Circle is always true\.$#'
+			identifier: match.alwaysTrue
+			count: 1
+			path: app/World/WorldEntityService.php
+
+		-
+			message: '#^Match arm comparison between string and App\\Enums\\WorldEntityType\:\:Character is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: app/World/WorldEntityService.php
+
+		-
+			message: '#^Match arm comparison between string and App\\Enums\\WorldEntityType\:\:Location is always false\.$#'
+			identifier: match.alwaysFalse
+			count: 1
+			path: app/World/WorldEntityService.php
+
+		-
+			message: '#^Method App\\World\\WorldEntityService\:\:renameEntity\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: app/World/WorldEntityService.php
+
+		-
+			message: '#^Method App\\World\\WorldEntityService\:\:updateSectFaction\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: app/World/WorldEntityService.php
+
+		-
+			message: '#^Offset ''auto_synced_sect…'' on string\|null on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/World/WorldEntityService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\WorldEntityStatus\:\:Active will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 3
+			path: app/World/WorldEntityService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between false and true will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/World/WorldEntityService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and App\\Enums\\WorldEntityType\:\:Character will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: app/World/WorldEntityService.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 3
+			path: app/World/WorldEntityService.php
+
+		-
+			message: '#^Instanceof between string and App\\Enums\\WorldEntityType will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 2
+			path: app/World/WorldRelationService.php
+
+		-
+			message: '#^Instantiated class App\\World\\WorldRelationException not found\.$#'
+			identifier: class.notFound
+			count: 2
+			path: app/World/WorldRelationService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\WorldEntityType\:\:Faction will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/World/WorldRelationService.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\WorldEntityType\:\:Location will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/World/WorldRelationService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string\|null and App\\Enums\\WorldEntityType\:\:Faction will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: app/World/WorldRelationService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string\|null and App\\Enums\\WorldEntityType\:\:Location will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: app/World/WorldRelationService.php
+
+		-
+			message: '#^Throwing object of an unknown class App\\World\\WorldRelationException\.$#'
+			identifier: class.notFound
+			count: 2
+			path: app/World/WorldRelationService.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 2
+			path: app/World/WorldRelationService.php
+
+		-
+			message: '#^Instanceof between string and App\\Enums\\WorldEntityType will always evaluate to false\.$#'
+			identifier: instanceof.alwaysFalse
+			count: 1
+			path: app/World/WorldRelationTypeValidator.php
+
+		-
+			message: '#^Instantiated class App\\World\\WorldRelationTypeException not found\.$#'
+			identifier: class.notFound
+			count: 3
+			path: app/World/WorldRelationTypeValidator.php
+
+		-
+			message: '#^Throwing object of an unknown class App\\World\\WorldRelationTypeException\.$#'
+			identifier: class.notFound
+			count: 3
+			path: app/World/WorldRelationTypeValidator.php
+
+		-
+			message: '#^Parameter \#1 \$view of function view expects view\-string\|null, string given\.$#'
+			identifier: argument.type
+			count: 1
+			path: routes/web.php

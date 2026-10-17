@@ -31,6 +31,10 @@
 2. `DiaryEntryController`: все сервисы и `EmbeddingProvider` — в конструктор с property promotion; `app(...)` удалить. Публичные сигнатуры action меняются только в части внедряемых параметров.
 3. `rg "app\(|resolve\(" app --glob '!app/Providers/**'` — перечислить оставшееся в отчёте (ожидаемо только `Message::booted`).
 4. (после решения) Перевести комментарии на выбранный язык. Комментарии, пересказывающие код, удалить.
+5. Починить 20 × generics.notSubtype в PHPDoc фабрик моделей
+  (типовой паттерн: @extends Factory<Model> → Factory<Model, Model>).
+  Это отдельная категория, не связана с World/enum, но входит в финальный
+  baseline ≤50.
 
 ## Definition of Done
 
