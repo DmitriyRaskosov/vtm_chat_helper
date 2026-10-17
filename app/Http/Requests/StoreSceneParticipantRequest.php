@@ -8,11 +8,6 @@ use Illuminate\Validation\Rule;
 
 class StoreSceneParticipantRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        return true;
-    }
-
     /**
      * @return array<string, mixed>
      */

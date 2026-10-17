@@ -6,11 +6,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class UpdateDiaryEntryRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        return (bool) $this->user()?->isStoryteller();
-    }
-
     /**
      * @return array<string, mixed>
      */

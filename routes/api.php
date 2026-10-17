@@ -12,6 +12,7 @@ use App\Http\Controllers\SceneContextController;
 use App\Http\Controllers\SceneController;
 use App\Http\Controllers\SceneParticipantController;
 use App\Models\Character;
+use App\Models\GameSession;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [RegisterController::class, 'store']);
@@ -55,21 +56,32 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::post('/copilot/drafts', [CopilotController::class, 'drafts']);
 
-    Route::middleware('storyteller')->group(function () {
-        Route::post('/game-sessions', [GameSessionController::class, 'store']);
+    Route::post('/game-sessions', [GameSessionController::class, 'store'])
+        ->can('create', GameSession::class);
 
-        Route::post('/game-sessions/{gameSession}/scenes', [SceneController::class, 'store']);
-        Route::patch('/scenes/{scene}/activate', [SceneController::class, 'activate']);
-        Route::patch('/scenes/{scene}/close', [SceneController::class, 'close']);
-        Route::put('/scenes/{scene}/context', [SceneContextController::class, 'update']);
-        Route::post('/scenes/{scene}/participants', [SceneParticipantController::class, 'store']);
-        Route::patch('/scenes/{scene}/participants/{character}', [SceneParticipantController::class, 'leave']);
+    Route::post('/game-sessions/{gameSession}/scenes', [SceneController::class, 'store']);
 
-        Route::get('/characters/{character}/diary', [DiaryEntryController::class, 'index']);
-        Route::post('/characters/{character}/diary/preview', [DiaryEntryController::class, 'preview']);
-        Route::get('/diary-entries/{diaryEntry}', [DiaryEntryController::class, 'show']);
-        Route::patch('/diary-entries/{diaryEntry}', [DiaryEntryController::class, 'update']);
-        Route::delete('/diary-entries/{diaryEntry}', [DiaryEntryController::class, 'destroy']);
-        Route::post('/diary-entries/{diaryEntry}/regenerate', [DiaryEntryController::class, 'regenerate']);
-    });
+    Route::patch('/scenes/{scene}/activate', [SceneController::class, 'activate'])
+        ->can('activate', 'scene');
+    Route::patch('/scenes/{scene}/close', [SceneController::class, 'close'])
+        ->can('close', 'scene');
+    Route::put('/scenes/{scene}/context', [SceneContextController::class, 'update'])
+        ->can('update', 'scene');
+    Route::post('/scenes/{scene}/participants', [SceneParticipantController::class, 'store'])
+        ->can('addParticipant', 'scene');
+    Route::patch('/scenes/{scene}/participants/{character}', [SceneParticipantController::class, 'leave'])
+        ->can('removeParticipant', 'scene');
+
+    Route::get('/characters/{character}/diary', [DiaryEntryController::class, 'index'])
+        ->can('viewDiary', 'character');
+    Route::post('/characters/{character}/diary/preview', [DiaryEntryController::class, 'preview'])
+        ->can('previewDiary', 'character');
+    Route::get('/diary-entries/{diaryEntry}', [DiaryEntryController::class, 'show'])
+        ->can('view', 'diaryEntry');
+    Route::patch('/diary-entries/{diaryEntry}', [DiaryEntryController::class, 'update'])
+        ->can('update', 'diaryEntry');
+    Route::delete('/diary-entries/{diaryEntry}', [DiaryEntryController::class, 'destroy'])
+        ->can('delete', 'diaryEntry');
+    Route::post('/diary-entries/{diaryEntry}/regenerate', [DiaryEntryController::class, 'regenerate'])
+        ->can('regenerate', 'diaryEntry');
 });

@@ -8,11 +8,6 @@ use Illuminate\Validation\Rule;
 
 class CopilotDraftsRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        return true;
-    }
-
     /**
      * @return array<string, mixed>
      */

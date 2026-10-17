@@ -72,6 +72,20 @@ class CharacterPolicy
         return $character->is_active;
     }
 
+    public function viewDiary(User $user, Character $character): Response|bool
+    {
+        return $user->isStoryteller()
+            ? true
+            : Response::deny('Только рассказчик.');
+    }
+
+    public function previewDiary(User $user, Character $character): Response|bool
+    {
+        return $user->isStoryteller()
+            ? true
+            : Response::deny('Только рассказчик.');
+    }
+
     private function denyUnlessManagesSheet(User $user, Character $character): Response|bool
     {
         if ($user->isStoryteller() || $character->isPlayableBy($user)) {

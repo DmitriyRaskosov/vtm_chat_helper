@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Character\Exceptions\InvalidCharacterInputException;
 use App\Http\Requests\CopilotDraftsRequest;
 use App\Http\Resources\CopilotDraftsResource;
 use App\Llm\CopilotDraftService;
@@ -26,7 +27,7 @@ class CopilotController extends Controller
         );
 
         $scene->loadMissing('gameSession');
-        $this->authorize('create', $scene);
+        $this->authorize('createCopilotDraft', $scene);
 
         [$characterId, $npcName] = $this->resolveNpcIdentity($request, $scene);
 
@@ -52,7 +53,9 @@ class CopilotController extends Controller
 
         $character->loadMissing('entity');
         $npcName = $character->entity?->canonical_name;
-        abort_if(! is_string($npcName) || $npcName === '', 422, 'NPC name is required.');
+        if (! is_string($npcName) || $npcName === '') {
+            throw new InvalidCharacterInputException('NPC name is required.');
+        }
 
         return [$character->id, $npcName];
     }

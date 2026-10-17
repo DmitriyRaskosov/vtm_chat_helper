@@ -6,12 +6,6 @@ use Illuminate\Foundation\Http\FormRequest;
 
 class PreviewDiaryRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        // Доступ управляется middleware storyteller на маршруте.
-        return true;
-    }
-
     /**
      * @return array<string, mixed>
      */

@@ -16,6 +16,8 @@ class SceneController extends Controller
 
     public function store(StoreSceneRequest $request, GameSession $gameSession): JsonResponse
     {
+        $this->authorize('create', [Scene::class, $gameSession]);
+
         $scene = $this->scenes->create(
             $gameSession,
             $request->validated('title'),
