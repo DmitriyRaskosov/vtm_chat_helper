@@ -20,14 +20,15 @@ class CharacterTraitService
             $sortOrder = 0;
 
             foreach ($traits as $row) {
-                $value = trim((string) ($row['value'] ?? ''));
+                $value = trim((string) $row['value']);
                 if ($value === '') {
                     continue;
                 }
 
                 $key = trim((string) ($row['key'] ?? ''));
                 if ($key === '') {
-                    $key = Str::slug((string) ($row['label'] ?? 'trait'));
+                    $labelForSlug = trim((string) $row['label']);
+                    $key = Str::slug($labelForSlug !== '' ? $labelForSlug : 'trait');
                     if ($key === '') {
                         continue;
                     }

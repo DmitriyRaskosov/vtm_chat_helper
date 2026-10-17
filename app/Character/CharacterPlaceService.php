@@ -7,8 +7,6 @@ use Illuminate\Support\Facades\DB;
 
 class CharacterPlaceService
 {
-    public function __construct(private CharacterIdentityService $identity) {}
-
     /**
      * @param  array{sect_id?: int|string|null, clan_id?: int|string|null, lore_clearance_levels?: list<int>}  $fields
      */

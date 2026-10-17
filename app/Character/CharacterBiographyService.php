@@ -131,7 +131,9 @@ class CharacterBiographyService
             'fears' => $biography?->fears,
             'desires' => $biography?->desires,
             'behavioral_rules' => $biography?->behavioral_rules,
-            'status' => $biography?->status ?? CharacterBiographyStatus::Draft,
+            'status' => $biography === null
+                ? CharacterBiographyStatus::Draft
+                : $biography->status,
         ];
 
         foreach (self::TEXT_FIELDS as $field) {

@@ -7,9 +7,30 @@ use App\Models\CanonDiscipline;
 use App\Models\Character;
 use App\Models\CharacterDiscipline;
 use App\Models\CharacterPower;
+use Illuminate\Support\Facades\DB;
 
 class DisciplineService
 {
+    /**
+     * @param  list<array{discipline_id: int|string, level: int|string}>  $rows
+     */
+    public function sync(Character $character, array $rows): void
+    {
+        DB::transaction(function () use ($character, $rows): void {
+            foreach ($rows as $row) {
+                $discipline = CanonDiscipline::query()->findOrFail((int) $row['discipline_id']);
+                $level = (int) $row['level'];
+                if ($level === 0) {
+                    $this->clearCharacterDiscipline($character, $discipline);
+
+                    continue;
+                }
+
+                $this->setCharacterDiscipline($character, $discipline, $level);
+            }
+        });
+    }
+
     public function setCharacterDiscipline(
         Character $character,
         CanonDiscipline $discipline,

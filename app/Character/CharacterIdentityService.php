@@ -84,7 +84,7 @@ class CharacterIdentityService
      */
     private function applyTyped(Character $character, array $typed): void
     {
-        if (isset($typed['clan_id']) && $typed['clan_id'] !== null
+        if (array_key_exists('clan_id', $typed) && $typed['clan_id'] !== null
             && ! CanonClan::query()->whereKey((int) $typed['clan_id'])->exists()) {
             throw new InvalidCharacterInputException('The selected clan does not exist.');
         }

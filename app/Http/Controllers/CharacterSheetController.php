@@ -3,7 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Character\CharacterAccess;
+use App\Character\CharacterArchiveService;
 use App\Character\CharacterBiographyService;
+use App\Character\CharacterCatalog;
+use App\Character\CharacterCreationService;
 use App\Character\CharacterIdentityService;
 use App\Character\CharacterPlaceService;
 use App\Character\CharacterSheetReader;
@@ -13,98 +16,37 @@ use App\Character\Exceptions\BiographyUnchangedException;
 use App\Chronicle\CurrentChronicle;
 use App\Enums\CharacterBiographyStatus;
 use App\Enums\CharacterType;
-use App\Enums\WorldEntityType;
 use App\Http\Requests\StoreCharacterRequest;
 use App\Http\Requests\UpdateCharacterBiographyRequest;
 use App\Http\Requests\UpdateCharacterDisciplinesRequest;
 use App\Http\Requests\UpdateCharacterIdentityRequest;
 use App\Http\Requests\UpdateCharacterPlaceRequest;
 use App\Http\Requests\UpdateCharacterTraitsRequest;
-use App\Models\CanonClan;
-use App\Models\CanonDiscipline;
-use App\Models\CanonSect;
 use App\Models\Character;
 use App\Models\SceneParticipant;
-use App\Models\WorldEntity;
 use App\Scene\ActiveSceneResolver;
-use App\Scene\SceneParticipantService;
-use App\World\WorldEntityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class CharacterSheetController extends Controller
 {
     public function __construct(
         private CharacterSheetReader $reader,
-        private WorldEntityService $entities,
+        private CharacterCatalog $catalog,
+        private CharacterCreationService $creation,
+        private CharacterArchiveService $archiveService,
         private CharacterIdentityService $identity,
         private DisciplineService $disciplines,
         private CharacterBiographyService $biographies,
         private CharacterPlaceService $place,
         private CharacterTraitService $traits,
-        private SceneParticipantService $participants,
         private CurrentChronicle $currentChronicle,
         private ActiveSceneResolver $activeSceneResolver,
     ) {}
 
     public function catalog(): JsonResponse
     {
-        $disciplines = CanonDiscipline::query()
-            ->orderBy('name')
-            ->get(['id', 'slug', 'name', 'description', 'is_common'])
-            ->map(fn (CanonDiscipline $row): array => [
-                'id' => (int) $row->id,
-                'slug' => $row->slug,
-                'name' => $row->name,
-                'description' => $row->description,
-                'is_common' => (bool) $row->is_common,
-            ])
-            ->values();
-
-        $clans = CanonClan::query()
-            ->where('is_playable', true)
-            ->where('is_bloodline', false)
-            ->orderBy('name')
-            ->get(['id', 'slug', 'name', 'nickname'])
-            ->map(fn (CanonClan $row): array => [
-                'id' => (int) $row->id,
-                'slug' => $row->slug,
-                'name' => $row->name,
-                'nickname' => $row->nickname,
-            ])
-            ->values();
-
-        $bloodlines = CanonClan::query()
-            ->where('is_playable', true)
-            ->where('is_bloodline', true)
-            ->orderBy('name')
-            ->get(['id', 'slug', 'name', 'nickname', 'parent_clan_id'])
-            ->map(fn (CanonClan $row): array => [
-                'id' => (int) $row->id,
-                'slug' => $row->slug,
-                'name' => $row->name,
-                'nickname' => $row->nickname,
-                'parent_clan_id' => $row->parent_clan_id === null ? null : (int) $row->parent_clan_id,
-            ])
-            ->values();
-
-        $sects = CanonSect::query()
-            ->orderBy('name')
-            ->get(['id', 'slug', 'name'])
-            ->map(fn (CanonSect $row): array => [
-                'id' => (int) $row->id,
-                'slug' => $row->slug,
-                'name' => $row->name,
-            ])
-            ->values();
-
-        return response()->json([
-            'disciplines' => $disciplines,
-            'clans' => $clans,
-            'bloodlines' => $bloodlines,
-            'sects' => $sects,
-        ]);
+        return response()->json($this->catalog->load()->toArray());
     }
 
     public function index(Request $request): JsonResponse
@@ -146,41 +88,9 @@ class CharacterSheetController extends Controller
 
     public function store(StoreCharacterRequest $request): JsonResponse
     {
-        $validated = $request->validated();
+        $character = $this->creation->create($request->validated());
 
-        return DB::transaction(function () use ($validated) {
-            $chronicle = $this->currentChronicle->get();
-
-            $typed = [
-                'character_type' => CharacterType::from($validated['character_type']),
-            ];
-
-            if (isset($validated['user_id'])) {
-                $typed['user_id'] = (int) $validated['user_id'];
-            }
-            if (isset($validated['clan_id'])) {
-                $typed['clan_id'] = (int) $validated['clan_id'];
-            }
-            if (isset($validated['sire_character_id'])) {
-                $typed['sire_character_id'] = (int) $validated['sire_character_id'];
-            }
-            foreach (['generation', 'nature', 'demeanor', 'concept'] as $field) {
-                if (array_key_exists($field, $validated)) {
-                    $typed[$field] = $validated[$field];
-                }
-            }
-
-            $entity = $this->entities->create(
-                $chronicle,
-                WorldEntityType::Character,
-                $validated['canonical_name'],
-                typed: $typed,
-            );
-
-            $character = Character::query()->findOrFail($entity->id);
-
-            return response()->json(['character' => $this->reader->aggregate($character)], 201);
-        });
+        return response()->json(['character' => $this->reader->aggregate($character)], 201);
     }
 
     public function show(Request $request, Character $character): JsonResponse
@@ -203,19 +113,7 @@ class CharacterSheetController extends Controller
     {
         CharacterAccess::abortUnlessManagesSheet($request->user(), $character);
 
-        DB::transaction(function () use ($request, $character): void {
-            foreach ($request->validated('disciplines') as $row) {
-                $discipline = CanonDiscipline::query()->findOrFail((int) $row['discipline_id']);
-                $level = (int) $row['level'];
-                if ($level === 0) {
-                    $this->disciplines->clearCharacterDiscipline($character, $discipline);
-
-                    continue;
-                }
-
-                $this->disciplines->setCharacterDiscipline($character, $discipline, $level);
-            }
-        });
+        $this->disciplines->sync($character, $request->validated('disciplines'));
 
         return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
     }
@@ -255,23 +153,21 @@ class CharacterSheetController extends Controller
     {
         CharacterAccess::abortUnlessManagesSheet($request->user(), $character);
 
-        return DB::transaction(function () use ($request, $character) {
-            $this->place->apply($character, $request->validated());
+        $this->place->apply($character, $request->validated());
 
-            return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
-        });
+        return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
     }
 
     public function archive(Character $character): JsonResponse
     {
-        $this->hideCharacter($character);
+        $this->archiveService->archive($character);
 
         return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
     }
 
     public function restore(Character $character): JsonResponse
     {
-        $this->restoreCharacter($character);
+        $this->archiveService->restore($character);
 
         return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
     }
@@ -334,18 +230,5 @@ class CharacterSheetController extends Controller
             'character_type' => $character->character_type->value,
             'user_id' => $character->user_id === null ? null : (int) $character->user_id,
         ])->values()->all();
-    }
-
-    private function hideCharacter(Character $character): void
-    {
-        $entity = WorldEntity::query()->findOrFail($character->id);
-        $this->entities->archive($entity);
-        $this->participants->leaveMutableScenes($character->refresh());
-    }
-
-    private function restoreCharacter(Character $character): void
-    {
-        $entity = WorldEntity::query()->findOrFail($character->id);
-        $this->entities->restore($entity);
     }
 }
