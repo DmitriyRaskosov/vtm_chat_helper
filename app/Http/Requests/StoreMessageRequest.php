@@ -2,7 +2,6 @@
 
 namespace App\Http\Requests;
 
-use App\Character\CharacterAccess;
 use App\Enums\CharacterType;
 use App\Models\Character;
 use Illuminate\Foundation\Http\FormRequest;
@@ -10,21 +9,6 @@ use Illuminate\Validation\Rule;
 
 class StoreMessageRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        if (! $this->filled('character_id')) {
-            return true;
-        }
-
-        $character = Character::query()->find($this->integer('character_id'));
-
-        if ($character === null) {
-            return true;
-        }
-
-        return CharacterAccess::canSpeakAs($this->user(), $character);
-    }
-
     /**
      * @return array<string, mixed>
      */

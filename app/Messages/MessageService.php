@@ -2,12 +2,10 @@
 
 namespace App\Messages;
 
-use App\Character\CharacterSceneGuard;
 use App\Diary\DiaryScheduler;
 use App\Enums\CharacterType;
 use App\Messages\Exceptions\CopilotDraftNotFoundException;
 use App\Messages\Exceptions\CopilotRequestAlreadyUsedException;
-use App\Messages\Exceptions\CopilotRequestForbiddenException;
 use App\Messages\Exceptions\CopilotRequestMismatchException;
 use App\Models\Character;
 use App\Models\CopilotRequest;
@@ -19,10 +17,7 @@ use Illuminate\Support\Facades\DB;
 
 final class MessageService
 {
-    public function __construct(
-        private CharacterSceneGuard $characterSceneGuard,
-        private DiaryScheduler $diaryScheduler,
-    ) {}
+    public function __construct(private DiaryScheduler $diaryScheduler) {}
 
     /**
      * @return Collection<int, Message>
@@ -53,7 +48,6 @@ final class MessageService
         }
 
         $character = Character::query()->findOrFail($characterId);
-        $this->characterSceneGuard->assertUsableIn($character, $scene);
 
         if ($character->character_type === CharacterType::Npc) {
             $character->loadMissing('entity');
@@ -88,10 +82,6 @@ final class MessageService
 
             if ($copilotRequest->message()->exists()) {
                 throw new CopilotRequestAlreadyUsedException;
-            }
-
-            if ((int) $copilotRequest->storyteller_id !== (int) $user->id) {
-                throw new CopilotRequestForbiddenException;
             }
 
             if ($copilotRequest->scene_id !== $scene->id

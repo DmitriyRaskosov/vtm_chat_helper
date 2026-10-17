@@ -8,11 +8,6 @@ use Illuminate\Validation\Rule;
 
 class StoreCharacterRequest extends FormRequest
 {
-    public function authorize(): bool
-    {
-        return (bool) $this->user()?->isStoryteller();
-    }
-
     /**
      * @return array<string, mixed>
      */

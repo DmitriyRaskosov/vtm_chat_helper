@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Character\CharacterSceneGuard;
 use App\Http\Requests\CopilotDraftsRequest;
+use App\Http\Resources\CopilotDraftsResource;
 use App\Llm\CopilotDraftService;
 use App\Models\Character;
 use App\Models\Scene;
@@ -14,7 +14,6 @@ class CopilotController extends Controller
 {
     public function __construct(
         private ActiveSceneResolver $activeSceneResolver,
-        private CharacterSceneGuard $characterSceneGuard,
         private CopilotDraftService $copilotDrafts,
     ) {}
 
@@ -27,6 +26,8 @@ class CopilotController extends Controller
         );
 
         $scene->loadMissing('gameSession');
+        $this->authorize('create', $scene);
+
         [$characterId, $npcName] = $this->resolveNpcIdentity($request, $scene);
 
         $created = $this->copilotDrafts->create(
@@ -37,10 +38,7 @@ class CopilotController extends Controller
             $characterId,
         );
 
-        return response()->json([
-            'copilot_request_id' => $created->copilotRequestId,
-            'drafts' => $created->drafts,
-        ]);
+        return response()->json((new CopilotDraftsResource($created))->toArray($request));
     }
 
     /**
@@ -50,7 +48,7 @@ class CopilotController extends Controller
     {
         $characterId = (int) $request->validated('character_id');
         $character = Character::query()->findOrFail((int) $characterId);
-        $this->characterSceneGuard->assertUsableIn($character, $scene);
+        $this->authorize('viewInScene', [$character, $scene]);
 
         $character->loadMissing('entity');
         $npcName = $character->entity?->canonical_name;

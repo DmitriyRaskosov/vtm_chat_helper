@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Character\CharacterAccess;
 use App\Character\CharacterArchiveService;
 use App\Character\CharacterBiographyService;
 use App\Character\CharacterCatalog;
@@ -11,6 +10,7 @@ use App\Character\CharacterIdentityService;
 use App\Character\CharacterPlaceService;
 use App\Character\CharacterSheetReader;
 use App\Character\CharacterTraitService;
+use App\Character\CharacterVisibility;
 use App\Character\DisciplineService;
 use App\Character\Exceptions\BiographyUnchangedException;
 use App\Chronicle\CurrentChronicle;
@@ -25,8 +25,6 @@ use App\Http\Requests\UpdateCharacterTraitsRequest;
 use App\Http\Resources\CharacterResource;
 use App\Http\Resources\CharacterSheetResource;
 use App\Models\Character;
-use App\Models\SceneParticipant;
-use App\Scene\ActiveSceneResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -43,7 +41,7 @@ class CharacterSheetController extends Controller
         private CharacterPlaceService $place,
         private CharacterTraitService $traits,
         private CurrentChronicle $currentChronicle,
-        private ActiveSceneResolver $activeSceneResolver,
+        private CharacterVisibility $visibility,
     ) {}
 
     public function catalog(): JsonResponse
@@ -71,7 +69,7 @@ class CharacterSheetController extends Controller
                 return response()->json(['characters' => [], 'archived' => []]);
             }
 
-            $query->whereIn('id', $this->visibleCharacterIdsForPlayer($chronicleId, (int) $pcId));
+            $query->whereIn('id', $this->visibility->visibleIdsForPlayer($chronicleId, (int) $pcId));
         }
 
         $characters = $query->with('entity')->orderBy('id')->get();
@@ -93,6 +91,8 @@ class CharacterSheetController extends Controller
 
     public function store(StoreCharacterRequest $request): JsonResponse
     {
+        $this->authorize('create', Character::class);
+
         $character = $this->creation->create($request->validated());
 
         return response()->json([
@@ -102,7 +102,7 @@ class CharacterSheetController extends Controller
 
     public function show(Request $request, Character $character): JsonResponse
     {
-        CharacterAccess::abortUnlessManagesSheet($request->user(), $character);
+        $this->authorize('view', $character);
 
         return response()->json([
             'character' => (new CharacterSheetResource($character, $this->reader))->toArray($request),
@@ -111,7 +111,7 @@ class CharacterSheetController extends Controller
 
     public function update(UpdateCharacterIdentityRequest $request, Character $character): JsonResponse
     {
-        CharacterAccess::abortUnlessManagesSheet($request->user(), $character);
+        $this->authorize('update', $character);
 
         $this->identity->update($character, $request->validated());
 
@@ -122,7 +122,7 @@ class CharacterSheetController extends Controller
 
     public function updateDisciplines(UpdateCharacterDisciplinesRequest $request, Character $character): JsonResponse
     {
-        CharacterAccess::abortUnlessManagesSheet($request->user(), $character);
+        $this->authorize('update', $character);
 
         $this->disciplines->sync($character, $request->validated('disciplines'));
 
@@ -133,7 +133,7 @@ class CharacterSheetController extends Controller
 
     public function updateBiography(UpdateCharacterBiographyRequest $request, Character $character): JsonResponse
     {
-        CharacterAccess::abortUnlessManagesSheet($request->user(), $character);
+        $this->authorize('update', $character);
 
         $fields = [
             ...$request->validated(),
@@ -157,7 +157,7 @@ class CharacterSheetController extends Controller
 
     public function updateTraits(UpdateCharacterTraitsRequest $request, Character $character): JsonResponse
     {
-        CharacterAccess::abortUnlessManagesSheet($request->user(), $character);
+        $this->authorize('update', $character);
 
         $this->traits->sync($character, $request->validated('traits') ?? []);
 
@@ -168,7 +168,8 @@ class CharacterSheetController extends Controller
 
     public function updatePlace(UpdateCharacterPlaceRequest $request, Character $character): JsonResponse
     {
-        CharacterAccess::abortUnlessManagesSheet($request->user(), $character);
+        $this->authorize('updatePlace', $character);
+        $this->authorize('update', $character);
 
         $this->place->apply($character, $request->validated());
 
@@ -179,6 +180,8 @@ class CharacterSheetController extends Controller
 
     public function archive(Request $request, Character $character): JsonResponse
     {
+        $this->authorize('archive', $character);
+
         $this->archiveService->archive($character);
 
         return response()->json([
@@ -188,33 +191,12 @@ class CharacterSheetController extends Controller
 
     public function restore(Request $request, Character $character): JsonResponse
     {
+        $this->authorize('restore', $character);
+
         $this->archiveService->restore($character);
 
         return response()->json([
             'character' => (new CharacterSheetResource($character->refresh(), $this->reader))->toArray($request),
         ]);
-    }
-
-    /**
-     * @return list<int>
-     */
-    private function visibleCharacterIdsForPlayer(int $chronicleId, int $pcId): array
-    {
-        $visibleIds = [$pcId];
-
-        $activeScene = $this->activeSceneResolver->activeOrNull();
-
-        if ($activeScene === null) {
-            return $visibleIds;
-        }
-
-        $participantIds = SceneParticipant::query()
-            ->where('scene_id', $activeScene->id)
-            ->where('is_current', true)
-            ->pluck('character_id')
-            ->map(fn ($id) => (int) $id)
-            ->all();
-
-        return array_values(array_unique([...$visibleIds, ...$participantIds]));
     }
 }

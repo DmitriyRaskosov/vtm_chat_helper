@@ -11,6 +11,7 @@ use App\Http\Controllers\GameSessionController;
 use App\Http\Controllers\SceneContextController;
 use App\Http\Controllers\SceneController;
 use App\Http\Controllers\SceneParticipantController;
+use App\Models\Character;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [RegisterController::class, 'store']);
@@ -33,24 +34,29 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/characters', [CharacterSheetController::class, 'index']);
     Route::get('/characters/{character}', [CharacterSheetController::class, 'show']);
 
+    Route::post('/characters', [CharacterSheetController::class, 'store'])
+        ->can('create', Character::class);
+
     Route::patch('/characters/{character}', [CharacterSheetController::class, 'update']);
     Route::put('/characters/{character}/disciplines', [CharacterSheetController::class, 'updateDisciplines']);
 
     Route::put('/characters/{character}/biography', [CharacterSheetController::class, 'updateBiography']);
     Route::put('/characters/{character}/traits', [CharacterSheetController::class, 'updateTraits']);
 
+    Route::post('/characters/{character}/archive', [CharacterSheetController::class, 'archive'])
+        ->can('archive', 'character');
+    Route::post('/characters/{character}/restore', [CharacterSheetController::class, 'restore'])
+        ->can('restore', 'character');
+    Route::put('/characters/{character}/place', [CharacterSheetController::class, 'updatePlace'])
+        ->can('updatePlace', 'character');
+
     Route::get('/scenes/{scene}/context', [SceneContextController::class, 'show']);
     Route::get('/scenes/{scene}/participants', [SceneParticipantController::class, 'index']);
 
-    Route::post('/copilot/drafts', [CopilotController::class, 'drafts'])->middleware('storyteller');
+    Route::post('/copilot/drafts', [CopilotController::class, 'drafts']);
 
     Route::middleware('storyteller')->group(function () {
         Route::post('/game-sessions', [GameSessionController::class, 'store']);
-        Route::post('/characters', [CharacterSheetController::class, 'store']);
-
-        Route::post('/characters/{character}/archive', [CharacterSheetController::class, 'archive']);
-        Route::post('/characters/{character}/restore', [CharacterSheetController::class, 'restore']);
-        Route::put('/characters/{character}/place', [CharacterSheetController::class, 'updatePlace']);
 
         Route::post('/game-sessions/{gameSession}/scenes', [SceneController::class, 'store']);
         Route::patch('/scenes/{scene}/activate', [SceneController::class, 'activate']);

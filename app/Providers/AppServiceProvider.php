@@ -4,8 +4,12 @@ namespace App\Providers;
 
 use App\Llm\ChatProvider;
 use App\Llm\DeepSeekChatProvider;
+use App\Models\CopilotRequest;
+use App\Models\Scene;
+use App\Policies\CopilotPolicy;
 use App\Rag\EmbeddingProvider;
 use App\Rag\OllamaEmbeddingProvider;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -29,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        //
+        Gate::policy(Scene::class, CopilotPolicy::class);
+        Gate::policy(CopilotRequest::class, CopilotPolicy::class);
     }
 }
