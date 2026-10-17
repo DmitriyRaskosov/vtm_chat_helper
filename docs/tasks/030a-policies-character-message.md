@@ -37,6 +37,8 @@
 - `app/Http/Requests/{StoreMessage,StoreCharacter,UpdateCharacterPlace,UpdateCharacterIdentity,UpdateCharacterBiography,UpdateCharacterDisciplines,UpdateCharacterTraits}Request.php` — удалить `authorize()`
 - `routes/api.php` — маршруты персонажей: `storyteller` → `->can(...)`
 - `tests/Feature/CharacterAuthorizationTest.php`, `MessageAuthorizationTest.php` (создать), существующие тесты
+- `CopilotRequestForbiddenException` (025b, 403) → `MessagePolicy::create` (или `CopilotPolicy`). После переноса удалить исключение.
+- `visibleCharacterIdsForPlayer` (026, приватный метод контроллера) → `CharacterPolicy::viewAny` + scope запроса. После переноса удалить метод.
 
 **Out of scope:** сцены, сессии, дневник, Copilot drafts, удаление `EnsureStoryteller` (030b); полная матрица (030c); членство в хронике (этап 3).
 
@@ -63,6 +65,7 @@
 ## Definition of Done
 
 - [ ] `rg 'CharacterAccess|CharacterSceneGuard|AccessDeniedHttpException' app/` → пусто (кроме допустимых комментариев)
+- [ ] `rg 'CharacterAccess|CharacterSceneGuard|CopilotRequestForbiddenException|visibleCharacterIdsForPlayer' app/` — пусто (кроме комментариев)
 - [ ] `rg "function authorize" app/Http/Requests -g "{StoreMessage,StoreCharacter,UpdateCharacter*}Request.php"` → пусто
 - [ ] коды и тексты 403 из шага 1 не изменились; `CharacterVisibilityTest` зелёный без правок
 - [ ] `sail artisan test` — зелёные; `sail pint --test` — чисто; phpstan — OK, baseline не вырос

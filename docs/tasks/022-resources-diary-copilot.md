@@ -17,6 +17,7 @@
 - `index` → `{character_id, entries: [...]}`; `show/update/regenerate` → `{entry: {...}}`.
 - Copilot (после 024a) → `{copilot_request_id, drafts}` из DTO сервиса.
 - **Превью дневника (`POST /characters/{id}/diary/preview`) исключено:** его форма формируется в `App\Context\DiaryPreviewService` (перенесён в 029) и остаётся массивом сервиса.
+- `DiaryPreviewService` перенесён в `App\Context` (029) — если в задаче есть ссылки на `App\Diary\DiaryPreviewService`, обновить на `App\Context`. Форма ответа preview (`selected`, `rendered`, `stats`) не должна измениться.
 
 ## Scope
 
@@ -24,6 +25,8 @@
 - `app/Http/Controllers/DiaryEntryController.php` — только `index/show/update/regenerate`
 - `app/Http/Controllers/CopilotController.php` — только сериализация
 - `tests/Feature/DiaryJsonShapeTest.php` (создать), `tests/Feature/CopilotTest.php`
+- `DiaryEntryController::serializeList` / `serializeFull` → `DiaryEntryResource`.
+- `CopilotController`: ответ `CopilotDraftService` → `CopilotDraftResource`.
 
 **Out of scope:** `preview` и `DiaryPreviewService`; изменение полей; авторизация.
 

@@ -17,6 +17,7 @@
 - Сейчас: `index` → `{characters: [listItem], archived: [...]}`, `listItem` и `archivedList` дублируют одинаковый набор полей (`id`, `canonical_name`, `character_type`, `user_id`); `show/update/updateDisciplines/updateBiography/updateTraits/updatePlace/archive/restore/store` → `{character: CharacterSheetReader::aggregate(...)}`; `catalog` → `{disciplines, clans, bloodlines, sects}`.
 - После 023 имя — через связь `entity` (eager load); после 026 каталог — из `CharacterCatalog`.
 - Единственный существующий Resource — `UserResource` (образец стиля).
+- В 025b создан `app/Http/Resources/MessageResource` как заготовка (для списка сообщений). Использовать его как образец стиля Resource (зритель передаётся явно, `auth()` внутри Resource запрещён). В 020 — `CharacterResource` по образцу `MessageResource`.
 
 ## Scope
 
@@ -24,6 +25,8 @@
 - `app/Http/Controllers/CharacterSheetController.php` — только сериализация
 - `app/Character/CharacterSheetReader.php` — только если `aggregate` нужно вернуть DTO для Resource (форма не меняется)
 - `tests/Feature/CharacterJsonShapeTest.php` (создать)
+- `CharacterSheetController::listItem` / `archivedList` → `CharacterResource`.
+- `CharacterSheetController::visibleCharacterIdsForPlayer` — оставить до 030a (Policy).
 
 **Out of scope:** изменение полей ответа; фронт; авторизация; `wrap` по умолчанию у Resource — отключить или использовать так, чтобы ключи `character`/`characters` остались прежними.
 

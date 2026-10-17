@@ -27,6 +27,7 @@
 - `app/Http/Controllers/*` — только вызовы `Gate::authorize`, если ability нельзя выразить на маршруте
 - `app/Http/Controllers/CopilotController.php` — `abort_if` (пустое имя NPC, 422) заменить на `InvalidInputException` или валидацию в `CopilotDraftsRequest`. Убрать последний `abort` из контроллера.
 - `tests/Feature/*AuthorizationTest.php`
+- `SceneParticipantService::leaveMutableScenes` — если после 030a меняется путь проверки (`ConflictException` vs Policy-403), обновить catch. Тест «архивация в закрытой сцене → 200» должен остаться зелёным.
 
 **Out of scope:** маршруты, открытые всем авторизованным (Policy `view` = `true` с комментарием `// этап 3: членство в хронике`); `ChroniclePolicy` (нет маршрутов хроники — этап 3); фронт.
 

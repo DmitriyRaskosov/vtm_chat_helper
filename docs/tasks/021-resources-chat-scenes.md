@@ -17,6 +17,7 @@
 - `mine` и `author` зависят от **зрителя**: сейчас `auth()->id()` и `isPlayableBy($user)` внутри lookup. В Resource `auth()` не используется — зритель передаётся явно.
 - `GameSessionController::serialize` (сессия + сцены + `active_scene_id`), `SceneController::serialize`, `SceneContextController::serialize` (`location_name`, `revision`, `frozen_revision`), `SceneParticipantController::serialize` (`character_name`, `character_type`, `user_id`, `role`, …).
 - После 023 имена — через связь; после 025b/026a контроллеры тонкие.
+- `MessageResource` уже создан в 025b (тонкий `ChatController` уже отдаёт через него). В 021 — `SceneResource`, `GameSessionResource`, `SceneContextResource`, `SceneParticipantResource`. Не менять `MessageResource` без необходимости.
 
 ## Scope
 
@@ -32,6 +33,7 @@
 2. `MessageResource` принимает зрителя явно: конструктор/`additional(['viewer' => ...])`/фабричный метод — выбрать один способ и обосновать. `auth()`, `request()->user()` внутри Resource запрещены.
 3. Остальные Resources — с теми же ключами и форматами дат (`toISOString()` где был он).
 4. Удалить приватные `serialize` и `characterLookup`/`lookupIsNpcLike`, если их работу взял Resource + eager load.
+5. Проверить `serialize()` в `SceneController`, `GameSessionController`, `SceneContextController`, `SceneParticipantController` — форма JSON не должна измениться, все поля сохранить.
 
 ## Definition of Done
 
