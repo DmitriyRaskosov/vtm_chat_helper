@@ -2,7 +2,7 @@
 
 - **Stage:** 2
 - **Part:** 2
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 031
 - **Risk:** med
 - **Разрешённые зависимости:** нет

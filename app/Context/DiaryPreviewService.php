@@ -1,10 +1,9 @@
 <?php
 
-namespace App\Diary;
+namespace App\Context;
 
-use App\Context\DiaryRenderer;
-use App\Context\LineTrimmer;
-use App\Context\TokenEstimator;
+use App\Diary\DiaryRetrievalService;
+use App\Enums\DiaryEmotion;
 use App\Models\Character;
 use App\Models\CharacterDiaryEntry;
 use App\Models\Message;
@@ -56,10 +55,12 @@ final class DiaryPreviewService
 
     private function resolveRecentFirstMessageId(int $sceneId): ?int
     {
+        $historyLimit = (int) config('copilot.history_limit');
+
         $id = Message::query()
             ->where('scene_id', $sceneId)
             ->orderByDesc('id')
-            ->limit((int) config('copilot.history_limit', 15))
+            ->limit($historyLimit)
             ->pluck('id')
             ->min();
 
@@ -76,6 +77,8 @@ final class DiaryPreviewService
         $isFirst = true;
 
         foreach ($entries as $e) {
+            $emotion = $e->getAttribute('emotion');
+
             $out[] = [
                 'id' => (int) $e->id,
                 'level' => (int) $e->level,
@@ -86,7 +89,7 @@ final class DiaryPreviewService
                 'label' => DiaryRenderer::labelFor($e, $isFirst),
                 'excerpt' => mb_substr(trim((string) $e->entry), 0, 200),
                 'importance' => $e->importance === null ? null : (float) $e->importance,
-                'emotion' => $e->emotion?->value,
+                'emotion' => $emotion instanceof DiaryEmotion ? $emotion->value : null,
             ];
             $isFirst = false;
         }

@@ -2,9 +2,10 @@
 
 namespace App\Models;
 
-use App\Context\TokenEstimator;
+use App\Observers\MessageObserver;
 use Database\Factories\MessageFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,6 +25,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'token_estimator_version',
     'is_ooc',
 ])]
+#[ObservedBy(MessageObserver::class)]
 class Message extends Model
 {
     /** @use HasFactory<MessageFactory> */
@@ -48,7 +50,7 @@ class Message extends Model
             return $this->npc_name;
         }
 
-        return $this->user?->name ?? 'Аноним';
+        return $this->user->name ?? 'Аноним';
     }
 
     public function isOoc(): bool
@@ -86,19 +88,6 @@ class Message extends Model
     public function copilotRequest(): BelongsTo
     {
         return $this->belongsTo(CopilotRequest::class);
-    }
-
-    protected static function booted(): void
-    {
-        static::saving(function (Message $message): void {
-            if (! $message->isDirty('body') && $message->token_estimate !== null) {
-                return;
-            }
-
-            $estimator = app(TokenEstimator::class);
-            $message->token_estimate = $estimator->estimate((string) $message->body);
-            $message->token_estimator_version = $estimator->version();
-        });
     }
 
     protected function casts(): array

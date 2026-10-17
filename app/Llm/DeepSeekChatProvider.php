@@ -5,7 +5,7 @@ namespace App\Llm;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
 
-class DeepseekChatProvider implements ChatProvider
+class DeepSeekChatProvider implements ChatProvider
 {
     public function __construct(
         private ?string $chatModel = null,

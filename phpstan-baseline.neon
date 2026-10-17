@@ -49,27 +49,6 @@ parameters:
 			count: 1
 			path: app/Context/Providers/DirectRelationsProvider.php
 
-		# debt: 029 — перенос DiaryPreviewService в Context, типы enum
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 1
-			path: app/Diary/DiaryPreviewService.php
-
-		# debt: 029 — сравнение id с null в Message (observer)
-		-
-			message: '#^Strict comparison using \!\=\= between int\<0, max\> and null will always evaluate to true\.$#'
-			identifier: notIdentical.alwaysTrue
-			count: 1
-			path: app/Models/Message.php
-
-		# debt: 029 — лишний nullsafe name в Message
-		-
-			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Models/Message.php
-
 		# exception: array_values на уже list в OllamaEmbeddingProvider
 		-
 			message: '#^Parameter \#1 \$array \(non\-empty\-list\<string\>\) of array_values is already a list, call has no effect\.$#'

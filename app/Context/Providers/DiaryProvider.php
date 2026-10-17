@@ -12,8 +12,6 @@ use App\Models\Message;
 
 class DiaryProvider implements ContextProvider
 {
-    private const LIMIT = 3;
-
     public function __construct(
         private TokenEstimator $estimator,
         private LineTrimmer $trimmer,
@@ -39,7 +37,7 @@ class DiaryProvider implements ContextProvider
             $entries = $this->diary->retrieve(
                 $character,
                 $query,
-                self::LIMIT,
+                DiaryRetrievalService::MAX_ENTRIES,
                 $recentFirstMessageId,
                 (int) $assembly->scene->id,
             );

@@ -3,7 +3,7 @@
 namespace App\Providers;
 
 use App\Llm\ChatProvider;
-use App\Llm\DeepseekChatProvider;
+use App\Llm\DeepSeekChatProvider;
 use App\Rag\EmbeddingProvider;
 use App\Rag\OllamaEmbeddingProvider;
 use Illuminate\Support\ServiceProvider;
@@ -14,7 +14,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->singleton(ChatProvider::class, function ($app) {
             return match (config('llm.driver')) {
-                'deepseek' => $app->make(DeepseekChatProvider::class),
+                'deepseek' => $app->make(DeepSeekChatProvider::class),
                 default => throw new \RuntimeException('Unknown LLM driver: '.config('llm.driver')),
             };
         });

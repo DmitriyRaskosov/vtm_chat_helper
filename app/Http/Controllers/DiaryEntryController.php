@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Context\DiaryPreviewService;
 use App\Diary\DiaryEntryEditor;
-use App\Diary\DiaryPreviewService;
 use App\Enums\DiaryEmotion;
 use App\Http\Requests\PreviewDiaryRequest;
 use App\Http\Requests\UpdateDiaryEntryRequest;
