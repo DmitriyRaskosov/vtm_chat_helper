@@ -46,7 +46,7 @@ final readonly class ContextRequest
             return (int) config('context.topic.max_input_tokens', 8000);
         }
 
-        return (int) config('context.copilot.max_input_tokens', 12000);
+        return (int) config('context.copilot.max_input_tokens', 16000);
     }
 
     public function maxOutputTokens(): int

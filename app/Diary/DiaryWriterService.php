@@ -331,7 +331,10 @@ class DiaryWriterService
                     'formattedMessages' => $formattedMessages,
                 ])],
             ],
-            ['max_tokens' => 2500, 'temperature' => 0.7],
+            [
+                'max_tokens' => (int) config('diary.write.max_output_tokens'),
+                'temperature' => (float) config('diary.write.temperature'),
+            ],
             [],
         );
 

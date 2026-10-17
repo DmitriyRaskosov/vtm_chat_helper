@@ -35,6 +35,7 @@
   (типовой паттерн: @extends Factory<Model> → Factory<Model, Model>).
   Это отдельная категория, не связана с World/enum, но входит в финальный
   baseline ≤50.
+6. SystemPromptProvider: удалить чтение несуществующего config('copilot.tools.enabled') — остаток от 012.
 
 ## Definition of Done
 

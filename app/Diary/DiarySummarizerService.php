@@ -201,8 +201,8 @@ class DiarySummarizerService
                 ])],
             ],
             [
-                'max_tokens' => (int) config('diary.summarize.max_output_tokens', 1500),
-                'temperature' => 0.4,
+                'max_tokens' => (int) config('diary.summarize.max_output_tokens'),
+                'temperature' => (float) config('diary.summarize.temperature'),
             ],
             [],
         );

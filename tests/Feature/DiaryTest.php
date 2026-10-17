@@ -8,6 +8,7 @@ use App\Enums\SceneParticipantRole;
 use App\Enums\SceneStatus;
 use App\Jobs\SummarizeSceneDiaryJob;
 use App\Jobs\WriteDiaryJob;
+use App\Jobs\WriteFinalDiaryJob;
 use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\GameSession;
@@ -112,6 +113,15 @@ class DiaryTest extends TestCase
         Queue::assertPushed(SummarizeSceneDiaryJob::class, function (SummarizeSceneDiaryJob $job): bool {
             return $job->sceneId === $this->scene->id;
         });
+    }
+
+    public function test_diary_jobs_use_write_timeout_from_config(): void
+    {
+        config(['diary.write_timeout' => 123]);
+
+        $this->assertSame(123, (new WriteDiaryJob($this->scene->id))->timeout);
+        $this->assertSame(123, (new SummarizeSceneDiaryJob($this->scene->id))->timeout);
+        $this->assertSame(123, (new WriteFinalDiaryJob($this->scene->id, $this->npc->id))->timeout);
     }
 
     public function test_retrieval_returns_latest_entry_when_query_empty(): void

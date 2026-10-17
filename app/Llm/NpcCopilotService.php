@@ -35,7 +35,7 @@ class NpcCopilotService
         try {
             $topicTurn = $this->chat->chatTurn($topicsContext->messages, [
                 'num_predict' => (int) config('copilot.topic_max_output_tokens', 384),
-                'temperature' => (float) config('copilot.topic_temperature', 0.2),
+                'temperature' => (float) config('copilot.topic_temperature', 0.1),
             ]);
         } catch (\Throwable $e) {
             throw new RuntimeException('LLM provider is unavailable.', 0, $e);

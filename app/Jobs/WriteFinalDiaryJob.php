@@ -19,14 +19,16 @@ class WriteFinalDiaryJob implements ShouldBeUnique, ShouldQueue
 
     public int $tries = 1;
 
-    public int $timeout = 540;
+    public int $timeout;
 
     public int $uniqueFor = 900;
 
     public function __construct(
         public int $sceneId,
         public int $characterId,
-    ) {}
+    ) {
+        $this->timeout = (int) config('diary.write_timeout', 540);
+    }
 
     public function uniqueId(): string
     {

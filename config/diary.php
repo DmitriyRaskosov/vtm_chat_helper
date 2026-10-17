@@ -13,6 +13,11 @@ return [
      */
     'write_timeout' => (int) env('DIARY_WRITE_TIMEOUT', 540),
 
+    'write' => [
+        'max_output_tokens' => 2500,
+        'temperature' => 0.7,
+    ],
+
     'summarize' => [
         /*
         * Максимум токенов для L1-сводки сцены.
@@ -20,5 +25,6 @@ return [
         * с запасом от hard-limit 300 слов в промпте.
         */
         'max_output_tokens' => 1500,
+        'temperature' => 0.4,
     ],
 ];
