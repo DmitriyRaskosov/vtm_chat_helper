@@ -54,11 +54,11 @@ class SummarizeSceneDiaryJob implements ShouldBeUnique, ShouldQueue
 
         Log::info('diary.summary.job.done', [
             'scene_id' => $this->sceneId,
-            'l0_created' => $writeResult['created'],
-            'l0_processed_messages' => $writeResult['processed_messages'],
-            'l1_created' => $summaryResult['created'],
-            'npcs' => $summaryResult['npcs'],
-            'errors' => array_merge($writeResult['errors'], $summaryResult['errors']),
+            'l0_created' => $writeResult->created,
+            'l0_processed_messages' => $writeResult->processedMessages,
+            'l1_created' => $summaryResult->created,
+            'npcs' => $summaryResult->npcs,
+            'errors' => array_merge($writeResult->errors, $summaryResult->errors),
         ]);
     }
 }

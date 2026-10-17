@@ -83,6 +83,10 @@ class DiaryRetrievalService
         }
 
         $lastEntry = $pool->sortByDesc('id')->first();
+        if (! $lastEntry instanceof CharacterDiaryEntry) {
+            return ['selected' => collect(), 'stats' => $stats];
+        }
+
         $result = collect([$lastEntry]);
         $usedIds = [(int) $lastEntry->id];
 

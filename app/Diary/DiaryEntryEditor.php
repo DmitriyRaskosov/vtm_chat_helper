@@ -3,10 +3,10 @@
 namespace App\Diary;
 
 use App\Diary\Exceptions\InvalidDiaryEntryInputException;
+use App\Enums\DiaryEmotion;
 use App\Models\CharacterDiaryEntry;
 use App\Rag\EmbeddingProvider;
 use App\Rag\VectorLiteral;
-use Illuminate\Support\Facades\DB;
 
 final class DiaryEntryEditor
 {
@@ -14,6 +14,7 @@ final class DiaryEntryEditor
         private EmbeddingProvider $embeddings,
         private DiaryWriterService $writer,
         private DiarySummarizerService $summarizer,
+        private DiaryEntryRepository $entries,
     ) {}
 
     public function update(CharacterDiaryEntry $entry, string $text): CharacterDiaryEntry
@@ -24,15 +25,15 @@ final class DiaryEntryEditor
         }
 
         $vector = $this->embeddings->embed($entryText);
+        $emotion = $entry->getAttribute('emotion');
 
-        DB::transaction(function () use ($entry, $entryText, $vector): void {
-            $entry->update(['entry' => $entryText]);
-
-            DB::statement(
-                'UPDATE character_diary_entries SET embedding = ?::vector WHERE id = ?',
-                [VectorLiteral::fromArray($vector), $entry->id],
-            );
-        });
+        $this->entries->updateContent(
+            (int) $entry->id,
+            $entryText,
+            $entry->importance === null ? null : (float) $entry->importance,
+            $emotion instanceof DiaryEmotion ? $emotion->value : null,
+            VectorLiteral::fromArray($vector),
+        );
 
         return $entry->refresh()->loadMissing('scene:id,title,game_session_id');
     }

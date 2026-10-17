@@ -43,6 +43,8 @@
 4. `MessageObserver::saving(Message $m)` с `TokenEstimator` в конструкторе; логика та же. Подключение — `#[ObservedBy(MessageObserver::class)]` на модели.
 5. DeepSeek: переименовать класс в `DeepSeekChatProvider`; файл — `app/Llm/DeepSeekChatProvider.php`. На Windows регистр меняется только двойным переименованием (`git mv a tmp && git mv tmp b` — выполняет пользователь, т. к. `git` запрещён; в отчёте — точные команды). Проверка в контейнере: `docker compose exec laravel.test ls app/Llm`.
 6. `sail composer dump-autoload` и тесты.
+7. ReembedDiaryCommand: UPDATE character_diary_entries → DiaryEntryRepository::updateContent. 
+  После правки grep "UPDATE character_diary_entries" app/ — только в DiaryEntryRepository.
 
 ## Definition of Done
 

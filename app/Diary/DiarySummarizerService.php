@@ -2,6 +2,8 @@
 
 namespace App\Diary;
 
+use App\Diary\Data\SummarizeSceneResult;
+use App\Diary\Exceptions\DiaryGenerationFailedException;
 use App\Enums\CharacterType;
 use App\Llm\ChatProvider;
 use App\Models\Character;
@@ -12,9 +14,7 @@ use App\Prompt\PromptRepository;
 use App\Rag\EmbeddingProvider;
 use App\Rag\VectorLiteral;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use RuntimeException;
 
 class DiarySummarizerService
 {
@@ -24,16 +24,14 @@ class DiarySummarizerService
         private ChatProvider $chat,
         private EmbeddingProvider $embeddings,
         private PromptRepository $prompts,
+        private DiaryEntryRepository $entries,
     ) {}
 
-    /**
-     * @return array{created: int, npcs: int, skipped: int, errors: list<string>}
-     */
-    public function summarizeScene(Scene $scene): array
+    public function summarizeScene(Scene $scene): SummarizeSceneResult
     {
         $npcs = $this->resolveSceneNpcs($scene);
         if ($npcs->isEmpty()) {
-            return ['created' => 0, 'npcs' => 0, 'skipped' => 0, 'errors' => []];
+            return new SummarizeSceneResult(0, 0, 0, []);
         }
 
         $created = 0;
@@ -59,12 +57,12 @@ class DiarySummarizerService
             }
         }
 
-        return [
-            'created' => $created,
-            'npcs' => $npcs->count(),
-            'skipped' => $skipped,
-            'errors' => $errors,
-        ];
+        return new SummarizeSceneResult(
+            $created,
+            $npcs->count(),
+            $skipped,
+            $errors,
+        );
     }
 
     private function summarizeForNpc(Character $npc, Scene $scene): bool
@@ -121,17 +119,17 @@ class DiarySummarizerService
         try {
             $raw = $this->generateSummaryText($npc, $l0Entries);
         } catch (\Throwable $e) {
-            throw new RuntimeException('LLM call failed: '.$e->getMessage(), 0, $e);
+            throw new DiaryGenerationFailedException('LLM call failed: '.$e->getMessage(), $e);
         }
 
         if ($raw === '') {
-            throw new RuntimeException('LLM returned empty L1 entry.');
+            throw new DiaryGenerationFailedException('LLM returned empty L1 entry.');
         }
 
         $parsed = DiaryMetadataParser::parse($raw);
         $entry = $parsed['entry'];
         if ($entry === '') {
-            throw new RuntimeException('LLM returned empty L1 entry after parsing.');
+            throw new DiaryGenerationFailedException('LLM returned empty L1 entry after parsing.');
         }
 
         Log::info('diary.summarize.npc_done', [
@@ -148,21 +146,15 @@ class DiarySummarizerService
         $firstL0 = $l0Entries->first();
         $lastL0 = $l0Entries->last();
 
-        DB::statement(
-            'INSERT INTO character_diary_entries
-                (character_id, chronicle_id, scene_id, level, from_message_id, to_message_id, entry, importance, emotion, embedding, created_at, updated_at)
-             VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?::vector, NOW(), NOW())',
-            [
-                $npc->id,
-                $npc->chronicle_id,
-                $scene->id,
-                $firstL0->from_message_id,
-                $lastL0->to_message_id,
-                $entry,
-                $parsed['importance'],
-                $parsed['emotion']?->value,
-                VectorLiteral::fromArray($vector),
-            ],
+        $this->entries->insertL1(
+            $npc,
+            $scene,
+            (int) $firstL0->from_message_id,
+            (int) $lastL0->to_message_id,
+            $entry,
+            $parsed['importance'],
+            $parsed['emotion']?->value,
+            VectorLiteral::fromArray($vector),
         );
 
         return true;
@@ -176,8 +168,8 @@ class DiarySummarizerService
         $npc->loadMissing(['clan', 'sect', 'traits']);
 
         $name = WorldEntity::query()->whereKey($npc->id)->value('canonical_name') ?? 'NPC';
-        $clan = $npc->clan?->name ?? '—';
-        $sect = $npc->sect?->name ?? '—';
+        $clan = $npc->clan !== null ? $npc->clan->name : '—';
+        $sect = $npc->sect !== null ? $npc->sect->name : '—';
 
         $traits = $npc->traits
             ->map(fn ($t): string => "- {$t->label}: {$t->value}")
@@ -205,7 +197,6 @@ class DiarySummarizerService
                 'max_tokens' => (int) config('diary.summarize.max_output_tokens'),
                 'temperature' => (float) config('diary.summarize.temperature'),
             ],
-            [],
         );
 
         return trim($turn->content);
@@ -267,17 +258,12 @@ class DiarySummarizerService
 
         $vector = $this->embeddings->embed($newEntry);
 
-        DB::statement(
-            'UPDATE character_diary_entries
-            SET entry = ?, importance = ?, emotion = ?, embedding = ?::vector, updated_at = NOW()
-            WHERE id = ?',
-            [
-                $newEntry,
-                $parsed['importance'],
-                $parsed['emotion']?->value,
-                VectorLiteral::fromArray($vector),
-                $entry->id,
-            ],
+        $this->entries->updateContent(
+            (int) $entry->id,
+            $newEntry,
+            $parsed['importance'],
+            $parsed['emotion']?->value,
+            VectorLiteral::fromArray($vector),
         );
 
         Log::info('diary.regenerate.summary_done', [

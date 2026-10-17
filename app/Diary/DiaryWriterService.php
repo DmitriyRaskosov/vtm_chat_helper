@@ -2,6 +2,9 @@
 
 namespace App\Diary;
 
+use App\Diary\Data\WriteEntryResult;
+use App\Diary\Data\WriteSceneResult;
+use App\Diary\Exceptions\DiaryGenerationFailedException;
 use App\Enums\CharacterType;
 use App\Http\Controllers\ChatController;
 use App\Jobs\WriteDiaryJob;
@@ -16,9 +19,7 @@ use App\Prompt\PromptRepository;
 use App\Rag\EmbeddingProvider;
 use App\Rag\VectorLiteral;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use RuntimeException;
 
 class DiaryWriterService
 {
@@ -28,22 +29,21 @@ class DiaryWriterService
         private ChatProvider $chat,
         private EmbeddingProvider $embeddings,
         private PromptRepository $prompts,
+        private DiaryEntryRepository $entries,
     ) {}
 
     /**
      * Пишет все сообщения сцены после курсора дневника каждого NPC-участника (до
      * {@see self::MAX_MESSAGES_PER_CALL} на NPC). `write_threshold` из config не читает —
      * порог только в {@see ChatController::maybeDispatchDiaryWrite} перед {@see WriteDiaryJob}.
-     *
-     * @return array{created: int, npcs: int, processed_messages: int, errors: list<string>}
      */
-    public function writeForScene(Scene $scene): array
+    public function writeForScene(Scene $scene): WriteSceneResult
     {
         $scene->loadMissing('gameSession');
 
         $npcs = $this->resolveSceneNpcs($scene);
         if ($npcs->isEmpty()) {
-            return ['created' => 0, 'npcs' => 0, 'processed_messages' => 0, 'errors' => []];
+            return new WriteSceneResult(0, 0, 0, []);
         }
 
         $created = 0;
@@ -54,9 +54,9 @@ class DiaryWriterService
             try {
                 $result = $this->writeForNpc($npc, $scene);
 
-                if ($result['created']) {
+                if ($result->created) {
                     $created++;
-                    $processedMessages += $result['processed_messages'];
+                    $processedMessages += $result->processedMessages;
                 }
             } catch (\Throwable $e) {
                 $errors[] = 'NPC '.$npc->id.': '.$e->getMessage();
@@ -68,18 +68,15 @@ class DiaryWriterService
             }
         }
 
-        return [
-            'created' => $created,
-            'npcs' => $npcs->count(),
-            'processed_messages' => $processedMessages,
-            'errors' => $errors,
-        ];
+        return new WriteSceneResult(
+            $created,
+            $npcs->count(),
+            $processedMessages,
+            $errors,
+        );
     }
 
-    /**
-     * @return array{created: bool, processed_messages: int}
-     */
-    private function writeForNpc(Character $npc, Scene $scene): array
+    private function writeForNpc(Character $npc, Scene $scene): WriteEntryResult
     {
         $participant = SceneParticipant::query()
             ->where('scene_id', $scene->id)
@@ -88,21 +85,18 @@ class DiaryWriterService
             ->first();
 
         if ($participant === null) {
-            return ['created' => false, 'processed_messages' => 0];
+            return new WriteEntryResult(false, 0);
         }
 
         return $this->writeEntryForParticipant($npc, $scene, $participant);
     }
 
-    /**
-     * @return array{created: bool, processed_messages: int}
-     */
     private function writeEntryForParticipant(
         Character $npc,
         Scene $scene,
         SceneParticipant $participant,
         ?int $upperBoundMessageId = null,
-    ): array {
+    ): WriteEntryResult {
         $fromId = (int) ($participant->last_diary_message_id ?? 0);
         $minId = (int) ($participant->entered_message_id ?? 0);
 
@@ -121,7 +115,7 @@ class DiaryWriterService
         $messages = $query->get();
 
         if ($messages->isEmpty()) {
-            return ['created' => false, 'processed_messages' => 0];
+            return new WriteEntryResult(false, 0);
         }
 
         $formattedMessages = $this->formatMessages($messages);
@@ -137,17 +131,17 @@ class DiaryWriterService
                 excludeEntryId: null,
             );
         } catch (\Throwable $e) {
-            throw new RuntimeException('LLM call failed: '.$e->getMessage(), 0, $e);
+            throw new DiaryGenerationFailedException('LLM call failed: '.$e->getMessage(), $e);
         }
 
         if ($raw === '') {
-            throw new RuntimeException('LLM returned empty diary entry.');
+            throw new DiaryGenerationFailedException('LLM returned empty diary entry.');
         }
 
         $parsed = DiaryMetadataParser::parse($raw);
         $entry = $parsed['entry'];
         if ($entry === '') {
-            throw new RuntimeException('LLM returned empty diary entry after parsing.');
+            throw new DiaryGenerationFailedException('LLM returned empty diary entry after parsing.');
         }
 
         Log::info('diary.write.npc_done', [
@@ -162,26 +156,19 @@ class DiaryWriterService
 
         $vector = $this->embeddings->embed($entry);
 
-        DB::statement(
-            'INSERT INTO character_diary_entries
-                (character_id, chronicle_id, scene_id, level, from_message_id, to_message_id, entry, importance, emotion, embedding, created_at, updated_at)
-            VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?::vector, NOW(), NOW())',
-            [
-                $npc->id,
-                $npc->chronicle_id,
-                $scene->id,
-                $fromMessageId,
-                $toMessageId,
-                $entry,
-                $parsed['importance'],
-                $parsed['emotion']?->value,
-                VectorLiteral::fromArray($vector),
-            ],
+        $this->entries->insertL0(
+            $npc,
+            $scene,
+            $participant,
+            $fromMessageId,
+            $toMessageId,
+            $entry,
+            $parsed['importance'],
+            $parsed['emotion']?->value,
+            VectorLiteral::fromArray($vector),
         );
 
-        $participant->update(['last_diary_message_id' => $toMessageId]);
-
-        return ['created' => true, 'processed_messages' => $messages->count()];
+        return new WriteEntryResult(true, $messages->count());
     }
 
     /**
@@ -212,7 +199,7 @@ class DiaryWriterService
             upperBoundMessageId: (int) $participant->left_message_id,
         );
 
-        return $result['created'];
+        return $result->created;
     }
 
     public function regenerateEntry(CharacterDiaryEntry $entry): bool
@@ -262,17 +249,12 @@ class DiaryWriterService
 
         $vector = $this->embeddings->embed($newEntry);
 
-        DB::statement(
-            'UPDATE character_diary_entries
-             SET entry = ?, importance = ?, emotion = ?, embedding = ?::vector, updated_at = NOW()
-             WHERE id = ?',
-            [
-                $newEntry,
-                $parsed['importance'],
-                $parsed['emotion']?->value,
-                VectorLiteral::fromArray($vector),
-                $entry->id,
-            ],
+        $this->entries->updateContent(
+            (int) $entry->id,
+            $newEntry,
+            $parsed['importance'],
+            $parsed['emotion']?->value,
+            VectorLiteral::fromArray($vector),
         );
 
         Log::info('diary.regenerate.entry_done', [
@@ -293,8 +275,8 @@ class DiaryWriterService
         $npc->loadMissing(['clan', 'sect', 'traits', 'biography']);
 
         $name = WorldEntity::query()->whereKey($npc->id)->value('canonical_name') ?? 'NPC';
-        $clan = $npc->clan?->name ?? '—';
-        $sect = $npc->sect?->name ?? '—';
+        $clan = $npc->clan !== null ? $npc->clan->name : '—';
+        $sect = $npc->sect !== null ? $npc->sect->name : '—';
 
         $traits = $npc->traits
             ->map(fn ($t): string => "- {$t->label}: {$t->value}")
@@ -303,7 +285,7 @@ class DiaryWriterService
             $traits = '(нет)';
         }
 
-        $bio = $npc->biography?->summary ?? '(нет)';
+        $bio = $npc->biography !== null ? ($npc->biography->summary ?? '(нет)') : '(нет)';
 
         $previousEntry = CharacterDiaryEntry::query()
             ->where('character_id', $npc->id)
@@ -335,7 +317,6 @@ class DiaryWriterService
                 'max_tokens' => (int) config('diary.write.max_output_tokens'),
                 'temperature' => (float) config('diary.write.temperature'),
             ],
-            [],
         );
 
         return trim($turn->content);

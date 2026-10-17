@@ -56,48 +56,6 @@ parameters:
 			count: 1
 			path: app/Diary/DiaryPreviewService.php
 
-		# debt: 028 — Collection|null в return type DiaryRetrievalService
-		-
-			message: '#^Method App\\Diary\\DiaryRetrievalService\:\:retrieveWithDiagnostics\(\) should return array\{selected\: Illuminate\\Support\\Collection\<int, App\\Models\\CharacterDiaryEntry\>, stats\: array\<string, int\>\} but returns array\{selected\: Illuminate\\Support\\Collection\<int, App\\Models\\CharacterDiaryEntry\|null\>, stats\: array\{total_entries\: int\<0, max\>, stale\: int\<0, max\>, filtered_by_recent\: int, kept_by_current_scene\: int, in_pool\: int\<0, max\>, selected\: int\<0, max\>\}\}\.$#'
-			identifier: return.type
-			count: 1
-			path: app/Diary/DiaryRetrievalService.php
-
-		# debt: 028 — сигнатура ChatProvider в DiarySummarizerService
-		-
-			message: '#^Method App\\Llm\\ChatProvider\:\:chatTurn\(\) invoked with 3 parameters, 1\-2 required\.$#'
-			identifier: arguments.count
-			count: 1
-			path: app/Diary/DiarySummarizerService.php
-
-		# debt: 028 — лишний nullsafe в DiarySummarizerService
-		-
-			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 2
-			path: app/Diary/DiarySummarizerService.php
-
-		# debt: 028 — сигнатура ChatProvider в DiaryWriterService
-		-
-			message: '#^Method App\\Llm\\ChatProvider\:\:chatTurn\(\) invoked with 3 parameters, 1\-2 required\.$#'
-			identifier: arguments.count
-			count: 1
-			path: app/Diary/DiaryWriterService.php
-
-		# debt: 028 — лишний nullsafe в DiaryWriterService
-		-
-			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 2
-			path: app/Diary/DiaryWriterService.php
-
-		# debt: 028 — лишний nullsafe summary в DiaryWriterService
-		-
-			message: '#^Using nullsafe property access "\?\-\>summary" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Diary/DiaryWriterService.php
-
 		# debt: 029 — сравнение id с null в Message (observer)
 		-
 			message: '#^Strict comparison using \!\=\= between int\<0, max\> and null will always evaluate to true\.$#'

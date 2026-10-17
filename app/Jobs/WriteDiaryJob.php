@@ -46,9 +46,9 @@ class WriteDiaryJob implements ShouldBeUnique, ShouldQueue
 
         Log::info('diary.job.done', [
             'scene_id' => $this->sceneId,
-            'created' => $result['created'],
-            'npcs' => $result['npcs'],
-            'errors' => count($result['errors']),
+            'created' => $result->created,
+            'npcs' => $result->npcs,
+            'errors' => count($result->errors),
         ]);
     }
 }

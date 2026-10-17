@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Diary\Data\WriteSceneResult;
 use App\Diary\DiarySummarizerService;
 use App\Diary\DiaryWriterService;
 use App\Enums\SceneParticipantRole;
@@ -118,10 +119,63 @@ class DiaryLlmServicesTest extends TestCase
         $service = app(DiaryWriterService::class);
         $result = $service->writeForScene($this->scene->fresh());
 
-        $this->assertSame(0, $result['created']);
+        $this->assertSame(0, $result->created);
         $this->assertSame(0, CharacterDiaryEntry::query()->where('character_id', $this->npc->id)->count());
         $participant->refresh();
         $this->assertNull($participant->last_diary_message_id);
+    }
+
+    public function test_write_for_scene_returns_dto_with_expected_fields(): void
+    {
+        $this->fakeChat()->push('DTO smoke test entry.');
+        $this->fakeEmbeddings();
+
+        $this->createSceneMessage('Реплика для DTO.');
+
+        $service = app(DiaryWriterService::class);
+        $result = $service->writeForScene($this->scene->fresh());
+
+        $this->assertInstanceOf(WriteSceneResult::class, $result);
+        $this->assertSame(1, $result->created);
+        $this->assertSame(1, $result->npcs);
+        $this->assertSame(1, $result->processedMessages);
+        $this->assertSame([], $result->errors);
+    }
+
+    public function test_l0_insert_rolls_back_when_participant_cursor_update_fails(): void
+    {
+        SceneParticipant::updating(function (): never {
+            throw new \RuntimeException('Simulated cursor update failure');
+        });
+
+        try {
+            $this->fakeChat()->push('Запись при сбое курсора.');
+            $this->fakeEmbeddings();
+
+            $this->createSceneMessage('Сообщение для L0.');
+
+            $service = app(DiaryWriterService::class);
+            $result = $service->writeForScene($this->scene->fresh());
+
+            $this->assertSame(0, $result->created);
+            $this->assertCount(1, $result->errors);
+            $this->assertSame(
+                0,
+                CharacterDiaryEntry::query()->where('character_id', $this->npc->id)->count(),
+            );
+        } finally {
+            SceneParticipant::flushEventListeners();
+        }
+
+        $this->fakeChat()->push('Повторная запись после сбоя.');
+        $service = app(DiaryWriterService::class);
+        $retry = $service->writeForScene($this->scene->fresh());
+
+        $this->assertSame(1, $retry->created);
+        $this->assertSame(
+            1,
+            CharacterDiaryEntry::query()->where('character_id', $this->npc->id)->where('level', 0)->count(),
+        );
     }
 
     public function test_write_for_scene_writes_despite_high_write_threshold_when_invoked_directly(): void
@@ -135,7 +189,7 @@ class DiaryLlmServicesTest extends TestCase
         $service = app(DiaryWriterService::class);
         $result = $service->writeForScene($this->scene->fresh());
 
-        $this->assertSame(1, $result['created']);
+        $this->assertSame(1, $result->created);
         $entry = CharacterDiaryEntry::query()
             ->where('character_id', $this->npc->id)
             ->where('level', 0)
@@ -163,8 +217,8 @@ class DiaryLlmServicesTest extends TestCase
         $service = app(DiaryWriterService::class);
         $result = $service->writeForScene($this->scene->fresh());
 
-        $this->assertSame(1, $result['created']);
-        $this->assertSame(3, $result['processed_messages']);
+        $this->assertSame(1, $result->created);
+        $this->assertSame(3, $result->processedMessages);
 
         $entry = CharacterDiaryEntry::query()
             ->where('character_id', $this->npc->id)
@@ -208,9 +262,9 @@ class DiaryLlmServicesTest extends TestCase
         $service = app(DiaryWriterService::class);
         $result = $service->writeForScene($this->scene->fresh());
 
-        $this->assertSame(2, $result['created']);
-        $this->assertSame(2, $result['npcs']);
-        $this->assertSame([], $result['errors']);
+        $this->assertSame(2, $result->created);
+        $this->assertSame(2, $result->npcs);
+        $this->assertSame([], $result->errors);
         $this->assertSame(2, CharacterDiaryEntry::query()->where('level', 0)->count());
     }
 
@@ -242,9 +296,9 @@ class DiaryLlmServicesTest extends TestCase
         $service = app(DiaryWriterService::class);
         $result = $service->writeForScene($this->scene->fresh());
 
-        $this->assertSame(1, $result['created']);
-        $this->assertCount(1, $result['errors']);
-        $this->assertStringContainsString('NPC '.$secondNpc->id, $result['errors'][0]);
+        $this->assertSame(1, $result->created);
+        $this->assertCount(1, $result->errors);
+        $this->assertStringContainsString('NPC '.$secondNpc->id, $result->errors[0]);
     }
 
     public function test_write_final_for_npc_creates_entry_up_to_left_message_id(): void
@@ -329,8 +383,8 @@ class DiaryLlmServicesTest extends TestCase
         $service = app(DiarySummarizerService::class);
         $result = $service->summarizeScene($this->scene->fresh());
 
-        $this->assertSame(0, $result['created']);
-        $this->assertSame(1, $result['skipped']);
+        $this->assertSame(0, $result->created);
+        $this->assertSame(1, $result->skipped);
         $this->assertSame(
             0,
             CharacterDiaryEntry::query()->where('character_id', $this->npc->id)->where('level', 1)->count(),
@@ -348,7 +402,7 @@ class DiaryLlmServicesTest extends TestCase
         $service = app(DiarySummarizerService::class);
         $result = $service->summarizeScene($this->scene->fresh());
 
-        $this->assertSame(1, $result['created']);
+        $this->assertSame(1, $result->created);
         $l1 = CharacterDiaryEntry::query()
             ->where('character_id', $this->npc->id)
             ->where('level', 1)
@@ -368,11 +422,11 @@ class DiaryLlmServicesTest extends TestCase
 
         $service = app(DiarySummarizerService::class);
         $first = $service->summarizeScene($this->scene->fresh());
-        $this->assertSame(1, $first['created']);
+        $this->assertSame(1, $first->created);
 
         $second = $service->summarizeScene($this->scene->fresh());
-        $this->assertSame(0, $second['created']);
-        $this->assertSame(1, $second['skipped']);
+        $this->assertSame(0, $second->created);
+        $this->assertSame(1, $second->skipped);
         $this->assertSame(
             1,
             CharacterDiaryEntry::query()->where('character_id', $this->npc->id)->where('level', 1)->count(),
