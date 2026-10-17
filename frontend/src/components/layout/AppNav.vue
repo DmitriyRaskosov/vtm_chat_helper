@@ -15,9 +15,8 @@
 </template>
 
 <script setup>
-import { computed } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
-import { useAuth } from '../../auth';
+import { isStoryteller, useAuth } from '../../auth';
 
 defineProps({
     current: {
@@ -29,7 +28,6 @@ defineProps({
 
 const auth = useAuth();
 const router = useRouter();
-const isStoryteller = computed(() => auth.user.value?.is_storyteller === true);
 
 async function logout() {
     await auth.logout();

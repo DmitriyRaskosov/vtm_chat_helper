@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router';
-import { useAuth } from './auth';
+import { isStoryteller, useAuth } from './auth';
 import LoginView from './views/LoginView.vue';
 import RegisterView from './views/RegisterView.vue';
 import ChatView from './views/ChatView.vue';
@@ -37,6 +37,10 @@ router.beforeEach(async (to) => {
     }
 
     if (to.meta.guest && auth.token.value) {
+        return { name: 'chat' };
+    }
+
+    if (to.meta.storyteller && !isStoryteller.value) {
         return { name: 'chat' };
     }
 

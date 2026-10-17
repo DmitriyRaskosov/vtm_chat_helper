@@ -75,7 +75,7 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref } from 'vue';
-import { useAuth } from '../auth';
+import { isStoryteller, useAuth } from '../auth';
 import AppNav from '../components/layout/AppNav.vue';
 import ChatComposer from '../components/chat/ChatComposer.vue';
 import ChatLog from '../components/chat/ChatLog.vue';
@@ -87,7 +87,6 @@ import { useSceneSession } from '../composables/useSceneSession';
 const auth = useAuth();
 const chatLog = ref(null);
 const copilotPanel = ref(null);
-const isStoryteller = computed(() => auth.user.value?.is_storyteller === true);
 
 const {
     gameSession,

@@ -1,10 +1,18 @@
 import axios from 'axios';
-import { ref } from 'vue';
+import { computed, ref } from 'vue';
 
 const TOKEN_KEY = 'game-chat-token';
 
 const token = ref(localStorage.getItem(TOKEN_KEY) || '');
 const user = ref(null);
+
+let onUnauthorized = null;
+
+export const isStoryteller = computed(() => user.value?.is_storyteller === true);
+
+export function registerUnauthorizedHandler(handler) {
+    onUnauthorized = handler;
+}
 
 export const api = axios.create({
     baseURL: '/api',
@@ -18,6 +26,22 @@ api.interceptors.request.use((config) => {
 
     return config;
 });
+
+api.interceptors.response.use(
+    (response) => response,
+    (error) => {
+        const status = error.response?.status;
+        const url = error.config?.url ?? '';
+        const isAuthEndpoint = /\/(login|register)(\?|$)/.test(url);
+
+        if (status === 401 && !isAuthEndpoint) {
+            clear();
+            onUnauthorized?.();
+        }
+
+        return Promise.reject(error);
+    },
+);
 
 function setSession(nextToken, nextUser) {
     token.value = nextToken;

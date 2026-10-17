@@ -6,9 +6,15 @@ alwaysApply: false
 
 # Frontend (черновик)
 
-<!-- TODO(032): после задачи 032 описать guard meta.storyteller, глобальный 401 и единый isStoryteller. -->
 <!-- TODO(033): после задачи 033 вписать имена общих утилит (метки игрок/NPC, хелпер ошибок, таймер «сохранено»). -->
 <!-- TODO(034): после задачи 034 зафиксировать правило «view без прямых вызовов API». -->
+
+## Авторизация (router и auth.js)
+
+- Защищённые маршруты: `meta.auth: true` (логин/регистрация — `meta.guest: true`). Без токена → `login`.
+- Только рассказчик: `meta.storyteller: true` (сейчас дневник `/characters/:id/diary`). Игрок → редирект на `chat`.
+- Признак рассказчика: `export const isStoryteller` в `auth.js` (не дублировать в view/composables).
+- Ответ API `401` (кроме `/login` и `/register`): сброс сессии в `auth.js`, переход на логин через `registerUnauthorizedHandler` в `main.js` (без импорта router в `auth.js`).
 
 ## Базовое
 - Vue 3 Composition API, только `<script setup>`.

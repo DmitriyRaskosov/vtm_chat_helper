@@ -1,6 +1,6 @@
 import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
-import { api, useAuth } from '../auth';
+import { api, isStoryteller, useAuth } from '../auth';
 
 export function typeLabel(type) {
     if (type === 'player') return 'игрок';
@@ -60,7 +60,6 @@ export function useCharacterSheet() {
     const sheet = ref(null);
     const catalog = ref(null);
     const error = ref('');
-    const isStoryteller = computed(() => auth.user.value?.is_storyteller === true);
     const identity = reactive({
         canonical_name: '',
         nature: '',

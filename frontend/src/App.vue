@@ -11,11 +11,9 @@
 <script setup>
 import { computed } from 'vue';
 import { RouterView, useRoute } from 'vue-router';
-import { useAuth } from './auth';
+import { isStoryteller } from './auth';
 
 const route = useRoute();
-const auth = useAuth();
-const isStoryteller = computed(() => auth.user.value?.is_storyteller === true);
 const isWide = computed(() => (
     (isStoryteller.value && route.name === 'chat')
     || route.name === 'characters'
