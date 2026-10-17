@@ -15,7 +15,6 @@ use App\Models\Message;
 use App\Models\Scene;
 use App\Models\SceneParticipant;
 use App\Models\User;
-use App\Models\WorldEntity;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -42,7 +41,7 @@ class ChatController extends Controller
         );
 
         $query = Message::query()
-            ->with('user:id,name')
+            ->with(['user:id,name', 'authorCharacter.entity'])
             ->where('scene_id', $scene->id);
 
         if ($request->boolean('include_deleted')) {
@@ -193,9 +192,8 @@ class ChatController extends Controller
         abort_if(! $character->is_active, 409, 'Character is archived.');
 
         if ($this->isNpcLikeSpeech($character, $user)) {
-            $snapshot = WorldEntity::query()
-                ->whereKey($character->id)
-                ->value('canonical_name');
+            $character->loadMissing('entity');
+            $snapshot = $character->entity?->canonical_name;
             $snapshot = is_string($snapshot) && $snapshot !== '' ? $snapshot : null;
 
             return [$character->id, $snapshot];
@@ -260,15 +258,17 @@ class ChatController extends Controller
 
         $characters = Character::query()
             ->whereIn('id', $ids)
+            ->with('entity')
             ->get(['id', 'character_type', 'user_id'])
             ->keyBy('id');
-        $names = WorldEntity::query()->whereIn('id', $ids)->pluck('canonical_name', 'id');
         $user = auth()->user();
         $lookup = [];
 
         foreach ($characters as $id => $character) {
             $lookup[(int) $id] = [
-                'name' => (string) ($names[$id] ?? $names[(string) $id] ?? ''),
+                'name' => $character->entity === null
+                    ? ''
+                    : (string) $character->entity->canonical_name,
                 'type' => $character->character_type,
                 'playable' => $character->isPlayableBy($user instanceof User ? $user : null),
             ];

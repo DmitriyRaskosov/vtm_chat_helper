@@ -62,7 +62,8 @@ class CharacterIdentityService
 
     private function rename(Character $character, string $name): void
     {
-        $entity = WorldEntity::query()->findOrFail($character->id);
+        $character->loadMissing('entity');
+        $entity = $character->entity ?? WorldEntity::query()->findOrFail($character->id);
         $name = $this->entities->prepareCanonicalName($name);
 
         $this->entities->assertCanonicalNameAvailable(
@@ -95,9 +96,11 @@ class CharacterIdentityService
             }
 
             $sire = Character::query()->findOrFail($sireId);
+            $sire->loadMissing('entity');
+            $sireEntity = $sire->entity ?? WorldEntity::query()->findOrFail($sire->id);
             $this->entities->assertSameChronicle(
                 $character->chronicle,
-                WorldEntity::query()->findOrFail($sire->id),
+                $sireEntity,
             );
         }
 

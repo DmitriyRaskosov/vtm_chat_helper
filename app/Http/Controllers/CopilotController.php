@@ -9,7 +9,6 @@ use App\Llm\NpcCopilotService;
 use App\Models\Character;
 use App\Models\CopilotRequest;
 use App\Models\Scene;
-use App\Models\WorldEntity;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
@@ -100,7 +99,8 @@ class CopilotController extends Controller
         );
         abort_if(! $character->is_active, 409, 'Character is archived.');
 
-        $npcName = WorldEntity::query()->whereKey($character->id)->value('canonical_name');
+        $character->loadMissing('entity');
+        $npcName = $character->entity?->canonical_name;
         abort_if(! is_string($npcName) || $npcName === '', 422, 'NPC name is required.');
 
         return [$character->id, $npcName];

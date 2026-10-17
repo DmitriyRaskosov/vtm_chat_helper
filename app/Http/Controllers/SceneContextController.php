@@ -47,7 +47,7 @@ class SceneContextController extends Controller
         $locationId = $context?->location_entity_id;
         $locationName = $locationId === null
             ? null
-            : WorldEntity::query()->whereKey($locationId)->value('canonical_name');
+            : WorldEntity::query()->find($locationId)?->canonical_name;
 
         return [
             'scene_id' => (int) $scene->id,

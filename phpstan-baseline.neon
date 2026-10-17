@@ -140,13 +140,6 @@ parameters:
 			count: 1
 			path: app/Diary/DiaryWriterService.php
 
-		# debt: 018, 026 — phpDoc Collection в CharacterSheetController
-		-
-			message: '#^PHPDoc tag @param has invalid value \(Collection\<int, Character\>\)\: Unexpected token "\\n     \* ", expected variable at offset 45 on line 2$#'
-			identifier: phpDoc.parseError
-			count: 1
-			path: app/Http/Controllers/CharacterSheetController.php
-
 		# debt: 025b — abort_unless Copilot NPC в ChatController
 		-
 			message: '#^Call to function abort_unless\(\) with arguments false, 422 and ''Selected Copilot…'' will always evaluate to false\.$#'

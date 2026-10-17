@@ -39,9 +39,17 @@ class Character extends Model
     public $incrementing = false;
 
     /**
-     * Идентичность с общим PK читается через WorldEntity::character(). Обратный belongsTo
-     * на том же `id` не объявляем: Eloquent уходит в рекурсию до падения PHP.
+     * Строка имени в world_entities (общий PK). belongsTo на том же `id` не используем;
+     * HasOne + eager load `entity` безопасны (рекурсия — у WorldEntity::character()).
      *
+     * @return HasOne<WorldEntity, $this>
+     */
+    public function entity(): HasOne
+    {
+        return $this->hasOne(WorldEntity::class, 'id', 'id');
+    }
+
+    /**
      * @return BelongsTo<User, $this>
      */
     public function user(): BelongsTo

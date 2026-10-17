@@ -31,7 +31,6 @@ use App\Scene\SceneParticipantService;
 use App\World\WorldEntityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class CharacterSheetController extends Controller
@@ -130,13 +129,10 @@ class CharacterSheetController extends Controller
             $query->whereIn('id', $this->visibleCharacterIdsForPlayer($chronicleId, (int) $pcId));
         }
 
-        $characters = $query->orderBy('id')->get();
-        $names = WorldEntity::query()
-            ->whereIn('id', $characters->pluck('id'))
-            ->pluck('canonical_name', 'id');
+        $characters = $query->with('entity')->orderBy('id')->get();
 
-        $payload = $characters->map(function (Character $character) use ($names): array {
-            return $this->listItem($character, $names);
+        $payload = $characters->map(function (Character $character): array {
+            return $this->listItem($character);
         })->values();
 
         return response()->json([
@@ -308,15 +304,15 @@ class CharacterSheetController extends Controller
     }
 
     /**
-     * @param  Collection<int, Character>
-     * @param  Collection<int|string, string>  $names
      * @return array<string, mixed>
      */
-    private function listItem(Character $character, $names): array
+    private function listItem(Character $character): array
     {
         return [
             'id' => (int) $character->id,
-            'canonical_name' => (string) ($names[$character->id] ?? $names[(string) $character->id] ?? ''),
+            'canonical_name' => $character->entity === null
+                ? ''
+                : (string) $character->entity->canonical_name,
             'character_type' => $character->character_type->value,
             'user_id' => $character->user_id === null ? null : (int) $character->user_id,
         ];
@@ -330,15 +326,15 @@ class CharacterSheetController extends Controller
         $characters = Character::query()
             ->where('chronicle_id', $chronicleId)
             ->where('is_active', false)
+            ->with('entity')
             ->orderBy('id')
             ->get();
-        $names = WorldEntity::query()
-            ->whereIn('id', $characters->pluck('id'))
-            ->pluck('canonical_name', 'id');
 
         return $characters->map(fn (Character $character): array => [
             'id' => (int) $character->id,
-            'canonical_name' => (string) ($names[$character->id] ?? $names[(string) $character->id] ?? ''),
+            'canonical_name' => $character->entity === null
+                ? ''
+                : (string) $character->entity->canonical_name,
             'character_type' => $character->character_type->value,
             'user_id' => $character->user_id === null ? null : (int) $character->user_id,
         ])->values()->all();

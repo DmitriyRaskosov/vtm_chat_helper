@@ -34,9 +34,10 @@ class Message extends Model
     public function displayAuthor(?string $characterCanonicalName = null): string
     {
         if ($this->author_character_id !== null) {
-            $name = $characterCanonicalName ?? WorldEntity::query()
-                ->whereKey($this->author_character_id)
-                ->value('canonical_name');
+            $name = $characterCanonicalName;
+            if ($name === null && $this->relationLoaded('authorCharacter')) {
+                $name = $this->authorCharacter?->entity?->canonical_name;
+            }
 
             if (is_string($name) && $name !== '') {
                 return $name;
