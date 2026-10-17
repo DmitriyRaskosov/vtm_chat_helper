@@ -87,9 +87,9 @@ UI: http://localhost:5173 (прокси `/api` → backend на 8080)
 
 ### Демо-данные
 
-При `APP_ENV=local` `DatabaseSeeder` после канона запускает `DemoSeeder`: сцена, NPC, сообщения.
+`php artisan migrate:fresh --seed` (или `db:seed`) загружает канон (`Canon*Seeder`), пустую хронику «Моя первая хроника» (`ChronicleSeeder`) и импорт лора (`canon:import-lore`). **DemoSeeder при этом не запускается.**
 
-`demo:reset` — быстрый сброс без `migrate:fresh`. Учётная запись из сидера: логин **`admin`**, пароль **`admin`**.
+Демо-стенд: `php artisan demo:reset` — TRUNCATE данных игры (хроника, сцены, персонажи, сообщения, дневник), канон и пользователи остаются, затем `DemoSeeder` (логин **`admin`** / **`admin`**, «Demo Chronicle», «Demo Session», сцена «Встреча на пустыре», 5 NPC, без сообщений в чате).
 
 ## Тесты
 

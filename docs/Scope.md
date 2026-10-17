@@ -44,6 +44,10 @@ NPC ведут долговременный дневник, который по�
   `canon_lore_entries`, `canon_lore_entry_entities`.
 - 30 статей лора в `resources/canon/lore/*.md`, импорт `canon:import-lore`.
 
+### Демо-данные
+- `DatabaseSeeder` — только канон + `ChronicleSeeder` (хроника «Моя первая хроника» без сцен) + `canon:import-lore`; **не** вызывает `DemoSeeder`.
+- `php artisan demo:reset` — сброс данных игры (TRUNCATE) с сохранением канона и пользователей, затем `DemoSeeder`: рассказчик `admin` / `admin`, «Demo Chronicle», «Demo Session», активная сцена «Встреча на пустыре», 5 NPC-участников (Абрахам Леру, Август Сент-Клер, Гидеон Эш, Ильзе Фогель, Порижана) с биографиями и traits; **сообщений в чате не создаёт**.
+
 ### Tests
 - 54 feature-теста: Auth (5), Character (6), CharacterTrait (2), Scene (8), Message (3), MessageEdit (8), Copilot (4), Diary (16), Smoke (2).
 - 1 unit-тест — пустой `ExampleTest` (удаляется в задаче 003).

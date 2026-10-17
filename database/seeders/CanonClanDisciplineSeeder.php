@@ -39,16 +39,21 @@ class CanonClanDisciplineSeeder extends Seeder
                 if (! isset($disc[$disciplineSlug])) {
                     continue;
                 }
+                $now = now();
                 $rows[] = [
                     'clan_id' => $clans[$clanSlug],
                     'discipline_id' => $disc[$disciplineSlug],
                     'is_in_clan' => true,
+                    'created_at' => $now,
+                    'updated_at' => $now,
                 ];
             }
         }
 
-        // Upsert нужен только для created/updated, но у нас нет timestamps в этой таблице (m2m без timestamps).
-        // Поэтому — insertOrIgnore, чтобы повторный запуск не падал по PK.
-        DB::table('canon_clan_disciplines')->insertOrIgnore($rows);
+        DB::table('canon_clan_disciplines')->upsert(
+            $rows,
+            ['clan_id', 'discipline_id'],
+            ['is_in_clan', 'updated_at'],
+        );
     }
 }

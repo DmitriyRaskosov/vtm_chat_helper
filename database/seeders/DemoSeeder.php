@@ -32,6 +32,13 @@ class DemoSeeder extends Seeder
 {
     public function run(): void
     {
+        DB::transaction(function (): void {
+            $this->seedDemo();
+        });
+    }
+
+    private function seedDemo(): void
+    {
         $storyteller = User::query()->firstOrCreate(
             ['login' => 'admin'],
             [
