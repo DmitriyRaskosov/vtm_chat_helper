@@ -3,7 +3,6 @@
 namespace App\Character;
 
 use App\Models\CanonDiscipline;
-use App\Models\CanonDisciplinePower;
 use App\Models\Character;
 use App\Models\CharacterDiscipline;
 use App\Models\CharacterPower;
@@ -48,38 +47,5 @@ class DisciplineService
         }
 
         $known->delete();
-    }
-
-    /**
-     * @param  array<string, mixed>|null  $parameters
-     */
-    public function learnPower(
-        Character $character,
-        CanonDisciplinePower $power,
-        ?string $note = null,
-        ?array $parameters = null,
-        mixed $acquiredAt = null,
-    ): CharacterPower {
-        $known = CharacterDiscipline::query()
-            ->where('character_id', $character->id)
-            ->where('discipline_id', $power->discipline_id)
-            ->first();
-
-        if ($known === null) {
-            throw new InvalidArgumentException('A character must know the discipline before learning a power.');
-        }
-
-        if ($known->level < $power->level) {
-            throw new InvalidArgumentException('Character discipline level is below the power level.');
-        }
-
-        return CharacterPower::query()->create([
-            'character_id' => $character->id,
-            'discipline_id' => $power->discipline_id,
-            'discipline_power_id' => $power->id,
-            'acquired_at' => $acquiredAt ?? now(),
-            'note' => $note,
-            'parameters' => $parameters,
-        ]);
     }
 }

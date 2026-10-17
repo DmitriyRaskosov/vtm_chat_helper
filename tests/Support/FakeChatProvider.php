@@ -11,7 +11,7 @@ final class FakeChatProvider implements ChatProvider
     /** @var list<string|array{content?: string}> */
     private array $queue = [];
 
-    /** @var list<array{method: string, messages: list<array<string, mixed>>, options: array<string, int|float|string|bool>, tools: list<array<string, mixed>>}> */
+    /** @var list<array{method: string, messages: list<array<string, mixed>>, options: array<string, int|float|string|bool>}> */
     private array $recorded = [];
 
     public function push(string|array $response): self
@@ -22,7 +22,7 @@ final class FakeChatProvider implements ChatProvider
     }
 
     /**
-     * @return list<array{method: string, messages: list<array<string, mixed>>, options: array<string, int|float|string|bool>, tools: list<array<string, mixed>>}>
+     * @return list<array{method: string, messages: list<array<string, mixed>>, options: array<string, int|float|string|bool>}>
      */
     public function requests(): array
     {
@@ -46,15 +46,13 @@ final class FakeChatProvider implements ChatProvider
     /**
      * @param  list<array<string, mixed>>  $messages
      * @param  array<string, int|float|string|bool>  $options
-     * @param  list<array<string, mixed>>  $tools
      */
-    public function chatTurn(array $messages, array $options = [], array $tools = []): ChatTurn
+    public function chatTurn(array $messages, array $options = []): ChatTurn
     {
         $this->recorded[] = [
             'method' => 'chatTurn',
             'messages' => $messages,
             'options' => $options,
-            'tools' => $tools,
         ];
 
         if ($this->queue === []) {
@@ -73,7 +71,6 @@ final class FakeChatProvider implements ChatProvider
             'method' => 'complete',
             'messages' => [['role' => 'user', 'content' => $prompt]],
             'options' => [],
-            'tools' => [],
         ];
 
         return $this->chat([

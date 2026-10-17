@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -44,22 +43,5 @@ class CanonClanRelation extends Model
     public function toClan(): BelongsTo
     {
         return $this->belongsTo(CanonClan::class, 'to_clan_id');
-    }
-
-    /**
-     * Все отношения клана — и исходящие, и входящие симметричные.
-     *
-     * @return Builder<static>
-     */
-    public static function relationsOf(int $clanId): Builder
-    {
-        return static::query()
-            ->where(function ($q) use ($clanId) {
-                $q->where('from_clan_id', $clanId)
-                    ->orWhere(function ($q2) use ($clanId) {
-                        $q2->where('to_clan_id', $clanId)
-                            ->where('is_symmetric', true);
-                    });
-            });
     }
 }

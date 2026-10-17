@@ -13,9 +13,8 @@ interface ChatProvider
     /**
      * @param  list<array<string, mixed>>  $messages
      * @param  array<string, int|float|string|bool>  $options
-     * @param  list<array<string, mixed>>  $tools
      */
-    public function chatTurn(array $messages, array $options = [], array $tools = []): ChatTurn;
+    public function chatTurn(array $messages, array $options = []): ChatTurn;
 
     public function complete(string $prompt): string;
 }

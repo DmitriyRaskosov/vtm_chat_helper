@@ -30,9 +30,8 @@ class DeepseekChatProvider implements ChatProvider
     /**
      * @param  list<array<string, mixed>>  $messages
      * @param  array<string, int|float|string|bool>  $options
-     * @param  list<array<string, mixed>>  $tools
      */
-    public function chatTurn(array $messages, array $options = [], array $tools = []): ChatTurn
+    public function chatTurn(array $messages, array $options = []): ChatTurn
     {
         $maxTokens = (int) ($options['max_tokens']
             ?? $options['num_predict']
@@ -48,10 +47,6 @@ class DeepseekChatProvider implements ChatProvider
 
         if (config('llm.json_mode')) {
             $payload['response_format'] = ['type' => 'json_object'];
-        }
-
-        if ($tools !== []) {
-            $payload['tools'] = $tools;
         }
 
         $response = Http::timeout($this->httpTimeoutSeconds())
@@ -70,40 +65,11 @@ class DeepseekChatProvider implements ChatProvider
         $content = $message['content'] ?? '';
         $content = is_string($content) ? $content : '';
 
-        $rawToolCalls = $message['tool_calls'] ?? [];
-        $rawToolCalls = is_array($rawToolCalls) ? array_values($rawToolCalls) : [];
-
-        $toolCalls = [];
-        foreach ($rawToolCalls as $raw) {
-            if (! is_array($raw)) {
-                continue;
-            }
-
-            $function = $raw['function'] ?? [];
-            $name = is_array($function) ? ($function['name'] ?? '') : '';
-            if (! is_string($name) || $name === '') {
-                continue;
-            }
-
-            $arguments = is_array($function) ? ($function['arguments'] ?? []) : [];
-            if (is_string($arguments)) {
-                $decoded = json_decode($arguments, true);
-                $arguments = is_array($decoded) ? $decoded : [];
-            }
-            if (! is_array($arguments)) {
-                $arguments = [];
-            }
-
-            $toolCalls[] = new ToolCall($name, $arguments);
-        }
-
-        if ($content === '' && $toolCalls === []) {
+        if ($content === '') {
             throw new RuntimeException('DeepSeek returned an empty chat response.');
         }
 
-        $finishReason = $response->json('choices.0.finish_reason');
-
-        return new ChatTurn($content, $toolCalls, $rawToolCalls, finishReason: $finishReason);
+        return new ChatTurn($content);
     }
 
     public function complete(string $prompt): string

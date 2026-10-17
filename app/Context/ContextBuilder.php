@@ -10,26 +10,6 @@ class ContextBuilder
 
     public function __construct(private ContextAssembler $assembler) {}
 
-    public function build(
-        string $npcName,
-        string $prompt,
-        int $sceneId,
-        int $draftCount,
-        ?int $storytellerId = null,
-        ?int $gameSessionId = null,
-        ?int $characterId = null,
-    ): ContextBuild {
-        return $this->buildReply(
-            $npcName,
-            $prompt,
-            $sceneId,
-            $draftCount,
-            $storytellerId,
-            $gameSessionId,
-            $characterId,
-        );
-    }
-
     public function buildTopics(
         string $npcName,
         string $prompt,

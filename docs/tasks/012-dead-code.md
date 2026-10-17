@@ -1,7 +1,7 @@
 # 012 — Мёртвый код и tool calls
 
 - **Stage:** 1
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 011
 - **Risk:** low
 - **Разрешённые зависимости:** нет

@@ -60,18 +60,6 @@ class CharacterIdentityService
         return $character->refresh();
     }
 
-    public function setExperience(Character $character, int $experience): Character
-    {
-        if ($experience < 0) {
-            throw new InvalidArgumentException('Experience cannot be negative.');
-        }
-
-        $character->experience = $experience;
-        $character->save();
-
-        return $character->refresh();
-    }
-
     private function rename(Character $character, string $name): void
     {
         $entity = WorldEntity::query()->findOrFail($character->id);

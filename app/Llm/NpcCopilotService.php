@@ -36,7 +36,7 @@ class NpcCopilotService
             $topicTurn = $this->chat->chatTurn($topicsContext->messages, [
                 'num_predict' => (int) config('copilot.topic_max_output_tokens', 384),
                 'temperature' => (float) config('copilot.topic_temperature', 0.2),
-            ], []);
+            ]);
         } catch (\Throwable $e) {
             throw new RuntimeException('LLM provider is unavailable.', 0, $e);
         }
@@ -58,7 +58,7 @@ class NpcCopilotService
             $replyOptions = [
                 'max_tokens' => (int) config('llm.max_output_tokens'),
             ];
-            $turn = $this->chat->chatTurn($messages, $replyOptions, []);
+            $turn = $this->chat->chatTurn($messages, $replyOptions);
             $raw = $turn->content;
         } catch (\Throwable $e) {
             throw new RuntimeException('LLM provider is unavailable.', 0, $e);
@@ -82,13 +82,6 @@ class NpcCopilotService
             ContextBuilder::VERSION,
             ContextBuilder::PROMPT_VERSION,
         );
-    }
-
-    private function resolveModelName(): string
-    {
-        return config('llm.driver') === 'deepseek'
-            ? (string) config('llm.deepseek.chat_model')
-            : throw new RuntimeException('Unknown LLM driver: '.config('llm.driver'));
     }
 
     /**

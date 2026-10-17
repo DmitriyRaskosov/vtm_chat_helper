@@ -107,37 +107,6 @@ class CharacterBiographyService
         });
     }
 
-    public function approve(Character $character, User $approver): CharacterBiography
-    {
-        return DB::transaction(function () use ($character, $approver): CharacterBiography {
-            $biography = CharacterBiography::query()
-                ->where('character_id', $character->id)
-                ->lockForUpdate()
-                ->first();
-
-            if ($biography === null) {
-                throw new InvalidArgumentException('Character has no biography to approve.');
-            }
-
-            if ($biography->status === CharacterBiographyStatus::Approved
-                && (int) $biography->approved_by === (int) $approver->id) {
-                return $biography;
-            }
-
-            $biography->status = CharacterBiographyStatus::Approved;
-            $biography->approved_at = now();
-            $biography->approved_by = $approver->id;
-            $biography->save();
-
-            return $biography->refresh();
-        });
-    }
-
-    public function current(Character $character): ?CharacterBiography
-    {
-        return CharacterBiography::query()->find($character->id);
-    }
-
     /**
      * @param  array<string, mixed>  $fields
      * @return array{
