@@ -10,9 +10,9 @@ use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\Location;
 use App\Models\WorldEntity;
+use App\World\Exceptions\InvalidWorldEntityInputException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
 
 class WorldEntityService
 {
@@ -54,7 +54,7 @@ class WorldEntityService
                 return $entity->load(['location', 'character']);
             });
         } catch (UniqueConstraintViolationException) {
-            throw new InvalidArgumentException('This name is already used in the chronicle.');
+            throw new InvalidWorldEntityInputException('This name is already used in the chronicle.');
         }
     }
 
@@ -123,7 +123,7 @@ class WorldEntityService
         }
 
         if ($query->exists()) {
-            throw new InvalidArgumentException('This name is already used in the chronicle.');
+            throw new InvalidWorldEntityInputException('This name is already used in the chronicle.');
         }
     }
 
@@ -149,7 +149,7 @@ class WorldEntityService
         $parentId = isset($typed['parent_location_id']) ? (int) $typed['parent_location_id'] : null;
 
         if ($parentId === $entity->id) {
-            throw new InvalidArgumentException('A location cannot be its own parent.');
+            throw new InvalidWorldEntityInputException('A location cannot be its own parent.');
         }
 
         if ($parentId !== null) {
@@ -183,23 +183,23 @@ class WorldEntityService
         $userId = isset($typed['user_id']) ? (int) $typed['user_id'] : null;
 
         if ($characterType === CharacterType::Player && $userId === null) {
-            throw new InvalidArgumentException('A player character must belong to a user.');
+            throw new InvalidWorldEntityInputException('A player character must belong to a user.');
         }
 
         if ($characterType === CharacterType::Npc && $userId !== null) {
-            throw new InvalidArgumentException('An NPC cannot belong to a user.');
+            throw new InvalidWorldEntityInputException('An NPC cannot belong to a user.');
         }
 
         $clanId = isset($typed['clan_id']) ? (int) $typed['clan_id'] : null;
 
         if ($clanId !== null && ! CanonClan::query()->whereKey($clanId)->exists()) {
-            throw new InvalidArgumentException('The selected clan does not exist.');
+            throw new InvalidWorldEntityInputException('The selected clan does not exist.');
         }
 
         $sireId = isset($typed['sire_character_id']) ? (int) $typed['sire_character_id'] : null;
 
         if ($sireId === $entity->id) {
-            throw new InvalidArgumentException('A character cannot be their own sire.');
+            throw new InvalidWorldEntityInputException('A character cannot be their own sire.');
         }
 
         if ($sireId !== null) {

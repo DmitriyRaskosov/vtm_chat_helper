@@ -7,10 +7,10 @@ use App\Models\Location;
 use App\Models\Scene;
 use App\Models\SceneContext;
 use App\Models\User;
+use App\Scene\Exceptions\InvalidSceneContextInputException;
+use App\Scene\Exceptions\SceneNotMutableException;
 use App\World\MixedChronicleException;
 use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class SceneContextService
 {
@@ -32,7 +32,7 @@ class SceneContextService
 
         foreach (array_keys($fields) as $field) {
             if (! in_array($field, $allowed, true)) {
-                throw new InvalidArgumentException("Unknown scene context field [{$field}].");
+                throw new InvalidSceneContextInputException("Unknown scene context field [{$field}].");
             }
         }
 
@@ -169,7 +169,7 @@ class SceneContextService
 
     private function conflict(): never
     {
-        throw new ConflictHttpException('Сцена закрыта или локация уже изменена');
+        throw new SceneNotMutableException;
     }
 
     private function normalize(int $chronicleId, string $field, mixed $raw): mixed
@@ -182,7 +182,7 @@ class SceneContextService
             $locationId = (int) $raw;
             $location = Location::query()->find($locationId);
             if ($location === null) {
-                throw new InvalidArgumentException('Scene location must be a location entity.');
+                throw new InvalidSceneContextInputException('Scene location must be a location entity.');
             }
             if ((int) $location->chronicle_id !== $chronicleId) {
                 throw new MixedChronicleException;

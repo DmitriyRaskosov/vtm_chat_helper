@@ -7,9 +7,7 @@ use App\Models\Scene;
 use App\Models\SceneContext;
 use App\Models\WorldEntity;
 use App\Scene\SceneContextService;
-use App\World\MixedChronicleException;
 use Illuminate\Http\JsonResponse;
-use InvalidArgumentException;
 
 class SceneContextController extends Controller
 {
@@ -31,18 +29,12 @@ class SceneContextController extends Controller
             'storyteller_notes',
         ]);
 
-        try {
-            $context = $this->contexts->apply(
-                $scene,
-                $fields,
-                (int) $request->validated('expected_revision'),
-                $request->user(),
-            );
-        } catch (MixedChronicleException $e) {
-            abort(409, $e->getMessage());
-        } catch (InvalidArgumentException $e) {
-            abort(422, $e->getMessage());
-        }
+        $context = $this->contexts->apply(
+            $scene,
+            $fields,
+            (int) $request->validated('expected_revision'),
+            $request->user(),
+        );
 
         return response()->json(['context' => $this->serialize($scene, $context)]);
     }

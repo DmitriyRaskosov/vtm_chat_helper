@@ -1,5 +1,7 @@
 <?php
 
+use App\Exceptions\DomainException;
+use App\Exceptions\InvalidInputException;
 use App\Http\Middleware\EnsureStoryteller;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
@@ -23,4 +25,18 @@ return Application::configure(basePath: dirname(__DIR__))
         $exceptions->shouldRenderJsonWhen(
             fn (Request $request) => $request->is('api/*') || $request->expectsJson(),
         );
+
+        $exceptions->render(function (DomainException $e, Request $request) {
+            if (! $request->is('api/*')) {
+                return null;
+            }
+
+            $payload = ['message' => $e->getMessage()];
+
+            if ($e instanceof InvalidInputException) {
+                $payload['errors'] = (object) [];
+            }
+
+            return response()->json($payload, $e->statusCode());
+        });
     })->create();

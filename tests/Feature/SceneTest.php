@@ -147,7 +147,8 @@ class SceneTest extends TestCase
                 'role' => 'npc',
             ]);
 
-        $response->assertStatus(422);
+        $response->assertStatus(409);
+        $response->assertJsonPath('message', 'World entities must belong to the same chronicle.');
     }
 
     public function test_scene_context_can_be_updated(): void

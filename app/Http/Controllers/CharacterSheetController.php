@@ -9,6 +9,7 @@ use App\Character\CharacterPlaceService;
 use App\Character\CharacterSheetReader;
 use App\Character\CharacterTraitService;
 use App\Character\DisciplineService;
+use App\Character\Exceptions\BiographyUnchangedException;
 use App\Chronicle\CurrentChronicle;
 use App\Enums\CharacterBiographyStatus;
 use App\Enums\CharacterType;
@@ -27,13 +28,11 @@ use App\Models\Scene;
 use App\Models\SceneParticipant;
 use App\Models\WorldEntity;
 use App\Scene\SceneParticipantService;
-use App\World\MixedChronicleException;
 use App\World\WorldEntityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
 
 class CharacterSheetController extends Controller
 {
@@ -174,18 +173,12 @@ class CharacterSheetController extends Controller
                 }
             }
 
-            try {
-                $entity = $this->entities->create(
-                    $chronicle,
-                    WorldEntityType::Character,
-                    $validated['canonical_name'],
-                    typed: $typed,
-                );
-            } catch (InvalidArgumentException $e) {
-                abort(422, $e->getMessage());
-            } catch (MixedChronicleException $e) {
-                abort(409, $e->getMessage());
-            }
+            $entity = $this->entities->create(
+                $chronicle,
+                WorldEntityType::Character,
+                $validated['canonical_name'],
+                typed: $typed,
+            );
 
             $character = Character::query()->findOrFail($entity->id);
 
@@ -204,13 +197,7 @@ class CharacterSheetController extends Controller
     {
         CharacterAccess::abortUnlessManagesSheet($request->user(), $character);
 
-        try {
-            $this->identity->update($character, $request->validated());
-        } catch (InvalidArgumentException $e) {
-            abort(422, $e->getMessage());
-        } catch (MixedChronicleException $e) {
-            abort(409, $e->getMessage());
-        }
+        $this->identity->update($character, $request->validated());
 
         return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
     }
@@ -219,23 +206,19 @@ class CharacterSheetController extends Controller
     {
         CharacterAccess::abortUnlessManagesSheet($request->user(), $character);
 
-        try {
-            DB::transaction(function () use ($request, $character): void {
-                foreach ($request->validated('disciplines') as $row) {
-                    $discipline = CanonDiscipline::query()->findOrFail((int) $row['discipline_id']);
-                    $level = (int) $row['level'];
-                    if ($level === 0) {
-                        $this->disciplines->clearCharacterDiscipline($character, $discipline);
+        DB::transaction(function () use ($request, $character): void {
+            foreach ($request->validated('disciplines') as $row) {
+                $discipline = CanonDiscipline::query()->findOrFail((int) $row['discipline_id']);
+                $level = (int) $row['level'];
+                if ($level === 0) {
+                    $this->disciplines->clearCharacterDiscipline($character, $discipline);
 
-                        continue;
-                    }
-
-                    $this->disciplines->setCharacterDiscipline($character, $discipline, $level);
+                    continue;
                 }
-            });
-        } catch (InvalidArgumentException $e) {
-            abort(422, $e->getMessage());
-        }
+
+                $this->disciplines->setCharacterDiscipline($character, $discipline, $level);
+            }
+        });
 
         return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
     }
@@ -256,10 +239,7 @@ class CharacterSheetController extends Controller
                 'Правка с листа',
                 $request->user(),
             );
-        } catch (InvalidArgumentException $e) {
-            if ($e->getMessage() !== 'Biography is unchanged.') {
-                abort(422, $e->getMessage());
-            }
+        } catch (BiographyUnchangedException) {
         }
 
         return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
@@ -279,13 +259,7 @@ class CharacterSheetController extends Controller
         CharacterAccess::abortUnlessManagesSheet($request->user(), $character);
 
         return DB::transaction(function () use ($request, $character) {
-            try {
-                $this->place->apply($character, $request->validated());
-            } catch (InvalidArgumentException $e) {
-                abort(422, $e->getMessage());
-            } catch (MixedChronicleException $e) {
-                abort(409, $e->getMessage());
-            }
+            $this->place->apply($character, $request->validated());
 
             return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
         });

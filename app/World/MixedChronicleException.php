@@ -2,9 +2,9 @@
 
 namespace App\World;
 
-use InvalidArgumentException;
+use App\Exceptions\ConflictException;
 
-class MixedChronicleException extends InvalidArgumentException
+class MixedChronicleException extends ConflictException
 {
     public function __construct()
     {

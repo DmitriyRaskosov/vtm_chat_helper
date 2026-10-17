@@ -2,7 +2,7 @@
 
 - **Stage:** 2
 - **Part:** 1
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 019
 - **Risk:** high (коды ответов; `MixedChronicleException` 422 → 409 меняет API)
 - **Разрешённые зависимости:** нет

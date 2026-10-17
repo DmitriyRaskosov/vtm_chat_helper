@@ -61,6 +61,7 @@ class MessageEditService
             return;
         }
 
+        // Авторизация: перенесётся в Policy (задача 030a).
         throw new AccessDeniedHttpException('You cannot edit this message.');
     }
 

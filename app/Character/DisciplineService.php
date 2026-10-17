@@ -2,11 +2,11 @@
 
 namespace App\Character;
 
+use App\Character\Exceptions\InvalidDisciplineInputException;
 use App\Models\CanonDiscipline;
 use App\Models\Character;
 use App\Models\CharacterDiscipline;
 use App\Models\CharacterPower;
-use InvalidArgumentException;
 
 class DisciplineService
 {
@@ -16,7 +16,7 @@ class DisciplineService
         int $level,
     ): CharacterDiscipline {
         if ($level < 1 || $level > 9) {
-            throw new InvalidArgumentException('A discipline level must be between 1 and 9.');
+            throw new InvalidDisciplineInputException('A discipline level must be between 1 and 9.');
         }
 
         return CharacterDiscipline::query()->updateOrCreate(
@@ -43,7 +43,7 @@ class DisciplineService
             ->where('character_id', $character->id)
             ->where('discipline_id', $discipline->id)
             ->exists()) {
-            throw new InvalidArgumentException('Remove learned powers before clearing a discipline.');
+            throw new InvalidDisciplineInputException('Remove learned powers before clearing a discipline.');
         }
 
         $known->delete();

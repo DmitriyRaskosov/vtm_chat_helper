@@ -3,16 +3,17 @@
 namespace App\Scene;
 
 use App\Enums\SceneParticipantRole;
+use App\Exceptions\ConflictException;
+use App\Exceptions\InvalidInputException;
 use App\Jobs\WriteFinalDiaryJob;
 use App\Models\Character;
 use App\Models\Message;
 use App\Models\Scene;
 use App\Models\SceneParticipant;
+use App\Scene\Exceptions\InvalidSceneParticipantInputException;
 use App\World\MixedChronicleException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
-use Symfony\Component\HttpKernel\Exception\ConflictHttpException;
 
 class SceneParticipantService
 {
@@ -31,7 +32,7 @@ class SceneParticipantService
         }
 
         if (! $character->is_active) {
-            throw new InvalidArgumentException('An archived character cannot enter a scene.');
+            throw new InvalidSceneParticipantInputException('An archived character cannot enter a scene.');
         }
 
         return DB::transaction(function () use ($scene, $character, $role, $visible): SceneParticipant {
@@ -83,7 +84,7 @@ class SceneParticipantService
                 ->first();
 
             if ($current === null) {
-                throw new InvalidArgumentException('Character is not a current participant of this scene.');
+                throw new InvalidSceneParticipantInputException('Character is not a current participant of this scene.');
             }
 
             $lastMessageId = Message::query()
@@ -121,7 +122,7 @@ class SceneParticipantService
 
             try {
                 $this->leave($scene, $character);
-            } catch (ConflictHttpException|InvalidArgumentException) {
+            } catch (ConflictException|InvalidInputException) {
                 continue;
             }
         }

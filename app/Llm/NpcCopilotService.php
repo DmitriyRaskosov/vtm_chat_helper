@@ -3,6 +3,7 @@
 namespace App\Llm;
 
 use App\Context\ContextBuilder;
+use App\Llm\Exceptions\LlmUnavailableException;
 use App\Models\Scene;
 use RuntimeException;
 
@@ -38,7 +39,7 @@ class NpcCopilotService
                 'temperature' => (float) config('copilot.topic_temperature', 0.1),
             ]);
         } catch (\Throwable $e) {
-            throw new RuntimeException('LLM provider is unavailable.', 0, $e);
+            throw new LlmUnavailableException($e);
         }
 
         $topics = $this->parseTopics($topicTurn->content, $prompt);
@@ -61,7 +62,7 @@ class NpcCopilotService
             $turn = $this->chat->chatTurn($messages, $replyOptions);
             $raw = $turn->content;
         } catch (\Throwable $e) {
-            throw new RuntimeException('LLM provider is unavailable.', 0, $e);
+            throw new LlmUnavailableException($e);
         }
 
         $metadata['topics'] = $topics;

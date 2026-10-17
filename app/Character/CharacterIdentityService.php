@@ -2,12 +2,12 @@
 
 namespace App\Character;
 
+use App\Character\Exceptions\InvalidCharacterInputException;
 use App\Models\CanonClan;
 use App\Models\Character;
 use App\Models\WorldEntity;
 use App\World\WorldEntityService;
 use Illuminate\Database\UniqueConstraintViolationException;
-use InvalidArgumentException;
 
 class CharacterIdentityService
 {
@@ -21,7 +21,7 @@ class CharacterIdentityService
         if (array_key_exists('canonical_name', $fields)) {
             $name = trim((string) $fields['canonical_name']);
             if ($name === '') {
-                throw new InvalidArgumentException('A character name is required.');
+                throw new InvalidCharacterInputException('A character name is required.');
             }
 
             $this->rename($character, $name);
@@ -74,7 +74,7 @@ class CharacterIdentityService
         try {
             $entity->update(['canonical_name' => $name]);
         } catch (UniqueConstraintViolationException) {
-            throw new InvalidArgumentException('This name is already used in the chronicle.');
+            throw new InvalidCharacterInputException('This name is already used in the chronicle.');
         }
     }
 
@@ -85,13 +85,13 @@ class CharacterIdentityService
     {
         if (isset($typed['clan_id']) && $typed['clan_id'] !== null
             && ! CanonClan::query()->whereKey((int) $typed['clan_id'])->exists()) {
-            throw new InvalidArgumentException('The selected clan does not exist.');
+            throw new InvalidCharacterInputException('The selected clan does not exist.');
         }
 
         if (isset($typed['sire_character_id'])) {
             $sireId = (int) $typed['sire_character_id'];
             if ($sireId === (int) $character->id) {
-                throw new InvalidArgumentException('A character cannot be their own sire.');
+                throw new InvalidCharacterInputException('A character cannot be their own sire.');
             }
 
             $sire = Character::query()->findOrFail($sireId);

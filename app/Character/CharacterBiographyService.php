@@ -2,13 +2,14 @@
 
 namespace App\Character;
 
+use App\Character\Exceptions\BiographyUnchangedException;
+use App\Character\Exceptions\InvalidBiographyInputException;
 use App\Enums\CharacterBiographyStatus;
 use App\Models\Character;
 use App\Models\CharacterBiography;
 use App\Models\CharacterBiographyVersion;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
 
 class CharacterBiographyService
 {
@@ -37,12 +38,12 @@ class CharacterBiographyService
         $changeReason = trim($changeReason);
 
         if ($changeReason === '') {
-            throw new InvalidArgumentException('A change reason is required.');
+            throw new InvalidBiographyInputException('A change reason is required.');
         }
 
         foreach (array_keys($fields) as $field) {
             if (! in_array($field, [...self::TEXT_FIELDS, 'status'], true)) {
-                throw new InvalidArgumentException("Unknown biography field [{$field}].");
+                throw new InvalidBiographyInputException("Unknown biography field [{$field}].");
             }
         }
 
@@ -55,11 +56,11 @@ class CharacterBiographyService
             $merged = $this->merge($biography, $fields);
 
             if ($this->isBlank($merged['summary']) && $this->isBlank($merged['full_text'])) {
-                throw new InvalidArgumentException('Biography requires a summary or full_text.');
+                throw new InvalidBiographyInputException('Biography requires a summary or full_text.');
             }
 
             if ($biography !== null && $this->sameCanon($biography, $merged)) {
-                throw new InvalidArgumentException('Biography is unchanged.');
+                throw new BiographyUnchangedException;
             }
 
             $nextVersion = $biography === null ? 1 : (int) $biography->current_version + 1;

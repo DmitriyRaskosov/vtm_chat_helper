@@ -36,6 +36,7 @@
 2. `LlmUnavailableException` (503) и `LlmResponseInvalidException` (502) наследуют `UpstreamException`; тексты прежние. `NpcCopilotService` бросает их вместо `RuntimeException`.
 3. Сервис `CopilotDraftService::create(...)`: вызывает `NpcCopilotService`, сохраняет `CopilotRequest`, возвращает DTO (`final readonly`) с `copilotRequestId` и `drafts`.
 4. Контроллер: резолвер (024) → сервис → `response()->json([...])` той же формы. Никаких `try/catch` — маппинг глобальный.
+5. В CopilotController заменить сравнение по тексту 'LLM provider is unavailable.' на catch (LlmUnavailableException).
 
 ## Definition of Done
 

@@ -10,7 +10,6 @@ use App\Models\SceneParticipant;
 use App\Models\WorldEntity;
 use App\Scene\SceneParticipantService;
 use Illuminate\Http\JsonResponse;
-use InvalidArgumentException;
 
 class SceneParticipantController extends Controller
 {
@@ -32,22 +31,14 @@ class SceneParticipantController extends Controller
         $role = SceneParticipantRole::from((string) $request->validated('role'));
         $visible = $request->boolean('visible', true);
 
-        try {
-            $participant = $this->participants->enter($scene, $character, $role, $visible);
-        } catch (InvalidArgumentException $e) {
-            abort(422, $e->getMessage());
-        }
+        $participant = $this->participants->enter($scene, $character, $role, $visible);
 
         return response()->json(['participant' => $this->serialize($participant)], 201);
     }
 
     public function leave(Scene $scene, Character $character): JsonResponse
     {
-        try {
-            $participant = $this->participants->leave($scene, $character);
-        } catch (InvalidArgumentException $e) {
-            abort(422, $e->getMessage());
-        }
+        $participant = $this->participants->leave($scene, $character);
 
         return response()->json(['participant' => $this->serialize($participant)]);
     }
