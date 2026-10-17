@@ -15,16 +15,14 @@
             @save="saveIdentity"
         />
 
-        <template v-if="!compact">
-            <SheetAdvantagesSection
-                v-model:new-discipline-id="newDisciplineId"
-                :discipline-rows="disciplineRows"
-                :unused-disciplines="unusedDisciplines"
-                @set-discipline="setDiscipline"
-                @add-discipline="addDiscipline"
-                @remove-discipline="removeDiscipline"
-            />
-        </template>
+        <SheetAdvantagesSection
+            v-model:new-discipline-id="newDisciplineId"
+            :discipline-rows="disciplineRows"
+            :unused-disciplines="unusedDisciplines"
+            @set-discipline="setDiscipline"
+            @add-discipline="addDiscipline"
+            @remove-discipline="removeDiscipline"
+        />
 
         <SheetBiographySection
             :sheet="sheet"

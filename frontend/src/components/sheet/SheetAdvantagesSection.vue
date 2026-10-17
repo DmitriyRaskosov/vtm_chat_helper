@@ -29,6 +29,7 @@
 </template>
 
 <script setup>
+import TraitDots from './TraitDots.vue';
 
 defineProps({
     disciplineRows: { type: Array, required: true },
