@@ -39,8 +39,8 @@ class Character extends Model
     public $incrementing = false;
 
     /**
-     * Shared-PK identity is read from WorldEntity::character(). Inverse belongsTo
-     * on the same `id` is omitted: Eloquent recurses until PHP dies.
+     * Идентичность с общим PK читается через WorldEntity::character(). Обратный belongsTo
+     * на том же `id` не объявляем: Eloquent уходит в рекурсию до падения PHP.
      *
      * @return BelongsTo<User, $this>
      */

@@ -2,25 +2,25 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+#[Fillable([
+    'slug',
+    'title',
+    'text',
+    'category',
+    'tags',
+    'source_book',
+    'source_page',
+    'source_url',
+    'retrieved_at',
+    'era_from',
+    'era_to',
+])]
 class CanonLoreEntry extends Model
 {
-    protected $fillable = [
-        'slug',
-        'title',
-        'text',
-        'category',
-        'tags',
-        'source_book',
-        'source_page',
-        'source_url',
-        'retrieved_at',
-        'era_from',
-        'era_to',
-    ];
-
     protected function casts(): array
     {
         return [

@@ -2,20 +2,20 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
+#[Fillable([
+    'slug',
+    'name',
+    'description',
+    'founded_year',
+    'ended_year',
+    'is_independent',
+])]
 class CanonSect extends Model
 {
-    protected $fillable = [
-        'slug',
-        'name',
-        'description',
-        'founded_year',
-        'ended_year',
-        'is_independent',
-    ];
-
     protected function casts(): array
     {
         return [

@@ -2,23 +2,23 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+#[Fillable([
+    'from_clan_id',
+    'to_clan_id',
+    'relation_type',
+    'intensity',
+    'since_year',
+    'until_year',
+    'is_symmetric',
+    'note',
+    'source',
+])]
 class CanonClanRelation extends Model
 {
-    protected $fillable = [
-        'from_clan_id',
-        'to_clan_id',
-        'relation_type',
-        'intensity',
-        'since_year',
-        'until_year',
-        'is_symmetric',
-        'note',
-        'source',
-    ];
-
     protected function casts(): array
     {
         return [

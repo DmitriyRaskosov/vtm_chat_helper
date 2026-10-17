@@ -17,6 +17,10 @@ use Illuminate\Support\Facades\DB;
 
 class DiaryEntryController extends Controller
 {
+    public function __construct(
+        private EmbeddingProvider $embeddings,
+    ) {}
+
     public function index(Request $request, Character $character): JsonResponse
     {
         $entries = CharacterDiaryEntry::query()
@@ -66,7 +70,7 @@ class DiaryEntryController extends Controller
             $diaryEntry->update(['entry' => $entry]);
 
             // Пересчитать embedding — иначе retrieval сломается
-            $vector = app(EmbeddingProvider::class)->embed($entry);
+            $vector = $this->embeddings->embed($entry);
 
             DB::statement(
                 'UPDATE character_diary_entries SET embedding = ?::vector WHERE id = ?',

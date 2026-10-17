@@ -30,10 +30,9 @@ class DiaryWriterService
     ) {}
 
     /**
-     * Writes all in-scene messages after each NPC participant's diary cursor (up to
-     * {@see self::MAX_MESSAGES_PER_CALL} per NPC). Does not read `write_threshold` from
-     * config — that gate applies only in {@see ChatController::maybeDispatchDiaryWrite}
-     * before dispatching {@see WriteDiaryJob}.
+     * Пишет все сообщения сцены после курсора дневника каждого NPC-участника (до
+     * {@see self::MAX_MESSAGES_PER_CALL} на NPC). `write_threshold` из config не читает —
+     * порог только в {@see ChatController::maybeDispatchDiaryWrite} перед {@see WriteDiaryJob}.
      *
      * @return array{created: int, npcs: int, processed_messages: int, errors: list<string>}
      */
@@ -185,8 +184,8 @@ class DiaryWriterService
     }
 
     /**
-     * Final L0 slice when an NPC leaves the scene (up to `left_message_id`).
-     * Player characters ({@link CharacterType::Player}) are skipped: PC diary is not a product feature.
+     * Финальный срез L0, когда NPC уходит из сцены (до `left_message_id`).
+     * Игровые персонажи ({@link CharacterType::Player}) пропускаются: дневник PC вне продукта.
      */
     public function writeFinalForNpc(Scene $scene, Character $character): bool
     {

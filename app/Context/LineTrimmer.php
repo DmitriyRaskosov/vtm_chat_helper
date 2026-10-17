@@ -7,7 +7,7 @@ final class LineTrimmer
     public function __construct(private TokenEstimator $estimator) {}
 
     /**
-     * Keep a heading plus as many body lines as fit in `$maxTokens`.
+     * Сохраняет заголовок и столько строк тела, сколько укладывается в `$maxTokens`.
      *
      * @param  list<string>  $bodyLines
      * @return array{0: string, 1: bool} content and whether anything was dropped

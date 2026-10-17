@@ -45,7 +45,7 @@ class SceneContext extends Model
     }
 
     /**
-     * Typed location row. Inverse WorldEntity belongsTo on shared PK is omitted.
+     * Строка локации. Обратный belongsTo WorldEntity на общем PK не объявляем.
      *
      * @return BelongsTo<Location, $this>
      */

@@ -63,7 +63,7 @@ final readonly class ContextRequest
     }
 
     /**
-     * Query for vector + graph retrieval. Topics when present, else the ST prompt.
+     * Запрос для векторного и графового retrieval: topics, если есть, иначе промпт рассказчика.
      */
     public function retrievalQuery(): string
     {

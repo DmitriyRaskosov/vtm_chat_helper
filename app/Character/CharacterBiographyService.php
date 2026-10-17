@@ -23,8 +23,8 @@ class CharacterBiographyService
     ];
 
     /**
-     * Replace the current biography and append an immutable version snapshot.
-     * Does not touch the search index.
+     * Заменяет текущую биографию и добавляет неизменяемый снимок версии.
+     * Поисковый индекс не трогает.
      *
      * @param  array<string, mixed>  $fields
      */

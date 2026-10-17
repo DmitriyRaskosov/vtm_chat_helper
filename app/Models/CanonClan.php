@@ -2,23 +2,23 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
+#[Fillable([
+    'slug',
+    'name',
+    'nickname',
+    'description',
+    'weakness',
+    'weakness_system',
+    'parent_clan_id',
+    'is_bloodline',
+    'is_playable',
+])]
 class CanonClan extends Model
 {
-    protected $fillable = [
-        'slug',
-        'name',
-        'nickname',
-        'description',
-        'weakness',
-        'weakness_system',
-        'parent_clan_id',
-        'is_bloodline',
-        'is_playable',
-    ];
-
     protected function casts(): array
     {
         return [

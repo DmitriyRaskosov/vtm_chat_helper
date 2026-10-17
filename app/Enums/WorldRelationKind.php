@@ -45,7 +45,7 @@ enum WorldRelationKind: string
     }
 
     /**
-     * Relation keys stored on incoming edges that should appear in neighbors().
+     * Ключи связей на входящих рёбрах, которые должны попасть в neighbors().
      *
      * @return list<self>
      */

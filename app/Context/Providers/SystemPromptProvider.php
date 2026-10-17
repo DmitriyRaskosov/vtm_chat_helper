@@ -55,7 +55,6 @@ class SystemPromptProvider implements ContextProvider
         return ContextSection::fromContent($this->key(), $content, $this->estimator, [
             'npc_name' => $npcName,
             'draft_count' => $draftCount,
-            'tools_enabled' => (bool) config('copilot.tools.enabled'),
             'pass' => ContextPass::Reply->value,
         ]);
     }

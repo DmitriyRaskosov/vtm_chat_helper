@@ -49,8 +49,8 @@ class WorldEntity extends Model
     }
 
     /**
-     * Shared-PK subtype. Inverse belongsTo on the subtype is omitted: Eloquent
-     * HasOne + belongsTo on the same `id` recurses until PHP dies.
+     * Подтип с общим PK. Обратный belongsTo на подтипе не объявляем: связка
+     * HasOne + belongsTo на одном `id` уходит в рекурсию до падения PHP.
      *
      * @return HasOne<Location, $this>
      */

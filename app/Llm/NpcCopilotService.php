@@ -153,7 +153,7 @@ class NpcCopilotService
                     }
                     $item = trim($item);
 
-                    // Nested JSON guard: model may wrap each draft as a JSON string
+                    // Вложенный JSON: модель иногда оборачивает черновик в JSON-строку
                     if (str_starts_with($item, '{')) {
                         $inner = json_decode($item, true);
                         if (is_array($inner) && isset($inner['drafts']) && is_array($inner['drafts'])) {
@@ -172,7 +172,7 @@ class NpcCopilotService
                     }
                 }
 
-                // Dedupe — model sometimes repeats the same draft
+                // Дедупликация — модель иногда повторяет один и тот же черновик
                 $drafts = array_values(array_unique($drafts));
 
                 if (count($drafts) >= $expected) {

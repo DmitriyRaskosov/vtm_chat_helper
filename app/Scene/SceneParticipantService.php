@@ -137,16 +137,4 @@ class SceneParticipantService
             ->orderBy('id')
             ->get();
     }
-
-    /**
-     * @return Collection<int, SceneParticipant>
-     */
-    public function current(Scene $scene): Collection
-    {
-        return SceneParticipant::query()
-            ->where('scene_id', $scene->id)
-            ->where('is_current', true)
-            ->orderBy('id')
-            ->get();
-    }
 }
