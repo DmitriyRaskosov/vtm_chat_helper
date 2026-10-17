@@ -481,96 +481,6 @@ parameters:
 			path: app/Http/Controllers/WorldEntityController.php
 
 		-
-			message: '#^Call to function in_array\(\) with arguments string, array\{App\\Enums\\WorldEntityType\:\:Faction, App\\Enums\\WorldEntityType\:\:Coterie, App\\Enums\\WorldEntityType\:\:Circle, App\\Enums\\WorldEntityType\:\:Other, App\\Enums\\WorldEntityType\:\:Location, App\\Enums\\WorldEntityType\:\:Item, App\\Enums\\WorldEntityType\:\:Concept\} and true will always evaluate to false\.$#'
-			identifier: function.impossibleType
-			count: 1
-			path: app/Http/Controllers/WorldRelationController.php
-
-		-
-			message: '#^Call to function in_array\(\) with arguments string\|null, array\{App\\Enums\\WorldEntityType\:\:Faction, App\\Enums\\WorldEntityType\:\:Coterie, App\\Enums\\WorldEntityType\:\:Circle, App\\Enums\\WorldEntityType\:\:Other, App\\Enums\\WorldEntityType\:\:Location, App\\Enums\\WorldEntityType\:\:Item, App\\Enums\\WorldEntityType\:\:Concept\} and true will always evaluate to false\.$#'
-			identifier: function.impossibleType
-			count: 2
-			path: app/Http/Controllers/WorldRelationController.php
-
-		-
-			message: '#^Call to method getMessage\(\) on an unknown class App\\World\\WorldRelationException\.$#'
-			identifier: class.notFound
-			count: 1
-			path: app/Http/Controllers/WorldRelationController.php
-
-		-
-			message: '#^Call to method getMessage\(\) on an unknown class App\\World\\WorldRelationTypeException\.$#'
-			identifier: class.notFound
-			count: 1
-			path: app/Http/Controllers/WorldRelationController.php
-
-		-
-			message: '#^Cannot call method toIso8601String\(\) on string\.$#'
-			identifier: method.nonObject
-			count: 3
-			path: app/Http/Controllers/WorldRelationController.php
-
-		-
-			message: '#^Caught class App\\World\\WorldRelationException not found\.$#'
-			identifier: class.notFound
-			count: 1
-			path: app/Http/Controllers/WorldRelationController.php
-
-		-
-			message: '#^Caught class App\\World\\WorldRelationTypeException not found\.$#'
-			identifier: class.notFound
-			count: 1
-			path: app/Http/Controllers/WorldRelationController.php
-
-		-
-			message: '#^Dead catch \- App\\World\\MixedChronicleException is already caught above\.$#'
-			identifier: catch.alreadyCaught
-			count: 1
-			path: app/Http/Controllers/WorldRelationController.php
-
-		-
-			message: '#^Result of && is always false\.$#'
-			identifier: booleanAnd.alwaysFalse
-			count: 5
-			path: app/Http/Controllers/WorldRelationController.php
-
-		-
-			message: '#^Strict comparison using \!\=\= between string and App\\Enums\\WorldEntityType\:\:Faction will always evaluate to true\.$#'
-			identifier: notIdentical.alwaysTrue
-			count: 1
-			path: app/Http/Controllers/WorldRelationController.php
-
-		-
-			message: '#^Strict comparison using \=\=\= between string and App\\Enums\\WorldEntityStatus\:\:Active will always evaluate to false\.$#'
-			identifier: identical.alwaysFalse
-			count: 4
-			path: app/Http/Controllers/WorldRelationController.php
-
-		-
-			message: '#^Strict comparison using \=\=\= between string\|null and App\\Enums\\WorldEntityType\:\:Faction will always evaluate to false\.$#'
-			identifier: identical.alwaysFalse
-			count: 2
-			path: app/Http/Controllers/WorldRelationController.php
-
-		-
-			message: '#^Unreachable statement \- code above always terminates\.$#'
-			identifier: deadCode.unreachable
-			count: 2
-			path: app/Http/Controllers/WorldRelationController.php
-
-		-
-			message: '#^Using nullsafe property access on non\-nullable type App\\Models\\WorldEntity\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 4
-			path: app/Http/Controllers/WorldRelationController.php
-
-		-
-			message: '#^Variable \$existed on left side of \?\? always exists and is not nullable\.$#'
-			identifier: nullCoalesce.variable
-			count: 1
-			path: app/Http/Controllers/WorldRelationController.php
-
-		-
 			message: '#^Using nullsafe property access "\?\-\>entity_type" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
@@ -919,24 +829,6 @@ parameters:
 			path: app/Models/WorldRelation.php
 
 		-
-			message: '#^PHPDoc tag @use has invalid type Database\\Factories\\WorldRelationTypeFactory\.$#'
-			identifier: class.notFound
-			count: 1
-			path: app/Models/WorldRelationType.php
-
-		-
-			message: '#^Parameter \#1 \$array \(array\{\}\|string\) to function array_values is empty, call has no effect\.$#'
-			identifier: arrayValues.empty
-			count: 2
-			path: app/Models/WorldRelationType.php
-
-		-
-			message: '#^Type Database\\Factories\\WorldRelationTypeFactory in generic type Illuminate\\Database\\Eloquent\\Factories\\HasFactory\<Database\\Factories\\WorldRelationTypeFactory\> in PHPDoc tag @use is not subtype of template type TFactory of Illuminate\\Database\\Eloquent\\Factories\\Factory of trait Illuminate\\Database\\Eloquent\\Factories\\HasFactory\.$#'
-			identifier: generics.notSubtype
-			count: 1
-			path: app/Models/WorldRelationType.php
-
-		-
 			message: '#^Parameter \#1 \$array \(non\-empty\-list\<string\>\) of array_values is already a list, call has no effect\.$#'
 			identifier: arrayValues.list
 			count: 1
@@ -1031,36 +923,6 @@ parameters:
 			identifier: instanceof.alwaysFalse
 			count: 1
 			path: app/World/WorldRelationService.php
-
-		-
-			message: '#^Instantiated class App\\World\\WorldRelationException not found\.$#'
-			identifier: class.notFound
-			count: 2
-			path: app/World/WorldRelationService.php
-
-		-
-			message: '#^Throwing object of an unknown class App\\World\\WorldRelationException\.$#'
-			identifier: class.notFound
-			count: 2
-			path: app/World/WorldRelationService.php
-
-		-
-			message: '#^Instanceof between string and App\\Enums\\WorldEntityType will always evaluate to false\.$#'
-			identifier: instanceof.alwaysFalse
-			count: 1
-			path: app/World/WorldRelationTypeValidator.php
-
-		-
-			message: '#^Instantiated class App\\World\\WorldRelationTypeException not found\.$#'
-			identifier: class.notFound
-			count: 3
-			path: app/World/WorldRelationTypeValidator.php
-
-		-
-			message: '#^Throwing object of an unknown class App\\World\\WorldRelationTypeException\.$#'
-			identifier: class.notFound
-			count: 3
-			path: app/World/WorldRelationTypeValidator.php
 
 		-
 			message: '#^Parameter \#1 \$view of function view expects view\-string\|null, string given\.$#'

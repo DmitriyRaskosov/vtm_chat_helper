@@ -12,7 +12,6 @@ use App\Http\Controllers\SceneContextController;
 use App\Http\Controllers\SceneController;
 use App\Http\Controllers\SceneParticipantController;
 use App\Http\Controllers\WorldEntityController;
-use App\Http\Controllers\WorldRelationController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [RegisterController::class, 'store']);
@@ -59,11 +58,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/world/entities/{worldEntity}', [WorldEntityController::class, 'update']);
         Route::post('/world/entities/{worldEntity}/archive', [WorldEntityController::class, 'archive']);
         Route::post('/world/entities/{worldEntity}/restore', [WorldEntityController::class, 'restore']);
-        Route::get('/world/entities/{worldEntity}/neighbors', [WorldRelationController::class, 'neighbors']);
-
-        Route::get('/world/relations', [WorldRelationController::class, 'index']);
-        Route::post('/world/relations', [WorldRelationController::class, 'store']);
-        Route::post('/world/relations/{worldRelation}/end', [WorldRelationController::class, 'end']);
 
         Route::post('/game-sessions/{gameSession}/scenes', [SceneController::class, 'store']);
         Route::patch('/scenes/{scene}/activate', [SceneController::class, 'activate']);

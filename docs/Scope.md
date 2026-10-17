@@ -36,7 +36,7 @@ NPC ведут долговременный дневник, который по�
 - Создание, чтение, идентичность, дисциплины, биография, traits, место (клан/секта), архив.
 
 ### World
-- `world_entities`, `world_relations`, `world_relation_types`, альясы. CRUD + neighbors.
+- `world_entities` — identity для characters/locations; `world_relations` — read-only, не используется.
 - Экран «Мир» из UI убран, API сущностей и отношений остаётся (отношения для Copilot).
 
 ### Canon

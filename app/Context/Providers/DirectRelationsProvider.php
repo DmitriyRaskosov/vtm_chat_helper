@@ -90,7 +90,7 @@ class DirectRelationsProvider implements ContextProvider
             : $relation->source;
         $selfName = $self->canonical_name;
         $otherName = $counterpart?->canonical_name ?? ('#'.$relation->target_id);
-        $type = $relation->relation;
+        $type = $relation->relation->value;
         $weight = number_format((float) $relation->weight, 2);
         $note = is_string($relation->note) && $relation->note !== '' ? '; '.$relation->note : '';
 

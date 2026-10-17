@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\WorldEntityType;
+use App\Enums\WorldRelationKind;
 use Database\Factories\WorldRelationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
@@ -11,6 +12,9 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use InvalidArgumentException;
 
+/**
+ * @property WorldRelationKind $relation
+ */
 #[Fillable([
     'chronicle_id',
     'source_type',
@@ -65,11 +69,6 @@ class WorldRelation extends Model
         return $this->belongsTo(WorldEntity::class, 'target_id');
     }
 
-    public function relationType(): ?WorldRelationType
-    {
-        return WorldRelationType::query()->where('key', $this->relation)->first();
-    }
-
     public function other(WorldEntity $entity): WorldEntity
     {
         if ((int) $this->source_id === (int) $entity->id
@@ -103,6 +102,7 @@ class WorldRelation extends Model
             'chronicle_id' => 'integer',
             'source_id' => 'integer',
             'target_id' => 'integer',
+            'relation' => WorldRelationKind::class,
             'intensity' => 'integer',
             'weight' => 'float',
             'metadata' => 'array',

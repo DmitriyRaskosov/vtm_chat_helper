@@ -13,7 +13,6 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            WorldRelationTypeSeeder::class,
             CanonSectSeeder::class,
             CanonClanSeeder::class,
             CanonClanSectSeeder::class,
