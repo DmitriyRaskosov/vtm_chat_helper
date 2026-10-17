@@ -44,7 +44,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('canon_lore_chunks');
         Schema::dropIfExists('canon_lore_entry_entities');
         Schema::dropIfExists('canon_lore_entries');
     }

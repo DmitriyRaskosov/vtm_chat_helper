@@ -9,10 +9,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('world_entities', function (Blueprint $table) {
-            $table->unique(['id', 'entity_type'], 'world_entities_id_type_unique');
-        });
-
         Schema::create('locations', function (Blueprint $table) {
             $table->unsignedBigInteger('id')->primary();
             $table->unsignedBigInteger('chronicle_id');
@@ -23,40 +19,26 @@ return new class extends Migration
 
             $table->unique(['id', 'chronicle_id'], 'locations_id_chronicle_unique');
             $table->unique(['id', 'entity_type'], 'locations_id_type_unique');
-        });
 
-        DB::statement("ALTER TABLE locations ADD CONSTRAINT locations_entity_type_check CHECK (entity_type = 'location')");
-
-        $this->typedIdentityForeign('locations');
-
-        Schema::table('locations', function (Blueprint $table) {
+            $table->foreign(['id', 'chronicle_id'], 'locations_id_chronicle_foreign')
+                ->references(['id', 'chronicle_id'])
+                ->on('world_entities')
+                ->restrictOnDelete();
+            $table->foreign(['id', 'entity_type'], 'locations_id_type_foreign')
+                ->references(['id', 'entity_type'])
+                ->on('world_entities')
+                ->restrictOnDelete();
             $table->foreign(['parent_location_id', 'chronicle_id'], 'locations_parent_chronicle_foreign')
                 ->references(['id', 'chronicle_id'])
                 ->on('locations')
                 ->restrictOnDelete();
         });
+
+        DB::statement("ALTER TABLE locations ADD CONSTRAINT locations_entity_type_check CHECK (entity_type = 'location')");
     }
 
     public function down(): void
     {
         Schema::dropIfExists('locations');
-
-        Schema::table('world_entities', function (Blueprint $table) {
-            $table->dropUnique('world_entities_id_type_unique');
-        });
-    }
-
-    private function typedIdentityForeign(string $table): void
-    {
-        Schema::table($table, function (Blueprint $blueprint) use ($table) {
-            $blueprint->foreign(['id', 'chronicle_id'], $table.'_id_chronicle_foreign')
-                ->references(['id', 'chronicle_id'])
-                ->on('world_entities')
-                ->restrictOnDelete();
-            $blueprint->foreign(['id', 'entity_type'], $table.'_id_type_foreign')
-                ->references(['id', 'entity_type'])
-                ->on('world_entities')
-                ->restrictOnDelete();
-        });
     }
 };

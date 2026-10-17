@@ -23,14 +23,12 @@ return new class extends Migration
             $table->timestamp('approved_at')->nullable();
             $table->foreignId('approved_by')->nullable()->constrained('users')->restrictOnDelete();
             $table->timestamps();
+
+            $table->foreign('character_id')->references('id')->on('characters')->restrictOnDelete();
         });
 
         DB::statement("ALTER TABLE character_biographies ADD CONSTRAINT character_biographies_status_check CHECK (status IN ('draft', 'approved'))");
         DB::statement('ALTER TABLE character_biographies ADD CONSTRAINT character_biographies_body_check CHECK (summary IS NOT NULL OR full_text IS NOT NULL)');
-
-        Schema::table('character_biographies', function (Blueprint $table) {
-            $table->foreign('character_id')->references('id')->on('characters')->restrictOnDelete();
-        });
 
         Schema::create('character_biography_versions', function (Blueprint $table) {
             $table->id();

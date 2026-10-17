@@ -21,6 +21,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['id', 'chronicle_id'], 'world_entities_id_chronicle_unique');
+            $table->unique(['id', 'entity_type'], 'world_entities_id_type_unique');
             $table->unique(['chronicle_id', 'slug'], 'world_entities_chronicle_slug_unique');
             $table->index(['chronicle_id', 'entity_type'], 'world_entities_chronicle_type_index');
         });

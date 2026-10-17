@@ -23,9 +23,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['scene_id', 'chronicle_id'], 'scene_contexts_scene_chronicle_unique');
-        });
 
-        Schema::table('scene_contexts', function (Blueprint $table) {
             $table->foreign('chronicle_id', 'scene_contexts_chronicle_foreign')
                 ->references('id')
                 ->on('chronicles')
@@ -51,16 +49,14 @@ return new class extends Migration
             $table->unsignedBigInteger('left_message_id')->nullable();
             $table->unsignedBigInteger('last_diary_message_id')->nullable();
             $table->index(['scene_id', 'is_current'], 'scene_participants_scene_current_index');
-        });
 
-        DB::statement("ALTER TABLE scene_participants ADD CONSTRAINT scene_participants_role_check CHECK (role IN ('npc', 'player', 'extra'))");
-
-        Schema::table('scene_participants', function (Blueprint $table) {
             $table->foreign(['character_id', 'chronicle_id'], 'scene_participants_character_chronicle_foreign')
                 ->references(['id', 'chronicle_id'])
                 ->on('characters')
                 ->restrictOnDelete();
         });
+
+        DB::statement("ALTER TABLE scene_participants ADD CONSTRAINT scene_participants_role_check CHECK (role IN ('npc', 'player', 'extra'))");
 
         DB::statement(
             'CREATE UNIQUE INDEX scene_participants_current_unique
@@ -71,6 +67,8 @@ return new class extends Migration
 
     public function down(): void
     {
+        DB::statement('DROP INDEX IF EXISTS scene_participants_current_unique');
+
         Schema::dropIfExists('scene_participants');
         Schema::dropIfExists('scene_contexts');
     }

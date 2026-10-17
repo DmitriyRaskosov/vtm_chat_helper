@@ -32,19 +32,7 @@ return new class extends Migration
 
             $table->unique(['id', 'chronicle_id'], 'characters_id_chronicle_unique');
             $table->unique(['id', 'entity_type'], 'characters_id_type_unique');
-        });
 
-        DB::statement("ALTER TABLE characters ADD CONSTRAINT characters_entity_type_check CHECK (entity_type = 'character')");
-        DB::statement("ALTER TABLE characters ADD CONSTRAINT characters_type_check CHECK (character_type IN ('player', 'npc'))");
-        DB::statement(<<<'SQL'
-ALTER TABLE characters ADD CONSTRAINT characters_player_user_check CHECK (
-    (character_type = 'player' AND user_id IS NOT NULL)
-    OR (character_type = 'npc' AND user_id IS NULL)
-)
-SQL);
-        DB::statement('ALTER TABLE characters ADD CONSTRAINT characters_sire_not_self_check CHECK (sire_character_id IS NULL OR sire_character_id <> id)');
-
-        Schema::table('characters', function (Blueprint $table) {
             $table->foreign(['id', 'chronicle_id'], 'characters_id_chronicle_foreign')
                 ->references(['id', 'chronicle_id'])
                 ->on('world_entities')
@@ -59,32 +47,24 @@ SQL);
                 ->restrictOnDelete();
         });
 
-        Schema::table('messages', function (Blueprint $table) {
-            $table->foreignId('author_character_id')
-                ->nullable()
-                ->after('npc_name')
-                ->constrained('characters')
-                ->restrictOnDelete();
-        });
+        DB::statement("ALTER TABLE characters ADD CONSTRAINT characters_entity_type_check CHECK (entity_type = 'character')");
+        DB::statement("ALTER TABLE characters ADD CONSTRAINT characters_type_check CHECK (character_type IN ('player', 'npc'))");
+        DB::statement(<<<'SQL'
+ALTER TABLE characters ADD CONSTRAINT characters_player_user_check CHECK (
+    (character_type = 'player' AND user_id IS NOT NULL)
+    OR (character_type = 'npc' AND user_id IS NULL)
+)
+SQL);
+        DB::statement('ALTER TABLE characters ADD CONSTRAINT characters_sire_not_self_check CHECK (sire_character_id IS NULL OR sire_character_id <> id)');
 
-        Schema::table('copilot_requests', function (Blueprint $table) {
-            $table->foreignId('character_id')
-                ->nullable()
-                ->after('npc_name')
-                ->constrained('characters')
-                ->restrictOnDelete();
-        });
+        DB::statement('ALTER TABLE messages ADD CONSTRAINT messages_author_character_id_foreign FOREIGN KEY (author_character_id) REFERENCES characters (id) ON DELETE RESTRICT');
+        DB::statement('ALTER TABLE copilot_requests ADD CONSTRAINT copilot_requests_character_id_foreign FOREIGN KEY (character_id) REFERENCES characters (id) ON DELETE RESTRICT');
     }
 
     public function down(): void
     {
-        Schema::table('copilot_requests', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('character_id');
-        });
-
-        Schema::table('messages', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('author_character_id');
-        });
+        DB::statement('ALTER TABLE copilot_requests DROP CONSTRAINT IF EXISTS copilot_requests_character_id_foreign');
+        DB::statement('ALTER TABLE messages DROP CONSTRAINT IF EXISTS messages_author_character_id_foreign');
 
         Schema::dropIfExists('characters');
     }

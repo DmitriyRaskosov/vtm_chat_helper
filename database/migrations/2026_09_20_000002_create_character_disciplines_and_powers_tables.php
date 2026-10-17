@@ -32,9 +32,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->unique(['character_id', 'discipline_power_id'], 'character_powers_character_power_unique');
-        });
 
-        Schema::table('character_powers', function (Blueprint $table) {
             $table->foreign(['character_id', 'discipline_id'], 'character_powers_character_discipline_foreign')
                 ->references(['character_id', 'discipline_id'])
                 ->on('character_disciplines')
