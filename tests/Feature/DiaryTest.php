@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Diary\DiaryEntryEditor;
 use App\Diary\DiaryRetrievalService;
+use App\Diary\Exceptions\InvalidDiaryEntryInputException;
 use App\Enums\SceneParticipantRole;
 use App\Jobs\SummarizeSceneDiaryJob;
 use App\Jobs\WriteDiaryJob;
@@ -17,11 +19,13 @@ use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
 use Illuminate\Support\Facades\Queue;
 use Tests\Support\CreatesDiaryEntries;
+use Tests\Support\CreatesSceneMessages;
 use Tests\TestCase;
 
 class DiaryTest extends TestCase
 {
     use CreatesDiaryEntries;
+    use CreatesSceneMessages;
 
     private User $storyteller;
 
@@ -347,5 +351,75 @@ class DiaryTest extends TestCase
 
         $ids = $result->pluck('id')->map(fn ($id): int => (int) $id)->all();
         $this->assertContains((int) $highImportance->id, $ids);
+    }
+
+    public function test_patch_diary_entry_with_whitespace_only_returns_422(): void
+    {
+        $entry = $this->createDiaryEntry('Исходный текст');
+
+        $this->expectException(InvalidDiaryEntryInputException::class);
+        $this->expectExceptionMessage('Entry cannot be empty.');
+
+        app(DiaryEntryEditor::class)->update($entry, '   ');
+    }
+
+    public function test_patch_diary_entry_updates_text_and_embedding(): void
+    {
+        $embeddings = $this->fakeEmbeddings();
+        $entry = $this->createDiaryEntry('Исходный текст');
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->patchJson("/api/diary-entries/{$entry->id}", ['entry' => 'Новый текст записи'])
+            ->assertOk()
+            ->assertJsonPath('entry.entry', 'Новый текст записи');
+
+        $this->assertNotEmpty(array_filter(
+            $embeddings->calls(),
+            fn (array $call): bool => $call['type'] === 'embed' && ($call['text'] ?? '') === 'Новый текст записи',
+        ));
+    }
+
+    public function test_regenerate_diary_entry_fails_without_source(): void
+    {
+        $entry = $this->createDiaryEntry('Текст', level: 0, fromMessageId: 999, toMessageId: 999);
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson("/api/diary-entries/{$entry->id}/regenerate")
+            ->assertStatus(422)
+            ->assertJsonPath('message', 'Не удалось пересоздать запись. Проверьте источник.');
+    }
+
+    public function test_regenerate_l0_diary_entry_via_http(): void
+    {
+        $this->fakeChat()->push('Новый текст L0 после регенерации.');
+        $this->fakeEmbeddings();
+
+        $message = $this->createSceneMessage('Реплика для регенерации.');
+        $entry = $this->createDiaryEntry(
+            'Старый текст',
+            level: 0,
+            fromMessageId: (int) $message->id,
+            toMessageId: (int) $message->id,
+        );
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson("/api/diary-entries/{$entry->id}/regenerate")
+            ->assertOk()
+            ->assertJsonPath('entry.entry', 'Новый текст L0 после регенерации.');
+    }
+
+    public function test_regenerate_l1_diary_entry_via_http(): void
+    {
+        $this->fakeChat()->push('Обновлённая L1-сводка.');
+        $this->fakeEmbeddings();
+
+        $this->createDiaryEntry('L0 один', level: 0, fromMessageId: 1, toMessageId: 5);
+        $this->createDiaryEntry('L0 два', level: 0, fromMessageId: 6, toMessageId: 10);
+        $l1 = $this->createDiaryEntry('Старая L1', level: 1, fromMessageId: 1, toMessageId: 10);
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson("/api/diary-entries/{$l1->id}/regenerate")
+            ->assertOk()
+            ->assertJsonPath('entry.entry', 'Обновлённая L1-сводка.');
     }
 }

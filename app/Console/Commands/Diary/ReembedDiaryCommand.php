@@ -4,6 +4,7 @@ namespace App\Console\Commands\Diary;
 
 use App\Models\CharacterDiaryEntry;
 use App\Rag\EmbeddingProvider;
+use App\Rag\VectorLiteral;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -65,7 +66,7 @@ class ReembedDiaryCommand extends Command
                     if (! $dryRun) {
                         DB::statement(
                             'UPDATE character_diary_entries SET embedding = ?::vector, updated_at = NOW() WHERE id = ?',
-                            [$this->formatVector($vector), $entry->id],
+                            [VectorLiteral::fromArray($vector), $entry->id],
                         );
                     }
 
@@ -83,13 +84,5 @@ class ReembedDiaryCommand extends Command
         $this->info("Elapsed: {$startedAt->diffInSeconds(now())}s");
 
         return $failed > 0 ? self::FAILURE : self::SUCCESS;
-    }
-
-    /**
-     * @param  list<float>  $vector
-     */
-    private function formatVector(array $vector): string
-    {
-        return '['.implode(',', array_map(fn (float $v): string => (string) $v, $vector)).']';
     }
 }

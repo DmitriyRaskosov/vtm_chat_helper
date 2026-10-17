@@ -2,23 +2,23 @@
 
 namespace App\Http\Controllers;
 
+use App\Diary\DiaryEntryEditor;
 use App\Diary\DiaryPreviewService;
-use App\Diary\DiarySummarizerService;
-use App\Diary\DiaryWriterService;
+use App\Enums\DiaryEmotion;
 use App\Http\Requests\PreviewDiaryRequest;
 use App\Http\Requests\UpdateDiaryEntryRequest;
 use App\Models\Character;
 use App\Models\CharacterDiaryEntry;
-use App\Rag\EmbeddingProvider;
+use App\Models\Scene;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Support\Facades\DB;
 
 class DiaryEntryController extends Controller
 {
     public function __construct(
-        private EmbeddingProvider $embeddings,
+        private DiaryPreviewService $previewer,
+        private DiaryEntryEditor $editor,
     ) {}
 
     public function index(Request $request, Character $character): JsonResponse
@@ -49,12 +49,11 @@ class DiaryEntryController extends Controller
     public function preview(
         PreviewDiaryRequest $request,
         Character $character,
-        DiaryPreviewService $previewer,
     ): JsonResponse {
         $sceneId = $request->has('scene_id') ? (int) $request->validated('scene_id') : null;
         $prompt = (string) ($request->validated('prompt') ?? '');
 
-        return response()->json($previewer->preview($character, $sceneId, $prompt));
+        return response()->json($this->previewer->preview($character, $sceneId, $prompt));
     }
 
     public function update(
@@ -62,23 +61,7 @@ class DiaryEntryController extends Controller
         CharacterDiaryEntry $diaryEntry,
     ): JsonResponse {
         $entry = trim((string) $request->validated('entry'));
-        if ($entry === '') {
-            abort(422, 'Entry cannot be empty.');
-        }
-
-        DB::transaction(function () use ($diaryEntry, $entry): void {
-            $diaryEntry->update(['entry' => $entry]);
-
-            // Пересчитать embedding — иначе retrieval сломается
-            $vector = $this->embeddings->embed($entry);
-
-            DB::statement(
-                'UPDATE character_diary_entries SET embedding = ?::vector WHERE id = ?',
-                [$this->formatVector($vector), $diaryEntry->id],
-            );
-        });
-
-        $diaryEntry->refresh()->loadMissing('scene:id,title,game_session_id');
+        $diaryEntry = $this->editor->update($diaryEntry, $entry);
 
         return response()->json([
             'entry' => $this->serializeFull($diaryEntry),
@@ -87,29 +70,14 @@ class DiaryEntryController extends Controller
 
     public function destroy(CharacterDiaryEntry $diaryEntry): Response
     {
-        $diaryEntry->delete();
+        $this->editor->destroy($diaryEntry);
 
         return response()->noContent();
     }
 
-    public function regenerate(
-        CharacterDiaryEntry $diaryEntry,
-        DiaryWriterService $writer,
-        DiarySummarizerService $summarizer,
-    ): JsonResponse {
-        $level = (int) $diaryEntry->level;
-
-        $ok = match ($level) {
-            0 => $writer->regenerateEntry($diaryEntry),
-            1 => $summarizer->regenerateSummary($diaryEntry),
-            default => false,
-        };
-
-        if (! $ok) {
-            abort(422, 'Не удалось пересоздать запись. Проверьте источник.');
-        }
-
-        $diaryEntry->refresh()->loadMissing('scene:id,title,game_session_id');
+    public function regenerate(CharacterDiaryEntry $diaryEntry): JsonResponse
+    {
+        $diaryEntry = $this->editor->regenerate($diaryEntry);
 
         return response()->json([
             'entry' => $this->serializeFull($diaryEntry),
@@ -122,18 +90,19 @@ class DiaryEntryController extends Controller
     private function serializeList(CharacterDiaryEntry $entry): array
     {
         $text = trim((string) $entry->entry);
+        $emotion = $entry->getAttribute('emotion');
 
         return [
             'id' => (int) $entry->id,
             'character_id' => (int) $entry->character_id,
             'scene_id' => $entry->scene_id === null ? null : (int) $entry->scene_id,
-            'scene_title' => $entry->scene?->title,
+            'scene_title' => $entry->scene instanceof Scene ? $entry->scene->title : null,
             'level' => (int) $entry->level,
             'from_message_id' => $entry->from_message_id === null ? null : (int) $entry->from_message_id,
             'to_message_id' => $entry->to_message_id === null ? null : (int) $entry->to_message_id,
             'is_stale' => (bool) $entry->is_stale,
             'importance' => $entry->importance === null ? null : (float) $entry->importance,
-            'emotion' => $entry->emotion?->value,
+            'emotion' => $emotion instanceof DiaryEmotion ? $emotion->value : null,
             'preview' => mb_substr($text, 0, 300),
             'word_count' => count(preg_split('/\s+/u', $text, -1, PREG_SPLIT_NO_EMPTY) ?: []),
             'created_at' => $entry->created_at?->toIso8601String(),
@@ -149,13 +118,5 @@ class DiaryEntryController extends Controller
             ...$this->serializeList($entry),
             'entry' => $entry->entry,
         ];
-    }
-
-    /**
-     * @param  list<float>  $vector
-     */
-    private function formatVector(array $vector): string
-    {
-        return '['.implode(',', array_map(fn (float $v): string => (string) $v, $vector)).']';
     }
 }

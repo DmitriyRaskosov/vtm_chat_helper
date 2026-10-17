@@ -98,20 +98,6 @@ parameters:
 			count: 1
 			path: app/Diary/DiaryWriterService.php
 
-		# debt: 027 — Eloquent Model::$title в DiaryEntryController
-		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Controllers/DiaryEntryController.php
-
-		# debt: 027 — enum $value в DiaryEntryController
-		-
-			message: '#^Cannot access property \$value on string\.$#'
-			identifier: property.nonObject
-			count: 1
-			path: app/Http/Controllers/DiaryEntryController.php
-
 		# debt: 029 — сравнение id с null в Message (observer)
 		-
 			message: '#^Strict comparison using \!\=\= between int\<0, max\> and null will always evaluate to true\.$#'

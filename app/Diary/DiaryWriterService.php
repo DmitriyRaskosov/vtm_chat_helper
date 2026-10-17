@@ -14,6 +14,7 @@ use App\Models\SceneParticipant;
 use App\Models\WorldEntity;
 use App\Prompt\PromptRepository;
 use App\Rag\EmbeddingProvider;
+use App\Rag\VectorLiteral;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -174,7 +175,7 @@ class DiaryWriterService
                 $entry,
                 $parsed['importance'],
                 $parsed['emotion']?->value,
-                $this->formatVector($vector),
+                VectorLiteral::fromArray($vector),
             ],
         );
 
@@ -269,7 +270,7 @@ class DiaryWriterService
                 $newEntry,
                 $parsed['importance'],
                 $parsed['emotion']?->value,
-                $this->formatVector($vector),
+                VectorLiteral::fromArray($vector),
                 $entry->id,
             ],
         );
@@ -363,13 +364,5 @@ class DiaryWriterService
         return $messages
             ->map(fn (Message $m): string => $m->displayAuthor().': '.trim((string) $m->body))
             ->implode("\n");
-    }
-
-    /**
-     * @param  list<float>  $vector
-     */
-    private function formatVector(array $vector): string
-    {
-        return '['.implode(',', array_map(fn (float $v): string => (string) $v, $vector)).']';
     }
 }

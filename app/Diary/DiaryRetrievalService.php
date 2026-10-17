@@ -5,6 +5,7 @@ namespace App\Diary;
 use App\Models\Character;
 use App\Models\CharacterDiaryEntry;
 use App\Rag\EmbeddingProvider;
+use App\Rag\VectorLiteral;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -187,7 +188,7 @@ class DiaryRetrievalService
         }
 
         $vector = $this->embeddings->embed($query);
-        $pgVector = $this->formatVector($vector);
+        $pgVector = VectorLiteral::fromArray($vector);
         $pgArray = '{'.implode(',', $poolIds).'}';
 
         $rows = DB::select(
@@ -229,13 +230,5 @@ class DiaryRetrievalService
             ->map(fn (int $id) => $models->get($id))
             ->filter()
             ->values();
-    }
-
-    /**
-     * @param  list<float>  $vector
-     */
-    private function formatVector(array $vector): string
-    {
-        return '['.implode(',', array_map(fn (float $v): string => (string) $v, $vector)).']';
     }
 }
