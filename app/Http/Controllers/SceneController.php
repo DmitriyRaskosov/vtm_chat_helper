@@ -2,125 +2,38 @@
 
 namespace App\Http\Controllers;
 
-use App\Diary\DiaryScheduler;
-use App\Enums\GameSessionStatus;
-use App\Enums\SceneStatus;
 use App\Http\Requests\StoreSceneRequest;
 use App\Models\GameSession;
 use App\Models\Scene;
-use App\Scene\SceneContextService;
+use App\Scene\SceneLifecycleService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class SceneController extends Controller
 {
-    public function __construct(
-        private SceneContextService $contexts,
-        private DiaryScheduler $diaryScheduler,
-    ) {}
+    public function __construct(private SceneLifecycleService $scenes) {}
 
     public function store(StoreSceneRequest $request, GameSession $gameSession): JsonResponse
     {
-        $scene = DB::transaction(function () use ($request, $gameSession): Scene {
-            $session = GameSession::query()->lockForUpdate()->findOrFail($gameSession->id);
-
-            abort_unless(
-                $session->status === GameSessionStatus::Active,
-                409,
-                'Scenes can only be added to the active game session.',
-            );
-
-            $activate = $request->boolean('activate', true);
-            $now = now();
-
-            if ($activate) {
-                $session->scenes()
-                    ->active()
-                    ->update([
-                        'status' => SceneStatus::Draft,
-                        'updated_at' => $now,
-                    ]);
-            }
-
-            $position = ((int) $session->scenes()->max('position')) + 1;
-
-            return $session->scenes()->create([
-                'position' => $position,
-                'title' => $request->validated('title'),
-                'description' => $request->validated('description'),
-                'status' => $activate ? SceneStatus::Active : SceneStatus::Draft,
-                'started_at' => $activate ? $now : null,
-            ]);
-        });
+        $scene = $this->scenes->create(
+            $gameSession,
+            $request->validated('title'),
+            $request->validated('description'),
+            $request->boolean('activate', true),
+        );
 
         return response()->json(['scene' => $this->serialize($scene)], 201);
     }
 
     public function activate(Scene $scene): JsonResponse
     {
-        $scene = DB::transaction(function () use ($scene): Scene {
-            $lockedScene = Scene::query()
-                ->with('gameSession')
-                ->lockForUpdate()
-                ->findOrFail($scene->id);
-
-            abort_unless(
-                $lockedScene->gameSession->status === GameSessionStatus::Active,
-                409,
-                'Only scenes in the active game session can be activated.',
-            );
-
-            Scene::query()
-                ->where('game_session_id', $lockedScene->game_session_id)
-                ->active()
-                ->whereKeyNot($lockedScene->id)
-                ->update([
-                    'status' => SceneStatus::Draft,
-                    'updated_at' => now(),
-                ]);
-
-            $lockedScene->update([
-                'status' => SceneStatus::Active,
-                'started_at' => $lockedScene->started_at ?? now(),
-                'ended_at' => null,
-            ]);
-
-            $this->contexts->unfreeze($lockedScene);
-
-            return $lockedScene->refresh();
-        });
+        $scene = $this->scenes->activate($scene);
 
         return response()->json(['scene' => $this->serialize($scene)]);
     }
 
-    public function close(Request $request, Scene $scene): JsonResponse
+    public function close(Scene $scene): JsonResponse
     {
-        $scene = DB::transaction(function () use ($scene): Scene {
-            $lockedScene = Scene::query()
-                ->with('gameSession')
-                ->lockForUpdate()
-                ->findOrFail($scene->id);
-
-            if ($lockedScene->status !== SceneStatus::Closed) {
-                abort_unless(
-                    $lockedScene->gameSession->status === GameSessionStatus::Active,
-                    409,
-                    'Only scenes in the active game session can be closed.',
-                );
-
-                $lockedScene->update([
-                    'status' => SceneStatus::Closed,
-                    'ended_at' => now(),
-                ]);
-            }
-
-            $this->contexts->freeze($lockedScene);
-
-            return $lockedScene->refresh();
-        });
-
-        $this->diaryScheduler->scheduleSummary($scene);
+        $scene = $this->scenes->close($scene);
 
         return response()->json(['scene' => $this->serialize($scene)]);
     }

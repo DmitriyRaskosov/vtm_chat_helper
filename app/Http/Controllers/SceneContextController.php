@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Http\Requests\UpdateSceneContextRequest;
 use App\Models\Scene;
 use App\Models\SceneContext;
-use App\Models\WorldEntity;
 use App\Scene\SceneContextService;
 use Illuminate\Http\JsonResponse;
 
@@ -45,18 +44,15 @@ class SceneContextController extends Controller
     private function serialize(Scene $scene, ?SceneContext $context): array
     {
         $locationId = $context?->location_entity_id;
-        $locationName = $locationId === null
-            ? null
-            : WorldEntity::query()->find($locationId)?->canonical_name;
 
         return [
             'scene_id' => (int) $scene->id,
             'location_entity_id' => $locationId,
-            'location_name' => is_string($locationName) && $locationName !== '' ? $locationName : null,
+            'location_name' => $this->contexts->locationCanonicalName($context),
             'atmosphere' => $context?->atmosphere,
             'situation' => $context?->situation,
             'storyteller_notes' => $context?->storyteller_notes,
-            'revision' => (int) ($context?->revision ?? 0),
+            'revision' => $context === null ? 0 : (int) $context->revision,
             'frozen_revision' => $context?->frozen_revision,
             'updated_by' => $context?->updated_by,
             'updated_at' => $context?->updated_at?->toISOString(),

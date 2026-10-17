@@ -3,20 +3,18 @@
 namespace App\Http\Controllers;
 
 use App\Chronicle\CurrentChronicle;
-use App\Enums\GameSessionStatus;
 use App\Enums\SceneStatus;
 use App\Http\Requests\StoreGameSessionRequest;
 use App\Models\GameSession;
 use App\Models\Scene;
-use App\Scene\SceneContextService;
+use App\Scene\GameSessionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class GameSessionController extends Controller
 {
     public function __construct(
-        private SceneContextService $contexts,
+        private GameSessionService $sessions,
         private CurrentChronicle $currentChronicle,
     ) {}
 
@@ -27,11 +25,7 @@ class GameSessionController extends Controller
         ]);
         $chronicleId = $this->currentChronicle->id();
 
-        $gameSession = GameSession::query()
-            ->where('chronicle_id', $chronicleId)
-            ->active()
-            ->with('scenes')
-            ->first();
+        $gameSession = $this->sessions->findActiveWithScenes($chronicleId);
 
         return response()->json([
             'game_session' => $gameSession === null ? null : $this->serialize($gameSession),
@@ -40,58 +34,11 @@ class GameSessionController extends Controller
 
     public function store(StoreGameSessionRequest $request): JsonResponse
     {
-        $gameSession = DB::transaction(function () use ($request): GameSession {
-            $now = now();
-            $chronicleId = $this->currentChronicle->id();
-
-            $activeSessionIds = GameSession::query()
-                ->where('chronicle_id', $chronicleId)
-                ->active()
-                ->lockForUpdate()
-                ->pluck('id');
-
-            if ($activeSessionIds->isNotEmpty()) {
-                Scene::query()
-                    ->whereIn('game_session_id', $activeSessionIds)
-                    ->where('status', '!=', SceneStatus::Closed)
-                    ->update([
-                        'status' => SceneStatus::Closed,
-                        'ended_at' => $now,
-                        'updated_at' => $now,
-                    ]);
-
-                $this->contexts->freezeMany(
-                    Scene::query()
-                        ->whereIn('game_session_id', $activeSessionIds)
-                        ->pluck('id')
-                        ->all(),
-                );
-
-                GameSession::query()
-                    ->whereIn('id', $activeSessionIds)
-                    ->update([
-                        'status' => GameSessionStatus::Archived,
-                        'updated_at' => $now,
-                    ]);
-            }
-
-            $session = GameSession::query()->create([
-                'chronicle_id' => $chronicleId,
-                'title' => $request->validated('title'),
-                'status' => GameSessionStatus::Active,
-                'created_by' => $request->user()->id,
-                'activated_at' => $now,
-            ]);
-
-            $session->scenes()->create([
-                'position' => 1,
-                'title' => 'Начальная сцена',
-                'status' => SceneStatus::Active,
-                'started_at' => $now,
-            ]);
-
-            return $session->load('scenes');
-        });
+        $gameSession = $this->sessions->startNew(
+            $this->currentChronicle->id(),
+            $request->validated('title'),
+            (int) $request->user()->id,
+        );
 
         return response()->json(['game_session' => $this->serialize($gameSession)], 201);
     }

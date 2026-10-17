@@ -7,6 +7,7 @@ use App\Models\Location;
 use App\Models\Scene;
 use App\Models\SceneContext;
 use App\Models\User;
+use App\Models\WorldEntity;
 use App\Scene\Exceptions\InvalidSceneContextInputException;
 use App\Scene\Exceptions\SceneNotMutableException;
 use App\World\MixedChronicleException;
@@ -96,6 +97,18 @@ class SceneContextService
     public function current(Scene $scene): ?SceneContext
     {
         return SceneContext::query()->where('scene_id', $scene->id)->first();
+    }
+
+    public function locationCanonicalName(?SceneContext $context): ?string
+    {
+        $locationId = $context?->location_entity_id;
+        if ($locationId === null) {
+            return null;
+        }
+
+        $locationName = WorldEntity::query()->find($locationId)?->canonical_name;
+
+        return is_string($locationName) && $locationName !== '' ? $locationName : null;
     }
 
     public function freeze(Scene $scene): void

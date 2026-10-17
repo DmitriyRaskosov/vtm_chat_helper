@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
+ * @property SceneParticipantRole $role
  * @property Carbon|null $entered_at
  * @property Carbon|null $left_at
  */

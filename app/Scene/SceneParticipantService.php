@@ -22,6 +22,53 @@ class SceneParticipantService
         private DiaryScheduler $diaryScheduler,
     ) {}
 
+    /**
+     * @return array{participant: SceneParticipant, character: Character}
+     */
+    public function enterWithCharacter(
+        Scene $scene,
+        int $characterId,
+        SceneParticipantRole $role,
+        bool $visible = true,
+    ): array {
+        $character = Character::query()
+            ->with('entity')
+            ->findOrFail($characterId);
+
+        $participant = $this->enter($scene, $character, $role, $visible);
+
+        return [
+            'participant' => $participant,
+            'character' => $character,
+        ];
+    }
+
+    /**
+     * @param  Collection<int, int|string|null>  $characterIds
+     * @return Collection<int, Character>
+     */
+    public function charactersByIds(Collection $characterIds): Collection
+    {
+        $ids = $characterIds->filter()->unique()->values()->all();
+        if ($ids === []) {
+            return collect();
+        }
+
+        return Character::query()
+            ->whereIn('id', $ids)
+            ->with('entity')
+            ->get(['id', 'character_type', 'user_id'])
+            ->keyBy('id');
+    }
+
+    public function characterForSerialization(SceneParticipant $participant): ?Character
+    {
+        return Character::query()
+            ->with('entity')
+            ->whereKey($participant->character_id)
+            ->first(['id', 'character_type', 'user_id']);
+    }
+
     public function enter(
         Scene $scene,
         Character $character,
