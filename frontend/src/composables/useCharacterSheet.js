@@ -59,7 +59,6 @@ export function useCharacterSheet() {
     const route = useRoute();
     const sheet = ref(null);
     const catalog = ref(null);
-    const worldEntities = ref([]);
     const error = ref('');
     const isStoryteller = computed(() => auth.user.value?.is_storyteller === true);
     const identity = reactive({
@@ -81,11 +80,8 @@ export function useCharacterSheet() {
     const place = reactive({
         sect_id: '',
         clan_id: '',
-        haven_entity_id: '',
         lore_clearance_levels: [0],
     });
-    const creating = reactive({ sect: false, haven: false });
-    const createNames = reactive({ sect: '', haven: '' });
     const newDisciplineId = ref(null);
     const traits = ref([]);
     let traitSeq = 0;
@@ -99,7 +95,6 @@ export function useCharacterSheet() {
     const sects = computed(() => catalog.value?.sects ?? []);
     const clans = computed(() => catalog.value?.clans ?? []);
     const bloodlines = computed(() => catalog.value?.bloodlines ?? []);
-    const havens = computed(() => worldEntities.value.filter((row) => row.entity_type === 'location'));
     const statsMap = computed(() => {
         const map = {};
         for (const stat of sheet.value?.stats ?? []) {
@@ -222,7 +217,6 @@ export function useCharacterSheet() {
         Object.assign(place, {
             sect_id: character.sect_id ?? '',
             clan_id: character.clan_id ?? '',
-            haven_entity_id: character.haven_entity_id ?? '',
         });
         applyTraitsFromSheet(character.traits);
     }
@@ -236,10 +230,7 @@ export function useCharacterSheet() {
                     ? Promise.resolve({ data: { catalog: catalog.value, disciplines: catalog.value.disciplineList } })
                     : api.get('/character-sheet/catalog'),
             ];
-            if (isStoryteller.value) {
-                requests.push(api.get('/world/entities'));
-            }
-            const [sheetRes, catalogRes, worldRes] = await Promise.all(requests);
+            const [sheetRes, catalogRes] = await Promise.all(requests);
             if (!catalog.value) {
                 catalog.value = {
                     ...catalogRes.data.catalog,
@@ -248,9 +239,6 @@ export function useCharacterSheet() {
                     bloodlines: catalogRes.data.bloodlines ?? [],
                     sects: catalogRes.data.sects ?? [],
                 };
-            }
-            if (worldRes) {
-                worldEntities.value = worldRes.data.entities ?? [];
             }
             if (sheetRes) {
                 applySheet(sheetRes.data.character);
@@ -313,8 +301,7 @@ export function useCharacterSheet() {
             return Boolean(sheet.value?.clan_id)
                 && !clans.value.some((row) => row.id === sheet.value.clan_id);
         }
-        return Boolean(sheet.value?.haven_entity_id)
-            && !havens.value.some((row) => row.id === sheet.value.haven_entity_id);
+        return false;
     }
 
     async function savePlace() {
@@ -323,36 +310,11 @@ export function useCharacterSheet() {
             const { data } = await api.put(`/characters/${sheet.value.id}/place`, {
                 sect_id: optionalId(place.sect_id),
                 clan_id: optionalId(place.clan_id),
-                haven_entity_id: optionalId(place.haven_entity_id),
             });
             applySheet(data.character);
             flashSaved('place');
         } catch (e) {
             error.value = e.response?.data?.message ?? 'Не удалось сохранить место в мире.';
-        }
-    }
-
-    async function createPlaceEntity(kind) {
-        const name = createNames[kind].trim();
-        if (!name) {
-            return;
-        }
-        error.value = '';
-        try {
-            const payload = kind === 'haven'
-                ? { canonical_name: name, entity_type: 'location' }
-                : { canonical_name: name, entity_type: 'faction' };
-            const { data } = await api.post('/world/entities', payload);
-            worldEntities.value = [...worldEntities.value, data.entity];
-            if (kind === 'sect') {
-                place.sect_id = String(data.entity.id);
-            } else {
-                place.haven_entity_id = String(data.entity.id);
-            }
-            createNames[kind] = '';
-            creating[kind] = false;
-        } catch (e) {
-            error.value = e.response?.data?.message ?? 'Не удалось создать сущность мира.';
         }
     }
 
@@ -403,15 +365,12 @@ export function useCharacterSheet() {
         identity,
         biography,
         place,
-        creating,
-        createNames,
         newDisciplineId,
         traits,
         traitPresets: TRAIT_PRESETS,
         flash,
         sects,
         clans,
-        havens,
         disciplineRows,
         unusedDisciplines,
         formatSigned,
@@ -423,7 +382,6 @@ export function useCharacterSheet() {
         addCustomTrait,
         removeTrait,
         savePlace,
-        createPlaceEntity,
         setDiscipline,
         addDiscipline,
         removeDiscipline,

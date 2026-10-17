@@ -1,7 +1,7 @@
 # 007 — Дубль класса DiaryRenderer
 
 - **Stage:** 1
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 001
 - **Risk:** low
 - **Разрешённые зависимости:** нет

@@ -10,7 +10,7 @@ final class DiaryRenderer
     /**
      * Строит строки и список id ровно так, как это уйдёт в промпт.
      * Используется и DiaryProvider, и DiaryPreviewService.
-     * 
+     *
      * @param  Collection<int, CharacterDiaryEntry>  $entries
      * @return array{lines: list<string>, ids: list<int>}
      */

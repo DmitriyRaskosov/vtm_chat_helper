@@ -4,12 +4,9 @@ namespace App\Character;
 
 use App\Models\Character;
 use App\Models\WorldEntity;
-use App\World\WorldRelationService;
 
 class CharacterSheetReader
 {
-    public function __construct(private WorldRelationService $relations) {}
-
     /**
      * @return array<string, mixed>
      */
@@ -27,8 +24,6 @@ class CharacterSheetReader
         $entity = WorldEntity::query()->findOrFail($character->id);
 
         $biography = $character->biography;
-        $sect = $this->relations->activeSect($character);
-        $haven = $this->relations->activeHaven($character);
 
         return [
             'id' => (int) $character->id,
@@ -49,8 +44,6 @@ class CharacterSheetReader
                 'slug' => $character->sect->slug,
                 'name' => $character->sect->name,
             ] : null,
-            'haven_entity_id' => $haven === null ? null : (int) $haven->target_id,
-            'haven_name' => $haven?->target?->canonical_name,
             'sire_character_id' => $character->sire_character_id === null ? null : (int) $character->sire_character_id,
             'sire_name' => $character->sire === null
                 ? null

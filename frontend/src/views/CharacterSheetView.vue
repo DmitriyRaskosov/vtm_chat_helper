@@ -44,16 +44,12 @@
         <SheetPlaceSection
             :sheet="sheet"
             :place="place"
-            :creating="creating"
-            :create-names="createNames"
             :sects="sects"
             :clans="clans"
-            :havens="havens"
             :is-storyteller="isStoryteller"
             :missing-place-option="missingPlaceOption"
             :flash="flash.place"
             @save="savePlace"
-            @create-entity="createPlaceEntity"
         />
     </div>
     <p v-else-if="error" class="error">{{ error }}</p>
@@ -77,15 +73,12 @@ const {
     identity,
     biography,
     place,
-    creating,
-    createNames,
     newDisciplineId,
     traits,
     traitPresets,
     flash,
     sects,
     clans,
-    havens,
     disciplineRows,
     unusedDisciplines,
     formatSigned,
@@ -97,7 +90,6 @@ const {
     addCustomTrait,
     removeTrait,
     savePlace,
-    createPlaceEntity,
     setDiscipline,
     addDiscipline,
     removeDiscipline,

@@ -130,6 +130,23 @@ class CharacterTest extends TestCase
             'clan_id' => $clan->id,
             'sect_id' => $sect->id,
         ]);
+
+        $show = $this->actingAs($this->storyteller, 'sanctum')
+            ->getJson("/api/characters/{$characterId}");
+        $show->assertStatus(200);
+        $characterPayload = $show->json('character');
+        $this->assertArrayNotHasKey('haven_entity_id', $characterPayload);
+        $this->assertArrayNotHasKey('haven_name', $characterPayload);
+
+        $ignored = $this->actingAs($this->storyteller, 'sanctum')
+            ->putJson("/api/characters/{$characterId}/place", [
+                'clan_id' => $clan->id,
+                'sect_id' => $sect->id,
+                'haven_entity_id' => 1,
+            ]);
+        $ignored->assertStatus(200);
+        $ignored->assertJsonMissingPath('character.haven_entity_id');
+        $ignored->assertJsonMissingPath('character.haven_name');
     }
 
     public function test_storyteller_can_list_characters(): void

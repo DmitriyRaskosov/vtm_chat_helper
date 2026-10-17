@@ -12,15 +12,11 @@ use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\WorldEntity;
 use App\Models\WorldEntityAlias;
-use App\Models\WorldRelation;
-use App\Models\WorldRelationType;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class WorldEntityService
 {
-    private const SECT_SYNC_PROVENANCE_KEY = 'auto_synced_sect_faction';
-
     /**
      * @var list<WorldEntityType>
      */
@@ -33,8 +29,6 @@ class WorldEntityService
         WorldEntityType::Item,
         WorldEntityType::Concept,
     ];
-
-    public function __construct(private WorldRelationService $relations) {}
 
     /**
      * @param  list<string>  $aliases
@@ -496,62 +490,6 @@ class WorldEntityService
             WorldEntityType::Circle => $entity->circle()->update(['sect_faction_id' => $sectFactionId]),
             default => null,
         };
-
-        $this->syncSectFactionMemberOf($entity->refresh(), $sectFactionId);
-    }
-
-    private function syncSectFactionMemberOf(WorldEntity $entity, ?int $sectFactionId): void
-    {
-        $type = $entity->entity_type instanceof WorldEntityType
-            ? $entity->entity_type
-            : WorldEntityType::from((string) $entity->entity_type);
-
-        $memberOf = WorldRelationType::query()->where('key', 'member_of')->firstOrFail();
-
-        $autoSynced = WorldRelation::query()
-            ->where('source_type', $this->entityTypeValue($entity))
-            ->where('source_id', $entity->id)
-            ->where('relation', $memberOf->key)
-            ->active()
-            ->get()
-            ->filter(fn (WorldRelation $relation): bool => ($relation->provenance[self::SECT_SYNC_PROVENANCE_KEY] ?? false) === true);
-
-        foreach ($autoSynced as $relation) {
-            if ($sectFactionId === null || (int) $relation->target_id !== $sectFactionId) {
-                $this->relations->end($relation);
-            }
-        }
-
-        if ($sectFactionId === null) {
-            return;
-        }
-
-        $alreadyActive = WorldRelation::query()
-            ->where('source_type', $this->entityTypeValue($entity))
-            ->where('source_id', $entity->id)
-            ->where('target_id', $sectFactionId)
-            ->where('relation', $memberOf->key)
-            ->active()
-            ->exists();
-
-        if ($alreadyActive) {
-            return;
-        }
-
-        $sect = WorldEntity::query()->findOrFail($sectFactionId);
-        $this->relations->relate(
-            $entity,
-            $sect,
-            $memberOf,
-            provenance: [self::SECT_SYNC_PROVENANCE_KEY => true],
-        );
-    }
-
-    private function entityTypeValue(WorldEntity $entity): string
-    {
-        $type = $entity->entity_type;
-
-        return $type instanceof WorldEntityType ? $type->value : (string) $type;
     }
 
     private function storeAlias(

@@ -2,25 +2,15 @@
 
 namespace App\World;
 
-use App\Enums\WorldEntityStatus;
 use App\Enums\WorldEntityType;
-use App\Models\Character;
 use App\Models\WorldEntity;
 use App\Models\WorldRelation;
 use App\Models\WorldRelationType;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
 
 class WorldRelationService
 {
-    /**
-     * @var list<WorldEntityType>
-     */
-    private const AFFILIATION_TARGETS = [
-        WorldEntityType::Location,
-    ];
-
     public function __construct(private WorldRelationTypeValidator $validator) {}
 
     /**
@@ -195,118 +185,6 @@ class WorldRelationService
         return $outgoing->concat($incoming)->unique('id')->values();
     }
 
-    public function setSect(Character $character, ?WorldEntity $sect): ?WorldRelation
-    {
-        if ($sect !== null) {
-            $this->assertSectTarget($character, $sect);
-        }
-
-        return $this->replaceCharacterSlot(
-            $character,
-            fn (WorldRelation $row): bool => $row->relation === 'member_of'
-                && $row->target?->entity_type === WorldEntityType::Faction,
-            $sect,
-            'member_of',
-            ['stance' => 'allied'],
-        );
-    }
-
-    public function setHaven(Character $character, ?WorldEntity $haven): ?WorldRelation
-    {
-        if ($haven !== null) {
-            $this->assertHavenTarget($character, $haven);
-        }
-
-        return $this->replaceCharacterSlot(
-            $character,
-            fn (WorldRelation $row): bool => $row->relation === 'located_at'
-                && $row->target?->entity_type === WorldEntityType::Location,
-            $haven,
-            'located_at',
-            ['stance' => 'neutral'],
-        );
-    }
-
-    public function activeSect(Character $character): ?WorldRelation
-    {
-        return $this->activeCharacterRelations($character)
-            ->first(fn (WorldRelation $row): bool => $row->relation === 'member_of'
-                && $row->target?->entity_type === WorldEntityType::Faction);
-    }
-
-    public function activeHaven(Character $character): ?WorldRelation
-    {
-        return $this->activeCharacterRelations($character)
-            ->first(fn (WorldRelation $row): bool => $row->relation === 'located_at'
-                && $row->target?->entity_type === WorldEntityType::Location);
-    }
-
-    /**
-     * @return Collection<int, WorldRelation>
-     */
-    public function activeCharacterRelations(Character $character): Collection
-    {
-        return WorldRelation::query()
-            ->active()
-            ->where('source_type', 'character')
-            ->where('source_id', $character->id)
-            ->with('target')
-            ->orderBy('id')
-            ->get();
-    }
-
-    /**
-     * @param  callable(WorldRelation): bool  $matchesSlot
-     * @param  array<string, mixed>  $metadata
-     */
-    private function replaceCharacterSlot(
-        Character $character,
-        callable $matchesSlot,
-        ?WorldEntity $target,
-        string $relationKey,
-        array $metadata = [],
-    ): ?WorldRelation {
-        return DB::transaction(function () use ($character, $matchesSlot, $target, $relationKey, $metadata): ?WorldRelation {
-            WorldRelation::query()
-                ->where('source_type', 'character')
-                ->where('source_id', $character->id)
-                ->active()
-                ->lockForUpdate()
-                ->get();
-
-            $current = $this->activeCharacterRelations($character)->filter($matchesSlot);
-
-            if ($target === null) {
-                foreach ($current as $row) {
-                    $this->end($row);
-                }
-
-                return null;
-            }
-
-            $keep = $current->first(
-                fn (WorldRelation $row): bool => (int) $row->target_id === (int) $target->id,
-            );
-
-            foreach ($current as $row) {
-                if ($keep !== null && (int) $row->id === (int) $keep->id) {
-                    continue;
-                }
-
-                $this->end($row);
-            }
-
-            if ($keep !== null) {
-                return $keep;
-            }
-
-            $source = WorldEntity::query()->findOrFail($character->id);
-            $type = WorldRelationType::query()->where('key', $relationKey)->firstOrFail();
-
-            return $this->relate($source, $target, $type, metadata: $metadata);
-        });
-    }
-
     private function activeBetween(
         WorldEntity $source,
         WorldEntity $target,
@@ -336,49 +214,6 @@ class WorldRelationService
             });
 
         return $query->lockForUpdate()->exists();
-    }
-
-    private function assertSectTarget(Character $character, WorldEntity $sect): void
-    {
-        $this->assertAffiliationTarget($character, $sect);
-
-        if ($sect->entity_type !== WorldEntityType::Faction) {
-            throw new InvalidArgumentException('A character sect must be a faction.');
-        }
-
-        if ($sect->status !== WorldEntityStatus::Active) {
-            throw new InvalidArgumentException('A character sect must be an active faction.');
-        }
-    }
-
-    private function assertHavenTarget(Character $character, WorldEntity $haven): void
-    {
-        $this->assertAffiliationTarget($character, $haven);
-
-        if ($haven->entity_type !== WorldEntityType::Location) {
-            throw new InvalidArgumentException('A character haven must be a location.');
-        }
-
-        if ($haven->status !== WorldEntityStatus::Active) {
-            throw new InvalidArgumentException('A character haven must be an active location.');
-        }
-    }
-
-    private function assertAffiliationTarget(Character $character, WorldEntity $target): void
-    {
-        if ((int) $character->chronicle_id !== (int) $target->chronicle_id) {
-            throw new MixedChronicleException;
-        }
-
-        $type = $target->entity_type instanceof WorldEntityType
-            ? $target->entity_type
-            : WorldEntityType::from((string) $target->entity_type);
-
-        if (! in_array($type, self::AFFILIATION_TARGETS, true)) {
-            throw new InvalidArgumentException(
-                "Relation target must be a directory entity, not [{$type->value}].",
-            );
-        }
     }
 
     private function resolveType(WorldRelationType|string $type): WorldRelationType
