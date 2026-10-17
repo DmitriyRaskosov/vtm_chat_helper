@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Chronicle\CurrentChronicle;
-use App\Enums\SceneStatus;
+use App\Character\CharacterSceneGuard;
 use App\Http\Requests\CopilotDraftsRequest;
 use App\Llm\NpcCopilotService;
 use App\Models\Character;
 use App\Models\CopilotRequest;
 use App\Models\Scene;
+use App\Scene\ActiveSceneResolver;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
@@ -16,33 +16,17 @@ use RuntimeException;
 
 class CopilotController extends Controller
 {
-    public function __construct(private CurrentChronicle $currentChronicle) {}
+    public function __construct(
+        private ActiveSceneResolver $activeSceneResolver,
+        private CharacterSceneGuard $characterSceneGuard,
+    ) {}
 
     public function drafts(CopilotDraftsRequest $request, NpcCopilotService $copilot): JsonResponse
     {
         $sceneId = $request->validated('scene_id') ?? null;
-        $chronicleId = null;
-
-        if ($sceneId === null) {
-            $chronicleId = $this->currentChronicle->id();
-        }
-
-        $scene = Scene::query()
-            ->when($sceneId !== null, fn ($query) => $query->whereKey((int) $sceneId))
-            ->when($sceneId === null, fn ($query) => $query->active())
-            ->whereHas('gameSession', function ($query) use ($chronicleId) {
-                $query->active();
-
-                if ($chronicleId !== null) {
-                    $query->where('chronicle_id', (int) $chronicleId);
-                }
-            })
-            ->first();
-
-        abort_if(
-            $scene === null || $scene->status !== SceneStatus::Active,
-            409,
-            'Copilot requires an active scene.',
+        $scene = $this->activeSceneResolver->resolveActive(
+            $sceneId === null ? null : (int) $sceneId,
+            forCopilot: true,
         );
 
         $scene->loadMissing('gameSession');
@@ -92,12 +76,7 @@ class CopilotController extends Controller
     {
         $characterId = (int) $request->validated('character_id');
         $character = Character::query()->findOrFail((int) $characterId);
-        abort_if(
-            (int) $character->chronicle_id !== (int) $scene->gameSession->chronicle_id,
-            409,
-            'Character does not belong to this chronicle.',
-        );
-        abort_if(! $character->is_active, 409, 'Character is archived.');
+        $this->characterSceneGuard->assertUsableIn($character, $scene);
 
         $character->loadMissing('entity');
         $npcName = $character->entity?->canonical_name;

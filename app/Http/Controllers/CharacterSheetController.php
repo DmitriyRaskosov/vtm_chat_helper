@@ -24,9 +24,9 @@ use App\Models\CanonClan;
 use App\Models\CanonDiscipline;
 use App\Models\CanonSect;
 use App\Models\Character;
-use App\Models\Scene;
 use App\Models\SceneParticipant;
 use App\Models\WorldEntity;
+use App\Scene\ActiveSceneResolver;
 use App\Scene\SceneParticipantService;
 use App\World\WorldEntityService;
 use Illuminate\Http\JsonResponse;
@@ -45,6 +45,7 @@ class CharacterSheetController extends Controller
         private CharacterTraitService $traits,
         private SceneParticipantService $participants,
         private CurrentChronicle $currentChronicle,
+        private ActiveSceneResolver $activeSceneResolver,
     ) {}
 
     public function catalog(): JsonResponse
@@ -282,12 +283,7 @@ class CharacterSheetController extends Controller
     {
         $visibleIds = [$pcId];
 
-        $activeScene = Scene::query()
-            ->active()
-            ->whereHas('gameSession', function ($query) use ($chronicleId) {
-                $query->active()->where('chronicle_id', $chronicleId);
-            })
-            ->first();
+        $activeScene = $this->activeSceneResolver->activeOrNull();
 
         if ($activeScene === null) {
             return $visibleIds;

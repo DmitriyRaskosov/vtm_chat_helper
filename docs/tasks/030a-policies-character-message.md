@@ -44,6 +44,15 @@
 4. Вызовы: контроллеры — `Gate::authorize(...)`; маршруты персонажей из группы `storyteller` — `->can('create', Character::class)` и т. п.
 5. Видимость списка — `CharacterVisibility` (без изменения правила, тесты `CharacterVisibilityTest` без правок).
 6. Удалить `CharacterAccess`, `authorize()` из перечисленных FormRequest, проверки доступа из сервисов сообщений.
+7. CharacterArchivedException (из 024): после переноса authorize() в 
+  CharacterPolicy::createMessage — решить, возвращается ли это 
+  исключение (409, текущее) или заменяется на Policy-отказ (403). 
+  Согласовать с семантикой ADR-005 (авторизация — 403, доменные — 
+  конфликт). Если 403 — исключение удалить.
+8. CharacterSceneGuard::assertUsableIn() → CharacterPolicy::viewInScene() 
+  (или аналогичный метод). CharacterAccess::canSpeakAs() и 
+  canManageSheet() — тоже в CharacterPolicy. После 030a grep 
+  "CharacterAccess|CharacterSceneGuard" по app/ должен быть пустым.
 
 ## Definition of Done
 

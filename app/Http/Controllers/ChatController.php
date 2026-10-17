@@ -2,10 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Chronicle\CurrentChronicle;
+use App\Character\CharacterSceneGuard;
 use App\Enums\CharacterType;
-use App\Enums\GameSessionStatus;
-use App\Enums\SceneStatus;
 use App\Http\Requests\StoreMessageRequest;
 use App\Jobs\WriteDiaryJob;
 use App\Messages\MessageEditService;
@@ -15,6 +13,7 @@ use App\Models\Message;
 use App\Models\Scene;
 use App\Models\SceneParticipant;
 use App\Models\User;
+use App\Scene\ActiveSceneResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -24,7 +23,10 @@ use Illuminate\Support\Facades\Log;
 
 class ChatController extends Controller
 {
-    public function __construct(private CurrentChronicle $currentChronicle) {}
+    public function __construct(
+        private ActiveSceneResolver $activeSceneResolver,
+        private CharacterSceneGuard $characterSceneGuard,
+    ) {}
 
     public function index(Request $request): JsonResponse
     {
@@ -35,9 +37,8 @@ class ChatController extends Controller
         ]);
 
         $afterId = $request->integer('after_id');
-        $scene = $this->resolveScene(
+        $scene = $this->activeSceneResolver->resolve(
             isset($validated['scene_id']) ? (int) $validated['scene_id'] : null,
-            false,
         );
 
         $query = Message::query()
@@ -66,9 +67,8 @@ class ChatController extends Controller
     {
         $validated = $request->validated();
         $sceneId = $validated['scene_id'] ?? null;
-        $scene = $this->resolveScene(
+        $scene = $this->activeSceneResolver->resolveActive(
             $sceneId === null ? null : (int) $sceneId,
-            true,
         );
         $scene->loadMissing('gameSession');
 
@@ -184,12 +184,7 @@ class ChatController extends Controller
         }
 
         $character = Character::query()->findOrFail($characterId);
-        abort_if(
-            (int) $character->chronicle_id !== (int) $scene->gameSession->chronicle_id,
-            409,
-            'Character does not belong to this chronicle.',
-        );
-        abort_if(! $character->is_active, 409, 'Character is archived.');
+        $this->characterSceneGuard->assertUsableIn($character, $scene);
 
         if ($this->isNpcLikeSpeech($character, $user)) {
             $character->loadMissing('entity');
@@ -287,42 +282,6 @@ class ChatController extends Controller
         }
 
         return false;
-    }
-
-    private function resolveScene(?int $sceneId, bool $mustBeActive): Scene
-    {
-        $chronicleId = null;
-        if ($sceneId === null) {
-            $chronicleId = $this->currentChronicle->id();
-        }
-
-        $query = Scene::query()->whereHas(
-            'gameSession',
-            function ($query) use ($chronicleId) {
-                $query->where('status', GameSessionStatus::Active);
-
-                if ($chronicleId !== null) {
-                    $query->where('chronicle_id', $chronicleId);
-                }
-            },
-        );
-
-        if ($sceneId !== null) {
-            $query->whereKey($sceneId);
-        } else {
-            $query->active();
-        }
-
-        $scene = $query->first();
-
-        abort_if($scene === null, 409, 'There is no available scene in the active game session.');
-        abort_if(
-            $mustBeActive && $scene->status !== SceneStatus::Active,
-            409,
-            'Messages can only be posted to the active scene.',
-        );
-
-        return $scene;
     }
 
     private function maybeDispatchDiaryWrite(Scene $scene): void
