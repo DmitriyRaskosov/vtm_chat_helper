@@ -16,7 +16,8 @@
    - `dispatch()` — только из `Diary/DiaryScheduler`;
    - у каждой таблицы один модуль-владелец, остальные вызывают его методы;
    - `World` не зависит от остальных доменных модулей.
-4. Цикл Context ↔ Diary разрывается: `DiaryPreviewService` переезжает в `Context`, `TokenEstimator` — в `Llm`.
+4. Цикл Context ↔ Diary разрывается: `DiaryPreviewService` переезжает в `Context`.
+   `TokenEstimator` живёт в Context, потому что часть бюджетирования контекста. MessageObserver импортирует `App\Context\TokenEstimator` — осознанное исключение. Перенос в `App\Support` — при появлении третьего потребителя вне Context/Message.
 5. DI — только через конструктор; `app()`/`resolve()` — только в service providers. DTO — `final readonly class`.
 
 ## Consequences
