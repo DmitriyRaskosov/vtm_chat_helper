@@ -204,7 +204,7 @@ async function poll() {
 
     try {
         const previousSceneId = selectedSceneId.value;
-        const preferredSceneId = auth.user.value?.is_storyteller
+        const preferredSceneId = isStoryteller.value
             ? previousSceneId
             : null;
 

@@ -33,6 +33,7 @@
 import { reactive } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { useAuth } from '../auth';
+import { apiErrorMessage } from '../utils/apiError';
 
 const router = useRouter();
 const auth = useAuth();
@@ -55,7 +56,7 @@ async function submit() {
         const data = error.response?.data?.errors ?? {};
         errors.login = data.login?.[0] ?? '';
         errors.name = data.name?.[0] ?? '';
-        errors.password = data.password?.[0] ?? error.response?.data?.message ?? 'Не удалось зарегистрироваться.';
+        errors.password = data.password?.[0] ?? apiErrorMessage(error, 'Не удалось зарегистрироваться.');
     }
 }
 </script>

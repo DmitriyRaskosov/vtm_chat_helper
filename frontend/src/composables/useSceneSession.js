@@ -1,5 +1,10 @@
-import { computed, onUnmounted, ref, watch } from 'vue';
-import { api } from '../auth';
+import { computed, ref, watch } from 'vue';
+import { api, isStoryteller } from '../auth';
+import { useFlash } from './useFlash';
+import { apiErrorMessage } from '../utils/apiError';
+import { characterTypeLabel } from '../utils/labels';
+
+export { characterTypeLabel };
 
 export function sceneStatusLabel(status) {
     return {
@@ -7,13 +12,6 @@ export function sceneStatusLabel(status) {
         draft: 'ожидает',
         closed: 'закрыта',
     }[status] ?? status;
-}
-
-export function characterTypeLabel(type) {
-    if (type === 'player') {
-        return 'игрок';
-    }
-    return 'НПС';
 }
 
 function sceneRoleFor(type) {
@@ -54,7 +52,7 @@ export function useSceneSession({ auth }) {
     const sceneSituationSaving = ref(false);
     const sceneSituationError = ref('');
     let boundMessages = null;
-    let participantFlashTimer;
+    const { flashRef } = useFlash();
 
     const scenes = computed(() => gameSession.value?.scenes ?? []);
     const selectedScene = computed(
@@ -75,7 +73,7 @@ export function useSceneSession({ auth }) {
         return pc?.character_id ?? null;
     });
     const canEditParticipants = computed(() => (
-        auth.user.value?.is_storyteller === true
+        isStoryteller.value
         && selectedScene.value != null
         && selectedScene.value.status !== 'closed'
     ));
@@ -95,11 +93,7 @@ export function useSceneSession({ auth }) {
     }
 
     function flashParticipant(text) {
-        participantFlash.value = text;
-        clearTimeout(participantFlashTimer);
-        participantFlashTimer = setTimeout(() => {
-            participantFlash.value = '';
-        }, 2000);
+        flashRef(participantFlash, text, 'participant');
     }
 
     async function loadGameSession(preferredSceneId = selectedSceneId.value) {
@@ -152,7 +146,7 @@ export function useSceneSession({ auth }) {
             if (selectedSceneId.value !== sceneId) {
                 return;
             }
-            sceneSituationError.value = error.response?.data?.message ?? 'Не удалось загрузить локацию сцены.';
+            sceneSituationError.value = apiErrorMessage(error, 'Не удалось загрузить локацию сцены.');
         }
     }
 
@@ -178,7 +172,7 @@ export function useSceneSession({ auth }) {
             if (selectedSceneId.value !== sceneId) {
                 return;
             }
-            sceneSituationError.value = error.response?.data?.message ?? 'Не удалось сохранить локацию сцены.';
+            sceneSituationError.value = apiErrorMessage(error, 'Не удалось сохранить локацию сцены.');
         } finally {
             sceneSituationSaving.value = false;
         }
@@ -209,15 +203,14 @@ export function useSceneSession({ auth }) {
             participants.value = data.participants ?? [];
         } catch (error) {
             if (selectedSceneId.value === sceneId) {
-                participantError.value = error.response?.data?.message
-                    ?? 'Не удалось загрузить участников сцены.';
+                participantError.value = apiErrorMessage(error, 'Не удалось загрузить участников сцены.');
             }
             chronicleCharacters.value = [];
             return;
         }
     
         // Полный список персонажей хроники — только storyteller'у (для блока «Добавить»).
-        if (auth.user.value?.is_storyteller !== true) {
+        if (!isStoryteller.value) {
             chronicleCharacters.value = [];
             return;
         }
@@ -231,8 +224,7 @@ export function useSceneSession({ auth }) {
             selectedNpcId.value = sceneNpcs.value[0]?.character_id ?? null;
         } catch (error) {
             if (selectedSceneId.value === sceneId) {
-                participantError.value = error.response?.data?.message
-                    ?? 'Не удалось загрузить список персонажей.';
+                participantError.value = apiErrorMessage(error, 'Не удалось загрузить список персонажей.');
             }
         }
     }
@@ -263,7 +255,7 @@ export function useSceneSession({ auth }) {
             }
             flashParticipant('Добавлено');
         } catch (error) {
-            participantError.value = error.response?.data?.message ?? 'Не удалось добавить персонажа на сцену.';
+            participantError.value = apiErrorMessage(error, 'Не удалось добавить персонажа на сцену.');
         } finally {
             participantBusy.value = false;
         }
@@ -282,7 +274,7 @@ export function useSceneSession({ auth }) {
             await loadParticipants();
             flashParticipant('Убрано');
         } catch (error) {
-            participantError.value = error.response?.data?.message ?? 'Не удалось убрать персонажа со сцены.';
+            participantError.value = apiErrorMessage(error, 'Не удалось убрать персонажа со сцены.');
         } finally {
             participantBusy.value = false;
         }
@@ -304,7 +296,7 @@ export function useSceneSession({ auth }) {
             selectedSceneId.value = gameSession.value.active_scene_id;
             return true;
         } catch (error) {
-            sceneError.value = error.response?.data?.message ?? 'Не удалось создать игровую сессию.';
+            sceneError.value = apiErrorMessage(error, 'Не удалось создать игровую сессию.');
             return false;
         } finally {
             sceneLoading.value = false;
@@ -329,7 +321,7 @@ export function useSceneSession({ auth }) {
             await loadGameSession(data.scene.id);
             return true;
         } catch (error) {
-            sceneError.value = error.response?.data?.message ?? 'Не удалось создать сцену.';
+            sceneError.value = apiErrorMessage(error, 'Не удалось создать сцену.');
             return false;
         } finally {
             sceneLoading.value = false;
@@ -348,7 +340,7 @@ export function useSceneSession({ auth }) {
             await api.patch(`/scenes/${selectedScene.value.id}/activate`);
             await loadGameSession(selectedScene.value.id);
         } catch (error) {
-            sceneError.value = error.response?.data?.message ?? 'Не удалось активировать сцену.';
+            sceneError.value = apiErrorMessage(error, 'Не удалось активировать сцену.');
         } finally {
             sceneLoading.value = false;
         }
@@ -366,15 +358,11 @@ export function useSceneSession({ auth }) {
             await api.patch(`/scenes/${selectedScene.value.id}/close`);
             await loadGameSession(selectedScene.value.id);
         } catch (error) {
-            sceneError.value = error.response?.data?.message ?? 'Не удалось закрыть сцену.';
+            sceneError.value = apiErrorMessage(error, 'Не удалось закрыть сцену.');
         } finally {
             sceneLoading.value = false;
         }
     }
-
-    onUnmounted(() => {
-        clearTimeout(participantFlashTimer);
-    });
 
     return {
         gameSession,

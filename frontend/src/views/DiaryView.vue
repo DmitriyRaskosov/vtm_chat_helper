@@ -92,6 +92,7 @@ import { computed, onMounted, ref } from 'vue';
 import { useRoute } from 'vue-router';
 import { api } from '../auth';
 import AppNav from '../components/layout/AppNav.vue';
+import { apiErrorMessage } from '../utils/apiError';
 
 const route = useRoute();
 const characterId = computed(() => Number(route.params.id));
@@ -118,7 +119,7 @@ async function load() {
         characterName.value = sheetRes.data.character?.canonical_name ?? 'Дневник';
         entries.value = diaryRes.data.entries ?? [];
     } catch (e) {
-        error.value = e.response?.data?.message ?? 'Не удалось загрузить дневник.';
+        error.value = apiErrorMessage(e, 'Не удалось загрузить дневник.');
     } finally {
         loading.value = false;
     }
@@ -135,7 +136,7 @@ async function open(entry) {
         editing.value = false;
         editText.value = '';
     } catch (e) {
-        error.value = e.response?.data?.message ?? 'Не удалось открыть запись.';
+        error.value = apiErrorMessage(e, 'Не удалось открыть запись.');
     }
 }
 
@@ -148,7 +149,7 @@ async function startEdit(entry) {
         editing.value = true;
         editText.value = full.entry;
     } catch (e) {
-        error.value = e.response?.data?.message ?? 'Не удалось открыть запись.';
+        error.value = apiErrorMessage(e, 'Не удалось открыть запись.');
     }
 }
 
@@ -172,7 +173,7 @@ async function save() {
         editing.value = false;
         editText.value = '';
     } catch (e) {
-        error.value = e.response?.data?.message ?? 'Не удалось сохранить.';
+        error.value = apiErrorMessage(e, 'Не удалось сохранить.');
     } finally {
         saving.value = false;
     }
@@ -186,7 +187,7 @@ async function remove(entry) {
         entries.value = entries.value.filter((e) => e.id !== entry.id);
         if (activeEntry.value?.id === entry.id) close();
     } catch (e) {
-        error.value = e.response?.data?.message ?? 'Не удалось удалить.';
+        error.value = apiErrorMessage(e, 'Не удалось удалить.');
     }
 }
 
@@ -205,7 +206,7 @@ async function regenerate(entry) {
             activeEntry.value = updated;
         }
     } catch (e) {
-        error.value = e.response?.data?.message ?? 'Не удалось пересоздать.';
+        error.value = apiErrorMessage(e, 'Не удалось пересоздать.');
     } finally {
         regeneratingId.value = null;
     }

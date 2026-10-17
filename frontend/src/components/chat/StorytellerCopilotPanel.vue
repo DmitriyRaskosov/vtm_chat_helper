@@ -127,6 +127,7 @@
 <script setup>
 import { computed, ref } from 'vue';
 import { api } from '../../auth';
+import { apiErrorMessage } from '../../utils/apiError';
 
 const props = defineProps({
     sceneNpcs: { type: Array, required: true },
@@ -186,8 +187,10 @@ async function generateDrafts() {
             selectDraft(0);
         }
     } catch (error) {
-        copilotError.value =
-            error.response?.data?.message ?? 'Не удалось сгенерировать черновики. Проверьте DeepSeek API и сеть.';
+        copilotError.value = apiErrorMessage(
+            error,
+            'Не удалось сгенерировать черновики. Проверьте DeepSeek API и сеть.',
+        );
     } finally {
         copilotLoading.value = false;
     }
@@ -213,8 +216,7 @@ async function sendAsNpc() {
         resetDrafts();
         copilotPrompt.value = '';
     } catch (error) {
-        copilotError.value =
-            error.response?.data?.message ?? 'Не удалось отправить выбранный черновик.';
+        copilotError.value = apiErrorMessage(error, 'Не удалось отправить выбранный черновик.');
     }
 }
 
@@ -235,8 +237,7 @@ async function openPreview() {
         });
         previewData.value = data;
     } catch (error) {
-        previewError.value =
-            error.response?.data?.message ?? 'Не удалось получить preview дневника.';
+        previewError.value = apiErrorMessage(error, 'Не удалось получить preview дневника.');
     } finally {
         previewLoading.value = false;
     }

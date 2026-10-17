@@ -25,6 +25,7 @@
 import { reactive, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import { useAuth } from '../auth';
+import { apiErrorMessage } from '../utils/apiError';
 
 const router = useRouter();
 const auth = useAuth();
@@ -40,7 +41,7 @@ async function submit() {
         await router.push('/chat');
     } catch (error) {
         const data = error.response?.data?.errors ?? {};
-        errors.login = data.login?.[0] ?? error.response?.data?.message ?? 'Не удалось войти.';
+        errors.login = data.login?.[0] ?? apiErrorMessage(error, 'Не удалось войти.');
         errors.password = data.password?.[0] ?? '';
     }
 }

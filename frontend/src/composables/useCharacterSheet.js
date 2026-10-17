@@ -1,11 +1,11 @@
-import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { api, isStoryteller, useAuth } from '../auth';
+import { useFlash } from './useFlash';
+import { apiErrorMessage } from '../utils/apiError';
+import { characterTypeLabel } from '../utils/labels';
 
-export function typeLabel(type) {
-    if (type === 'player') return 'игрок';
-    return 'НПС';
-}
+export { characterTypeLabel as typeLabel };
 
 export const TRAIT_PRESETS = [
     {
@@ -90,7 +90,7 @@ export function useCharacterSheet() {
         traits: false,
         place: false,
     });
-    const flashTimers = {};
+    const { flash: flashSavedKey } = useFlash();
     const sects = computed(() => catalog.value?.sects ?? []);
     const clans = computed(() => catalog.value?.clans ?? []);
     const bloodlines = computed(() => catalog.value?.bloodlines ?? []);
@@ -116,11 +116,7 @@ export function useCharacterSheet() {
     }
 
     function flashSaved(key) {
-        flash[key] = true;
-        clearTimeout(flashTimers[key]);
-        flashTimers[key] = setTimeout(() => {
-            flash[key] = false;
-        }, 2000);
+        flashSavedKey(flash, key);
     }
 
     function makeTraitRow(row = {}) {
@@ -243,7 +239,7 @@ export function useCharacterSheet() {
                 applySheet(sheetRes.data.character);
             }
         } catch (e) {
-            error.value = e.response?.data?.message ?? 'Не удалось загрузить лист.';
+            error.value = apiErrorMessage(e, 'Не удалось загрузить лист.');
         }
     }
 
@@ -254,7 +250,7 @@ export function useCharacterSheet() {
             applySheet(data.character);
             flashSaved('identity');
         } catch (e) {
-            error.value = e.response?.data?.message ?? 'Не удалось сохранить шапку.';
+            error.value = apiErrorMessage(e, 'Не удалось сохранить шапку.');
         }
     }
 
@@ -265,9 +261,10 @@ export function useCharacterSheet() {
             applySheet(data.character);
             flashSaved('biography');
         } catch (e) {
-            error.value = e.response?.data?.message
-                ?? e.response?.data?.errors?.summary?.[0]
-                ?? 'Не удалось сохранить биографию.';
+            error.value = apiErrorMessage(
+                e,
+                e.response?.data?.errors?.summary?.[0] ?? 'Не удалось сохранить биографию.',
+            );
         }
     }
 
@@ -287,7 +284,7 @@ export function useCharacterSheet() {
             flashSaved('traits');
         } catch (e) {
             const firstError = Object.values(e.response?.data?.errors ?? {})[0]?.[0];
-            error.value = e.response?.data?.message ?? firstError ?? 'Не удалось сохранить черты.';
+            error.value = apiErrorMessage(e, firstError ?? 'Не удалось сохранить черты.');
         }
     }
 
@@ -313,7 +310,7 @@ export function useCharacterSheet() {
             applySheet(data.character);
             flashSaved('place');
         } catch (e) {
-            error.value = e.response?.data?.message ?? 'Не удалось сохранить место в мире.';
+            error.value = apiErrorMessage(e, 'Не удалось сохранить место в мире.');
         }
     }
 
@@ -345,17 +342,12 @@ export function useCharacterSheet() {
             const { data } = await api.put(`/characters/${sheet.value.id}/disciplines`, { disciplines: next });
             applySheet(data.character);
         } catch (e) {
-            error.value = e.response?.data?.message ?? 'Не удалось сохранить дисциплины.';
+            error.value = apiErrorMessage(e, 'Не удалось сохранить дисциплины.');
         }
     }
 
     watch(() => route.params.id, load);
     onMounted(load);
-    onUnmounted(() => {
-        for (const timer of Object.values(flashTimers)) {
-            clearTimeout(timer);
-        }
-    });
 
     return {
         sheet,

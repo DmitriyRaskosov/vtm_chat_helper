@@ -6,8 +6,13 @@ alwaysApply: false
 
 # Frontend (черновик)
 
-<!-- TODO(033): после задачи 033 вписать имена общих утилит (метки игрок/NPC, хелпер ошибок, таймер «сохранено»). -->
 <!-- TODO(034): после задачи 034 зафиксировать правило «view без прямых вызовов API». -->
+
+## Утилиты и composables (этап 2)
+
+- Метки типа персонажа: `frontend/src/utils/labels.js` — `PLAYER_LABEL`, `NPC_LABEL`, `characterTypeLabel(type)`. Composable `useSceneSession` / `useCharacterSheet` реэкспортируют для старых импортов.
+- Текст ошибки API: `frontend/src/utils/apiError.js` — `apiErrorMessage(error, fallback)`.
+- Таймер «сохранено» (~2 с): `frontend/src/composables/useFlash.js` — `flash(store, key)` для флагов, `flashRef(ref, value)` для строки.
 
 ## Авторизация (router и auth.js)
 

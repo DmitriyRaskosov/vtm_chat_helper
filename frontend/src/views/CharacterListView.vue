@@ -4,7 +4,7 @@
 
         <p v-if="error" class="error">{{ error }}</p>
 
-        <section v-if="auth.user.value?.is_storyteller" class="card character-create">
+        <section v-if="isStoryteller" class="card character-create">
             <h2>Новый персонаж</h2>
             <div class="character-create-grid">
                 <label>
@@ -35,9 +35,9 @@
                 <li v-for="row in characters" :key="row.id">
                     <div class="character-row">
                         <RouterLink :to="`/characters/${row.id}`">{{ row.canonical_name }}</RouterLink>
-                        <span class="muted"> · {{ typeLabel(row.character_type) }}</span>
+                        <span class="muted"> · {{ characterTypeLabel(row.character_type) }}</span>
                         <button
-                            v-if="auth.user.value?.is_storyteller"
+                            v-if="isStoryteller"
                             class="link"
                             type="button"
                             @click="hideCharacter(row.id)"
@@ -49,14 +49,14 @@
             </ul>
         </section>
 
-        <section v-if="auth.user.value?.is_storyteller" class="card">
+        <section v-if="isStoryteller" class="card">
             <h2>Скрытые</h2>
             <p v-if="!archived.length" class="muted">Скрытых персонажей нет.</p>
             <ul v-else class="character-tree">
                 <li v-for="row in archived" :key="row.id">
                     <div class="character-row">
                         <RouterLink :to="`/characters/${row.id}`">{{ row.canonical_name }}</RouterLink>
-                        <span class="muted"> · {{ typeLabel(row.character_type) }}</span>
+                        <span class="muted"> · {{ characterTypeLabel(row.character_type) }}</span>
                         <button class="link" type="button" @click="restoreCharacter(row.id)">Вернуть</button>
                     </div>
                 </li>
@@ -66,12 +66,13 @@
 </template>
 
 <script setup>
-import { computed, onMounted, reactive, ref } from 'vue';
+import { onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
-import { api, useAuth } from '../auth';
+import { api, isStoryteller } from '../auth';
 import AppNav from '../components/layout/AppNav.vue';
+import { apiErrorMessage } from '../utils/apiError';
+import { characterTypeLabel } from '../utils/labels';
 
-const auth = useAuth();
 const router = useRouter();
 const characters = ref([]);
 const archived = ref([]);
@@ -82,14 +83,6 @@ const form = reactive({
     character_type: 'npc',
     user_id: null,
 });
-const roots = computed(() => characters.value);
-
-function typeLabel(type) {
-    if (type === 'player') {
-        return 'игрок';
-    }
-    return 'НПС';
-}
 
 async function load() {
     error.value = '';
@@ -98,7 +91,7 @@ async function load() {
         characters.value = data.characters ?? [];
         archived.value = data.archived ?? [];
     } catch (e) {
-        error.value = e.response?.data?.message ?? 'Не удалось загрузить персонажей.';
+        error.value = apiErrorMessage(e, 'Не удалось загрузить персонажей.');
     }
 }
 
@@ -116,7 +109,7 @@ async function createCharacter() {
         const { data } = await api.post('/characters', payload);
         await router.push(`/characters/${data.character.id}`);
     } catch (e) {
-        error.value = e.response?.data?.message ?? 'Не удалось создать персонажа.';
+        error.value = apiErrorMessage(e, 'Не удалось создать персонажа.');
     } finally {
         saving.value = false;
     }
@@ -128,7 +121,7 @@ async function hideCharacter(id) {
         await api.post(`/characters/${id}/archive`);
         await load();
     } catch (e) {
-        error.value = e.response?.data?.message ?? 'Не удалось скрыть персонажа.';
+        error.value = apiErrorMessage(e, 'Не удалось скрыть персонажа.');
     }
 }
 
@@ -138,7 +131,7 @@ async function restoreCharacter(id) {
         await api.post(`/characters/${id}/restore`);
         await load();
     } catch (e) {
-        error.value = e.response?.data?.message ?? 'Не удалось вернуть персонажа.';
+        error.value = apiErrorMessage(e, 'Не удалось вернуть персонажа.');
     }
 }
 
