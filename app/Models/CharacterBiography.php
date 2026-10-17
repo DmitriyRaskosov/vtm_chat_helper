@@ -3,9 +3,7 @@
 namespace App\Models;
 
 use App\Enums\CharacterBiographyStatus;
-use Database\Factories\CharacterBiographyFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -29,9 +27,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 ])]
 class CharacterBiography extends Model
 {
-    /** @use HasFactory<CharacterBiographyFactory> */
-    use HasFactory;
-
     protected $primaryKey = 'character_id';
 
     public $incrementing = false;

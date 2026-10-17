@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\GameSessionStatus;
 use App\Models\Chronicle;
 use App\Models\GameSession;
 use App\Models\User;
@@ -30,14 +29,13 @@ class CopilotTest extends TestCase
         $this->seed(CanonClanSeeder::class);
 
         $this->storyteller = User::factory()->storyteller()->create();
-        $this->chronicle = Chronicle::query()->create([
+        $this->chronicle = Chronicle::factory()->create([
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);
-        $this->gameSession = GameSession::query()->create([
+        $this->gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $this->chronicle->id,
             'title' => 'Тестовая сессия',
-            'status' => GameSessionStatus::Active,
             'created_by' => $this->storyteller->id,
         ]);
 

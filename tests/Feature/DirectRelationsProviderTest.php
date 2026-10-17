@@ -6,8 +6,6 @@ use App\Context\ContextAssembly;
 use App\Context\ContextPass;
 use App\Context\ContextRequest;
 use App\Context\Providers\DirectRelationsProvider;
-use App\Enums\GameSessionStatus;
-use App\Enums\SceneStatus;
 use App\Enums\WorldRelationKind;
 use App\Models\Character;
 use App\Models\Chronicle;
@@ -28,23 +26,21 @@ class DirectRelationsProviderTest extends TestCase
         $this->seed(CanonClanSeeder::class);
 
         $storyteller = User::factory()->storyteller()->create();
-        $chronicle = Chronicle::query()->create([
+        $chronicle = Chronicle::factory()->create([
             'title' => 'Тестовая хроника',
             'created_by' => $storyteller->id,
         ]);
 
-        $gameSession = GameSession::query()->create([
+        $gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $chronicle->id,
             'title' => 'Сессия',
-            'status' => GameSessionStatus::Active,
             'created_by' => $storyteller->id,
         ]);
 
-        $scene = Scene::query()->create([
+        $scene = Scene::factory()->active()->create([
             'game_session_id' => $gameSession->id,
             'position' => 1,
             'title' => 'Сцена',
-            'status' => SceneStatus::Active,
         ]);
 
         $sourceResponse = $this->actingAs($storyteller, 'sanctum')

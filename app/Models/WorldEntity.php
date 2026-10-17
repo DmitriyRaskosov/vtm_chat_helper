@@ -4,10 +4,8 @@ namespace App\Models;
 
 use App\Enums\WorldEntityStatus;
 use App\Enums\WorldEntityType;
-use Database\Factories\WorldEntityFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -28,9 +26,6 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 ])]
 class WorldEntity extends Model
 {
-    /** @use HasFactory<WorldEntityFactory> */
-    use HasFactory;
-
     /**
      * @param  Builder<WorldEntity>  $query
      * @return Builder<WorldEntity>

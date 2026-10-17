@@ -14,7 +14,7 @@ class WorldEntityDeleteTest extends TestCase
     public function test_world_entity_cannot_be_deleted_from_database(): void
     {
         $storyteller = User::factory()->storyteller()->create();
-        $chronicle = Chronicle::query()->create([
+        $chronicle = Chronicle::factory()->create([
             'title' => 'Тестовая хроника',
             'created_by' => $storyteller->id,
         ]);

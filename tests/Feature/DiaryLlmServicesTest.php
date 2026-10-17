@@ -4,9 +4,7 @@ namespace Tests\Feature;
 
 use App\Diary\DiarySummarizerService;
 use App\Diary\DiaryWriterService;
-use App\Enums\GameSessionStatus;
 use App\Enums\SceneParticipantRole;
-use App\Enums\SceneStatus;
 use App\Jobs\SummarizeSceneDiaryJob;
 use App\Jobs\WriteDiaryJob;
 use App\Models\Character;
@@ -47,23 +45,21 @@ class DiaryLlmServicesTest extends TestCase
 
         $this->storyteller = User::factory()->storyteller()->create();
 
-        $this->chronicle = Chronicle::query()->create([
+        $this->chronicle = Chronicle::factory()->create([
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);
 
-        $this->gameSession = GameSession::query()->create([
+        $this->gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $this->chronicle->id,
             'title' => 'Тестовая сессия',
-            'status' => GameSessionStatus::Active,
             'created_by' => $this->storyteller->id,
         ]);
 
-        $this->scene = Scene::query()->create([
+        $this->scene = Scene::factory()->active()->create([
             'game_session_id' => $this->gameSession->id,
             'position' => 1,
             'title' => 'Сцена',
-            'status' => SceneStatus::Active,
         ]);
 
         $npcResponse = $this->actingAs($this->storyteller, 'sanctum')
@@ -76,7 +72,7 @@ class DiaryLlmServicesTest extends TestCase
 
         $this->npc = Character::query()->findOrFail($npcResponse->json('character.id'));
 
-        SceneParticipant::query()->create([
+        SceneParticipant::factory()->create([
             'scene_id' => $this->scene->id,
             'chronicle_id' => $this->chronicle->id,
             'character_id' => $this->npc->id,
@@ -195,7 +191,7 @@ class DiaryLlmServicesTest extends TestCase
         $secondNpcResponse->assertStatus(201);
         $secondNpc = Character::query()->findOrFail($secondNpcResponse->json('character.id'));
 
-        SceneParticipant::query()->create([
+        SceneParticipant::factory()->create([
             'scene_id' => $this->scene->id,
             'chronicle_id' => $this->chronicle->id,
             'character_id' => $secondNpc->id,
@@ -231,7 +227,7 @@ class DiaryLlmServicesTest extends TestCase
         $secondNpcResponse->assertStatus(201);
         $secondNpc = Character::query()->findOrFail($secondNpcResponse->json('character.id'));
 
-        SceneParticipant::query()->create([
+        SceneParticipant::factory()->create([
             'scene_id' => $this->scene->id,
             'chronicle_id' => $this->chronicle->id,
             'character_id' => $secondNpc->id,
@@ -306,7 +302,7 @@ class DiaryLlmServicesTest extends TestCase
 
         $message = $this->createSceneMessage('Реплика игрока.');
 
-        SceneParticipant::query()->create([
+        SceneParticipant::factory()->create([
             'scene_id' => $this->scene->id,
             'chronicle_id' => $this->chronicle->id,
             'character_id' => $player->id,

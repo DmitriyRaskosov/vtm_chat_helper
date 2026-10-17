@@ -2,7 +2,9 @@
 
 namespace Database\Factories;
 
+use App\Enums\ChronicleStatus;
 use App\Models\Chronicle;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -14,6 +16,12 @@ class ChronicleFactory extends Factory
 
     public function definition(): array
     {
-        return [];
+        return [
+            'title' => fake()->sentence(3),
+            'description' => fake()->optional()->paragraph(),
+            'setting' => fake()->optional()->word(),
+            'status' => ChronicleStatus::Active,
+            'created_by' => User::factory(),
+        ];
     }
 }

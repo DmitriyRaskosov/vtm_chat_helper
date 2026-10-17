@@ -4,10 +4,8 @@ namespace App\Models;
 
 use App\Enums\WorldEntityType;
 use App\Enums\WorldRelationKind;
-use Database\Factories\WorldRelationFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use InvalidArgumentException;
@@ -35,9 +33,6 @@ use InvalidArgumentException;
 ])]
 class WorldRelation extends Model
 {
-    /** @use HasFactory<WorldRelationFactory> */
-    use HasFactory;
-
     /**
      * @param  Builder<WorldRelation>  $query
      * @return Builder<WorldRelation>

@@ -50,6 +50,7 @@
 6. `Biography is unchanged.` → `BiographyUnchangedException`; контроллер ловит **этот класс** (не текст) и возвращает лист без ошибки, как сейчас.
 7. `NoChronicleException extends ConflictException`, удалить его `render()`.
 8. Удалить из контроллеров Scope `try/catch` + `abort`, ставшие ненужными. Удалить запись baseline `catch.alreadyCaught`.
+9. Удалить `WorldEntityAlias` и `WorldRelationType`, если они ещё существуют. В 034a отмечено, что они всё ещё в коде
 
 ## Definition of Done
 

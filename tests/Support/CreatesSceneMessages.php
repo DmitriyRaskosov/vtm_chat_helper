@@ -19,7 +19,7 @@ trait CreatesSceneMessages
         /** @var User $author */
         $author ??= $this->storyteller;
 
-        return Message::query()->create([
+        return Message::factory()->create([
             'user_id' => $author->id,
             'scene_id' => $scene->id,
             'body' => $body,

@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use App\Enums\GameSessionStatus;
 use App\Models\Chronicle;
 use App\Models\GameSession;
 use App\Models\User;
@@ -24,7 +23,7 @@ class CharacterVisibilityTest extends TestCase
         $this->seed(CanonClanSeeder::class);
 
         $this->storyteller = User::factory()->storyteller()->create();
-        $this->chronicle = Chronicle::query()->create([
+        $this->chronicle = Chronicle::factory()->create([
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);
@@ -51,10 +50,9 @@ class CharacterVisibilityTest extends TestCase
 
     public function test_player_sees_own_character_and_current_active_scene_participants(): void
     {
-        $gameSession = GameSession::query()->create([
+        $gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $this->chronicle->id,
             'title' => 'Сессия',
-            'status' => GameSessionStatus::Active,
             'created_by' => $this->storyteller->id,
         ]);
 

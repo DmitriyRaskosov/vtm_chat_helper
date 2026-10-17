@@ -24,7 +24,7 @@ class CharacterTraitTest extends TestCase
         $this->seed(CanonClanSeeder::class);
 
         $this->storyteller = User::factory()->storyteller()->create();
-        $this->chronicle = Chronicle::query()->create([
+        $this->chronicle = Chronicle::factory()->create([
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);

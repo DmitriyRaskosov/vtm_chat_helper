@@ -26,14 +26,13 @@ class SceneTest extends TestCase
         $this->seed(CanonClanSeeder::class);
 
         $this->storyteller = User::factory()->storyteller()->create();
-        $this->chronicle = Chronicle::query()->create([
+        $this->chronicle = Chronicle::factory()->create([
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);
-        $this->gameSession = GameSession::query()->create([
+        $this->gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $this->chronicle->id,
             'title' => 'Тестовая сессия',
-            'status' => GameSessionStatus::Active,
             'created_by' => $this->storyteller->id,
         ]);
     }
@@ -125,11 +124,11 @@ class SceneTest extends TestCase
 
     public function test_participant_must_belong_to_same_chronicle(): void
     {
-        $otherChronicle = Chronicle::query()->create([
+        $otherChronicle = Chronicle::factory()->create([
             'title' => 'Другая хроника',
             'created_by' => $this->storyteller->id,
         ]);
-        GameSession::query()->create([
+        GameSession::factory()->active()->create([
             'chronicle_id' => $otherChronicle->id,
             'title' => 'Другая сессия',
             'status' => GameSessionStatus::Active,

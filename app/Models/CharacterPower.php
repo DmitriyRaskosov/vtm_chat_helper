@@ -2,9 +2,7 @@
 
 namespace App\Models;
 
-use Database\Factories\CharacterPowerFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
@@ -18,9 +16,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 ])]
 class CharacterPower extends Model
 {
-    /** @use HasFactory<CharacterPowerFactory> */
-    use HasFactory;
-
     /**
      * @return BelongsTo<Character, $this>
      */
