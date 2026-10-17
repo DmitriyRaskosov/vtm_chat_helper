@@ -8,7 +8,6 @@ use App\Models\GameSession;
 use App\Models\User;
 use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
-use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class CopilotTest extends TestCase
@@ -57,17 +56,13 @@ class CopilotTest extends TestCase
             ]);
         $npc->assertStatus(201);
         $this->npcId = (int) $npc->json('character.id');
-
-        config(['llm.deepseek.api_key' => 'test-key']);
     }
 
     public function test_copilot_returns_drafts(): void
     {
-        Http::fake([
-            'api.deepseek.com/*' => Http::sequence()
-                ->push(['choices' => [['message' => ['content' => '{"topics":["test topic"]}']]]], 200)
-                ->push(['choices' => [['message' => ['content' => '{"drafts":["one","two","three"]}']]]], 200),
-        ]);
+        $this->fakeChat()
+            ->push('{"topics":["test topic"]}')
+            ->push('{"drafts":["one","two","three"]}');
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
             ->postJson('/api/copilot/drafts', [
@@ -104,9 +99,7 @@ class CopilotTest extends TestCase
 
     public function test_copilot_requires_active_scene(): void
     {
-        Http::fake([
-            'api.deepseek.com/*' => Http::response(['error' => 'should not be called'], 500),
-        ]);
+        $this->fakeChat();
 
         $second = $this->actingAs($this->storyteller, 'sanctum')
             ->postJson('/api/game-sessions/'.$this->gameSession->id.'/scenes', [
@@ -127,9 +120,7 @@ class CopilotTest extends TestCase
 
     public function test_copilot_returns_503_when_llm_unavailable(): void
     {
-        Http::fake([
-            'api.deepseek.com/*' => Http::response(['error' => 'server down'], 500),
-        ]);
+        $this->fakeChat();
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
             ->postJson('/api/copilot/drafts', [

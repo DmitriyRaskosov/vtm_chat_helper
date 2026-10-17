@@ -7,7 +7,6 @@ use App\Enums\GameSessionStatus;
 use App\Enums\SceneParticipantRole;
 use App\Enums\SceneStatus;
 use App\Models\Character;
-use App\Models\CharacterDiaryEntry;
 use App\Models\Chronicle;
 use App\Models\GameSession;
 use App\Models\Message;
@@ -16,11 +15,13 @@ use App\Models\SceneParticipant;
 use App\Models\User;
 use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
-use Illuminate\Support\Facades\DB;
+use Tests\Support\CreatesDiaryEntries;
 use Tests\TestCase;
 
 class MessageEditTest extends TestCase
 {
+    use CreatesDiaryEntries;
+
     private User $storyteller;
 
     private User $player;
@@ -159,14 +160,14 @@ class MessageEditTest extends TestCase
         $inside = $this->createDiaryEntry(
             'Внутри диапазона',
             level: 0,
-            fromId: (int) $first->id,
-            toId: (int) $last->id,
+            fromMessageId: (int) $first->id,
+            toMessageId: (int) $last->id,
         );
         $before = $this->createDiaryEntry(
             'Раньше диапазона',
             level: 0,
-            fromId: 1,
-            toId: (int) $first->id - 1,
+            fromMessageId: 1,
+            toMessageId: (int) $first->id - 1,
         );
 
         $this->actingAs($this->storyteller, 'sanctum')
@@ -184,8 +185,8 @@ class MessageEditTest extends TestCase
         $entry = $this->createDiaryEntry(
             'Запись',
             level: 0,
-            fromId: (int) $message->id,
-            toId: (int) $message->id,
+            fromMessageId: (int) $message->id,
+            toMessageId: (int) $message->id,
         );
 
         $this->actingAs($this->storyteller, 'sanctum')
@@ -197,8 +198,8 @@ class MessageEditTest extends TestCase
 
     public function test_retrieval_skips_stale_entries(): void
     {
-        $this->createDiaryEntry('Живая', level: 0, stale: false);
-        $this->createDiaryEntry('Устаревшая', level: 0, stale: true);
+        $this->createDiaryEntry('Живая', level: 0, isStale: false);
+        $this->createDiaryEntry('Устаревшая', level: 0, isStale: true);
 
         $service = app(DiaryRetrievalService::class);
         $result = $service->retrieve($this->npc, '', limit: 5);
@@ -217,31 +218,5 @@ class MessageEditTest extends TestCase
         $response->assertStatus(201);
 
         return Message::query()->findOrFail($response->json('message.id'));
-    }
-
-    private function createDiaryEntry(
-        string $text,
-        int $level,
-        int $fromId = 1,
-        int $toId = 1,
-        bool $stale = false,
-    ): CharacterDiaryEntry {
-        $vector = '['.implode(',', array_fill(0, 1024, '0.1')).']';
-
-        $id = DB::table('character_diary_entries')->insertGetId([
-            'character_id' => $this->npc->id,
-            'chronicle_id' => $this->chronicle->id,
-            'scene_id' => $this->scene->id,
-            'level' => $level,
-            'from_message_id' => $fromId,
-            'to_message_id' => $toId,
-            'entry' => $text,
-            'embedding' => DB::raw("'{$vector}'::vector"),
-            'is_stale' => $stale,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        return CharacterDiaryEntry::query()->findOrFail($id);
     }
 }

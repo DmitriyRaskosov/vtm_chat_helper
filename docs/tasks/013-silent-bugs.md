@@ -47,6 +47,11 @@
 
 Формат — `.cursor/rules/task-execution.mdc` §5. Дополнительно: таблица «находка → исправление → тест/обоснование».
 
+## Находки от 004
+
+1. `writeFinalForNpc` для персонажа-игрока всегда возвращает `false`, даже при участнике с `left_message_id` и непрочитанными сообщениями. Причина: в `DiaryWriterService` проверка `character_type !== CharacterType::Npc`. Продуктово спорно: если игрок уходит из сцены, его персонажу тоже нужна финальная запись. Решение: либо расширить метод на player (с проверкой через `CharacterAccess::canSpeakAs` или аналог), либо явно задокументировать, что PC-запись при уходе не делается. Зафиксировано тестом `test_write_final_for_npc_returns_false_for_player_character`.
+2. `write_threshold` влияет только на dispatch `WriteDiaryJob` в `ChatController::maybeDispatchDiaryWrite`. Прямой вызов `DiaryWriterService::writeForScene` порог не проверяет — пишет всё, что накопилось после курсора. Это не баг, но неочевидно. Решение: добавить комментарий в `DiaryWriterService` над методом `writeForScene` (или над константой `MAX_MESSAGES_PER_CALL`), либо в `docs/ARCHITECTURE.md` в раздел про дневник. Зафиксировано тестом `test_write_for_scene_writes_despite_high_write_threshold_when_invoked_directly`.
+
 ## Находки Larastan
 
 <!-- Дописывается задачей 002. -->

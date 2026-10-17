@@ -1,3 +1,6 @@
+# Baseline legacy-находок: политика — docs/adr/006-tooling.md.
+# Регенерация и сжатие — задачи 009–017 (см. docs/tasks/017-conventions.md).
+# Размер baseline только уменьшается или остаётся тем же; рост = регрессия (.cursor/rules/task-execution.mdc).
 includes:
     - vendor/larastan/larastan/extension.neon
     - phpstan-baseline.neon

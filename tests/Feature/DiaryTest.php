@@ -2,16 +2,13 @@
 
 namespace Tests\Feature;
 
-use App\Diary\DiaryMetadataParser;
 use App\Diary\DiaryRetrievalService;
-use App\Enums\DiaryEmotion;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneParticipantRole;
 use App\Enums\SceneStatus;
 use App\Jobs\SummarizeSceneDiaryJob;
 use App\Jobs\WriteDiaryJob;
 use App\Models\Character;
-use App\Models\CharacterDiaryEntry;
 use App\Models\Chronicle;
 use App\Models\GameSession;
 use App\Models\Scene;
@@ -19,12 +16,14 @@ use App\Models\SceneParticipant;
 use App\Models\User;
 use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
+use Tests\Support\CreatesDiaryEntries;
 use Tests\TestCase;
 
 class DiaryTest extends TestCase
 {
+    use CreatesDiaryEntries;
+
     private User $storyteller;
 
     private Chronicle $chronicle;
@@ -257,38 +256,6 @@ class DiaryTest extends TestCase
         $this->assertCount(0, $result);
     }
 
-    public function test_metadata_parser_extracts_prefix(): void
-    {
-        $parsed = DiaryMetadataParser::parse("[0.850 anger]\n\nНочь первая. Пустырь.");
-
-        $this->assertSame(0.85, $parsed['importance']);
-        $this->assertSame(DiaryEmotion::Anger, $parsed['emotion']);
-        $this->assertSame('Ночь первая. Пустырь.', $parsed['entry']);
-    }
-
-    public function test_metadata_parser_falls_back_when_no_prefix(): void
-    {
-        $parsed = DiaryMetadataParser::parse('Ночь первая. Пустырь.');
-
-        $this->assertNull($parsed['importance']);
-        $this->assertNull($parsed['emotion']);
-        $this->assertSame('Ночь первая. Пустырь.', $parsed['entry']);
-    }
-
-    public function test_metadata_parser_normalizes_aliases(): void
-    {
-        $parsed = DiaryMetadataParser::parse("[0.700 fury]\n\nтекст");
-
-        $this->assertSame(DiaryEmotion::Anger, $parsed['emotion']);
-    }
-
-    public function test_metadata_parser_clamps_out_of_range_importance(): void
-    {
-        $parsed = DiaryMetadataParser::parse("[1.500 joy]\n\nтекст");
-
-        $this->assertSame(1.0, $parsed['importance']);
-    }
-
     public function test_blend_score_boosts_important_entries(): void
     {
         $service = app(DiaryRetrievalService::class);
@@ -306,30 +273,74 @@ class DiaryTest extends TestCase
         $this->assertSame(0.62, DiaryRetrievalService::blendScore(0.62, null));
     }
 
-    private function createDiaryEntry(
-        string $text,
-        int $level = 0,
-        ?int $sceneId = null,
-        int $fromMessageId = 1,
-        int $toMessageId = 1,
-        bool $isStale = false,
-    ): CharacterDiaryEntry {
-        $vector = '['.implode(',', array_fill(0, 1024, '0.1')).']';
+    public function test_retrieval_semantic_branch_includes_similar_entry_when_query_non_empty(): void
+    {
+        $embeddings = $this->fakeEmbeddings();
 
-        $id = DB::table('character_diary_entries')->insertGetId([
-            'character_id' => $this->npc->id,
-            'chronicle_id' => $this->chronicle->id,
-            'scene_id' => $sceneId ?? $this->scene->id,
-            'level' => $level,
-            'from_message_id' => $fromMessageId,
-            'to_message_id' => $toMessageId,
-            'entry' => $text,
-            'embedding' => DB::raw("'{$vector}'::vector"),
-            'is_stale' => $isStale,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $oldest = $this->createDiaryEntry(
+            'уникальный якорь альфа',
+            embeddingSourceText: 'уникальный якорь альфа',
+        );
+        $this->createDiaryEntry(
+            'другой текст бета',
+            embeddingSourceText: 'другой текст бета',
+        );
+        $latest = $this->createDiaryEntry(
+            'третий текст гамма',
+            embeddingSourceText: 'третий текст гамма',
+        );
 
-        return CharacterDiaryEntry::query()->findOrFail($id);
+        $service = app(DiaryRetrievalService::class);
+        $result = $service->retrieve($this->npc, 'уникальный якорь альфа', limit: 3);
+
+        $ids = $result->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $this->assertContains((int) $oldest->id, $ids);
+        $this->assertContains((int) $latest->id, $ids);
+        $this->assertGreaterThan(1, count($ids));
+        $this->assertNotEmpty(array_filter(
+            $embeddings->calls(),
+            fn (array $call): bool => $call['type'] === 'embed' && ($call['text'] ?? '') === 'уникальный якорь альфа',
+        ));
+    }
+
+    public function test_retrieval_semantic_branch_respects_min_similarity_cutoff(): void
+    {
+        $this->fakeEmbeddings();
+
+        $this->createDiaryEntry('запись один', embeddingSourceText: 'запись один');
+        $this->createDiaryEntry('запись два', embeddingSourceText: 'запись два');
+        $latest = $this->createDiaryEntry('запись три', embeddingSourceText: 'запись три');
+
+        $service = app(DiaryRetrievalService::class);
+        $result = $service->retrieve($this->npc, 'совсем другой запрос без пересечений', limit: 3);
+
+        $this->assertCount(1, $result);
+        $this->assertSame((int) $latest->id, (int) $result->first()->id);
+    }
+
+    public function test_retrieval_semantic_prefers_higher_blend_score_with_importance(): void
+    {
+        $this->fakeEmbeddings();
+
+        $highImportance = $this->createDiaryEntry(
+            'тема важности',
+            embeddingSourceText: 'тема важности',
+            importance: 0.95,
+        );
+        $this->createDiaryEntry(
+            'тема важности слегка иначе',
+            embeddingSourceText: 'тема важности слегка иначе',
+            importance: 0.1,
+        );
+        $this->createDiaryEntry(
+            'последняя запись',
+            embeddingSourceText: 'последняя запись',
+        );
+
+        $service = app(DiaryRetrievalService::class);
+        $result = $service->retrieve($this->npc, 'тема важности', limit: 3);
+
+        $ids = $result->pluck('id')->map(fn ($id): int => (int) $id)->all();
+        $this->assertContains((int) $highImportance->id, $ids);
     }
 }

@@ -23,6 +23,8 @@ use App\Models\CanonDiscipline;
 use App\Models\CanonSect;
 use App\Models\Character;
 use App\Models\Chronicle;
+use App\Models\Scene;
+use App\Models\SceneParticipant;
 use App\Models\WorldEntity;
 use App\Scene\SceneParticipantService;
 use App\World\MixedChronicleException;
@@ -121,8 +123,10 @@ class CharacterSheetController extends Controller
                 ->value('id');
 
             if ($pcId === null) {
-                return response()->json(['characters' => []]);
+                return response()->json(['characters' => [], 'archived' => []]);
             }
+
+            $query->whereIn('id', $this->visibleCharacterIdsForPlayer($chronicleId, (int) $pcId));
         }
 
         $characters = $query->orderBy('id')->get();
@@ -299,6 +303,34 @@ class CharacterSheetController extends Controller
         $this->restoreCharacter($character);
 
         return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function visibleCharacterIdsForPlayer(int $chronicleId, int $pcId): array
+    {
+        $visibleIds = [$pcId];
+
+        $activeScene = Scene::query()
+            ->active()
+            ->whereHas('gameSession', function ($query) use ($chronicleId) {
+                $query->active()->where('chronicle_id', $chronicleId);
+            })
+            ->first();
+
+        if ($activeScene === null) {
+            return $visibleIds;
+        }
+
+        $participantIds = SceneParticipant::query()
+            ->where('scene_id', $activeScene->id)
+            ->where('is_current', true)
+            ->pluck('character_id')
+            ->map(fn ($id) => (int) $id)
+            ->all();
+
+        return array_values(array_unique([...$visibleIds, ...$participantIds]));
     }
 
     /**
