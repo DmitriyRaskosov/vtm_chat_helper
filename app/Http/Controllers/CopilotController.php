@@ -4,24 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Character\CharacterSceneGuard;
 use App\Http\Requests\CopilotDraftsRequest;
-use App\Llm\NpcCopilotService;
+use App\Llm\CopilotDraftService;
 use App\Models\Character;
-use App\Models\CopilotRequest;
 use App\Models\Scene;
 use App\Scene\ActiveSceneResolver;
-use Illuminate\Http\Client\ConnectionException;
-use Illuminate\Http\Client\RequestException;
 use Illuminate\Http\JsonResponse;
-use RuntimeException;
 
 class CopilotController extends Controller
 {
     public function __construct(
         private ActiveSceneResolver $activeSceneResolver,
         private CharacterSceneGuard $characterSceneGuard,
+        private CopilotDraftService $copilotDrafts,
     ) {}
 
-    public function drafts(CopilotDraftsRequest $request, NpcCopilotService $copilot): JsonResponse
+    public function drafts(CopilotDraftsRequest $request): JsonResponse
     {
         $sceneId = $request->validated('scene_id') ?? null;
         $scene = $this->activeSceneResolver->resolveActive(
@@ -32,40 +29,17 @@ class CopilotController extends Controller
         $scene->loadMissing('gameSession');
         [$characterId, $npcName] = $this->resolveNpcIdentity($request, $scene);
 
-        try {
-            $result = $copilot->drafts(
-                $npcName,
-                (string) $request->validated('prompt'),
-                $scene->id,
-                (int) $request->user()->id,
-                $characterId,
-            );
-        } catch (ConnectionException|RequestException) {
-            return response()->json(['message' => 'LLM provider is unavailable.'], 503);
-        } catch (RuntimeException $e) {
-            if ($e->getMessage() === 'LLM provider is unavailable.') {
-                return response()->json(['message' => 'LLM provider is unavailable.'], 503);
-            }
-
-            return response()->json(['message' => $e->getMessage()], 502);
-        }
-
-        $copilotRequest = CopilotRequest::query()->create([
-            'scene_id' => $scene->id,
-            'storyteller_id' => $request->user()->id,
-            'npc_name' => $npcName,
-            'character_id' => $characterId,
-            'prompt' => $request->validated('prompt'),
-            'drafts' => $result->drafts,
-            'context_metadata' => $result->contextMetadata,
-            'model' => $result->model,
-            'prompt_version' => $result->promptVersion,
-            'builder_version' => $result->builderVersion,
-        ]);
+        $created = $this->copilotDrafts->create(
+            $npcName,
+            (string) $request->validated('prompt'),
+            $scene->id,
+            (int) $request->user()->id,
+            $characterId,
+        );
 
         return response()->json([
-            'copilot_request_id' => $copilotRequest->id,
-            'drafts' => $result->drafts,
+            'copilot_request_id' => $created->copilotRequestId,
+            'drafts' => $created->drafts,
         ]);
     }
 

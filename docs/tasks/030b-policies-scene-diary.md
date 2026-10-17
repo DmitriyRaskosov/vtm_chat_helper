@@ -35,6 +35,10 @@
 2. Policies с `Response::deny('Только рассказчик.')` для действий рассказчика.
 3. Маршруты: `->can('close', 'scene')`, `->can('create', GameSession::class)` и т. д.; группу `storyteller` убрать.
 4. Удалить `EnsureStoryteller` и алиас; удалить все `authorize()` в FormRequest.
+5. CopilotController::drafts: abort_if (пустое имя NPC) — заменить 
+  на InvalidInputException (422) или валидацию в FormRequest. 
+  После 030b grep "abort" app/Http/Controllers/CopilotController 
+  должен быть пустым.
 
 ## Definition of Done
 

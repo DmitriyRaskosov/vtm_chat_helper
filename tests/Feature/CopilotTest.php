@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Context\ContextBuilder;
 use App\Models\Chronicle;
+use App\Models\CopilotRequest;
 use App\Models\GameSession;
 use App\Models\User;
 use Database\Seeders\CanonClanSeeder;
@@ -127,6 +129,61 @@ class CopilotTest extends TestCase
             ]);
 
         $response->assertStatus(503);
+        $response->assertJsonPath('message', 'LLM provider is unavailable.');
         $this->assertDatabaseCount('copilot_requests', 0);
+    }
+
+    public function test_copilot_returns_502_when_draft_response_is_invalid(): void
+    {
+        $this->fakeChat()
+            ->push('{"topics":["test topic"]}')
+            ->push('   ');
+
+        $response = $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson('/api/copilot/drafts', [
+                'character_id' => $this->npcId,
+                'prompt' => 'Мрачно смотрит',
+                'scene_id' => $this->sceneId,
+            ]);
+
+        $response->assertStatus(502);
+        $response->assertJsonPath(
+            'message',
+            'Could not parse draft replies from the model response.',
+        );
+        $this->assertDatabaseCount('copilot_requests', 0);
+    }
+
+    public function test_copilot_persists_copilot_request_with_metadata(): void
+    {
+        $this->fakeChat()
+            ->push('{"topics":["test topic"]}')
+            ->push('{"drafts":["one","two","three"]}');
+
+        $prompt = 'Мрачно смотрит';
+
+        $response = $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson('/api/copilot/drafts', [
+                'character_id' => $this->npcId,
+                'prompt' => $prompt,
+                'scene_id' => $this->sceneId,
+            ]);
+
+        $response->assertStatus(200);
+
+        $copilotRequestId = (int) $response->json('copilot_request_id');
+        $row = CopilotRequest::query()->findOrFail($copilotRequestId);
+
+        $this->assertSame($this->sceneId, (int) $row->scene_id);
+        $this->assertSame($this->storyteller->id, (int) $row->storyteller_id);
+        $this->assertSame($this->npcId, (int) $row->character_id);
+        $this->assertSame('Иван', $row->npc_name);
+        $this->assertSame($prompt, $row->prompt);
+        $this->assertSame(['one', 'two', 'three'], $row->drafts);
+        $this->assertIsArray($row->context_metadata);
+        $this->assertNotEmpty($row->context_metadata);
+        $this->assertSame(ContextBuilder::PROMPT_VERSION, $row->prompt_version);
+        $this->assertSame(ContextBuilder::VERSION, $row->builder_version);
+        $this->assertNotSame('', (string) $row->model);
     }
 }

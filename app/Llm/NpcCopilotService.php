@@ -3,9 +3,9 @@
 namespace App\Llm;
 
 use App\Context\ContextBuilder;
+use App\Llm\Exceptions\LlmResponseInvalidException;
 use App\Llm\Exceptions\LlmUnavailableException;
 use App\Models\Scene;
-use RuntimeException;
 
 class NpcCopilotService
 {
@@ -205,7 +205,7 @@ class NpcCopilotService
             return [$trimmed];   // ← одиночный fallback, БЕЗ дублей
         }
 
-        throw new RuntimeException('Could not parse draft replies from the model response.');
+        throw new LlmResponseInvalidException;
     }
 
     private function extractJson(string $raw): ?string
