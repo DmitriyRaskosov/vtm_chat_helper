@@ -6,7 +6,13 @@ alwaysApply: false
 
 # Testing
 
-<!-- TODO(030): после задачи 030 добавить шаблон матрицы доступа «роль × маршрут». -->
+## Матрица доступа «роль × маршрут»
+
+- Эталон: `tests/Feature/AccessMatrixTest.php` + фикстуры `tests/Support/AccessMatrixFixtures.php`.
+- Роли: `guest`, `player_owner` (владелец PC), `player_foreign` (другой игрок), `storyteller`.
+- Ожидания: `401` (гость на `auth:sanctum`), `403` (Policy / `->can()`), `allowed` (любой код, кроме 401/403; валидация 422 не проверяется).
+- Новый маршрут в `routes/api.php` без строки в матрице роняет `test_every_api_route_is_listed_in_access_matrix`.
+- Найденная дыра в авторизации: `markTestSkipped('bug: …')` в матрице + запись в отчёте задачи; исправление — отдельная задача, не в матрице.
 
 ## Фреймворк
 - PHPUnit 12, классы `extends Tests\TestCase`, методы `public function test_...(): void`. Стиль — как в существующих тестах.
