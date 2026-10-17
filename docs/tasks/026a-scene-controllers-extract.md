@@ -21,6 +21,7 @@
 - `GameSessionController::store`: транзакция — архивирует активные сессии, закрывает их сцены, `SceneContextService::freezeMany`, создаёт сессию и первую сцену. `active`: запрос активной сессии со сценами.
 - `SceneContextController::serialize` и `SceneParticipantController::serialize` делают запросы `canonical_name` и `Character` на каждый элемент (после 023 — через связь).
 - PostgreSQL-инварианты: `game_sessions_single_active`, `game_sessions_one_active_per_chronicle`, `scenes_single_active_per_session`, `scene_participants_current_unique`.
+- В `SceneParticipantService::leaveMutableScenes` (из 018) `catch` ловит `ConflictException | InvalidInputException` (после перевода с `ConflictHttpException`). При переносе логики в Scene-модуль **не** возвращать `HttpException`-и, использовать доменные исключения.
 - Baseline: `SceneContextController` (nullsafe), `SceneParticipantController` (`$value` on string) — `debt: 026a`.
 
 ## Scope
@@ -46,6 +47,7 @@
 
 - [ ] `rg "DB::|::query\(\)|abort" app/Http/Controllers -g "{Scene,GameSession,SceneContext,SceneParticipant}Controller.php"` → пусто
 - [ ] тесты шага 1 зелёные, тексты и коды не изменились
+- [ ] тест «архивация персонажа в закрытой сцене возвращает 200» (из `DomainExceptionMappingTest`) остаётся зелёным
 - [ ] записи baseline `debt: 026a` удалены
 - [ ] ручная проверка: новая сессия, добавление сцены, закрытие сцены в чате
 - [ ] `sail artisan test` — зелёные; `sail pint --test` — чисто; phpstan — OK

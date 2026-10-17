@@ -40,11 +40,13 @@
 2. `MessageService::post(Scene, User, PostMessageData): Message` — транзакция, блокировка `CopilotRequest`, проверки через доменные исключения (тексты и коды прежние; 403 пока остаётся исключением авторизации — пометить для 030a), вызов `DiaryScheduler::afterMessagePosted` после коммита.
 3. `toggleOoc`/`softDelete`/`restore` — принимают `User` явно; контроллер передаёт `$request->user()`.
 4. Контроллер: зависимости в конструктор; убрать `request()`, `auth()` из приватных методов (зритель передаётся явно в `serialize`); удалить `isNpcLikeSpeech` или параметр `$user`.
-5. Удалить закрытые записи baseline.
+5. `MessageEditService::markDiaryStale` — сейчас пишет через `DB::table` в `character_diary_entries`. Заменить на вызов метода Diary-модуля (`DiaryScheduler::markStale` из 025a, или `Diary\DiaryStaleMarker` — см. Scope 025a). Модуль Messages не должен знать о схеме дневника.
+6. Удалить закрытые записи baseline.
 
 ## Definition of Done
 
 - [ ] `rg "DB::|::query\(\)|abort|request\(\)|auth\(\)" app/Http/Controllers/ChatController.php` → пусто (кроме `load()` для ответа)
+- [ ] `rg 'DB::table.*character_diary_entries' app/Messages` → пусто
 - [ ] тесты шага 1 зелёные, коды и тексты не изменились
 - [ ] записи baseline `ChatController` удалены или обоснованно оставлены
 - [ ] ручная проверка: отправка реплики NPC из черновика Copilot в чате работает

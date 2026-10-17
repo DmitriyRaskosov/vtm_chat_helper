@@ -28,7 +28,7 @@
 - `app/Http/Controllers/ChatController.php` — только `maybeDispatchDiaryWrite`
 - `app/Http/Controllers/SceneController.php` — только строка `dispatch`
 - `app/Scene/SceneParticipantService.php` — только `dispatch`
-- `app/Messages/MessageEditService.php` — только `markDiaryStale`
+- `app/Messages/MessageEditService.php` — заменить `DB::table` (`character_diary_entries`) на вызов `DiaryScheduler::markStale` или метод Diary-модуля (`markStaleCovering` / `DiaryStaleMarker`)
 - `tests/Feature/DiarySchedulerTest.php` (создать)
 
 **Out of scope:** логика Job-классов и сервисов записи; новые Job-классы; остальная логика `ChatController`/`SceneController` (025b, 026a).
@@ -37,15 +37,17 @@
 
 1. Характеризация (`Queue::fake()`): после N-го сообщения при пороге N — `WriteDiaryJob` запущен ровно один раз, при N−1 — нет; закрытие сцены → `SummarizeSceneDiaryJob`; уход NPC из сцены с сообщениями → `WriteFinalDiaryJob`, без сообщений — нет; правка/удаление/восстановление сообщения → записи в диапазоне `is_stale = true`.
 2. `DiaryScheduler` (`final`): `afterMessagePosted(Scene $scene): void` (порог), `sceneClosed(Scene $scene): void`, `participantLeft(SceneParticipant $p): void`. Внутри — `dispatch(...)->afterCommit()` (или `DB::afterCommit`), логирование `diary.write.dispatched` как сейчас.
-3. `markDiaryStale` → `Diary`-метод `markStaleCovering(Message $message, string $reason): int`; `MessageEditService` его вызывает.
-4. Заменить три точки `dispatch`.
-5. Тест: `dispatch` внутри `DB::transaction`, которая откатывается, — задача не поставлена.
+3. Все `dispatch` — через `afterCommit` (`dispatch()->afterCommit()` или `DB::afterCommit`). Проверить, что `SceneController::close` и `SceneParticipantService::leave` не диспатчат внутри незавершённой транзакции. Если диспатч внутри `DB::transaction` — перенести за пределы транзакции.
+4. `markDiaryStale` → `Diary`-метод `markStaleCovering(Message $message, string $reason): int`; `MessageEditService` его вызывает.
+5. Заменить три точки `dispatch`.
+6. Тест: `dispatch` внутри `DB::transaction`, которая откатывается, — задача не поставлена.
 
 ## Definition of Done
 
 - [ ] `rg "::dispatch\(|dispatch\(" app` → только `app/Diary/DiaryScheduler.php`
 - [ ] `rg "character_diary_entries" app/Messages app/Scene app/Http` → пусто
-- [ ] тесты шагов 1 и 5 зелёные
+- [ ] тест: если транзакция откатилась (rollback), задача не попала в очередь (`afterCommit`)
+- [ ] тесты шагов 1 и 6 зелёные
 - [ ] `sail artisan test` — зелёные; `sail pint --test` — чисто; phpstan — OK, baseline не вырос
 
 ## Report

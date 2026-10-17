@@ -25,6 +25,7 @@
 - `app/Http/Middleware/EnsureStoryteller.php` (удалить), `bootstrap/app.php` — удалить алиас
 - `app/Http/Requests/**/*.php` — удалить все `authorize()`
 - `app/Http/Controllers/*` — только вызовы `Gate::authorize`, если ability нельзя выразить на маршруте
+- `app/Http/Controllers/CopilotController.php` — `abort_if` (пустое имя NPC, 422) заменить на `InvalidInputException` или валидацию в `CopilotDraftsRequest`. Убрать последний `abort` из контроллера.
 - `tests/Feature/*AuthorizationTest.php`
 
 **Out of scope:** маршруты, открытые всем авторизованным (Policy `view` = `true` с комментарием `// этап 3: членство в хронике`); `ChroniclePolicy` (нет маршрутов хроники — этап 3); фронт.
@@ -43,6 +44,7 @@
 ## Definition of Done
 
 - [ ] `rg "storyteller" routes bootstrap` → пусто
+- [ ] `rg 'abort' app/Http/Controllers/CopilotController.php` → пусто
 - [ ] `rg "function authorize" app/Http/Requests` → пусто
 - [ ] `rg "isStoryteller\(\)" app --glob "!app/Policies/**" --glob "!app/Models/User.php"` → пусто или только `CharacterVisibility`
 - [ ] тесты шага 1 зелёные, тексты 403 не изменились

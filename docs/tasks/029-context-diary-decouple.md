@@ -33,7 +33,7 @@
 - `phpstan-baseline.neon`
 - `tests/Feature/DiaryTest.php`, `tests/Feature/MessageTokenEstimateTest.php` (создать)
 
-**Out of scope:** `ContextAssembler`; перенос `TokenEstimator`; изменение алгоритма retrieval и формы ответа превью; промпты.
+**Out of scope:** `ContextAssembler` (не трогать, в т. ч. без правок кроме возможного `use` — по итогу не менять); перенос `TokenEstimator` в Llm — отклонено (ADR-001 п. 4). `TokenEstimator` остаётся в `App\Context`; изменение алгоритма retrieval и формы ответа превью; промпты.
 
 ## Steps
 

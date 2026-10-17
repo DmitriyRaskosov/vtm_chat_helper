@@ -14,6 +14,7 @@
 ## Context
 
 - ADR-003. Роль пока глобальная (`User::isStoryteller()`), хроника — из модели.
+- Из 024: `CharacterArchivedException` сейчас недостижим по HTTP (валидация 403/422 раньше). После переноса `authorize()` в Policy путь меняется — решить судьбу исключения.
 - Текущие механизмы и тексты 403:
   - `CharacterAccess::canManageSheet` / `abortUnlessManagesSheet` → `403 You cannot access this character sheet.` (show, update, disciplines, biography, traits, place);
   - `CharacterAccess::canSpeakAs` — из `StoreMessageRequest::authorize` (говорить за NPC — рассказчик, за игрока — его владелец, архивный — никто) → стандартный текст Laravel `This action is unauthorized.`;
@@ -27,7 +28,10 @@
 
 - `app/Policies/{Character,Message,CopilotRequest}Policy.php` (создать)
 - `app/Character/CharacterVisibility.php` (создать) — запрос видимых id для игрока (перенос из контроллера/сервиса)
-- `app/Character/CharacterAccess.php` (удалить)
+- `app/Character/CharacterAccess.php` — `canManageSheet`, `canSpeakAs` → `CharacterPolicy::view` / `update` / `speakAs`. После переноса удалить `CharacterAccess`.
+- `app/Character/CharacterSceneGuard.php` (из 024) — `assertUsableIn` → `CharacterPolicy::viewInScene`. После переноса удалить guard.
+- `CharacterArchivedException` (из 024) — решить: 409 (текущее, доменное) или 403 (Policy-отказ, ADR-005). Если 403 — исключение удалить. Обосновать в отчёте.
+- `app/Messages/MessageEditService::assertCanEdit` — перенести в `MessagePolicy::update` / `delete`. Удалить `AccessDeniedHttpException` из сервиса.
 - `app/Messages/MessageEditService.php`, `app/Messages/MessageService.php` — удалить проверки доступа
 - `app/Http/Controllers/{CharacterSheet,Chat}Controller.php` — `Gate::authorize` / `$this->authorize`
 - `app/Http/Requests/{StoreMessage,StoreCharacter,UpdateCharacterPlace,UpdateCharacterIdentity,UpdateCharacterBiography,UpdateCharacterDisciplines,UpdateCharacterTraits}Request.php` — удалить `authorize()`
@@ -56,7 +60,7 @@
 
 ## Definition of Done
 
-- [ ] `rg "CharacterAccess|AccessDeniedHttpException" app` → пусто
+- [ ] `rg 'CharacterAccess|CharacterSceneGuard|AccessDeniedHttpException' app/` → пусто (кроме допустимых комментариев)
 - [ ] `rg "function authorize" app/Http/Requests -g "{StoreMessage,StoreCharacter,UpdateCharacter*}Request.php"` → пусто
 - [ ] коды и тексты 403 из шага 1 не изменились; `CharacterVisibilityTest` зелёный без правок
 - [ ] `sail artisan test` — зелёные; `sail pint --test` — чисто; phpstan — OK, baseline не вырос
