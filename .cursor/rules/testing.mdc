@@ -1,12 +1,11 @@
 ---
-description: Правила для тестов (черновик, дорабатывается по ходу этапа 1)
+description: Правила для тестов
 globs: tests/**
 alwaysApply: false
 ---
 
-# Testing (черновик)
+# Testing
 
-<!-- TODO(004): после задачи 004 добавить образец теста LLM-части дневника. -->
 <!-- TODO(030): после задачи 030 добавить шаблон матрицы доступа «роль × маршрут». -->
 
 ## Фреймворк
@@ -29,18 +28,24 @@ alwaysApply: false
 - `Http::fake` по URL DeepSeek/Ollama в Feature-тестах не использовать.
 - Реальный Ollama и DeepSeek в тестах не требуются.
 
-### Хелпер дневника
+### Хелперы дневника и сцены
 - Trait `Tests\Support\CreatesDiaryEntries` — метод `createDiaryEntry(string $text, int $level = 0, ?int $sceneId = null, int $fromMessageId = 1, int $toMessageId = 1, bool $isStale = false)`; нужны свойства `$npc`, `$chronicle`, `$scene` на тест-классе.
+- Trait `Tests\Support\CreatesSceneMessages` — создание сообщений сцены для сценариев дневника; используется вместе с `CreatesDiaryEntries` (см. `DiaryLlmServicesTest`).
 
 ```php
 use Tests\Support\CreatesDiaryEntries;
+use Tests\Support\CreatesSceneMessages;
 
-class DiaryTest extends TestCase
+class DiaryLlmServicesTest extends TestCase
 {
     use CreatesDiaryEntries;
-    // ...
+    use CreatesSceneMessages;
+    // fakeChat()->push(...); вызов DiaryWriterService / job
 }
 ```
+
+## Образец LLM-части дневника
+- `tests/Feature/DiaryLlmServicesTest.php` — порог `write_threshold`, `writeForScene` / `writeFinalForNpc`, `DiarySummarizerService`, job-ы; `fakeChat()` и `CreatesSceneMessages` для сообщений, `CreatesDiaryEntries` для готовых записей; без реального DeepSeek.
 
 ## Что покрывать
 - Каждому новому или изменённому маршруту — тест доступа (гость 401, игрок, рассказчик).

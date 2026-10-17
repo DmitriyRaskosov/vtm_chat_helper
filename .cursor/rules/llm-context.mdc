@@ -1,18 +1,20 @@
 ---
-description: Правила для Copilot, контекста, дневника и промптов (черновик)
+description: Правила для Copilot, контекста, дневника и промптов
 globs: app/Context/**,app/Llm/**,app/Diary/**,app/Rag/**,resources/prompts/**
 alwaysApply: false
 ---
 
-# LLM и Context (черновик)
+# LLM и Context
 
-<!-- TODO(014): после задачи 014 перечислить актуальные ключи config/copilot.php, config/context.php, config/diary.php. -->
 <!-- TODO(027): после задачи 027 добавить правило Rag/VectorLiteral вместо formatVector. -->
-<!-- TODO(029): после задачи 029 обновить размещение DiaryPreviewService (Context) и TokenEstimator (Llm). -->
 
 ## Защищённое
 - `ContextAssembler` — не менять без задачи.
 - Новые провайдеры контекста и изменение порядка секций — только по задаче.
+
+## Размещение классов (ADR-001)
+- `DiaryPreviewService` переезжает в `Context` (задача 029).
+- `TokenEstimator` остаётся в `Context` (бюджет секций и исключение `MessageObserver`).
 
 ## Промпты
 - Все промпты — markdown-файлы в `resources/prompts/`, загрузка через `App\Prompt\PromptRepository`, переменные `{{var}}`.
@@ -24,6 +26,12 @@ alwaysApply: false
 - Провайдер только читает данные других модулей; не пишет в БД и не запускает задачи.
 - Лимиты секций — из `config/context.php`; один источник на лимит (не дублировать константой в классе).
 
+## Параметры LLM (config)
+- `config/copilot.php`: `history_limit`, `topic_history_limit`, `topic_max_output_tokens`, `topic_temperature`, `topic_max_count`, `draft_count`.
+- `config/context.php`: `token_estimator.characters_per_token`; `copilot.max_input_tokens`; `topic.max_input_tokens`; `assembler.sections` (лимиты `max` по ключам секций: system, storyteller_prompt, npc_identity, scene, recent_messages, diary, direct_relations, biography, personality, world_lore, closing).
+- `config/diary.php`: `write_threshold`, `write_timeout`; `write.max_output_tokens`, `write.temperature`; `summarize.max_output_tokens`, `summarize.temperature`.
+- Модель DeepSeek и таймауты HTTP — в `config/services.php` (не дублировать в модуле).
+
 ## Параметры LLM
 - Модель, температуры, `max_tokens`, таймауты — только из config. Дефолты в коде совпадают с config или отсутствуют.
 
@@ -33,4 +41,4 @@ alwaysApply: false
 - Вектор — `vector(1024)` (bge-m3). Смена модели эмбеддингов — только с `diary:reembed`.
 
 ## Тесты
-- `ChatProvider` и `EmbeddingProvider` в тестах — фейки из `tests/Support` (после задачи 003).
+- `ChatProvider` и `EmbeddingProvider` в тестах — фейки из `tests/Support` (`FakeChatProvider`, `FakeEmbeddingProvider`, `fakeChat()` / `fakeEmbeddings()`).

@@ -11,7 +11,7 @@ NPC ведут долговременный дневник, который по�
 
 **Не в проекте:** механика (кубы, статы, здоровье), рулбук, world events.
 
-## Что работает сейчас (07.10.2026)
+## Что работает сейчас (17.10.2026)
 
 ### Auth / Game / Chat
 - Регистрация, логин, логаут, /user.
@@ -36,7 +36,7 @@ NPC ведут долговременный дневник, который по�
 - Создание, чтение, идентичность, дисциплины, биография, traits, место (клан/секта), архив.
 
 ### World
-- `world_entities` — identity для characters/locations; `world_relations` — read-only, не используется.
+- `world_entities` — identity для characters/locations; `world_relations` — read-only связи (ADR-002). `WorldRelationKind` — 13 унаследованных значений enum, в коде приложения не используются.
 
 ### Canon
 - `canon_sects`, `canon_clans`, `canon_clan_sects`, `canon_clan_relations`,
@@ -49,8 +49,9 @@ NPC ведут долговременный дневник, который по�
 - `php artisan demo:reset` — сброс данных игры (TRUNCATE) с сохранением канона и пользователей, затем `DemoSeeder`: рассказчик `admin` / `admin`, «Demo Chronicle», «Demo Session», активная сцена «Встреча на пустыре», 5 NPC-участников (Абрахам Леру, Август Сент-Клер, Гидеон Эш, Ильзе Фогель, Порижана) с биографиями и traits; **сообщений в чате не создаёт**.
 
 ### Tests
-- 54 feature-теста: Auth (5), Character (6), CharacterTrait (2), Scene (8), Message (3), MessageEdit (8), Copilot (4), Diary (16), Smoke (2).
-- 1 unit-тест — пустой `ExampleTest` (удаляется в задаче 003).
+- 84 теста: 80 Feature + 4 Unit (`rg -c "function test_" tests`).
+- Feature: Auth (5), Character (11), CharacterTrait (2), CharacterVisibility (4), Scene (8), Message (3), MessageEdit (8), Copilot (4), Diary (16), DiaryLlmServices (12), DemoReset (3), DirectRelationsProvider (1), Smoke (2), WorldEntityDelete (1).
+- Unit: DiaryMetadataParser (4).
 
 ## Правила
 

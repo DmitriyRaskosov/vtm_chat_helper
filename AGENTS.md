@@ -43,7 +43,7 @@ NPC ведут долговременный дневник (L0 — записи 
 - `Scene/` — сцены, участники, контекст сцены (`SceneContextService` с оптимистичной блокировкой).
 - `Messages/` — создание и редактирование сообщений.
 - `Diary/` — дневник NPC: запись L0, сводка L1, retrieval, парсер метаданных.
-- `Context/` — сборка промпта Copilot: `ContextAssembler` + провайдеры секций. Потребитель остальных модулей.
+- `Context/` — сборка промпта Copilot: `ContextAssembler`, провайдеры секций, `TokenEstimator`. Потребитель остальных модулей (`MessageObserver` — исключение, ADR-001).
 - `Llm/` — `ChatProvider`, DeepSeek, `NpcCopilotService` (два прохода: topics → reply).
 - `Rag/` — `EmbeddingProvider`, Ollama.
 - `Prompt/` — `PromptRepository`, промпты лежат в `resources/prompts/*.md`.

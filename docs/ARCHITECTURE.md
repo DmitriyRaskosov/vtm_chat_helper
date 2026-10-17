@@ -43,6 +43,7 @@ flowchart TD
 
 Правила:
 - Ни один модуль не импортирует `App\Context\*`. Сейчас нарушено: `Diary\DiaryPreviewService` → `Context\DiaryRenderer` (задача 029).
+- Исключение: `App\Observers\MessageObserver` → `App\Context\TokenEstimator` (ADR-001 п. 4; осознанное чтение токенов сообщения вне сборки Copilot).
 - `dispatch()` — только из `Diary/DiaryScheduler`. Сейчас задачи запускают контроллеры и `SceneParticipantService` (задача 025).
 - `Messages` не пишет в таблицу дневника, а вызывает метод `Diary`. Сейчас `MessageEditService` пишет через `DB::table` (задача 025).
 - DI — только через конструктор. `app()`/`resolve()` — только в service providers.
@@ -53,8 +54,8 @@ flowchart TD
 - **Scene** — игровые сессии, сцены, участники, контекст сцены. `ActiveSceneResolver` (задача 024) — единственный поиск активной сцены.
 - **Messages** — создание, редактирование, удаление сообщений.
 - **Diary** — L0/L1, retrieval, persistence, `DiaryScheduler`. Единственный владелец `character_diary_entries`.
-- **Context** — `ContextAssembler` (не трогать без задачи), провайдеры, `DiaryRenderer`, `LineTrimmer`, `DiaryPreviewService` (после задачи 029).
-- **Llm** — `ChatProvider`, `DeepSeekChatProvider`, `NpcCopilotService`, `TokenEstimator` (после задачи 029).
+- **Context** — `ContextAssembler` (не трогать без задачи), провайдеры, `DiaryRenderer`, `LineTrimmer`, `TokenEstimator` (остаётся в Context, ADR-001 п. 4), `DiaryPreviewService` (после задачи 029).
+- **Llm** — `ChatProvider`, `DeepSeekChatProvider`, `NpcCopilotService` (два прохода topics → reply).
 - **Rag** — `EmbeddingProvider`, Ollama, `VectorLiteral` (задача 027).
 - **World** — `WorldEntityService` (создание identity, `assertSameChronicle`), `WorldRelationService` (только чтение). ADR-002.
 - **Chronicle** — этап 3: членство, приглашения, `CurrentChronicle` (ADR-007).
@@ -101,8 +102,9 @@ flowchart TD
 
 ## 7. Ошибки
 
-Цель (ADR-005): каждый модуль бросает свои исключения, наследующие общий базовый `DomainException` проекта. Перевод в HTTP (403/404/409/422) — в одном месте: `bootstrap/app.php` → `withExceptions`.
-Сейчас: `abort()`, `HttpException` из сервисов, `RuntimeException`, дневник глушит ошибки в лог. Устраняется задачей 018.
+Цель (ADR-005, задача 018): абстрактный `App\Exceptions\DomainException`; категории — `NotFoundException` (404), `ConflictException` (409, в т.ч. `MixedChronicleException` и неизменяемая сцена), `InvalidInputException` (422, тело с `message` и `errors` как у валидации Laravel). Авторизация — Policies (403), не доменные исключения.
+Маппинг для `api/*` — только `bootstrap/app.php` → `withExceptions()->render(...)`.
+Сейчас: `abort()` и `HttpException` в контроллерах и части сервисов, `InvalidArgumentException` без единого маппинга, `RuntimeException` в дневнике (глушится внутри). Поэтапно: 018 (World, Scene, Character, Chronicle), 024a (Copilot), 025b/026a (остальные контроллеры), 028 (Diary persistence).
 
 ## 8. Что не вводим сейчас
 

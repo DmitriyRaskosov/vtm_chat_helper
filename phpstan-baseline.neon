@@ -1,197 +1,230 @@
 parameters:
 	ignoreErrors:
+		# debt: 026 — лишний nullsafe в CharacterBiographyService
 		-
 			message: '#^Using nullsafe property access "\?\-\>status" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Character/CharacterBiographyService.php
 
+		# debt: 026 — сравнение mixed с null в CharacterIdentityService
 		-
 			message: '#^Strict comparison using \!\=\= between mixed and null will always evaluate to true\.$#'
 			identifier: notIdentical.alwaysTrue
 			count: 1
 			path: app/Character/CharacterIdentityService.php
 
+		# debt: 026 — нечитаемое свойство identity в CharacterPlaceService
 		-
 			message: '#^Property App\\Character\\CharacterPlaceService\:\:\$identity is never read, only written\.$#'
 			identifier: property.onlyWritten
 			count: 1
 			path: app/Character/CharacterPlaceService.php
 
+		# debt: 026 — избыточный ?? для label в CharacterTraitService
 		-
 			message: '#^Offset ''label'' on array\{key\?\: string, label\: string, value\: string, sort_order\?\: int\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Character/CharacterTraitService.php
 
+		# debt: 026 — избыточный ?? для value в CharacterTraitService
 		-
 			message: '#^Offset ''value'' on array\{key\?\: string, label\: string, value\: string, sort_order\?\: int\} on left side of \?\? always exists and is not nullable\.$#'
 			identifier: nullCoalesce.offset
 			count: 1
 			path: app/Character/CharacterTraitService.php
 
+		# exception: defensive is_string после нормализации входа ContextRequest
 		-
 			message: '#^Call to function is_string\(\) with string will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
 			count: 1
 			path: app/Context/ContextRequest.php
 
+		# exception: ветки метаданных relation под будущий граф (ADR-002)
 		-
 			message: '#^Call to function array_key_exists\(\) with ''fear''\|''loyalty''\|''obligation''\|''trust'' and array\{\} will always evaluate to false\.$#'
 			identifier: function.impossibleType
 			count: 1
 			path: app/Context/Providers/DirectRelationsProvider.php
 
+		# exception: ветки метаданных relation под будущий граф (ADR-002)
 		-
 			message: '#^Call to function is_array\(\) with string\|null will always evaluate to false\.$#'
 			identifier: function.impossibleType
 			count: 1
 			path: app/Context/Providers/DirectRelationsProvider.php
 
+		# exception: ветки метаданных relation под будущий граф (ADR-002)
 		-
 			message: '#^Offset ''rank''\|''role'' on array\{\} in isset\(\) does not exist\.$#'
 			identifier: isset.offset
 			count: 1
 			path: app/Context/Providers/DirectRelationsProvider.php
 
+		# exception: ветки метаданных relation под будущий граф (ADR-002)
 		-
 			message: '#^Offset ''stance'' on array\{\} in isset\(\) does not exist\.$#'
 			identifier: isset.offset
 			count: 1
 			path: app/Context/Providers/DirectRelationsProvider.php
 
+		# exception: ветки метаданных relation под будущий граф (ADR-002)
 		-
 			message: '#^Result of && is always false\.$#'
 			identifier: booleanAnd.alwaysFalse
 			count: 4
 			path: app/Context/Providers/DirectRelationsProvider.php
 
+		# exception: ветки метаданных relation под будущий граф (ADR-002)
 		-
 			message: '#^Using nullsafe property access "\?\-\>canonical_name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Context/Providers/DirectRelationsProvider.php
 
+		# exception: Larastan не сужает backed enum в SceneProvider
 		-
 			message: '#^Cannot access property \$value on string\.$#'
 			identifier: property.nonObject
 			count: 1
 			path: app/Context/Providers/SceneProvider.php
 
+		# debt: 029 — перенос DiaryPreviewService в Context, типы enum
 		-
 			message: '#^Cannot access property \$value on string\.$#'
 			identifier: property.nonObject
 			count: 1
 			path: app/Diary/DiaryPreviewService.php
 
+		# debt: 028 — Collection|null в return type DiaryRetrievalService
 		-
 			message: '#^Method App\\Diary\\DiaryRetrievalService\:\:retrieveWithDiagnostics\(\) should return array\{selected\: Illuminate\\Support\\Collection\<int, App\\Models\\CharacterDiaryEntry\>, stats\: array\<string, int\>\} but returns array\{selected\: Illuminate\\Support\\Collection\<int, App\\Models\\CharacterDiaryEntry\|null\>, stats\: array\{total_entries\: int\<0, max\>, stale\: int\<0, max\>, filtered_by_recent\: int, kept_by_current_scene\: int, in_pool\: int\<0, max\>, selected\: int\<0, max\>\}\}\.$#'
 			identifier: return.type
 			count: 1
 			path: app/Diary/DiaryRetrievalService.php
 
+		# debt: 028 — сигнатура ChatProvider в DiarySummarizerService
 		-
 			message: '#^Method App\\Llm\\ChatProvider\:\:chatTurn\(\) invoked with 3 parameters, 1\-2 required\.$#'
 			identifier: arguments.count
 			count: 1
 			path: app/Diary/DiarySummarizerService.php
 
+		# debt: 028 — лишний nullsafe в DiarySummarizerService
 		-
 			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 2
 			path: app/Diary/DiarySummarizerService.php
 
+		# debt: 028 — сигнатура ChatProvider в DiaryWriterService
 		-
 			message: '#^Method App\\Llm\\ChatProvider\:\:chatTurn\(\) invoked with 3 parameters, 1\-2 required\.$#'
 			identifier: arguments.count
 			count: 1
 			path: app/Diary/DiaryWriterService.php
 
+		# debt: 028 — лишний nullsafe в DiaryWriterService
 		-
 			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 2
 			path: app/Diary/DiaryWriterService.php
 
+		# debt: 028 — лишний nullsafe summary в DiaryWriterService
 		-
 			message: '#^Using nullsafe property access "\?\-\>summary" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Diary/DiaryWriterService.php
 
+		# debt: 018, 026 — dead catch MixedChronicleException в CharacterSheetController
 		-
 			message: '#^Dead catch \- App\\World\\MixedChronicleException is already caught above\.$#'
 			identifier: catch.alreadyCaught
 			count: 3
 			path: app/Http/Controllers/CharacterSheetController.php
 
+		# debt: 018, 026 — phpDoc Collection в CharacterSheetController
 		-
 			message: '#^PHPDoc tag @param has invalid value \(Collection\<int, Character\>\)\: Unexpected token "\\n     \* ", expected variable at offset 45 on line 2$#'
 			identifier: phpDoc.parseError
 			count: 1
 			path: app/Http/Controllers/CharacterSheetController.php
 
+		# debt: 025b — abort_unless Copilot NPC в ChatController
 		-
 			message: '#^Call to function abort_unless\(\) with arguments false, 422 and ''Selected Copilot…'' will always evaluate to false\.$#'
 			identifier: function.impossibleType
 			count: 1
 			path: app/Http/Controllers/ChatController.php
 
+		# debt: 025b — array_key_exists int/string в ChatController
 		-
 			message: '#^Call to function array_key_exists\(\) with int and string will always evaluate to false\.$#'
 			identifier: function.impossibleType
 			count: 1
 			path: app/Http/Controllers/ChatController.php
 
+		# debt: 025b — неверный тип второго аргумента array_key_exists в ChatController
 		-
 			message: '#^Parameter \#2 \$array of function array_key_exists expects array, string given\.$#'
 			identifier: argument.type
 			count: 1
 			path: app/Http/Controllers/ChatController.php
 
+		# debt: 027 — Eloquent Model::$title в DiaryEntryController
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$title\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Controllers/DiaryEntryController.php
 
+		# debt: 027 — enum $value в DiaryEntryController
 		-
 			message: '#^Cannot access property \$value on string\.$#'
 			identifier: property.nonObject
 			count: 1
 			path: app/Http/Controllers/DiaryEntryController.php
 
+		# debt: 026a — лишний nullsafe revision в SceneContextController
 		-
 			message: '#^Using nullsafe property access "\?\-\>revision" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Http/Controllers/SceneContextController.php
 
+		# debt: 026a — enum $value в SceneParticipantController
 		-
 			message: '#^Cannot access property \$value on string\.$#'
 			identifier: property.nonObject
 			count: 1
 			path: app/Http/Controllers/SceneParticipantController.php
 
+		# debt: 029 — сравнение id с null в Message (observer)
 		-
 			message: '#^Strict comparison using \!\=\= between int\<0, max\> and null will always evaluate to true\.$#'
 			identifier: notIdentical.alwaysTrue
 			count: 1
 			path: app/Models/Message.php
 
+		# debt: 029 — лишний nullsafe name в Message
 		-
 			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Models/Message.php
 
+		# exception: array_values на уже list в OllamaEmbeddingProvider
 		-
 			message: '#^Parameter \#1 \$array \(non\-empty\-list\<string\>\) of array_values is already a list, call has no effect\.$#'
 			identifier: arrayValues.list
 			count: 1
 			path: app/Rag/OllamaEmbeddingProvider.php
 
+		# exception: SPA fallback view() без view-string literal
 		-
 			message: '#^Parameter \#1 \$view of function view expects view\-string\|null, string given\.$#'
 			identifier: argument.type
