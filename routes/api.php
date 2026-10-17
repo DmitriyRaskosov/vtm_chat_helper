@@ -11,7 +11,6 @@ use App\Http\Controllers\GameSessionController;
 use App\Http\Controllers\SceneContextController;
 use App\Http\Controllers\SceneController;
 use App\Http\Controllers\SceneParticipantController;
-use App\Http\Controllers\WorldEntityController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [RegisterController::class, 'store']);
@@ -52,12 +51,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/characters/{character}/archive', [CharacterSheetController::class, 'archive']);
         Route::post('/characters/{character}/restore', [CharacterSheetController::class, 'restore']);
         Route::put('/characters/{character}/place', [CharacterSheetController::class, 'updatePlace']);
-
-        Route::get('/world/entities', [WorldEntityController::class, 'index']);
-        Route::post('/world/entities', [WorldEntityController::class, 'store']);
-        Route::put('/world/entities/{worldEntity}', [WorldEntityController::class, 'update']);
-        Route::post('/world/entities/{worldEntity}/archive', [WorldEntityController::class, 'archive']);
-        Route::post('/world/entities/{worldEntity}/restore', [WorldEntityController::class, 'restore']);
 
         Route::post('/game-sessions/{gameSession}/scenes', [SceneController::class, 'store']);
         Route::patch('/scenes/{scene}/activate', [SceneController::class, 'activate']);

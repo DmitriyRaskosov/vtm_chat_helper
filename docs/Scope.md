@@ -37,7 +37,6 @@ NPC ведут долговременный дневник, который по�
 
 ### World
 - `world_entities` — identity для characters/locations; `world_relations` — read-only, не используется.
-- Экран «Мир» из UI убран, API сущностей и отношений остаётся (отношения для Copilot).
 
 ### Canon
 - `canon_sects`, `canon_clans`, `canon_clan_sects`, `canon_clan_relations`,

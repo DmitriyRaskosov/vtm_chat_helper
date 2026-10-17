@@ -28,13 +28,6 @@ class WorldEntity extends Model
     /** @use HasFactory<WorldEntityFactory> */
     use HasFactory;
 
-    protected static function booted(): void
-    {
-        static::deleting(function (): never {
-            throw new CannotDeleteWorldEntityException;
-        });
-    }
-
     /**
      * @param  Builder<WorldEntity>  $query
      * @return Builder<WorldEntity>
@@ -114,16 +107,6 @@ class WorldEntity extends Model
 
         return $this->hasMany(WorldRelation::class, 'target_id')
             ->where('target_type', $type);
-    }
-
-    /**
-     * Shared-PK subtype. Inverse belongsTo on WorldEvent is omitted.
-     *
-     * @return HasOne<WorldEvent, $this>
-     */
-    public function event(): HasOne
-    {
-        return $this->hasOne(WorldEvent::class, 'id', 'id');
     }
 
     protected function casts(): array
