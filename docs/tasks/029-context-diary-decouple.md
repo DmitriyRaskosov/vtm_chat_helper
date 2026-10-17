@@ -45,6 +45,9 @@
 6. `sail composer dump-autoload` и тесты.
 7. ReembedDiaryCommand: UPDATE character_diary_entries → DiaryEntryRepository::updateContent. 
   После правки grep "UPDATE character_diary_entries" app/ — только в DiaryEntryRepository.
+8. ContextAssembler: если diary-секция отбрасывается из-за пустого 
+  контента после LineTrimmer, но diary_ids в metadata есть — 
+  добавить reason: 'trimmed' или аналогичный, чтобы было понятно.
 
 ## Definition of Done
 
