@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Enums\WorldEntityAliasType;
 use App\Enums\WorldEntityStatus;
 use App\Enums\WorldEntityType;
 use Database\Factories\WorldEntityFactory;
@@ -43,25 +42,6 @@ class WorldEntity extends Model
     public function chronicle(): BelongsTo
     {
         return $this->belongsTo(Chronicle::class);
-    }
-
-    /**
-     * @return HasMany<WorldEntityAlias, $this>
-     */
-    public function aliases(): HasMany
-    {
-        return $this->hasMany(WorldEntityAlias::class, 'entity_id');
-    }
-
-    /**
-     * @return HasOne<WorldEntityAlias, $this>
-     */
-    public function canonicalAlias(): HasOne
-    {
-        return $this->hasOne(WorldEntityAlias::class, 'entity_id')->where(
-            'alias_type',
-            WorldEntityAliasType::Canonical->value,
-        );
     }
 
     /**

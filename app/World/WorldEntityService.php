@@ -3,7 +3,6 @@
 namespace App\World;
 
 use App\Enums\CharacterType;
-use App\Enums\WorldEntityAliasType;
 use App\Enums\WorldEntityStatus;
 use App\Enums\WorldEntityType;
 use App\Models\CanonClan;
@@ -11,14 +10,13 @@ use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\Location;
 use App\Models\WorldEntity;
-use App\Models\WorldEntityAlias;
+use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 class WorldEntityService
 {
     /**
-     * @param  list<string>  $aliases
      * @param  array<string, mixed>  $typed
      */
     public function create(
@@ -26,40 +24,38 @@ class WorldEntityService
         WorldEntityType $type,
         string $canonicalName,
         ?string $shortDescription = null,
-        array $aliases = [],
-        ?string $language = null,
         ?string $slug = null,
         array $typed = [],
     ): WorldEntity {
-        return DB::transaction(function () use (
-            $chronicle,
-            $type,
-            $canonicalName,
-            $shortDescription,
-            $language,
-            $slug,
-            $typed,
-        ): WorldEntity {
-            $entity = WorldEntity::query()->create([
-                'chronicle_id' => $chronicle->id,
-                'entity_type' => $type,
-                'canonical_name' => $canonicalName,
-                'slug' => $this->uniqueSlug($chronicle->id, $canonicalName, $slug),
-                'short_description' => $shortDescription,
-                'status' => WorldEntityStatus::Active,
-            ]);
+        $canonicalName = $this->prepareCanonicalName($canonicalName);
 
-            $this->storeAlias(
-                $entity,
+        try {
+            return DB::transaction(function () use (
+                $chronicle,
+                $type,
                 $canonicalName,
-                WorldEntityAliasType::Canonical,
-                $language,
-            );
+                $shortDescription,
+                $slug,
+                $typed,
+            ): WorldEntity {
+                $this->assertCanonicalNameAvailable($chronicle, $canonicalName);
 
-            $this->createTypedRecord($entity, $typed);
+                $entity = WorldEntity::query()->create([
+                    'chronicle_id' => $chronicle->id,
+                    'entity_type' => $type,
+                    'canonical_name' => $canonicalName,
+                    'slug' => $this->uniqueSlug($chronicle->id, $canonicalName, $slug),
+                    'short_description' => $shortDescription,
+                    'status' => WorldEntityStatus::Active,
+                ]);
 
-            return $entity->load(['aliases', 'location', 'character']);
-        });
+                $this->createTypedRecord($entity, $typed);
+
+                return $entity->load(['location', 'character']);
+            });
+        } catch (UniqueConstraintViolationException) {
+            throw new InvalidArgumentException('This name is already used in the chronicle.');
+        }
     }
 
     public function archive(WorldEntity $entity): WorldEntity
@@ -72,14 +68,6 @@ class WorldEntityService
 
             if ($entity->entity_type === WorldEntityType::Character) {
                 Character::query()->whereKey($entity->id)->update(['is_active' => false]);
-            }
-
-            foreach ($entity->aliases as $alias) {
-                $suffix = '--archived-'.$entity->id;
-                if (! str_ends_with($alias->normalized_alias, $suffix)) {
-                    $alias->normalized_alias = $alias->normalized_alias.$suffix;
-                    $alias->save();
-                }
             }
 
             return $entity->refresh();
@@ -98,27 +86,6 @@ class WorldEntityService
                 Character::query()->whereKey($entity->id)->update(['is_active' => true]);
             }
 
-            foreach ($entity->aliases as $alias) {
-                $cleaned = preg_replace('/--archived-\d+$/', '', $alias->normalized_alias);
-
-                if ($cleaned === $alias->normalized_alias) {
-                    continue;
-                }
-
-                $taken = WorldEntityAlias::query()
-                    ->where('chronicle_id', $alias->chronicle_id)
-                    ->where('normalized_alias', $cleaned)
-                    ->where('id', '!=', $alias->id)
-                    ->exists();
-
-                if ($taken) {
-                    continue;
-                }
-
-                $alias->normalized_alias = $cleaned;
-                $alias->save();
-            }
-
             return $entity->refresh();
         });
     }
@@ -129,6 +96,34 @@ class WorldEntityService
             if ((int) $entity->chronicle_id !== (int) $chronicle->id) {
                 throw new MixedChronicleException;
             }
+        }
+    }
+
+    public function prepareCanonicalName(string $value): string
+    {
+        $value = trim($value);
+        $collapsed = preg_replace('/\s+/u', ' ', $value);
+
+        return $collapsed === null ? $value : $collapsed;
+    }
+
+    public function assertCanonicalNameAvailable(
+        Chronicle $chronicle,
+        string $canonicalName,
+        ?int $exceptEntityId = null,
+    ): void {
+        $key = $this->canonicalNameKey($canonicalName);
+
+        $query = WorldEntity::query()
+            ->where('chronicle_id', $chronicle->id)
+            ->whereRaw('lower(canonical_name) = ?', [$key]);
+
+        if ($exceptEntityId !== null) {
+            $query->where('id', '!=', $exceptEntityId);
+        }
+
+        if ($query->exists()) {
+            throw new InvalidArgumentException('This name is already used in the chronicle.');
         }
     }
 
@@ -231,9 +226,14 @@ class WorldEntityService
         ]);
     }
 
+    private function canonicalNameKey(string $canonicalName): string
+    {
+        return mb_strtolower($this->prepareCanonicalName($canonicalName), 'UTF-8');
+    }
+
     private function uniqueSlug(int $chronicleId, string $canonicalName, ?string $slug): string
     {
-        $base = AliasNormalizer::slug($slug !== null && $slug !== '' ? $slug : $canonicalName);
+        $base = $this->slugFromName($slug !== null && $slug !== '' ? $slug : $canonicalName);
         $candidate = $base;
         $suffix = 2;
 
@@ -250,19 +250,13 @@ class WorldEntityService
         return $candidate;
     }
 
-    private function storeAlias(
-        WorldEntity $entity,
-        string $alias,
-        WorldEntityAliasType $type,
-        ?string $language,
-    ): WorldEntityAlias {
-        return WorldEntityAlias::query()->create([
-            'entity_id' => $entity->id,
-            'chronicle_id' => $entity->chronicle_id,
-            'alias' => $alias,
-            'normalized_alias' => AliasNormalizer::normalize($alias),
-            'alias_type' => $type,
-            'language' => $language,
-        ]);
+    private function slugFromName(string $value): string
+    {
+        $value = $this->canonicalNameKey($value);
+        $value = str_replace(' ', '-', $value);
+        $slug = preg_replace('/[^\p{L}\p{N}\-]+/u', '', $value);
+        $slug = $slug === null ? '' : trim($slug, '-');
+
+        return $slug === '' ? 'entity' : $slug;
     }
 }

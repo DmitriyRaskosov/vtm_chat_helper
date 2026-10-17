@@ -25,27 +25,8 @@ return new class extends Migration
             $table->index(['chronicle_id', 'entity_type'], 'world_entities_chronicle_type_index');
         });
 
-        Schema::create('world_entity_aliases', function (Blueprint $table) {
-            $table->id();
-            $table->unsignedBigInteger('entity_id');
-            $table->unsignedBigInteger('chronicle_id');
-            $table->string('alias', 120);
-            $table->string('normalized_alias', 120);
-            $table->string('alias_type', 20);
-            $table->string('language', 16)->nullable();
-            $table->timestamps();
-
-            $table->foreign(['entity_id', 'chronicle_id'], 'world_entity_aliases_entity_chronicle_foreign')
-                ->references(['id', 'chronicle_id'])
-                ->on('world_entities')
-                ->restrictOnDelete();
-            $table->unique(['chronicle_id', 'normalized_alias'], 'world_entity_aliases_chronicle_normalized_unique');
-        });
-
         DB::statement(
-            "CREATE UNIQUE INDEX world_entity_aliases_one_canonical
-             ON world_entity_aliases (entity_id)
-             WHERE alias_type = 'canonical'"
+            'CREATE UNIQUE INDEX world_entities_chronicle_name_unique ON world_entities (chronicle_id, lower(canonical_name))',
         );
 
         DB::unprepared(<<<'SQL'
@@ -73,7 +54,8 @@ DROP TRIGGER IF EXISTS prevent_world_entity_delete ON world_entities;
 DROP FUNCTION IF EXISTS prevent_world_entity_delete();
 SQL);
 
-        Schema::dropIfExists('world_entity_aliases');
+        DB::statement('DROP INDEX IF EXISTS world_entities_chronicle_name_unique');
+
         Schema::dropIfExists('world_entities');
     }
 };

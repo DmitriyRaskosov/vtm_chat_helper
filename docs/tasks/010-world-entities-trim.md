@@ -1,7 +1,7 @@
 # 010 — Сущности мира: только identity персонажей и локаций
 
 - **Stage:** 1
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 009
 - **Risk:** high (правка миграций, `migrate:fresh`)
 - **Разрешённые зависимости:** нет

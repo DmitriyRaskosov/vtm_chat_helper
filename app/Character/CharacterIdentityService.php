@@ -5,9 +5,8 @@ namespace App\Character;
 use App\Models\CanonClan;
 use App\Models\Character;
 use App\Models\WorldEntity;
-use App\Models\WorldEntityAlias;
-use App\World\AliasNormalizer;
 use App\World\WorldEntityService;
+use Illuminate\Database\UniqueConstraintViolationException;
 use InvalidArgumentException;
 
 class CharacterIdentityService
@@ -76,26 +75,18 @@ class CharacterIdentityService
     private function rename(Character $character, string $name): void
     {
         $entity = WorldEntity::query()->findOrFail($character->id);
-        $normalized = AliasNormalizer::normalize($name);
+        $name = $this->entities->prepareCanonicalName($name);
 
-        $taken = WorldEntityAlias::query()
-            ->where('chronicle_id', $entity->chronicle_id)
-            ->where('normalized_alias', $normalized)
-            ->where('entity_id', '!=', $entity->id)
-            ->exists();
+        $this->entities->assertCanonicalNameAvailable(
+            $character->chronicle,
+            $name,
+            (int) $entity->id,
+        );
 
-        if ($taken) {
+        try {
+            $entity->update(['canonical_name' => $name]);
+        } catch (UniqueConstraintViolationException) {
             throw new InvalidArgumentException('This name is already used in the chronicle.');
-        }
-
-        $entity->update(['canonical_name' => $name]);
-
-        $canonical = $entity->canonicalAlias()->first();
-        if ($canonical !== null) {
-            $canonical->update([
-                'alias' => $name,
-                'normalized_alias' => $normalized,
-            ]);
         }
     }
 

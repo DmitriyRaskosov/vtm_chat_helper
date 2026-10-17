@@ -167,4 +167,126 @@ class CharacterTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonCount(2, 'characters');
     }
+
+    public function test_duplicate_character_name_in_chronicle_returns_422(): void
+    {
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson('/api/characters', [
+                'canonical_name' => 'Иван',
+                'character_type' => 'npc',
+                'chronicle_id' => $this->chronicle->id,
+            ])
+            ->assertStatus(201);
+
+        $response = $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson('/api/characters', [
+                'canonical_name' => 'иван',
+                'character_type' => 'npc',
+                'chronicle_id' => $this->chronicle->id,
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertSee('This name is already used in the chronicle.');
+    }
+
+    public function test_same_character_name_in_another_chronicle_succeeds(): void
+    {
+        $otherChronicle = Chronicle::query()->create([
+            'title' => 'Другая хроника',
+            'created_by' => $this->storyteller->id,
+        ]);
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson('/api/characters', [
+                'canonical_name' => 'Иван',
+                'character_type' => 'npc',
+                'chronicle_id' => $this->chronicle->id,
+            ])
+            ->assertStatus(201);
+
+        $response = $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson('/api/characters', [
+                'canonical_name' => 'Иван',
+                'character_type' => 'npc',
+                'chronicle_id' => $otherChronicle->id,
+            ]);
+
+        $response->assertStatus(201);
+    }
+
+    public function test_character_rename_to_taken_name_returns_422(): void
+    {
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson('/api/characters', [
+                'canonical_name' => 'Первый',
+                'character_type' => 'npc',
+                'chronicle_id' => $this->chronicle->id,
+            ])
+            ->assertStatus(201);
+
+        $second = $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson('/api/characters', [
+                'canonical_name' => 'Второй',
+                'character_type' => 'npc',
+                'chronicle_id' => $this->chronicle->id,
+            ])
+            ->assertStatus(201)
+            ->json('character.id');
+
+        $response = $this->actingAs($this->storyteller, 'sanctum')
+            ->patchJson("/api/characters/{$second}", [
+                'canonical_name' => 'Первый',
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertSee('This name is already used in the chronicle.');
+    }
+
+    public function test_character_rename_case_insensitive_conflict_returns_422(): void
+    {
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson('/api/characters', [
+                'canonical_name' => 'Первый',
+                'character_type' => 'npc',
+                'chronicle_id' => $this->chronicle->id,
+            ])
+            ->assertStatus(201);
+
+        $second = $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson('/api/characters', [
+                'canonical_name' => 'Второй',
+                'character_type' => 'npc',
+                'chronicle_id' => $this->chronicle->id,
+            ])
+            ->assertStatus(201)
+            ->json('character.id');
+
+        $response = $this->actingAs($this->storyteller, 'sanctum')
+            ->patchJson("/api/characters/{$second}", [
+                'canonical_name' => 'первый',
+            ]);
+
+        $response->assertStatus(422);
+        $response->assertSee('This name is already used in the chronicle.');
+    }
+
+    public function test_character_rename_to_free_name_succeeds(): void
+    {
+        $characterId = $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson('/api/characters', [
+                'canonical_name' => 'Старое имя',
+                'character_type' => 'npc',
+                'chronicle_id' => $this->chronicle->id,
+            ])
+            ->assertStatus(201)
+            ->json('character.id');
+
+        $response = $this->actingAs($this->storyteller, 'sanctum')
+            ->patchJson("/api/characters/{$characterId}", [
+                'canonical_name' => 'Новое имя',
+            ]);
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('character.canonical_name', 'Новое имя');
+    }
 }
