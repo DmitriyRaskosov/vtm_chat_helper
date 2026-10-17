@@ -13,6 +13,7 @@ use App\World\MixedChronicleException;
 use App\World\WorldEntityService;
 use App\World\WorldRelationException;
 use App\World\WorldRelationService;
+use App\World\WorldRelationTypeCatalog;
 use App\World\WorldRelationTypeException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -265,7 +266,7 @@ class WorldRelationController extends Controller
 
         $allowed = array_map(
             fn (array $definition): string => $definition['key'],
-            \App\World\WorldRelationTypeCatalog::definitions(),
+            WorldRelationTypeCatalog::definitions(),
         );
         $unknown = array_diff($keys, $allowed);
         if ($unknown !== []) {

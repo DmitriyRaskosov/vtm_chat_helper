@@ -10,6 +10,7 @@ use App\Models\Scene;
 use App\Models\WorldEntity;
 use App\Prompt\PromptRepository;
 use App\Rag\EmbeddingProvider;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -167,9 +168,9 @@ class DiarySummarizerService
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, CharacterDiaryEntry>  $l0Entries
+     * @param  Collection<int, CharacterDiaryEntry>  $l0Entries
      */
-    private function generateSummaryText(Character $npc, \Illuminate\Support\Collection $l0Entries): string
+    private function generateSummaryText(Character $npc, Collection $l0Entries): string
     {
         $npc->loadMissing(['clan', 'sect', 'traits']);
 
@@ -209,7 +210,7 @@ class DiarySummarizerService
         return trim($turn->content);
     }
 
-    private function resolveSceneNpcs(Scene $scene): \Illuminate\Support\Collection
+    private function resolveSceneNpcs(Scene $scene): Collection
     {
         $ids = $scene->participants()
             ->pluck('character_id')

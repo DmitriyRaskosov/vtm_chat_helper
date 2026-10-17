@@ -70,5 +70,4 @@ class NpcIdentityProvider implements ContextProvider
             'compact' => $assembly->request->compactIdentity,
         ], $truncated ? 'lines_tail' : null);
     }
-
 }

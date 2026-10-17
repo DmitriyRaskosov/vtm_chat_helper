@@ -9,24 +9,24 @@ use App\Character\CharacterPlaceService;
 use App\Character\CharacterSheetReader;
 use App\Character\CharacterTraitService;
 use App\Character\DisciplineService;
+use App\Enums\CharacterBiographyStatus;
 use App\Enums\CharacterType;
 use App\Enums\WorldEntityType;
-use App\Enums\CharacterBiographyStatus;
 use App\Http\Requests\StoreCharacterRequest;
 use App\Http\Requests\UpdateCharacterBiographyRequest;
 use App\Http\Requests\UpdateCharacterDisciplinesRequest;
 use App\Http\Requests\UpdateCharacterIdentityRequest;
 use App\Http\Requests\UpdateCharacterPlaceRequest;
 use App\Http\Requests\UpdateCharacterTraitsRequest;
+use App\Models\CanonClan;
+use App\Models\CanonDiscipline;
+use App\Models\CanonSect;
 use App\Models\Character;
 use App\Models\Chronicle;
-use App\Models\CanonDiscipline;
 use App\Models\WorldEntity;
-use App\Models\CanonClan;
-use App\Models\CanonSect;
 use App\Scene\SceneParticipantService;
-use App\World\WorldEntityService;
 use App\World\MixedChronicleException;
+use App\World\WorldEntityService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -48,61 +48,61 @@ class CharacterSheetController extends Controller
 
     public function catalog(): JsonResponse
     {
-    $disciplines = CanonDiscipline::query()
-        ->orderBy('name')
-        ->get(['id', 'slug', 'name', 'description', 'is_common'])
-        ->map(fn (CanonDiscipline $row): array => [
-            'id' => (int) $row->id,
-            'slug' => $row->slug,
-            'name' => $row->name,
-            'description' => $row->description,
-            'is_common' => (bool) $row->is_common,
-        ])
-        ->values();
+        $disciplines = CanonDiscipline::query()
+            ->orderBy('name')
+            ->get(['id', 'slug', 'name', 'description', 'is_common'])
+            ->map(fn (CanonDiscipline $row): array => [
+                'id' => (int) $row->id,
+                'slug' => $row->slug,
+                'name' => $row->name,
+                'description' => $row->description,
+                'is_common' => (bool) $row->is_common,
+            ])
+            ->values();
 
-    $clans = CanonClan::query()
-        ->where('is_playable', true)
-        ->where('is_bloodline', false)
-        ->orderBy('name')
-        ->get(['id', 'slug', 'name', 'nickname'])
-        ->map(fn (CanonClan $row): array => [
-            'id' => (int) $row->id,
-            'slug' => $row->slug,
-            'name' => $row->name,
-            'nickname' => $row->nickname,
-        ])
-        ->values();
+        $clans = CanonClan::query()
+            ->where('is_playable', true)
+            ->where('is_bloodline', false)
+            ->orderBy('name')
+            ->get(['id', 'slug', 'name', 'nickname'])
+            ->map(fn (CanonClan $row): array => [
+                'id' => (int) $row->id,
+                'slug' => $row->slug,
+                'name' => $row->name,
+                'nickname' => $row->nickname,
+            ])
+            ->values();
 
-    $bloodlines = CanonClan::query()
-        ->where('is_playable', true)
-        ->where('is_bloodline', true)
-        ->orderBy('name')
-        ->get(['id', 'slug', 'name', 'nickname', 'parent_clan_id'])
-        ->map(fn (CanonClan $row): array => [
-            'id' => (int) $row->id,
-            'slug' => $row->slug,
-            'name' => $row->name,
-            'nickname' => $row->nickname,
-            'parent_clan_id' => $row->parent_clan_id === null ? null : (int) $row->parent_clan_id,
-        ])
-        ->values();
+        $bloodlines = CanonClan::query()
+            ->where('is_playable', true)
+            ->where('is_bloodline', true)
+            ->orderBy('name')
+            ->get(['id', 'slug', 'name', 'nickname', 'parent_clan_id'])
+            ->map(fn (CanonClan $row): array => [
+                'id' => (int) $row->id,
+                'slug' => $row->slug,
+                'name' => $row->name,
+                'nickname' => $row->nickname,
+                'parent_clan_id' => $row->parent_clan_id === null ? null : (int) $row->parent_clan_id,
+            ])
+            ->values();
 
-    $sects = CanonSect::query()
-        ->orderBy('name')
-        ->get(['id', 'slug', 'name'])
-        ->map(fn (CanonSect $row): array => [
-            'id' => (int) $row->id,
-            'slug' => $row->slug,
-            'name' => $row->name,
-        ])
-        ->values();
+        $sects = CanonSect::query()
+            ->orderBy('name')
+            ->get(['id', 'slug', 'name'])
+            ->map(fn (CanonSect $row): array => [
+                'id' => (int) $row->id,
+                'slug' => $row->slug,
+                'name' => $row->name,
+            ])
+            ->values();
 
-    return response()->json([
-        'disciplines' => $disciplines,
-        'clans' => $clans,
-        'bloodlines' => $bloodlines,
-        'sects' => $sects,
-    ]);
+        return response()->json([
+            'disciplines' => $disciplines,
+            'clans' => $clans,
+            'bloodlines' => $bloodlines,
+            'sects' => $sects,
+        ]);
     }
 
     public function index(Request $request): JsonResponse
@@ -302,7 +302,7 @@ class CharacterSheetController extends Controller
     }
 
     /**
-     * @param  Collection<int, Character> 
+     * @param  Collection<int, Character>
      * @param  Collection<int|string, string>  $names
      * @return array<string, mixed>
      */

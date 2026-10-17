@@ -4,8 +4,8 @@ namespace App\Scene;
 
 use App\Enums\SceneParticipantRole;
 use App\Jobs\WriteFinalDiaryJob;
-use App\Models\Message;
 use App\Models\Character;
+use App\Models\Message;
 use App\Models\Scene;
 use App\Models\SceneParticipant;
 use App\World\MixedChronicleException;
@@ -19,10 +19,10 @@ class SceneParticipantService
     public function __construct(private SceneContextService $contexts) {}
 
     public function enter(
-    Scene $scene,
-    Character $character,
-    SceneParticipantRole $role,
-    bool $visible = true,
+        Scene $scene,
+        Character $character,
+        SceneParticipantRole $role,
+        bool $visible = true,
     ): SceneParticipant {
         $scene->loadMissing('gameSession');
 

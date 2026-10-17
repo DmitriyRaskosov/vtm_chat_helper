@@ -95,7 +95,7 @@ class WorldEntity extends Model
      */
     public function outgoingRelations(): HasMany
     {
-        $type = $this->entity_type instanceof \App\Enums\WorldEntityType
+        $type = $this->entity_type instanceof WorldEntityType
             ? $this->entity_type->value
             : (string) $this->entity_type;
 
@@ -108,7 +108,7 @@ class WorldEntity extends Model
      */
     public function incomingRelations(): HasMany
     {
-        $type = $this->entity_type instanceof \App\Enums\WorldEntityType
+        $type = $this->entity_type instanceof WorldEntityType
             ? $this->entity_type->value
             : (string) $this->entity_type;
 

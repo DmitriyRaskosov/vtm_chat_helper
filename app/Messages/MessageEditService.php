@@ -2,7 +2,6 @@
 
 namespace App\Messages;
 
-use App\Models\CharacterDiaryEntry;
 use App\Models\Message;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;

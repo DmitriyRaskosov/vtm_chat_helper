@@ -3,14 +3,13 @@
 namespace App\World;
 
 use App\Enums\CharacterType;
-use App\Enums\WorldEntityType;
-use App\Enums\WorldEntityStatus;
-use App\Enums\WorldEntityAliasType;
 use App\Enums\FactionStatus;
+use App\Enums\WorldEntityAliasType;
+use App\Enums\WorldEntityStatus;
+use App\Enums\WorldEntityType;
+use App\Models\CanonClan;
 use App\Models\Character;
 use App\Models\Chronicle;
-use App\Models\CanonClan;
-use App\Models\Scene;
 use App\Models\WorldEntity;
 use App\Models\WorldEntityAlias;
 use App\Models\WorldRelation;
@@ -56,7 +55,6 @@ class WorldEntityService
             $type,
             $canonicalName,
             $shortDescription,
-            $aliases,
             $language,
             $slug,
             $typed,
@@ -84,8 +82,8 @@ class WorldEntityService
     }
 
     /**
-    * @return array<string, mixed>
-    */
+     * @return array<string, mixed>
+     */
     public function defaultTypedPayload(WorldEntityType $type): array
     {
         return match ($type) {
@@ -124,7 +122,6 @@ class WorldEntityService
             $canonicalName,
             $shortDescription,
             $aliases,
-            $type,
             $updateParentFaction,
             $parentFactionId,
             $updateSectFaction,
@@ -174,9 +171,9 @@ class WorldEntityService
             }
 
             foreach ($entity->aliases as $alias) {
-                $suffix = '--archived-' . $entity->id;
+                $suffix = '--archived-'.$entity->id;
                 if (! str_ends_with($alias->normalized_alias, $suffix)) {
-                    $alias->normalized_alias = $alias->normalized_alias . $suffix;
+                    $alias->normalized_alias = $alias->normalized_alias.$suffix;
                     $alias->save();
                 }
             }

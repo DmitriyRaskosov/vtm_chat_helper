@@ -23,6 +23,7 @@ use App\Models\SceneParticipant;
 use App\Models\User;
 use App\Models\WorldEntity;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -90,9 +91,9 @@ class DemoSeeder extends Seeder
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, Character>
+     * @return Collection<int, Character>
      */
-    private function createNpcs(Chronicle $chronicle, User $storyteller): \Illuminate\Support\Collection
+    private function createNpcs(Chronicle $chronicle, User $storyteller): Collection
     {
         $definitions = [
             [

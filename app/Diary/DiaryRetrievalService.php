@@ -11,7 +11,9 @@ use Illuminate\Support\Facades\DB;
 class DiaryRetrievalService
 {
     private const MIN_SIMILARITY = 0.45;
+
     public const MAX_ENTRIES = 3;
+
     private const CANDIDATE_LIMIT = 30;
 
     public function __construct(

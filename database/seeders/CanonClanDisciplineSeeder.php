@@ -15,28 +15,28 @@ class CanonClanDisciplineSeeder extends Seeder
         $disc = CanonDiscipline::pluck('id', 'slug');
 
         $map = [
-            'assamite'          => ['celerity', 'obfuscate', 'quietus'],
-            'brujah'            => ['celerity', 'potence', 'presence'],
-            'followers_of_set'  => ['obfuscate', 'presence', 'serpentis'],
-            'gangrel'           => ['animalism', 'fortitude', 'protean'],
-            'giovanni'          => ['dominate', 'necromancy', 'potence'],
-            'lasombra'          => ['dominate', 'obtenebration', 'potence'],
-            'malkavian'         => ['auspex', 'dementation', 'obfuscate'],
-            'nosferatu'         => ['animalism', 'obfuscate', 'potence'],
-            'ravnos'            => ['animalism', 'chimerstry', 'fortitude'],
-            'toreador'          => ['auspex', 'celerity', 'presence'],
-            'tremere'           => ['auspex', 'dominate', 'thaumaturgy'],
-            'tzimisce'          => ['animalism', 'auspex', 'vicissitude'],
-            'ventrue'           => ['dominate', 'fortitude', 'presence'],
+            'assamite' => ['celerity', 'obfuscate', 'quietus'],
+            'brujah' => ['celerity', 'potence', 'presence'],
+            'followers_of_set' => ['obfuscate', 'presence', 'serpentis'],
+            'gangrel' => ['animalism', 'fortitude', 'protean'],
+            'giovanni' => ['dominate', 'necromancy', 'potence'],
+            'lasombra' => ['dominate', 'obtenebration', 'potence'],
+            'malkavian' => ['auspex', 'dementation', 'obfuscate'],
+            'nosferatu' => ['animalism', 'obfuscate', 'potence'],
+            'ravnos' => ['animalism', 'chimerstry', 'fortitude'],
+            'toreador' => ['auspex', 'celerity', 'presence'],
+            'tremere' => ['auspex', 'dominate', 'thaumaturgy'],
+            'tzimisce' => ['animalism', 'auspex', 'vicissitude'],
+            'ventrue' => ['dominate', 'fortitude', 'presence'],
         ];
 
         $rows = [];
         foreach ($map as $clanSlug => $disciplines) {
-            if (!isset($clans[$clanSlug])) {
+            if (! isset($clans[$clanSlug])) {
                 continue;
             }
             foreach ($disciplines as $disciplineSlug) {
-                if (!isset($disc[$disciplineSlug])) {
+                if (! isset($disc[$disciplineSlug])) {
                     continue;
                 }
                 $rows[] = [

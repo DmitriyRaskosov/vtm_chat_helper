@@ -2,13 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\UpdateDiaryEntryRequest;
-use App\Http\Requests\PreviewDiaryRequest;
-use App\Models\Character;
-use App\Models\CharacterDiaryEntry;
+use App\Diary\DiaryPreviewService;
 use App\Diary\DiarySummarizerService;
 use App\Diary\DiaryWriterService;
-use App\Diary\DiaryPreviewService;
+use App\Http\Requests\PreviewDiaryRequest;
+use App\Http\Requests\UpdateDiaryEntryRequest;
+use App\Models\Character;
+use App\Models\CharacterDiaryEntry;
 use App\Rag\EmbeddingProvider;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -43,9 +43,9 @@ class DiaryEntryController extends Controller
     }
 
     public function preview(
-    PreviewDiaryRequest $request,
-    Character $character,
-    DiaryPreviewService $previewer,
+        PreviewDiaryRequest $request,
+        Character $character,
+        DiaryPreviewService $previewer,
     ): JsonResponse {
         $sceneId = $request->has('scene_id') ? (int) $request->validated('scene_id') : null;
         $prompt = (string) ($request->validated('prompt') ?? '');
@@ -89,9 +89,9 @@ class DiaryEntryController extends Controller
     }
 
     public function regenerate(
-    CharacterDiaryEntry $diaryEntry,
-    DiaryWriterService $writer,
-    DiarySummarizerService $summarizer,
+        CharacterDiaryEntry $diaryEntry,
+        DiaryWriterService $writer,
+        DiarySummarizerService $summarizer,
     ): JsonResponse {
         $level = (int) $diaryEntry->level;
 

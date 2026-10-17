@@ -2,10 +2,7 @@
 
 namespace App\Models;
 
-use App\Models\CanonSect;
-use App\Casts\PostgresIntegerArray;
 use App\Enums\CharacterType;
-use App\Enums\WorldEntityType;
 use Database\Factories\CharacterFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -158,7 +155,7 @@ class Character extends Model
 
     public function sect(): BelongsTo
     {
-    return $this->belongsTo(CanonSect::class, 'sect_id');
+        return $this->belongsTo(CanonSect::class, 'sect_id');
     }
 
     public function isPlayableBy(?User $user): bool

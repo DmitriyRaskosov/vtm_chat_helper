@@ -22,10 +22,15 @@ use Tests\TestCase;
 class MessageEditTest extends TestCase
 {
     private User $storyteller;
+
     private User $player;
+
     private Chronicle $chronicle;
+
     private GameSession $gameSession;
+
     private Scene $scene;
+
     private Character $npc;
 
     protected function setUp(): void

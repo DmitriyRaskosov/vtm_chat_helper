@@ -9,7 +9,6 @@ use App\Models\Scene;
 use App\Models\SceneParticipant;
 use App\Models\WorldEntity;
 use App\Scene\SceneParticipantService;
-use App\World\MixedChronicleException;
 use Illuminate\Http\JsonResponse;
 use InvalidArgumentException;
 
@@ -62,7 +61,7 @@ class SceneParticipantController extends Controller
         $character = Character::query()
             ->whereKey($participant->character_id)
             ->first(['id', 'character_type', 'user_id']);
-    
+
         return [
             'id' => (int) $participant->id,
             'scene_id' => (int) $participant->scene_id,

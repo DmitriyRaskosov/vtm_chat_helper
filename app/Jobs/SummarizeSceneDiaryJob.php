@@ -2,8 +2,8 @@
 
 namespace App\Jobs;
 
-use App\Diary\DiaryWriterService;
 use App\Diary\DiarySummarizerService;
+use App\Diary\DiaryWriterService;
 use App\Models\Scene;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
@@ -13,7 +13,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
-class SummarizeSceneDiaryJob implements ShouldQueue, ShouldBeUnique
+class SummarizeSceneDiaryJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 

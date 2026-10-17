@@ -14,9 +14,9 @@ class CharacterPlaceService
         private CharacterIdentityService $identity,
     ) {}
 
-    /** 
+    /**
     @param  array{sect_id?: int|null, clan_id?: int|null, haven_entity_id?: int|null, lore_clearance_levels?: list<int>}  $fields
-    */
+     */
     public function apply(Character $character, array $fields): Character
     {
         return DB::transaction(function () use ($character, $fields): Character {

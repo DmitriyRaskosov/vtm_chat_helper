@@ -8,7 +8,6 @@ use App\Rag\EmbeddingProvider;
 use App\Rag\OllamaEmbeddingProvider;
 use Illuminate\Support\ServiceProvider;
 
-
 class AppServiceProvider extends ServiceProvider
 {
     public function register(): void

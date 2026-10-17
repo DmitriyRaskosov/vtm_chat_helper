@@ -126,7 +126,7 @@ class NpcCopilotService
         $fallback = trim($prompt);
 
         return $fallback !== '' ? [$fallback] : ['conversation'];
-    }  
+    }
 
     private function normalizeTopic(string $topic): ?string
     {
@@ -169,6 +169,7 @@ class NpcCopilotService
                                     $drafts[] = trim($sub);
                                 }
                             }
+
                             continue;
                         }
                     }

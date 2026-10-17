@@ -4,7 +4,6 @@ namespace Tests\Feature;
 
 use App\Models\CanonClan;
 use App\Models\CanonSect;
-use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\User;
 use Database\Seeders\CanonClanSeeder;
@@ -14,6 +13,7 @@ use Tests\TestCase;
 class CharacterTest extends TestCase
 {
     private User $storyteller;
+
     private Chronicle $chronicle;
 
     protected function setUp(): void

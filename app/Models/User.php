@@ -29,7 +29,7 @@ class User extends Authenticatable
     }
 
     /**
-     * One user owns at most one player character, globally. 
+     * One user owns at most one player character, globally.
      *
      * @return HasOne<Character, $this>
      */

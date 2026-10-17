@@ -8,11 +8,11 @@ use App\Models\Character;
 use App\Models\CharacterDiaryEntry;
 use App\Models\Message;
 use App\Models\Scene;
-use App\Models\WorldEntity;
 use App\Models\SceneParticipant;
-use App\Diary\DiaryMetadataParser;
+use App\Models\WorldEntity;
 use App\Prompt\PromptRepository;
 use App\Rag\EmbeddingProvider;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use RuntimeException;
@@ -327,7 +327,7 @@ class DiaryWriterService
         return trim($turn->content);
     }
 
-    private function resolveSceneNpcs(Scene $scene): \Illuminate\Support\Collection
+    private function resolveSceneNpcs(Scene $scene): Collection
     {
         $ids = $scene->participants()
             ->where('is_current', true)
@@ -345,7 +345,7 @@ class DiaryWriterService
             ->get();
     }
 
-    private function formatMessages(\Illuminate\Support\Collection $messages): string
+    private function formatMessages(Collection $messages): string
     {
         return $messages
             ->map(fn (Message $m): string => $m->displayAuthor().': '.trim((string) $m->body))

@@ -6,6 +6,7 @@ use App\Context\DiaryRenderer;
 use App\Context\LineTrimmer;
 use App\Context\TokenEstimator;
 use App\Models\Character;
+use App\Models\CharacterDiaryEntry;
 use App\Models\Message;
 use Illuminate\Support\Collection;
 
@@ -66,7 +67,7 @@ final class DiaryPreviewService
     }
 
     /**
-     * @param  Collection<int, \App\Models\CharacterDiaryEntry>  $entries
+     * @param  Collection<int, CharacterDiaryEntry>  $entries
      * @return list<array<string, mixed>>
      */
     private function serializeEntries(Collection $entries): array

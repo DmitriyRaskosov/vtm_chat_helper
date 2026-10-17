@@ -6,13 +6,13 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\CharacterSheetController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\CopilotController;
+use App\Http\Controllers\DiaryEntryController;
 use App\Http\Controllers\GameSessionController;
 use App\Http\Controllers\SceneContextController;
 use App\Http\Controllers\SceneController;
 use App\Http\Controllers\SceneParticipantController;
 use App\Http\Controllers\WorldEntityController;
 use App\Http\Controllers\WorldRelationController;
-use App\Http\Controllers\DiaryEntryController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [RegisterController::class, 'store']);
@@ -28,7 +28,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/messages/{message}/ooc', [ChatController::class, 'toggleOoc']);
     Route::delete('/messages/{message}', [ChatController::class, 'destroy']);
     Route::post('/messages/{message}/restore', [ChatController::class, 'restore'])
-    ->withTrashed();
+        ->withTrashed();
 
     Route::get('/character-sheet/catalog', [CharacterSheetController::class, 'catalog']);
 

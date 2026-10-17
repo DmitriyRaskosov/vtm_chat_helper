@@ -6,6 +6,8 @@ use App\Enums\CharacterType;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneStatus;
 use App\Http\Requests\StoreMessageRequest;
+use App\Jobs\WriteDiaryJob;
+use App\Messages\MessageEditService;
 use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\CopilotRequest;
@@ -14,14 +16,12 @@ use App\Models\Scene;
 use App\Models\SceneParticipant;
 use App\Models\User;
 use App\Models\WorldEntity;
-use App\Jobs\WriteDiaryJob;
-use App\Messages\MessageEditService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ChatController extends Controller
 {
@@ -32,26 +32,26 @@ class ChatController extends Controller
             'chronicle_id' => ['sometimes', 'integer', 'exists:chronicles,id'],
             'after_id' => ['sometimes', 'integer', 'min:0'],
         ]);
-    
+
         $afterId = $request->integer('after_id');
         $scene = $this->resolveScene(
             isset($validated['scene_id']) ? (int) $validated['scene_id'] : null,
             isset($validated['chronicle_id']) ? (int) $validated['chronicle_id'] : null,
             false,
         );
-    
+
         $query = Message::query()
             ->with('user:id,name')
             ->where('scene_id', $scene->id);
-    
+
         if ($request->boolean('include_deleted')) {
             $query->withTrashed();
         }
-    
+
         $messages = $query
             ->when($afterId > 0, fn ($q) => $q->where('id', '>', $afterId))
             ->orderBy('id')
-            ->get();    
+            ->get();
 
         $characterLookup = $this->characterLookup($messages);
 
@@ -324,29 +324,36 @@ class ChatController extends Controller
 
         return $scene;
     }
+
     private function maybeDispatchDiaryWrite(Scene $scene): void
     {
         $threshold = (int) config('diary.write_threshold', 15);
-        if ($threshold <= 0) return;
-    
+        if ($threshold <= 0) {
+            return;
+        }
+
         $participants = SceneParticipant::query()
             ->where('scene_id', $scene->id)
             ->where('is_current', true)
             ->get();
-    
-        if ($participants->isEmpty()) return;
-    
+
+        if ($participants->isEmpty()) {
+            return;
+        }
+
         $minCursor = $participants->min(fn ($p) => (int) ($p->last_diary_message_id ?? 0));
-    
+
         $pending = Message::query()
             ->where('scene_id', $scene->id)
             ->where('id', '>', $minCursor)
             ->count();
-    
-        if ($pending < $threshold) return;
-    
+
+        if ($pending < $threshold) {
+            return;
+        }
+
         WriteDiaryJob::dispatch($scene->id);
-    
+
         Log::info('diary.write.dispatched', [
             'scene_id' => $scene->id,
             'pending' => $pending,

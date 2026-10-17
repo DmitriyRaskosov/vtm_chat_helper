@@ -13,12 +13,14 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
-class WriteFinalDiaryJob implements ShouldQueue, ShouldBeUnique
+class WriteFinalDiaryJob implements ShouldBeUnique, ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     public int $tries = 1;
+
     public int $timeout = 540;
+
     public int $uniqueFor = 900;
 
     public function __construct(

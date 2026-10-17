@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\DB;
 class ResetCommand extends Command
 {
     protected $signature = 'demo:reset';
+
     protected $description = 'Reset game data (chronicles, characters, scenes, diary) but keep canon and users.';
 
     public function handle(): int

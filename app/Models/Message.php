@@ -25,6 +25,7 @@ class Message extends Model
 {
     /** @use HasFactory<MessageFactory> */
     use HasFactory;
+
     use SoftDeletes;
 
     public function displayAuthor(?string $characterCanonicalName = null): string

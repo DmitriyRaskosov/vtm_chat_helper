@@ -5,6 +5,7 @@ namespace App\Context;
 use App\Context\Providers\BiographyProvider;
 use App\Context\Providers\ClosingInstructionProvider;
 use App\Context\Providers\ContextProvider;
+use App\Context\Providers\DiaryProvider;
 use App\Context\Providers\DirectRelationsProvider;
 use App\Context\Providers\NpcIdentityProvider;
 use App\Context\Providers\PersonalityProvider;
@@ -13,7 +14,6 @@ use App\Context\Providers\SceneProvider;
 use App\Context\Providers\StorytellerPromptProvider;
 use App\Context\Providers\SystemPromptProvider;
 use App\Context\Providers\WorldLoreProvider;
-use App\Context\Providers\DiaryProvider;
 use App\Models\Character;
 use App\Models\Scene;
 use App\Models\WorldEntity;
@@ -350,7 +350,7 @@ class ContextAssembler
                 'context_revision' => $contextRevision,
             ],
             'filters' => [
-                'history_limit' => $historyLimit
+                'history_limit' => $historyLimit,
             ],
         ];
     }

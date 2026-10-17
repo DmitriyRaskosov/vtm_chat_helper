@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Diary\DiaryMetadataParser;
 use App\Diary\DiaryRetrievalService;
+use App\Enums\DiaryEmotion;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneParticipantRole;
 use App\Enums\SceneStatus;
@@ -24,9 +26,13 @@ use Tests\TestCase;
 class DiaryTest extends TestCase
 {
     private User $storyteller;
+
     private Chronicle $chronicle;
+
     private GameSession $gameSession;
+
     private Scene $scene;
+
     private Character $npc;
 
     protected function setUp(): void
@@ -250,19 +256,19 @@ class DiaryTest extends TestCase
 
         $this->assertCount(0, $result);
     }
-    
+
     public function test_metadata_parser_extracts_prefix(): void
     {
-        $parsed = \App\Diary\DiaryMetadataParser::parse("[0.850 anger]\n\nНочь первая. Пустырь.");
+        $parsed = DiaryMetadataParser::parse("[0.850 anger]\n\nНочь первая. Пустырь.");
 
         $this->assertSame(0.85, $parsed['importance']);
-        $this->assertSame(\App\Enums\DiaryEmotion::Anger, $parsed['emotion']);
+        $this->assertSame(DiaryEmotion::Anger, $parsed['emotion']);
         $this->assertSame('Ночь первая. Пустырь.', $parsed['entry']);
     }
 
     public function test_metadata_parser_falls_back_when_no_prefix(): void
     {
-        $parsed = \App\Diary\DiaryMetadataParser::parse('Ночь первая. Пустырь.');
+        $parsed = DiaryMetadataParser::parse('Ночь первая. Пустырь.');
 
         $this->assertNull($parsed['importance']);
         $this->assertNull($parsed['emotion']);
@@ -271,33 +277,33 @@ class DiaryTest extends TestCase
 
     public function test_metadata_parser_normalizes_aliases(): void
     {
-        $parsed = \App\Diary\DiaryMetadataParser::parse("[0.700 fury]\n\nтекст");
+        $parsed = DiaryMetadataParser::parse("[0.700 fury]\n\nтекст");
 
-        $this->assertSame(\App\Enums\DiaryEmotion::Anger, $parsed['emotion']);
+        $this->assertSame(DiaryEmotion::Anger, $parsed['emotion']);
     }
 
     public function test_metadata_parser_clamps_out_of_range_importance(): void
     {
-        $parsed = \App\Diary\DiaryMetadataParser::parse("[1.500 joy]\n\nтекст");
+        $parsed = DiaryMetadataParser::parse("[1.500 joy]\n\nтекст");
 
         $this->assertSame(1.0, $parsed['importance']);
     }
 
     public function test_blend_score_boosts_important_entries(): void
     {
-        $service = app(\App\Diary\DiaryRetrievalService::class);
+        $service = app(DiaryRetrievalService::class);
 
         // sim=0.6 imp=0.9 → 0.6 × 0.97 = 0.582
-        $boosted = \App\Diary\DiaryRetrievalService::blendScore(0.60, 0.9);
+        $boosted = DiaryRetrievalService::blendScore(0.60, 0.9);
         // sim=0.58 imp=null → 0.58
-        $plain = \App\Diary\DiaryRetrievalService::blendScore(0.58, null);
+        $plain = DiaryRetrievalService::blendScore(0.58, null);
 
         $this->assertGreaterThan($plain, $boosted);
     }
 
     public function test_blend_score_null_importance_is_identity(): void
     {
-        $this->assertSame(0.62, \App\Diary\DiaryRetrievalService::blendScore(0.62, null));
+        $this->assertSame(0.62, DiaryRetrievalService::blendScore(0.62, null));
     }
 
     private function createDiaryEntry(

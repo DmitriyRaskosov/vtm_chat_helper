@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\DiaryEmotion;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,7 +29,7 @@ class CharacterDiaryEntry extends Model
             'to_message_id' => 'integer',
             'is_stale' => 'boolean',
             'importance' => 'float',
-            'emotion' => \App\Enums\DiaryEmotion::class,
+            'emotion' => DiaryEmotion::class,
         ];
     }
 

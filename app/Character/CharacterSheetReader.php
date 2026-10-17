@@ -4,11 +4,11 @@ namespace App\Character;
 
 use App\Models\Character;
 use App\Models\WorldEntity;
-use Illuminate\Database\Eloquent\Builder;
+use App\World\WorldRelationService;
 
 class CharacterSheetReader
 {
-    public function __construct(private \App\World\WorldRelationService $relations) {}
+    public function __construct(private WorldRelationService $relations) {}
 
     /**
      * @return array<string, mixed>
