@@ -22,6 +22,8 @@ use App\Http\Requests\UpdateCharacterDisciplinesRequest;
 use App\Http\Requests\UpdateCharacterIdentityRequest;
 use App\Http\Requests\UpdateCharacterPlaceRequest;
 use App\Http\Requests\UpdateCharacterTraitsRequest;
+use App\Http\Resources\CharacterResource;
+use App\Http\Resources\CharacterSheetResource;
 use App\Models\Character;
 use App\Models\SceneParticipant;
 use App\Scene\ActiveSceneResolver;
@@ -74,15 +76,18 @@ class CharacterSheetController extends Controller
 
         $characters = $query->with('entity')->orderBy('id')->get();
 
-        $payload = $characters->map(function (Character $character): array {
-            return $this->listItem($character);
-        })->values();
+        $archivedModels = $user?->isStoryteller()
+            ? Character::query()
+                ->where('chronicle_id', $chronicleId)
+                ->where('is_active', false)
+                ->with('entity')
+                ->orderBy('id')
+                ->get()
+            : collect();
 
         return response()->json([
-            'characters' => $payload,
-            'archived' => $user?->isStoryteller()
-                ? $this->archivedList($chronicleId)
-                : [],
+            'characters' => CharacterResource::collection($characters)->toArray($request),
+            'archived' => CharacterResource::collection($archivedModels)->toArray($request),
         ]);
     }
 
@@ -90,14 +95,18 @@ class CharacterSheetController extends Controller
     {
         $character = $this->creation->create($request->validated());
 
-        return response()->json(['character' => $this->reader->aggregate($character)], 201);
+        return response()->json([
+            'character' => (new CharacterSheetResource($character, $this->reader))->toArray($request),
+        ], 201);
     }
 
     public function show(Request $request, Character $character): JsonResponse
     {
         CharacterAccess::abortUnlessManagesSheet($request->user(), $character);
 
-        return response()->json(['character' => $this->reader->aggregate($character)]);
+        return response()->json([
+            'character' => (new CharacterSheetResource($character, $this->reader))->toArray($request),
+        ]);
     }
 
     public function update(UpdateCharacterIdentityRequest $request, Character $character): JsonResponse
@@ -106,7 +115,9 @@ class CharacterSheetController extends Controller
 
         $this->identity->update($character, $request->validated());
 
-        return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
+        return response()->json([
+            'character' => (new CharacterSheetResource($character->refresh(), $this->reader))->toArray($request),
+        ]);
     }
 
     public function updateDisciplines(UpdateCharacterDisciplinesRequest $request, Character $character): JsonResponse
@@ -115,7 +126,9 @@ class CharacterSheetController extends Controller
 
         $this->disciplines->sync($character, $request->validated('disciplines'));
 
-        return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
+        return response()->json([
+            'character' => (new CharacterSheetResource($character->refresh(), $this->reader))->toArray($request),
+        ]);
     }
 
     public function updateBiography(UpdateCharacterBiographyRequest $request, Character $character): JsonResponse
@@ -137,7 +150,9 @@ class CharacterSheetController extends Controller
         } catch (BiographyUnchangedException) {
         }
 
-        return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
+        return response()->json([
+            'character' => (new CharacterSheetResource($character->refresh(), $this->reader))->toArray($request),
+        ]);
     }
 
     public function updateTraits(UpdateCharacterTraitsRequest $request, Character $character): JsonResponse
@@ -146,7 +161,9 @@ class CharacterSheetController extends Controller
 
         $this->traits->sync($character, $request->validated('traits') ?? []);
 
-        return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
+        return response()->json([
+            'character' => (new CharacterSheetResource($character->refresh(), $this->reader))->toArray($request),
+        ]);
     }
 
     public function updatePlace(UpdateCharacterPlaceRequest $request, Character $character): JsonResponse
@@ -155,21 +172,27 @@ class CharacterSheetController extends Controller
 
         $this->place->apply($character, $request->validated());
 
-        return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
+        return response()->json([
+            'character' => (new CharacterSheetResource($character->refresh(), $this->reader))->toArray($request),
+        ]);
     }
 
-    public function archive(Character $character): JsonResponse
+    public function archive(Request $request, Character $character): JsonResponse
     {
         $this->archiveService->archive($character);
 
-        return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
+        return response()->json([
+            'character' => (new CharacterSheetResource($character->refresh(), $this->reader))->toArray($request),
+        ]);
     }
 
-    public function restore(Character $character): JsonResponse
+    public function restore(Request $request, Character $character): JsonResponse
     {
         $this->archiveService->restore($character);
 
-        return response()->json(['character' => $this->reader->aggregate($character->refresh())]);
+        return response()->json([
+            'character' => (new CharacterSheetResource($character->refresh(), $this->reader))->toArray($request),
+        ]);
     }
 
     /**
@@ -193,42 +216,5 @@ class CharacterSheetController extends Controller
             ->all();
 
         return array_values(array_unique([...$visibleIds, ...$participantIds]));
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function listItem(Character $character): array
-    {
-        return [
-            'id' => (int) $character->id,
-            'canonical_name' => $character->entity === null
-                ? ''
-                : (string) $character->entity->canonical_name,
-            'character_type' => $character->character_type->value,
-            'user_id' => $character->user_id === null ? null : (int) $character->user_id,
-        ];
-    }
-
-    /**
-     * @return list<array<string, mixed>>
-     */
-    private function archivedList(int $chronicleId): array
-    {
-        $characters = Character::query()
-            ->where('chronicle_id', $chronicleId)
-            ->where('is_active', false)
-            ->with('entity')
-            ->orderBy('id')
-            ->get();
-
-        return $characters->map(fn (Character $character): array => [
-            'id' => (int) $character->id,
-            'canonical_name' => $character->entity === null
-                ? ''
-                : (string) $character->entity->canonical_name,
-            'character_type' => $character->character_type->value,
-            'user_id' => $character->user_id === null ? null : (int) $character->user_id,
-        ])->values()->all();
     }
 }

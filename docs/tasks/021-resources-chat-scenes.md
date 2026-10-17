@@ -2,7 +2,7 @@
 
 - **Stage:** 2
 - **Part:** 3
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 020
 - **Risk:** med (чат опрашивает `GET /messages` каждые 3 секунды)
 - **Разрешённые зависимости:** нет

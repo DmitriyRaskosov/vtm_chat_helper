@@ -2,30 +2,32 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\CharacterType;
 use App\Enums\SceneParticipantRole;
 use App\Http\Requests\StoreSceneParticipantRequest;
+use App\Http\Resources\SceneParticipantResource;
 use App\Models\Character;
 use App\Models\Scene;
 use App\Models\SceneParticipant;
 use App\Scene\SceneParticipantService;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\Request;
 
 class SceneParticipantController extends Controller
 {
     public function __construct(private SceneParticipantService $participants) {}
 
-    public function index(Scene $scene): JsonResponse
+    public function index(Request $request, Scene $scene): JsonResponse
     {
         $participants = $this->participants->list($scene);
         $characters = $this->participants->charactersByIds($participants->pluck('character_id'));
 
         return response()->json([
             'participants' => $participants
-                ->map(fn (SceneParticipant $participant): array => $this->serialize(
+                ->map(fn (SceneParticipant $participant) => (new SceneParticipantResource(
                     $participant,
                     $characters->get($participant->character_id),
-                ))
+                    $this->participants,
+                ))->toArray($request))
                 ->values(),
         ]);
     }
@@ -40,42 +42,22 @@ class SceneParticipantController extends Controller
         );
 
         return response()->json([
-            'participant' => $this->serialize($entered['participant'], $entered['character']),
+            'participant' => (new SceneParticipantResource(
+                $entered['participant'],
+                $entered['character'],
+                $this->participants,
+            ))->toArray($request),
         ], 201);
     }
 
-    public function leave(Scene $scene, Character $character): JsonResponse
+    public function leave(Request $request, Scene $scene, Character $character): JsonResponse
     {
         $character->loadMissing('entity');
         $participant = $this->participants->leave($scene, $character);
 
-        return response()->json(['participant' => $this->serialize($participant, $character)]);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function serialize(SceneParticipant $participant, ?Character $character = null): array
-    {
-        if ($character === null) {
-            $character = $this->participants->characterForSerialization($participant);
-        }
-
-        $name = $character?->entity?->canonical_name;
-        $characterType = $character?->character_type;
-
-        return [
-            'id' => (int) $participant->id,
-            'scene_id' => (int) $participant->scene_id,
-            'character_id' => (int) $participant->character_id,
-            'character_name' => is_string($name) && $name !== '' ? $name : null,
-            'character_type' => $characterType instanceof CharacterType ? $characterType->value : $characterType,
-            'user_id' => $character?->user_id === null ? null : (int) $character->user_id,
-            'role' => $participant->role->value,
-            'visible' => (bool) $participant->visible,
-            'is_current' => (bool) $participant->is_current,
-            'entered_at' => $participant->entered_at?->toISOString(),
-            'left_at' => $participant->left_at?->toISOString(),
-        ];
+        return response()->json([
+            'participant' => (new SceneParticipantResource($participant, $character, $this->participants))
+                ->toArray($request),
+        ]);
     }
 }

@@ -2,7 +2,7 @@
 
 - **Stage:** 2
 - **Part:** 3
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 029
 - **Risk:** med (форма JSON листа читается фронтом)
 - **Разрешённые зависимости:** нет
