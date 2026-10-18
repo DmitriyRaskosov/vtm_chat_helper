@@ -49,9 +49,10 @@ class CharacterAuthorizationTest extends TestCase
     public function test_player_cannot_create_character(): void
     {
         $player = User::factory()->create();
+        $this->joinChronicle($player, $this->chronicle, ChronicleRole::Player);
 
         $this->actingAs($player, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Запрещённый',
                 'character_type' => 'npc',
             ])
@@ -74,7 +75,7 @@ class CharacterAuthorizationTest extends TestCase
         $this->createPlayerCharacter($player, 'Герой');
 
         $this->actingAs($player, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                 'scene_id' => $sceneId,
                 'character_id' => $npcId,
                 'body' => 'От имени NPC',
@@ -85,7 +86,7 @@ class CharacterAuthorizationTest extends TestCase
     private function createNpc(string $name): int
     {
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => $name,
                 'character_type' => 'npc',
             ]);
@@ -103,7 +104,7 @@ class CharacterAuthorizationTest extends TestCase
             ->create();
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => $name,
                 'character_type' => 'player',
                 'user_id' => $player->id,

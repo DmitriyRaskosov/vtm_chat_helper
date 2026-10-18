@@ -50,6 +50,7 @@ class ChatJsonShapeTest extends TestCase
             'created_by' => $this->storyteller->id,
         ]);
         $this->joinChronicle($this->storyteller, $this->chronicle, ChronicleRole::Storyteller);
+        $this->joinChronicle($this->player, $this->chronicle, ChronicleRole::Player);
 
         $gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $this->chronicle->id,
@@ -68,14 +69,14 @@ class ChatJsonShapeTest extends TestCase
     public function test_get_messages_item_shape(): void
     {
         $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                 'body' => 'Текст',
                 'scene_id' => $this->sceneId,
             ])
             ->assertStatus(201);
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->getJson('/api/messages?scene_id='.$this->sceneId);
+            ->getJson($this->chronicleApi($this->chronicle, 'messages').'?scene_id='.$this->sceneId);
 
         $response->assertStatus(200);
         $response->assertJsonStructure(['messages' => ['*' => self::MESSAGE_KEYS]]);
@@ -91,25 +92,25 @@ class ChatJsonShapeTest extends TestCase
     public function test_message_mine_true_for_author_and_false_for_other_player(): void
     {
         $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                 'body' => 'От мастера',
                 'scene_id' => $this->sceneId,
             ])
             ->assertStatus(201);
 
         $asAuthor = $this->actingAs($this->storyteller, 'sanctum')
-            ->getJson('/api/messages?scene_id='.$this->sceneId);
+            ->getJson($this->chronicleApi($this->chronicle, 'messages').'?scene_id='.$this->sceneId);
         $asAuthor->assertJsonPath('messages.0.mine', true);
 
         $asPlayer = $this->actingAs($this->player, 'sanctum')
-            ->getJson('/api/messages?scene_id='.$this->sceneId);
+            ->getJson($this->chronicleApi($this->chronicle, 'messages').'?scene_id='.$this->sceneId);
         $asPlayer->assertJsonPath('messages.0.mine', false);
     }
 
     public function test_post_message_response_shape(): void
     {
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                 'body' => 'Новое',
                 'scene_id' => $this->sceneId,
             ]);
@@ -122,7 +123,7 @@ class ChatJsonShapeTest extends TestCase
     public function test_toggle_ooc_and_restore_message_shapes(): void
     {
         $create = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                 'body' => 'Для правок',
                 'scene_id' => $this->sceneId,
             ]);
@@ -139,7 +140,7 @@ class ChatJsonShapeTest extends TestCase
             ->assertStatus(204);
 
         $deletedList = $this->actingAs($this->storyteller, 'sanctum')
-            ->getJson('/api/messages?scene_id='.$this->sceneId.'&include_deleted=1');
+            ->getJson($this->chronicleApi($this->chronicle, 'messages').'?scene_id='.$this->sceneId.'&include_deleted=1');
         $deletedList->assertJsonPath('messages.0.is_deleted', true);
 
         $restored = $this->actingAs($this->storyteller, 'sanctum')

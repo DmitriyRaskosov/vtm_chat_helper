@@ -105,7 +105,7 @@ class SceneTest extends TestCase
     public function test_storyteller_can_add_participant(): void
     {
         $npc = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Иван',
                 'character_type' => 'npc',
             ]);

@@ -50,6 +50,7 @@ class MessageEditTest extends TestCase
             'created_by' => $this->storyteller->id,
         ]);
         $this->joinChronicle($this->storyteller, $this->chronicle, ChronicleRole::Storyteller);
+        $this->joinChronicle($this->player, $this->chronicle, ChronicleRole::Player);
 
         $this->gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $this->chronicle->id,
@@ -64,7 +65,7 @@ class MessageEditTest extends TestCase
         ]);
 
         $npcResponse = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Абрахам',
                 'character_type' => 'npc',
             ]);
@@ -210,7 +211,7 @@ class MessageEditTest extends TestCase
     private function createMessage(User $author, string $body): Message
     {
         $response = $this->actingAs($author, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                 'body' => $body,
                 'scene_id' => $this->scene->id,
             ]);

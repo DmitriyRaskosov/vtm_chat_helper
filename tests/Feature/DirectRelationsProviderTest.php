@@ -24,20 +24,22 @@ class DirectRelationsProviderTest extends TestCase
 {
     use JoinsChronicle;
 
+    private Chronicle $chronicle;
+
     public function test_assemble_includes_active_neighbor_relation(): void
     {
         $this->seed(CanonSectSeeder::class);
         $this->seed(CanonClanSeeder::class);
 
         $storyteller = User::factory()->storyteller()->create();
-        $chronicle = Chronicle::factory()->create([
+        $this->chronicle = Chronicle::factory()->create([
             'title' => 'Тестовая хроника',
             'created_by' => $storyteller->id,
         ]);
-        $this->joinChronicle($storyteller, $chronicle, ChronicleRole::Storyteller);
+        $this->joinChronicle($storyteller, $this->chronicle, ChronicleRole::Storyteller);
 
         $gameSession = GameSession::factory()->active()->create([
-            'chronicle_id' => $chronicle->id,
+            'chronicle_id' => $this->chronicle->id,
             'title' => 'Сессия',
             'created_by' => $storyteller->id,
         ]);
@@ -49,7 +51,7 @@ class DirectRelationsProviderTest extends TestCase
         ]);
 
         $sourceResponse = $this->actingAs($storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Виктор',
                 'character_type' => 'npc',
             ]);
@@ -58,7 +60,7 @@ class DirectRelationsProviderTest extends TestCase
         $sourceEntity = WorldEntity::query()->findOrFail($sourceCharacter->id);
 
         $targetResponse = $this->actingAs($storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Мария',
                 'character_type' => 'npc',
             ]);
@@ -66,7 +68,7 @@ class DirectRelationsProviderTest extends TestCase
         $targetEntity = WorldEntity::query()->findOrFail($targetResponse->json('character.id'));
 
         WorldRelation::query()->create([
-            'chronicle_id' => $chronicle->id,
+            'chronicle_id' => $this->chronicle->id,
             'source_type' => 'character',
             'source_id' => $sourceEntity->id,
             'target_type' => 'character',
@@ -88,7 +90,7 @@ class DirectRelationsProviderTest extends TestCase
             ),
             $scene,
             $gameSession,
-            $chronicle,
+            $this->chronicle,
             $sourceCharacter,
             $sourceEntity,
         );

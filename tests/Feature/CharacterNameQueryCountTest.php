@@ -19,11 +19,11 @@ class CharacterNameQueryCountTest extends TestCase
     /** До задачи 023: 5; после 038 (членство рассказчика): 6. */
     private const MAX_QUERIES_CHARACTER_SHOW = 6;
 
-    /** До задачи 023: 5; после 038 (членство рассказчика): 6. */
-    private const MAX_QUERIES_CHARACTER_INDEX = 6;
+    /** До задачи 023: 5; после 038: 6; после 039: 8 (+2 authorize('view', chronicle) → chronicle_members.exists() + CurrentChronicle::get() → find((int) $chronicle)). */
+    private const MAX_QUERIES_CHARACTER_INDEX = 8;
 
-    /** До задачи 023: 4. */
-    private const MAX_QUERIES_MESSAGES_INDEX = 4;
+    /** До задачи 023: 4; после 039: 6 (+2 authorize('view', chronicle) → chronicle_members.exists() + CurrentChronicle::get() → find((int) $chronicle)). */
+    private const MAX_QUERIES_MESSAGES_INDEX = 6;
 
     /** До задачи 023: 2. */
     private const MAX_QUERIES_SCENE_PARTICIPANTS = 2;
@@ -52,7 +52,7 @@ class CharacterNameQueryCountTest extends TestCase
 
         foreach (['NPC 1', 'NPC 2', 'NPC 3', 'NPC 4', 'NPC 5'] as $name) {
             $this->actingAs($this->storyteller, 'sanctum')
-                ->postJson('/api/characters', [
+                ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                     'canonical_name' => $name,
                     'character_type' => 'npc',
                 ])
@@ -60,14 +60,14 @@ class CharacterNameQueryCountTest extends TestCase
         }
 
         $this->characterId = (int) $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Герой листа',
                 'character_type' => 'npc',
             ])
             ->json('character.id');
 
         $session = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/game-sessions', ['title' => 'Сессия'])
+            ->postJson($this->chronicleApi($this->chronicle, 'game-sessions'), ['title' => 'Сессия'])
             ->assertStatus(201);
 
         $this->sceneId = (int) $this->actingAs($this->storyteller, 'sanctum')
@@ -78,7 +78,7 @@ class CharacterNameQueryCountTest extends TestCase
 
         for ($i = 1; $i <= 20; $i++) {
             $this->actingAs($this->storyteller, 'sanctum')
-                ->postJson('/api/messages', [
+                ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                     'scene_id' => $this->sceneId,
                     'body' => "Сообщение {$i}",
                 ])
@@ -107,7 +107,7 @@ class CharacterNameQueryCountTest extends TestCase
         $response = null;
         $count = $this->countQueriesForRequest(function () use (&$response): void {
             $response = $this->actingAs($this->storyteller, 'sanctum')
-                ->getJson('/api/characters');
+                ->getJson($this->chronicleApi($this->chronicle, 'characters'));
         });
         $response->assertStatus(200);
 
@@ -121,7 +121,7 @@ class CharacterNameQueryCountTest extends TestCase
     public function test_get_messages_query_count_within_budget(): void
     {
         $count = $this->countQueriesForRequest(fn () => $this->actingAs($this->storyteller, 'sanctum')
-            ->getJson('/api/messages?scene_id='.$this->sceneId));
+            ->getJson($this->chronicleApi($this->chronicle, 'messages').'?scene_id='.$this->sceneId));
 
         $this->assertLessThanOrEqual(
             self::MAX_QUERIES_MESSAGES_INDEX,

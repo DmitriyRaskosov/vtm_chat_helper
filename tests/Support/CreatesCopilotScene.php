@@ -55,7 +55,7 @@ trait CreatesCopilotScene
         $this->scene = Scene::query()->findOrFail($this->sceneId);
 
         $npcResponse = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Иван',
                 'character_type' => 'npc',
             ]);

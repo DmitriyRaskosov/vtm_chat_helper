@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Chronicle\CurrentChronicle;
 use App\Http\Requests\StoreMessageRequest;
 use App\Http\Resources\MessageResource;
 use App\Messages\MessageEditService;
@@ -21,10 +22,13 @@ class ChatController extends Controller
         private ActiveSceneResolver $activeSceneResolver,
         private MessageService $messages,
         private MessageEditService $messageEdit,
+        private CurrentChronicle $currentChronicle,
     ) {}
 
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('view', $this->currentChronicle->get());
+
         $validated = $request->validate([
             'scene_id' => ['sometimes', 'integer', 'exists:scenes,id'],
             'chronicle_id' => ['prohibited'],
@@ -54,6 +58,8 @@ class ChatController extends Controller
 
     public function store(StoreMessageRequest $request): JsonResponse
     {
+        $this->authorize('view', $this->currentChronicle->get());
+
         $validated = $request->validated();
         $sceneId = $validated['scene_id'] ?? null;
         $scene = $this->activeSceneResolver->resolveActive(

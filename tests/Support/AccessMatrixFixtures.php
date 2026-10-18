@@ -226,7 +226,7 @@ final class AccessMatrixFixtures
             ];
         }
 
-        if ($method === 'POST' && $uriTemplate === 'messages') {
+        if ($method === 'POST' && $uriTemplate === 'chronicles/{chronicle}/messages') {
             if ($role === 'storyteller' || $role === 'player_foreign') {
                 return [
                     'scene_id' => $this->scene->id,
@@ -242,7 +242,7 @@ final class AccessMatrixFixtures
             ];
         }
 
-        if ($method === 'POST' && $uriTemplate === 'characters') {
+        if ($method === 'POST' && $uriTemplate === 'chronicles/{chronicle}/characters') {
             return [
                 'canonical_name' => 'Новый персонаж',
                 'character_type' => 'npc',
@@ -261,7 +261,7 @@ final class AccessMatrixFixtures
             ];
         }
 
-        if ($method === 'POST' && $uriTemplate === 'game-sessions') {
+        if ($method === 'POST' && $uriTemplate === 'chronicles/{chronicle}/game-sessions') {
             return ['title' => 'Новая сессия'];
         }
 
@@ -318,7 +318,7 @@ final class AccessMatrixFixtures
             return ['entry' => 'Обновлённая запись дневника.'];
         }
 
-        if ($method === 'POST' && $uriTemplate === 'copilot/drafts') {
+        if ($method === 'POST' && $uriTemplate === 'chronicles/{chronicle}/copilot/drafts') {
             return [
                 'character_id' => $this->npc->id,
                 'prompt' => 'Синопсис для Copilot',

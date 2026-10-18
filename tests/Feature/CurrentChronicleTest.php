@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use App\Chronicle\CurrentChronicle;
+use App\Chronicle\Exceptions\NoChronicleException;
 use App\Enums\ChronicleRole;
 use App\Models\Chronicle;
 use App\Models\GameSession;
@@ -27,16 +29,32 @@ class CurrentChronicleTest extends TestCase
         $this->storyteller = User::factory()->storyteller()->create();
     }
 
-    public function test_active_game_session_without_chronicles_returns_409(): void
+    public function test_current_chronicle_without_route_parameter_returns_409(): void
     {
-        $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->getJson('/api/game-sessions/active');
-
-        $response->assertStatus(409);
-        $response->assertJsonPath('message', 'There is no available chronicle.');
+        try {
+            $this->app->make(CurrentChronicle::class)->get();
+            $this->fail('Expected NoChronicleException.');
+        } catch (NoChronicleException $e) {
+            $this->assertSame('There is no available chronicle.', $e->getMessage());
+        }
     }
 
-    public function test_current_chronicle_is_first_by_id(): void
+    public function test_active_game_session_without_active_session_returns_null(): void
+    {
+        $chronicle = Chronicle::factory()->create([
+            'title' => 'Пустая',
+            'created_by' => $this->storyteller->id,
+        ]);
+        $this->joinChronicle($this->storyteller, $chronicle, ChronicleRole::Storyteller);
+
+        $response = $this->actingAs($this->storyteller, 'sanctum')
+            ->getJson($this->chronicleApi($chronicle, 'game-sessions/active'));
+
+        $response->assertStatus(200);
+        $response->assertJsonPath('game_session', null);
+    }
+
+    public function test_current_chronicle_comes_from_url_not_minimum_id(): void
     {
         $first = Chronicle::factory()->create([
             'title' => 'Первая',
@@ -47,35 +65,37 @@ class CurrentChronicleTest extends TestCase
             'title' => 'Вторая',
             'created_by' => $this->storyteller->id,
         ]);
+        $this->joinChronicle($this->storyteller, $second, ChronicleRole::Storyteller);
 
-        $firstSession = GameSession::factory()->active()->create([
+        GameSession::factory()->active()->create([
             'chronicle_id' => $first->id,
             'title' => 'Сессия первой',
             'created_by' => $this->storyteller->id,
         ]);
-        GameSession::factory()->active()->create([
+        $secondSession = GameSession::factory()->active()->create([
             'chronicle_id' => $second->id,
             'title' => 'Сессия второй',
             'created_by' => $this->storyteller->id,
         ]);
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->getJson('/api/game-sessions/active');
+            ->getJson($this->chronicleApi($second, 'game-sessions/active'));
 
         $response->assertStatus(200);
-        $response->assertJsonPath('game_session.id', $firstSession->id);
-        $response->assertJsonPath('game_session.chronicle_id', $first->id);
+        $response->assertJsonPath('game_session.id', $secondSession->id);
+        $response->assertJsonPath('game_session.chronicle_id', $second->id);
     }
 
     public function test_chronicle_id_query_on_characters_list_returns_422(): void
     {
-        Chronicle::factory()->create([
+        $chronicle = Chronicle::factory()->create([
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);
+        $this->joinChronicle($this->storyteller, $chronicle, ChronicleRole::Storyteller);
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->getJson('/api/characters?chronicle_id=1');
+            ->getJson($this->chronicleApi($chronicle, 'characters').'?chronicle_id=1');
 
         $response->assertStatus(422);
         $response->assertJsonValidationErrors(['chronicle_id']);
@@ -90,7 +110,7 @@ class CurrentChronicleTest extends TestCase
         $this->joinChronicle($this->storyteller, $chronicle, ChronicleRole::Storyteller);
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($chronicle, 'characters'), [
                 'canonical_name' => 'Иван',
                 'character_type' => 'npc',
                 'chronicle_id' => $chronicle->id,
@@ -120,14 +140,14 @@ class CurrentChronicleTest extends TestCase
         $sceneId = (int) $scene->json('scene.id');
 
         $npc = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($chronicle, 'characters'), [
                 'canonical_name' => 'NPC',
                 'character_type' => 'npc',
             ]);
         $npc->assertStatus(201);
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($chronicle, 'messages'), [
                 'body' => 'Привет',
                 'scene_id' => $sceneId,
                 'character_id' => $npc->json('character.id'),
@@ -158,7 +178,7 @@ class CurrentChronicleTest extends TestCase
         $sceneId = (int) $scene->json('scene.id');
 
         $npc = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($chronicle, 'characters'), [
                 'canonical_name' => 'NPC',
                 'character_type' => 'npc',
             ]);
@@ -170,7 +190,7 @@ class CurrentChronicleTest extends TestCase
             ->push('{"drafts":["one","two","three"]}');
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/copilot/drafts', [
+            ->postJson($this->chronicleApi($chronicle, 'copilot/drafts'), [
                 'character_id' => $npcId,
                 'prompt' => 'Синопсис',
                 'scene_id' => $sceneId,

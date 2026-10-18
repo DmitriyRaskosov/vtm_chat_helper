@@ -53,6 +53,10 @@
    - `POST .../messages` с персонажем чужой хроники → 409, сообщения нет;
    - `scene_id` чужой хроники на `GET /api/chronicles/{эта}/messages` не возвращает её сообщения;
    - запись дневника для NPC другой хроники на сцене этой — исключение, строки нет.
+   - CurrentChronicle::get(): убрать fallback find((int) $chronicle) после 
+  стабильного route model binding (добавить Chronicle $chronicle 
+  в методы контроллеров, тогда Route::parameter вернёт модель). 
+  Сейчас fallback даёт +1 SQL на каждом запросе.
 
 ## Definition of Done
 

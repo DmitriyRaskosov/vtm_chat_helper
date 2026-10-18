@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Character\Exceptions\InvalidCharacterInputException;
+use App\Chronicle\CurrentChronicle;
 use App\Http\Requests\CopilotDraftsRequest;
 use App\Http\Resources\CopilotDraftsResource;
 use App\Llm\CopilotDraftService;
@@ -16,10 +17,13 @@ class CopilotController extends Controller
     public function __construct(
         private ActiveSceneResolver $activeSceneResolver,
         private CopilotDraftService $copilotDrafts,
+        private CurrentChronicle $currentChronicle,
     ) {}
 
     public function drafts(CopilotDraftsRequest $request): JsonResponse
     {
+        $this->authorize('view', $this->currentChronicle->get());
+
         $sceneId = $request->validated('scene_id') ?? null;
         $scene = $this->activeSceneResolver->resolveActive(
             $sceneId === null ? null : (int) $sceneId,

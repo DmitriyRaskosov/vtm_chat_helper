@@ -65,7 +65,7 @@ class DiarySchedulerTest extends TestCase
         ]);
 
         $npcResponse = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Абрахам',
                 'character_type' => 'npc',
             ]);
@@ -90,7 +90,7 @@ class DiarySchedulerTest extends TestCase
 
         foreach (range(1, 3) as $i) {
             $this->actingAs($this->storyteller, 'sanctum')
-                ->postJson('/api/messages', [
+                ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                     'scene_id' => $this->scene->id,
                     'body' => "Сообщение номер {$i}",
                 ])
@@ -109,7 +109,7 @@ class DiarySchedulerTest extends TestCase
 
         foreach (range(1, 2) as $i) {
             $this->actingAs($this->storyteller, 'sanctum')
-                ->postJson('/api/messages', [
+                ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                     'scene_id' => $this->scene->id,
                     'body' => "Сообщение номер {$i}",
                 ])
@@ -137,7 +137,7 @@ class DiarySchedulerTest extends TestCase
         Queue::fake();
 
         $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                 'scene_id' => $this->scene->id,
                 'body' => 'Реплика NPC',
             ])
@@ -166,7 +166,7 @@ class DiarySchedulerTest extends TestCase
     public function test_message_edit_marks_overlapping_diary_entries_stale(): void
     {
         $messageResponse = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                 'scene_id' => $this->scene->id,
                 'body' => 'Целевое сообщение',
             ]);

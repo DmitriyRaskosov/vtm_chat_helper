@@ -1,7 +1,7 @@
 # 039 — Маршруты внутри хроники и CurrentChronicle из URL
 
 - **Stage:** 3
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 038
 - **Risk:** high
 - **Part:** 4

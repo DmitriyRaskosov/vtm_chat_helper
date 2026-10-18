@@ -13,8 +13,6 @@ use App\Http\Controllers\GameSessionController;
 use App\Http\Controllers\SceneContextController;
 use App\Http\Controllers\SceneController;
 use App\Http\Controllers\SceneParticipantController;
-use App\Models\Character;
-use App\Models\GameSession;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [RegisterController::class, 'store']);
@@ -29,9 +27,16 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/chronicles/{chronicle}/invitations', [ChronicleInvitationController::class, 'store']);
     Route::delete('/chronicles/{chronicle}/invitations/{invitation}', [ChronicleInvitationController::class, 'destroy']);
     Route::post('/invitations/{token}/accept', [ChronicleInvitationController::class, 'accept']);
-    Route::get('/game-sessions/active', [GameSessionController::class, 'active']);
-    Route::get('/messages', [ChatController::class, 'index']);
-    Route::post('/messages', [ChatController::class, 'store']);
+
+    Route::prefix('/chronicles/{chronicle}')->scopeBindings()->group(function () {
+        Route::get('/game-sessions/active', [GameSessionController::class, 'active']);
+        Route::get('/messages', [ChatController::class, 'index']);
+        Route::post('/messages', [ChatController::class, 'store']);
+        Route::get('/characters', [CharacterSheetController::class, 'index']);
+        Route::post('/characters', [CharacterSheetController::class, 'store']);
+        Route::post('/game-sessions', [GameSessionController::class, 'store']);
+        Route::post('/copilot/drafts', [CopilotController::class, 'drafts']);
+    });
 
     Route::patch('/messages/{message}/ooc', [ChatController::class, 'toggleOoc']);
     Route::delete('/messages/{message}', [ChatController::class, 'destroy']);
@@ -40,11 +45,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/character-sheet/catalog', [CharacterSheetController::class, 'catalog']);
 
-    Route::get('/characters', [CharacterSheetController::class, 'index']);
     Route::get('/characters/{character}', [CharacterSheetController::class, 'show']);
-
-    Route::post('/characters', [CharacterSheetController::class, 'store'])
-        ->can('create', Character::class);
 
     Route::patch('/characters/{character}', [CharacterSheetController::class, 'update']);
     Route::put('/characters/{character}/disciplines', [CharacterSheetController::class, 'updateDisciplines']);
@@ -63,11 +64,6 @@ Route::middleware('auth:sanctum')->group(function () {
         ->can('view', 'scene');
     Route::get('/scenes/{scene}/participants', [SceneParticipantController::class, 'index'])
         ->can('view', 'scene');
-
-    Route::post('/copilot/drafts', [CopilotController::class, 'drafts']);
-
-    Route::post('/game-sessions', [GameSessionController::class, 'store'])
-        ->can('create', GameSession::class);
 
     Route::post('/game-sessions/{gameSession}/scenes', [SceneController::class, 'store']);
 

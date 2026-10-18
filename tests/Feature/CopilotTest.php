@@ -54,7 +54,7 @@ class CopilotTest extends TestCase
         $this->sceneId = (int) $created->json('scene.id');
 
         $npc = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Иван',
                 'character_type' => 'npc',
             ]);
@@ -69,7 +69,7 @@ class CopilotTest extends TestCase
             ->push('{"drafts":["one","two","three"]}');
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/copilot/drafts', [
+            ->postJson($this->chronicleApi($this->chronicle, 'copilot/drafts'), [
                 'character_id' => $this->npcId,
                 'prompt' => 'Мрачно смотрит',
                 'scene_id' => $this->sceneId,
@@ -91,7 +91,7 @@ class CopilotTest extends TestCase
         $player = User::factory()->create();
 
         $response = $this->actingAs($player, 'sanctum')
-            ->postJson('/api/copilot/drafts', [
+            ->postJson($this->chronicleApi($this->chronicle, 'copilot/drafts'), [
                 'character_id' => $this->npcId,
                 'prompt' => 'Мрачно смотрит',
                 'scene_id' => $this->sceneId,
@@ -113,7 +113,7 @@ class CopilotTest extends TestCase
         $second->assertStatus(201);
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/copilot/drafts', [
+            ->postJson($this->chronicleApi($this->chronicle, 'copilot/drafts'), [
                 'character_id' => $this->npcId,
                 'prompt' => 'Мрачно смотрит',
                 'scene_id' => $second->json('scene.id'),
@@ -127,7 +127,7 @@ class CopilotTest extends TestCase
         $this->fakeChat();
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/copilot/drafts', [
+            ->postJson($this->chronicleApi($this->chronicle, 'copilot/drafts'), [
                 'character_id' => $this->npcId,
                 'prompt' => 'Мрачно смотрит',
                 'scene_id' => $this->sceneId,
@@ -145,7 +145,7 @@ class CopilotTest extends TestCase
             ->push('   ');
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/copilot/drafts', [
+            ->postJson($this->chronicleApi($this->chronicle, 'copilot/drafts'), [
                 'character_id' => $this->npcId,
                 'prompt' => 'Мрачно смотрит',
                 'scene_id' => $this->sceneId,
@@ -168,7 +168,7 @@ class CopilotTest extends TestCase
         $prompt = 'Мрачно смотрит';
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/copilot/drafts', [
+            ->postJson($this->chronicleApi($this->chronicle, 'copilot/drafts'), [
                 'character_id' => $this->npcId,
                 'prompt' => $prompt,
                 'scene_id' => $this->sceneId,

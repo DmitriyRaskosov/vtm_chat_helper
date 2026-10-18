@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Chronicle\CurrentChronicle;
 use App\Http\Requests\StoreGameSessionRequest;
 use App\Http\Resources\GameSessionResource;
+use App\Models\GameSession;
 use App\Scene\GameSessionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -18,6 +19,8 @@ class GameSessionController extends Controller
 
     public function active(Request $request): JsonResponse
     {
+        $this->authorize('view', $this->currentChronicle->get());
+
         $request->validate([
             'chronicle_id' => ['prohibited'],
         ]);
@@ -34,6 +37,9 @@ class GameSessionController extends Controller
 
     public function store(StoreGameSessionRequest $request): JsonResponse
     {
+        $this->authorize('view', $this->currentChronicle->get());
+        $this->authorize('create', GameSession::class);
+
         $gameSession = $this->sessions->startNew(
             $this->currentChronicle->id(),
             $request->validated('title'),

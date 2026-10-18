@@ -4,6 +4,7 @@ namespace App\Chronicle;
 
 use App\Chronicle\Exceptions\NoChronicleException;
 use App\Models\Chronicle;
+use Illuminate\Support\Facades\Route;
 
 final class CurrentChronicle
 {
@@ -14,12 +15,19 @@ final class CurrentChronicle
 
     public function get(): Chronicle
     {
-        $chronicle = Chronicle::query()->orderBy('id')->first();
+        $chronicle = Route::current()?->parameter('chronicle');
 
-        if ($chronicle === null) {
-            throw new NoChronicleException;
+        if ($chronicle instanceof Chronicle) {
+            return $chronicle;
         }
 
-        return $chronicle;
+        if (is_string($chronicle) && ctype_digit($chronicle)) {
+            $resolved = Chronicle::query()->find((int) $chronicle);
+            if ($resolved !== null) {
+                return $resolved;
+            }
+        }
+
+        throw new NoChronicleException;
     }
 }

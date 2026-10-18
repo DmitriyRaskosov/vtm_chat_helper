@@ -38,9 +38,10 @@ class SceneAuthorizationTest extends TestCase
     public function test_player_cannot_create_game_session(): void
     {
         $player = User::factory()->create();
+        $this->joinChronicle($player, $this->chronicle, ChronicleRole::Player);
 
         $this->actingAs($player, 'sanctum')
-            ->postJson('/api/game-sessions', ['title' => 'Сессия'])
+            ->postJson($this->chronicleApi($this->chronicle, 'game-sessions'), ['title' => 'Сессия'])
             ->assertStatus(403)
             ->assertJsonPath('message', 'Только рассказчик.');
     }
@@ -95,7 +96,7 @@ class SceneAuthorizationTest extends TestCase
     private function createNpc(): int
     {
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'NPC-дневник',
                 'character_type' => 'npc',
             ]);

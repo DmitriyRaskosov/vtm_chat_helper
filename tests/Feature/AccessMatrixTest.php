@@ -123,13 +123,13 @@ class AccessMatrixTest extends TestCase
                 'player_foreign' => self::EXPECT_ALLOWED,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
-            self::forRoles('game_sessions.active', 'GET', 'game-sessions/active', [
+            self::forRoles('game_sessions.active', 'GET', 'chronicles/{chronicle}/game-sessions/active', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_ALLOWED,
                 'player_foreign' => self::EXPECT_ALLOWED,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
-            self::forRoles('game_sessions.store', 'POST', 'game-sessions', [
+            self::forRoles('game_sessions.store', 'POST', 'chronicles/{chronicle}/game-sessions', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_403,
                 'player_foreign' => self::EXPECT_403,
@@ -185,13 +185,13 @@ class AccessMatrixTest extends TestCase
                 'player_foreign' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
-            self::forRoles('messages.index', 'GET', 'messages', [
+            self::forRoles('messages.index', 'GET', 'chronicles/{chronicle}/messages', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_ALLOWED,
                 'player_foreign' => self::EXPECT_ALLOWED,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
-            self::forRoles('messages.store', 'POST', 'messages', [
+            self::forRoles('messages.store', 'POST', 'chronicles/{chronicle}/messages', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_ALLOWED,
                 'player_foreign' => self::EXPECT_403,
@@ -233,13 +233,13 @@ class AccessMatrixTest extends TestCase
                 'player_foreign' => self::EXPECT_ALLOWED,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
-            self::forRoles('characters.index', 'GET', 'characters', [
+            self::forRoles('characters.index', 'GET', 'chronicles/{chronicle}/characters', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_ALLOWED,
                 'player_foreign' => self::EXPECT_ALLOWED,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
-            self::forRoles('characters.store', 'POST', 'characters', [
+            self::forRoles('characters.store', 'POST', 'chronicles/{chronicle}/characters', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_403,
                 'player_foreign' => self::EXPECT_403,
@@ -341,7 +341,7 @@ class AccessMatrixTest extends TestCase
                 'player_foreign' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
-            self::forRoles('copilot.drafts', 'POST', 'copilot/drafts', [
+            self::forRoles('copilot.drafts', 'POST', 'chronicles/{chronicle}/copilot/drafts', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_403,
                 'player_foreign' => self::EXPECT_403,

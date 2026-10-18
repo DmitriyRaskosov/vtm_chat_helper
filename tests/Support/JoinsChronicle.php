@@ -23,4 +23,11 @@ trait JoinsChronicle
 
         return $factory->create();
     }
+
+    protected function chronicleApi(Chronicle $chronicle, string $path): string
+    {
+        $path = ltrim($path, '/');
+
+        return '/api/chronicles/'.$chronicle->id.'/'.$path;
+    }
 }

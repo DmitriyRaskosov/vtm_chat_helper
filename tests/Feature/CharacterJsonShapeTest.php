@@ -36,7 +36,7 @@ class CharacterJsonShapeTest extends TestCase
     public function test_get_characters_index_shape_for_storyteller(): void
     {
         $create = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Список-NPC',
                 'character_type' => 'npc',
             ]);
@@ -44,7 +44,7 @@ class CharacterJsonShapeTest extends TestCase
         $characterId = (int) $create->json('character.id');
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->getJson('/api/characters');
+            ->getJson($this->chronicleApi($this->chronicle, 'characters'));
 
         $response->assertStatus(200);
         $response->assertJsonStructure([
@@ -66,9 +66,10 @@ class CharacterJsonShapeTest extends TestCase
     public function test_get_characters_index_shape_for_player_without_character(): void
     {
         $player = User::factory()->create();
+        $this->joinChronicle($player, $this->chronicle, ChronicleRole::Player);
 
         $response = $this->actingAs($player, 'sanctum')
-            ->getJson('/api/characters');
+            ->getJson($this->chronicleApi($this->chronicle, 'characters'));
 
         $response->assertStatus(200);
         $response->assertExactJson([
@@ -80,7 +81,7 @@ class CharacterJsonShapeTest extends TestCase
     public function test_get_character_show_shape(): void
     {
         $create = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Лист-NPC',
                 'character_type' => 'npc',
             ]);
@@ -152,7 +153,7 @@ class CharacterJsonShapeTest extends TestCase
     public function test_post_characters_response_wraps_character_sheet(): void
     {
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Созданный',
                 'character_type' => 'npc',
             ]);

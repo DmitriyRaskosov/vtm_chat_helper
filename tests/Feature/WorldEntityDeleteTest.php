@@ -15,17 +15,19 @@ class WorldEntityDeleteTest extends TestCase
 {
     use JoinsChronicle;
 
+    private Chronicle $chronicle;
+
     public function test_world_entity_cannot_be_deleted_from_database(): void
     {
         $storyteller = User::factory()->storyteller()->create();
-        $chronicle = Chronicle::factory()->create([
+        $this->chronicle = Chronicle::factory()->create([
             'title' => 'Тестовая хроника',
             'created_by' => $storyteller->id,
         ]);
-        $this->joinChronicle($storyteller, $chronicle, ChronicleRole::Storyteller);
+        $this->joinChronicle($storyteller, $this->chronicle, ChronicleRole::Storyteller);
 
         $response = $this->actingAs($storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Для удаления',
                 'character_type' => 'npc',
             ]);

@@ -41,7 +41,7 @@ class GameSessionTest extends TestCase
     public function test_active_without_session_returns_null(): void
     {
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->getJson('/api/game-sessions/active');
+            ->getJson($this->chronicleApi($this->chronicle, 'game-sessions/active'));
 
         $response->assertStatus(200);
         $response->assertJsonPath('game_session', null);
@@ -68,7 +68,7 @@ class GameSessionTest extends TestCase
             ->assertStatus(200);
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/game-sessions', [
+            ->postJson($this->chronicleApi($this->chronicle, 'game-sessions'), [
                 'title' => 'Новая сессия',
             ]);
 

@@ -55,7 +55,7 @@ class DomainExceptionMappingTest extends TestCase
             ->create(['canonical_name' => 'Чужой сир']);
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Потомок',
                 'character_type' => 'npc',
                 'sire_character_id' => $foreignSire->id,
@@ -76,7 +76,7 @@ class DomainExceptionMappingTest extends TestCase
             ->create(['canonical_name' => 'Чужой сир']);
 
         $characterId = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Герой',
                 'character_type' => 'npc',
             ])
@@ -132,7 +132,7 @@ class DomainExceptionMappingTest extends TestCase
     public function test_unchanged_biography_update_returns_200(): void
     {
         $characterId = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Биограф',
                 'character_type' => 'npc',
             ])
@@ -153,14 +153,14 @@ class DomainExceptionMappingTest extends TestCase
     public function test_invalid_character_input_returns_422_with_errors_object(): void
     {
         $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Первый',
                 'character_type' => 'npc',
             ])
             ->assertStatus(201);
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'первый',
                 'character_type' => 'npc',
             ]);
@@ -173,7 +173,7 @@ class DomainExceptionMappingTest extends TestCase
     public function test_archiving_character_in_closed_scene_returns_200(): void
     {
         $npcId = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'В закрытой сцене',
                 'character_type' => 'npc',
             ])

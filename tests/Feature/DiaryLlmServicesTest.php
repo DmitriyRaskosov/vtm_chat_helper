@@ -69,7 +69,7 @@ class DiaryLlmServicesTest extends TestCase
         ]);
 
         $npcResponse = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Абрахам',
                 'character_type' => 'npc',
             ]);
@@ -94,7 +94,7 @@ class DiaryLlmServicesTest extends TestCase
 
         foreach (range(1, 3) as $i) {
             $this->actingAs($this->storyteller, 'sanctum')
-                ->postJson('/api/messages', [
+                ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                     'scene_id' => $this->scene->id,
                     'body' => "Сообщение {$i}",
                 ])
@@ -241,7 +241,7 @@ class DiaryLlmServicesTest extends TestCase
     public function test_write_for_scene_creates_l0_for_each_npc_when_llm_succeeds(): void
     {
         $secondNpcResponse = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Второй NPC',
                 'character_type' => 'npc',
             ]);
@@ -276,7 +276,7 @@ class DiaryLlmServicesTest extends TestCase
     public function test_write_for_scene_continues_after_llm_failure_for_one_npc(): void
     {
         $secondNpcResponse = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Третий NPC',
                 'character_type' => 'npc',
             ]);
@@ -353,7 +353,7 @@ class DiaryLlmServicesTest extends TestCase
             ->create();
 
         $playerResponse = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Игрок-персонаж',
                 'character_type' => 'player',
                 'user_id' => $playerUser->id,

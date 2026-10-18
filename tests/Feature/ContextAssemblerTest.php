@@ -234,7 +234,7 @@ class ContextAssemblerTest extends TestCase
             ->push('{"drafts":["one","two","three"]}');
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/copilot/drafts', [
+            ->postJson($this->chronicleApi($this->chronicle, 'copilot/drafts'), [
                 'character_id' => $this->npcId,
                 'prompt' => 'Мрачно смотрит',
                 'scene_id' => $this->sceneId,
@@ -304,7 +304,7 @@ class ContextAssemblerTest extends TestCase
     private function seedOptionalContextData(): void
     {
         $otherResponse = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Мария',
                 'character_type' => 'npc',
             ]);

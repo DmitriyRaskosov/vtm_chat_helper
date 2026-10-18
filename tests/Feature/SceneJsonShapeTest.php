@@ -128,12 +128,12 @@ class SceneJsonShapeTest extends TestCase
     public function test_game_session_active_and_store_shapes(): void
     {
         $active = $this->actingAs($this->storyteller, 'sanctum')
-            ->getJson('/api/game-sessions/active');
+            ->getJson($this->chronicleApi($this->chronicle, 'game-sessions/active'));
         $active->assertStatus(200);
         $this->assertSame(self::GAME_SESSION_KEYS, array_keys($active->json('game_session')));
 
         $created = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/game-sessions', ['title' => 'Новая игра']);
+            ->postJson($this->chronicleApi($this->chronicle, 'game-sessions'), ['title' => 'Новая игра']);
         $created->assertStatus(201);
 
         $session = $created->json('game_session');
@@ -142,7 +142,7 @@ class SceneJsonShapeTest extends TestCase
         $this->assertSame(self::GAME_SESSION_SCENE_KEYS, array_keys($session['scenes'][0]));
 
         $activeAfterStore = $this->actingAs($this->storyteller, 'sanctum')
-            ->getJson('/api/game-sessions/active');
+            ->getJson($this->chronicleApi($this->chronicle, 'game-sessions/active'));
         $activeAfterStore->assertStatus(200);
         $this->assertSame(self::GAME_SESSION_KEYS, array_keys($activeAfterStore->json('game_session')));
         $activeAfterStore->assertJsonPath('game_session.title', 'Новая игра');
@@ -171,7 +171,7 @@ class SceneJsonShapeTest extends TestCase
         $sceneId = $this->createSceneId();
 
         $npc = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Участник',
                 'character_type' => 'npc',
             ]);

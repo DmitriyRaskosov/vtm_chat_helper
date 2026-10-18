@@ -45,7 +45,7 @@ class CharacterVisibilityTest extends TestCase
             ->assertStatus(200);
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->getJson('/api/characters');
+            ->getJson($this->chronicleApi($this->chronicle, 'characters'));
 
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'characters');
@@ -109,7 +109,7 @@ class CharacterVisibilityTest extends TestCase
             ->assertStatus(200);
 
         $response = $this->actingAs($player, 'sanctum')
-            ->getJson('/api/characters');
+            ->getJson($this->chronicleApi($this->chronicle, 'characters'));
 
         $response->assertStatus(200);
         $response->assertJsonCount(2, 'characters');
@@ -129,7 +129,7 @@ class CharacterVisibilityTest extends TestCase
         $this->createCharacter('Чужой NPC');
 
         $response = $this->actingAs($player, 'sanctum')
-            ->getJson('/api/characters');
+            ->getJson($this->chronicleApi($this->chronicle, 'characters'));
 
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'characters');
@@ -142,9 +142,10 @@ class CharacterVisibilityTest extends TestCase
         $this->createCharacter('NPC');
 
         $player = User::factory()->create();
+        $this->joinChronicle($player, $this->chronicle, ChronicleRole::Player);
 
         $response = $this->actingAs($player, 'sanctum')
-            ->getJson('/api/characters');
+            ->getJson($this->chronicleApi($this->chronicle, 'characters'));
 
         $response->assertStatus(200);
         $response->assertJsonPath('characters', []);
@@ -154,7 +155,7 @@ class CharacterVisibilityTest extends TestCase
     private function createCharacter(string $name): int
     {
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => $name,
                 'character_type' => 'npc',
             ]);
@@ -172,7 +173,7 @@ class CharacterVisibilityTest extends TestCase
             ->create();
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => $name,
                 'character_type' => 'player',
                 'user_id' => $player->id,

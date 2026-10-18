@@ -39,7 +39,7 @@ class CharacterTest extends TestCase
     public function test_storyteller_can_create_character(): void
     {
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Иван',
                 'character_type' => 'npc',
             ]);
@@ -59,7 +59,7 @@ class CharacterTest extends TestCase
         $player = User::factory()->create(); // role=Player по умолчанию
 
         $response = $this->actingAs($player, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Запрещённый',
                 'character_type' => 'npc',
             ]);
@@ -75,7 +75,7 @@ class CharacterTest extends TestCase
         $clan = CanonClan::query()->where('slug', 'tremere')->firstOrFail();
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Тремер-Иван',
                 'character_type' => 'npc',
                 'clan_id' => $clan->id,
@@ -94,7 +94,7 @@ class CharacterTest extends TestCase
     public function test_character_with_invalid_clan_returns_422(): void
     {
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Иван',
                 'character_type' => 'npc',
                 'clan_id' => 999_999,
@@ -110,7 +110,7 @@ class CharacterTest extends TestCase
         $sect = CanonSect::query()->where('slug', 'camarilla')->firstOrFail();
 
         $create = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Иван',
                 'character_type' => 'npc',
             ]);
@@ -154,7 +154,7 @@ class CharacterTest extends TestCase
     {
         foreach (['Иван', 'Пётр'] as $name) {
             $this->actingAs($this->storyteller, 'sanctum')
-                ->postJson('/api/characters', [
+                ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                     'canonical_name' => $name,
                     'character_type' => 'npc',
                 ])
@@ -162,7 +162,7 @@ class CharacterTest extends TestCase
         }
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->getJson('/api/characters');
+            ->getJson($this->chronicleApi($this->chronicle, 'characters'));
 
         $response->assertStatus(200);
         $response->assertJsonCount(2, 'characters');
@@ -171,14 +171,14 @@ class CharacterTest extends TestCase
     public function test_duplicate_character_name_in_chronicle_returns_422(): void
     {
         $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Иван',
                 'character_type' => 'npc',
             ])
             ->assertStatus(201);
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'иван',
                 'character_type' => 'npc',
             ]);
@@ -195,7 +195,7 @@ class CharacterTest extends TestCase
         ]);
 
         $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Иван',
                 'character_type' => 'npc',
             ])
@@ -211,14 +211,14 @@ class CharacterTest extends TestCase
     public function test_character_rename_to_taken_name_returns_422(): void
     {
         $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Первый',
                 'character_type' => 'npc',
             ])
             ->assertStatus(201);
 
         $second = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Второй',
                 'character_type' => 'npc',
             ])
@@ -237,14 +237,14 @@ class CharacterTest extends TestCase
     public function test_character_rename_case_insensitive_conflict_returns_422(): void
     {
         $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Первый',
                 'character_type' => 'npc',
             ])
             ->assertStatus(201);
 
         $second = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Второй',
                 'character_type' => 'npc',
             ])
@@ -263,7 +263,7 @@ class CharacterTest extends TestCase
     public function test_character_rename_to_free_name_succeeds(): void
     {
         $characterId = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Старое имя',
                 'character_type' => 'npc',
             ])

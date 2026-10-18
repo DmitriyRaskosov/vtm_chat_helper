@@ -53,7 +53,7 @@ class MessageTest extends TestCase
     public function test_user_can_send_message(): void
     {
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                 'body' => 'Привет от мастера',
                 'scene_id' => $this->sceneId,
             ]);
@@ -78,7 +78,7 @@ class MessageTest extends TestCase
         $secondSceneId = $second->json('scene.id');
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                 'body' => 'X',
                 'scene_id' => $secondSceneId,
             ]);
@@ -93,7 +93,7 @@ class MessageTest extends TestCase
     {
         foreach (['Первое', 'Второе'] as $body) {
             $this->actingAs($this->storyteller, 'sanctum')
-                ->postJson('/api/messages', [
+                ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                     'body' => $body,
                     'scene_id' => $this->sceneId,
                 ])
@@ -101,7 +101,7 @@ class MessageTest extends TestCase
         }
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->getJson('/api/messages?scene_id='.$this->sceneId);
+            ->getJson($this->chronicleApi($this->chronicle, 'messages').'?scene_id='.$this->sceneId);
 
         $response->assertStatus(200);
         $response->assertJsonCount(2, 'messages');
@@ -115,7 +115,7 @@ class MessageTest extends TestCase
         $copilotRequestId = $this->createCopilotRequest($npcId);
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                 'scene_id' => $this->sceneId,
                 'character_id' => $npcId,
                 'body' => 'b',
@@ -144,11 +144,11 @@ class MessageTest extends TestCase
         ];
 
         $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/messages', $payload)
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), $payload)
             ->assertStatus(201);
 
         $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/messages', $payload)
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), $payload)
             ->assertStatus(409)
             ->assertJsonPath('message', 'Copilot request was already used.');
     }
@@ -161,7 +161,7 @@ class MessageTest extends TestCase
         $this->joinChronicle($other, $this->chronicle, ChronicleRole::Storyteller);
 
         $this->actingAs($other, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                 'scene_id' => $this->sceneId,
                 'character_id' => $npcId,
                 'body' => 'b',
@@ -179,7 +179,7 @@ class MessageTest extends TestCase
         $copilotRequestId = $this->createCopilotRequest($npcId);
 
         $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                 'scene_id' => $this->sceneId,
                 'character_id' => $otherNpc,
                 'body' => 'b',
@@ -196,7 +196,7 @@ class MessageTest extends TestCase
         $copilotRequestId = $this->createCopilotRequest($npcId);
 
         $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                 'scene_id' => $this->sceneId,
                 'character_id' => $npcId,
                 'body' => 'b',
@@ -212,7 +212,7 @@ class MessageTest extends TestCase
     private function createNpcInScene(): int
     {
         $npc = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'NPC '.uniqid(),
                 'character_type' => 'npc',
             ]);
@@ -236,7 +236,7 @@ class MessageTest extends TestCase
             ->push('{"drafts":["a","b","c"]}');
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/copilot/drafts', [
+            ->postJson($this->chronicleApi($this->chronicle, 'copilot/drafts'), [
                 'character_id' => $npcId,
                 'prompt' => 'Смотрит мрачно',
                 'scene_id' => $this->sceneId,

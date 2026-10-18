@@ -19,6 +19,8 @@ class MessageTokenEstimateTest extends TestCase
 
     private User $storyteller;
 
+    private Chronicle $chronicle;
+
     private int $sceneId;
 
     protected function setUp(): void
@@ -29,13 +31,13 @@ class MessageTokenEstimateTest extends TestCase
         $this->seed(CanonClanSeeder::class);
 
         $this->storyteller = User::factory()->storyteller()->create();
-        $chronicle = Chronicle::factory()->create([
+        $this->chronicle = Chronicle::factory()->create([
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);
-        $this->joinChronicle($this->storyteller, $chronicle, ChronicleRole::Storyteller);
+        $this->joinChronicle($this->storyteller, $this->chronicle, ChronicleRole::Storyteller);
         $gameSession = GameSession::factory()->active()->create([
-            'chronicle_id' => $chronicle->id,
+            'chronicle_id' => $this->chronicle->id,
             'title' => 'Тестовая сессия',
             'created_by' => $this->storyteller->id,
         ]);
@@ -55,7 +57,7 @@ class MessageTokenEstimateTest extends TestCase
         $expectedVersion = $estimator->version();
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                 'body' => 'Текст для оценки',
                 'scene_id' => $this->sceneId,
             ]);
@@ -72,7 +74,7 @@ class MessageTokenEstimateTest extends TestCase
     public function test_saving_without_body_change_does_not_recalculate_tokens(): void
     {
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                 'body' => 'Неподвижный текст',
                 'scene_id' => $this->sceneId,
             ]);

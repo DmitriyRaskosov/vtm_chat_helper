@@ -70,7 +70,7 @@ class ActiveSceneResolverTest extends TestCase
         ]);
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->getJson('/api/messages?scene_id='.$draftSceneId);
+            ->getJson($this->chronicleApi($this->chronicle, 'messages').'?scene_id='.$draftSceneId);
 
         $response->assertStatus(200);
         $response->assertJsonCount(1, 'messages');
@@ -87,7 +87,7 @@ class ActiveSceneResolverTest extends TestCase
         $draftSceneId = (int) $draft->json('scene.id');
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                 'body' => 'X',
                 'scene_id' => $draftSceneId,
             ]);
@@ -101,7 +101,7 @@ class ActiveSceneResolverTest extends TestCase
         $this->gameSession->update(['status' => GameSessionStatus::Archived]);
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                 'body' => 'X',
                 'scene_id' => $this->activeSceneId,
             ]);
@@ -124,7 +124,7 @@ class ActiveSceneResolverTest extends TestCase
         $draftSceneId = (int) $draft->json('scene.id');
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/copilot/drafts', [
+            ->postJson($this->chronicleApi($this->chronicle, 'copilot/drafts'), [
                 'character_id' => $npcId,
                 'prompt' => 'Тест',
                 'scene_id' => $draftSceneId,
@@ -149,7 +149,7 @@ class ActiveSceneResolverTest extends TestCase
             ->create(['canonical_name' => 'Чужой NPC']);
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/copilot/drafts', [
+            ->postJson($this->chronicleApi($this->chronicle, 'copilot/drafts'), [
                 'character_id' => $foreign->id,
                 'prompt' => 'Тест',
                 'scene_id' => $this->activeSceneId,
@@ -172,7 +172,7 @@ class ActiveSceneResolverTest extends TestCase
             ->create(['canonical_name' => 'Чужой NPC']);
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/messages', [
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                 'body' => 'X',
                 'scene_id' => $this->activeSceneId,
                 'character_id' => $foreign->id,
@@ -185,7 +185,7 @@ class ActiveSceneResolverTest extends TestCase
     private function createNpc(): int
     {
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'NPC',
                 'character_type' => 'npc',
             ]);

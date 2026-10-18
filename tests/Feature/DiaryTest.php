@@ -68,7 +68,7 @@ class DiaryTest extends TestCase
         ]);
 
         $npcResponse = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Абрахам',
                 'character_type' => 'npc',
             ]);
@@ -93,7 +93,7 @@ class DiaryTest extends TestCase
 
         foreach (range(1, 3) as $i) {
             $this->actingAs($this->storyteller, 'sanctum')
-                ->postJson('/api/messages', [
+                ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
                     'scene_id' => $this->scene->id,
                     'body' => "Сообщение номер {$i}",
                 ])

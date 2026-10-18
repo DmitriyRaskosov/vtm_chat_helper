@@ -51,6 +51,8 @@ class CharacterSheetController extends Controller
 
     public function index(Request $request): JsonResponse
     {
+        $this->authorize('view', $this->currentChronicle->get());
+
         $request->validate([
             'chronicle_id' => ['prohibited'],
         ]);
@@ -65,6 +67,7 @@ class CharacterSheetController extends Controller
             $pcId = Character::query()
                 ->where('user_id', $user?->id)
                 ->where('character_type', CharacterType::Player)
+                ->where('chronicle_id', $chronicleId)
                 ->value('id');
 
             if ($pcId === null) {
@@ -93,6 +96,7 @@ class CharacterSheetController extends Controller
 
     public function store(StoreCharacterRequest $request): JsonResponse
     {
+        $this->authorize('view', $this->currentChronicle->get());
         $this->authorize('create', Character::class);
 
         $character = $this->creation->create($request->validated());

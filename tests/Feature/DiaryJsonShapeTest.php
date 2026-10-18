@@ -129,7 +129,7 @@ class DiaryJsonShapeTest extends TestCase
         ]);
 
         $npcResponse = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/characters', [
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Дневник-NPC',
                 'character_type' => 'npc',
             ]);
@@ -272,7 +272,7 @@ class DiaryJsonShapeTest extends TestCase
             ->push('{"drafts":["alpha","beta","gamma"]}');
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson('/api/copilot/drafts', [
+            ->postJson($this->chronicleApi($this->chronicle, 'copilot/drafts'), [
                 'scene_id' => $this->scene->id,
                 'character_id' => $this->npc->id,
                 'prompt' => 'Синопсис для формы ответа',
