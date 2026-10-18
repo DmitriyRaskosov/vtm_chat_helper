@@ -12,6 +12,7 @@ use App\Models\CopilotRequest;
 use App\Models\Message;
 use App\Models\Scene;
 use App\Models\User;
+use App\World\MixedChronicleException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -48,6 +49,11 @@ final class MessageService
         }
 
         $character = Character::query()->findOrFail($characterId);
+        $scene->loadMissing('gameSession');
+
+        if ((int) $character->chronicle_id !== (int) $scene->gameSession->chronicle_id) {
+            throw new MixedChronicleException;
+        }
 
         if ($character->character_type === CharacterType::Npc) {
             $character->loadMissing('entity');

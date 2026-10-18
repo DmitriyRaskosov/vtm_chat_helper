@@ -62,16 +62,13 @@ final class ActiveSceneResolver
 
     private function findInActiveSession(?int $sceneId): ?Scene
     {
-        $chronicleId = $sceneId === null ? $this->currentChronicle->id() : null;
+        $chronicleId = $this->currentChronicle->id();
 
         $query = Scene::query()->whereHas(
             'gameSession',
             function ($query) use ($chronicleId) {
-                $query->where('status', GameSessionStatus::Active);
-
-                if ($chronicleId !== null) {
-                    $query->where('chronicle_id', $chronicleId);
-                }
+                $query->where('status', GameSessionStatus::Active)
+                    ->where('chronicle_id', $chronicleId);
             },
         );
 

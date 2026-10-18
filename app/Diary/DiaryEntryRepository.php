@@ -2,6 +2,7 @@
 
 namespace App\Diary;
 
+use App\Diary\Exceptions\DiaryChronicleMismatchException;
 use App\Models\Character;
 use App\Models\Scene;
 use App\Models\SceneParticipant;
@@ -20,6 +21,8 @@ final class DiaryEntryRepository
         ?string $emotion,
         string $vectorLiteral,
     ): void {
+        $this->assertNpcMatchesSceneChronicle($npc, $scene);
+
         DB::transaction(function () use (
             $npc,
             $scene,
@@ -62,6 +65,8 @@ final class DiaryEntryRepository
         ?string $emotion,
         string $vectorLiteral,
     ): void {
+        $this->assertNpcMatchesSceneChronicle($npc, $scene);
+
         DB::transaction(function () use (
             $npc,
             $scene,
@@ -110,5 +115,14 @@ final class DiaryEntryRepository
                 $entryId,
             ],
         );
+    }
+
+    private function assertNpcMatchesSceneChronicle(Character $npc, Scene $scene): void
+    {
+        $scene->loadMissing('gameSession');
+
+        if ((int) $npc->chronicle_id !== (int) $scene->gameSession->chronicle_id) {
+            throw new DiaryChronicleMismatchException;
+        }
     }
 }

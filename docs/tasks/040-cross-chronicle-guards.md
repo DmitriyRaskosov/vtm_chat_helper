@@ -1,7 +1,7 @@
 # 040 — Объекты одной хроники не смешиваются
 
 - **Stage:** 3
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 039
 - **Risk:** med
 - **Part:** 4

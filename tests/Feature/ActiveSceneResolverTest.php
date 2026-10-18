@@ -159,6 +159,52 @@ class ActiveSceneResolverTest extends TestCase
         $response->assertJsonPath('message', 'Character does not belong to this chronicle.');
     }
 
+    public function test_get_messages_with_own_scene_id_returns_200(): void
+    {
+        $response = $this->actingAs($this->storyteller, 'sanctum')
+            ->getJson($this->chronicleApi($this->chronicle, 'messages').'?scene_id='.$this->activeSceneId);
+
+        $response->assertStatus(200);
+        $response->assertJsonStructure(['messages']);
+    }
+
+    public function test_get_messages_with_foreign_chronicle_scene_id_returns_409_for_storyteller(): void
+    {
+        [, $foreignSceneId] = $this->createForeignChronicleActiveScene();
+
+        Message::factory()->create([
+            'scene_id' => $foreignSceneId,
+            'user_id' => $this->storyteller->id,
+            'body' => 'Секрет другой хроники',
+        ]);
+
+        $response = $this->actingAs($this->storyteller, 'sanctum')
+            ->getJson($this->chronicleApi($this->chronicle, 'messages').'?scene_id='.$foreignSceneId);
+
+        $response->assertStatus(409);
+        $response->assertJsonPath('message', 'There is no available scene in the active game session.');
+    }
+
+    public function test_get_messages_with_foreign_chronicle_scene_id_returns_409_for_player(): void
+    {
+        $player = User::factory()->create();
+        $this->joinChronicle($player, $this->chronicle, ChronicleRole::Player);
+
+        [, $foreignSceneId] = $this->createForeignChronicleActiveScene();
+
+        Message::factory()->create([
+            'scene_id' => $foreignSceneId,
+            'user_id' => $this->storyteller->id,
+            'body' => 'Секрет другой хроники',
+        ]);
+
+        $response = $this->actingAs($player, 'sanctum')
+            ->getJson($this->chronicleApi($this->chronicle, 'messages').'?scene_id='.$foreignSceneId);
+
+        $response->assertStatus(409);
+        $response->assertJsonPath('message', 'There is no available scene in the active game session.');
+    }
+
     public function test_message_with_character_from_other_chronicle_returns_409(): void
     {
         $otherChronicle = Chronicle::factory()->create([
@@ -180,6 +226,32 @@ class ActiveSceneResolverTest extends TestCase
 
         $response->assertStatus(409);
         $response->assertJsonPath('message', 'Character does not belong to this chronicle.');
+    }
+
+    /**
+     * @return array{0: Chronicle, 1: int}
+     */
+    private function createForeignChronicleActiveScene(): array
+    {
+        $otherChronicle = Chronicle::factory()->create([
+            'title' => 'Другая хроника',
+            'created_by' => $this->storyteller->id,
+        ]);
+        $this->joinChronicle($this->storyteller, $otherChronicle, ChronicleRole::Storyteller);
+
+        $otherSession = GameSession::factory()->active()->create([
+            'chronicle_id' => $otherChronicle->id,
+            'title' => 'Сессия другой хроники',
+            'created_by' => $this->storyteller->id,
+        ]);
+
+        $created = $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson('/api/game-sessions/'.$otherSession->id.'/scenes', [
+                'title' => 'Чужая сцена',
+            ]);
+        $created->assertStatus(201);
+
+        return [$otherChronicle, (int) $created->json('scene.id')];
     }
 
     private function createNpc(): int
