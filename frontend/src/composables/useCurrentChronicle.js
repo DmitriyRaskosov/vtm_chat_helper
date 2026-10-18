@@ -1,5 +1,5 @@
 import { computed, ref, toValue } from 'vue';
-import { api, CHRONICLE_STORAGE_KEY, currentChronicleId } from '../auth';
+import { api, CHRONICLE_STORAGE_KEY, currentChronicleId, refreshUser } from '../auth';
 import { apiErrorMessage } from '../utils/apiError';
 
 export const STORAGE_KEY = CHRONICLE_STORAGE_KEY;
@@ -144,6 +144,13 @@ async function create({ title, description, setting }) {
 
     const chronicle = data.chronicle;
     chronicles.value = [...chronicles.value, chronicle];
+
+    try {
+        await refreshUser();
+    } catch {
+        // Сеть: хроника уже в списке, select и переход возможны; роль подтянется после F5.
+    }
+
     select(chronicle.id);
 
     return chronicle;

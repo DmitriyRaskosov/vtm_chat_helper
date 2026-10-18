@@ -96,6 +96,11 @@ function clear() {
     localStorage.removeItem(TOKEN_KEY);
 }
 
+export async function refreshUser() {
+    const { data } = await api.get('/user');
+    user.value = data.user;
+}
+
 export function useAuth() {
     return {
         token,
@@ -117,8 +122,7 @@ export function useAuth() {
             }
         },
         async fetchUser() {
-            const { data } = await api.get('/user');
-            user.value = data.user;
+            await refreshUser();
         },
     };
 }
