@@ -6,6 +6,7 @@ use App\Models\CanonDiscipline;
 use App\Models\Character;
 use App\Models\CharacterDiaryEntry;
 use App\Models\Chronicle;
+use App\Models\ChronicleMember;
 use App\Models\CopilotRequest;
 use App\Models\GameSession;
 use App\Models\Message;
@@ -71,6 +72,12 @@ final class AccessMatrixFixtures
             'title' => 'Матрица доступа',
             'created_by' => $fixtures->storyteller->id,
         ]);
+
+        ChronicleMember::factory()
+            ->for($fixtures->chronicle)
+            ->for($fixtures->storyteller)
+            ->storyteller()
+            ->create();
 
         $fixtures->gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $fixtures->chronicle->id,
@@ -149,6 +156,7 @@ final class AccessMatrixFixtures
     {
         $map = [
             '{scene}' => (string) $this->scene->id,
+            '{chronicle}' => (string) $this->chronicle->id,
             '{gameSession}' => (string) $this->gameSession->id,
             '{npc}' => (string) $this->npc->id,
             '{playerCharacter}' => (string) $this->playerCharacter->id,
@@ -217,6 +225,10 @@ final class AccessMatrixFixtures
                 'canonical_name' => 'Новый персонаж',
                 'character_type' => 'npc',
             ];
+        }
+
+        if ($method === 'POST' && $uriTemplate === 'chronicles') {
+            return ['title' => 'Хроника матрицы'];
         }
 
         if ($method === 'POST' && $uriTemplate === 'game-sessions') {

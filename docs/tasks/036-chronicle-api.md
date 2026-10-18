@@ -1,7 +1,7 @@
 # 036 — API списка и создания хроник
 
 - **Stage:** 3
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 035
 - **Risk:** med
 - **Part:** 4

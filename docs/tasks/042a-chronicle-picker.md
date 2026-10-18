@@ -9,7 +9,7 @@
 
 ## Goal
 
-Пользователь видит свои хроники, создаёт новую и выбирает текущую без Pinia; выбранный id сохраняется в браузере.
+Пользователь видит свои хроники, создаёт новую и выбирает текущую без Pinia; выбранный id сохраняется в браузере. В AppNav — dropdown с названием текущей хроники и списком других + «создать новую». Не только ссылка «Хроники».
 
 ## Context
 
@@ -24,8 +24,9 @@
 
 - `frontend/src/composables/useCurrentChronicle.js` (создать)
 - `frontend/src/views/ChronicleListView.vue` (создать)
+- `frontend/src/components/layout/ChronicleSwitcher.vue` (создать) — dropdown: текущая хроника, список остальных, «создать новую»
 - `frontend/src/router.js` — маршрут `/chronicles` (имя `chronicles`), `meta.auth: true`
-- `frontend/src/components/layout/AppNav.vue` — ссылка «Хроники»
+- `frontend/src/components/layout/AppNav.vue` — `ChronicleSwitcher` вместо ссылки «Хроники»
 
 **Out of scope:**
 - префикс `/c/:chronicleId` у чата и персонажей (042b);
@@ -37,14 +38,17 @@
 
 1. `useCurrentChronicle`: `chronicles`, `currentId`, `loading`, `error`, `load()`, `select(id)`, `create({ title, description, setting })`. HTTP только через `api` из `auth.js`. `currentId` в `localStorage` под ключом `game-chat-chronicle`. Если сохранённого id нет в списке — сбросить.
 2. `ChronicleListView`: список (название, роль), кнопка выбора, форма создания (название обязано). Ошибки через `apiErrorMessage`. Пустой список — текст «Хроник пока нет» и форма. После создания хроника выбрана.
-3. Маршрут `/chronicles`. Ссылка в `AppNav`. Редирект с `/` не менять (его перенесёт 042b): пока `/` → `/chat`.
-4. Pinia не добавлять. Новый axios не создавать.
+3. Маршрут `/chronicles`. Редирект с `/` не менять (его перенесёт 042b): пока `/` → `/chat`.
+4. `ChronicleSwitcher.vue`: в `AppNav` заменить ссылку «Хроники» на dropdown. Клик по хронике → `router.push(\`/c/${id}/chat\`)`. Клик «создать» → переход на `/chronicles` (или модалка создания).
+5. Pinia не добавлять. Новый axios не создавать.
 
 ## Definition of Done
 
 - [ ] `rg "pinia|createPinia" frontend` → пусто
 - [ ] `rg "axios" frontend/src/composables/useCurrentChronicle.js frontend/src/views/ChronicleListView.vue` → пусто (только `api` из `auth.js`, и только в composable)
 - [ ] `cd frontend; npm run build` — без ошибок
+- [ ] `ChronicleSwitcher` в `AppNav` показывает текущую хронику по названию (не только id)
+- [ ] смена хроники через dropdown → `/c/{newId}/chat`
 - [ ] ручная проверка: пустой список; создание хроники показывает её в списке после обновления страницы; выбор пишет id в `localStorage` и восстанавливается после перезагрузки; чужая хроника в списке не появляется
 - [ ] `sail pint --test` — не требуется, PHP не менялся; если файлы PHP не в diff, так и написать
 - [ ] `sail artisan test` — не требуется (фронт). В отчёте указать «не запускался, бэкенд не менялся»

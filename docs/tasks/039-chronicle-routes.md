@@ -26,6 +26,7 @@
 - `ActiveSceneResolver::findInActiveSession`: если передан `scene_id`, фильтр хроники сейчас выключен (`$chronicleId = null`). Дыру «чужой scene_id» закрывает 040. В этой задаче резолвер без `scene_id` обязан звать новый `CurrentChronicle`.
 - Группа `{chronicle}`: `->can('view', 'chronicle')` (`ChroniclePolicy::view`, 038) — не-участник получает 403. Открытый вопрос ADR «403 или 404» не закрывать и на 404 не переключать.
 - Фронт ходит на старые пути до 042b. Сборку фронта не чинить под новые URL.
+- После этой задачи фронт сломан до 042b: старые маршруты API исчезли, новые в фронте ещё не используются. Не деплоить, не чинить фронт здесь. Фронт починится в 042b.
 - Под /api/chronicles/{chronicle}/... переезжают не только три 
   коллекции из плана (messages, characters, game-sessions/active), 
   но и POST /game-sessions, POST /copilot/drafts — они читают 
