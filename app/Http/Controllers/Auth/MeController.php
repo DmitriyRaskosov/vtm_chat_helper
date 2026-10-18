@@ -11,8 +11,14 @@ class MeController extends Controller
 {
     public function __invoke(Request $request): JsonResponse
     {
+        $user = $request->user();
+        $user->load([
+            'chronicleMemberships' => static fn ($query) => $query->whereNull('left_at'),
+            'chronicleMemberships.chronicle',
+        ]);
+
         return response()->json([
-            'user' => UserResource::make($request->user())->resolve(),
+            'user' => UserResource::make($user)->resolve(),
         ]);
     }
 }

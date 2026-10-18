@@ -108,7 +108,7 @@ class DiaryJsonShapeTest extends TestCase
         $this->seed(CanonSectSeeder::class);
         $this->seed(CanonClanSeeder::class);
 
-        $this->storyteller = User::factory()->storyteller()->create();
+        $this->storyteller = User::factory()->create();
 
         $this->chronicle = Chronicle::factory()->create([
             'title' => 'Тестовая хроника',

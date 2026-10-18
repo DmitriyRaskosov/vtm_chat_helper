@@ -1,7 +1,7 @@
 # 041 — Удаление глобальной роли пользователя
 
 - **Stage:** 3
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 038
 - **Risk:** high
 - **Part:** 4

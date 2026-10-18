@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers\Auth;
 
-use App\Enums\UserRole;
 use App\Http\Controllers\Controller;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\UserResource;
@@ -13,11 +12,12 @@ class RegisterController extends Controller
 {
     public function store(RegisterRequest $request): JsonResponse
     {
-        $user = User::query()->create([
-            ...$request->safe()->only(['name', 'login', 'password']),
-            'role' => User::query()->where('role', UserRole::Storyteller)->exists()
-                ? UserRole::Player
-                : UserRole::Storyteller,
+        $user = User::query()->create(
+            $request->safe()->only(['name', 'login', 'password']),
+        );
+        $user->load([
+            'chronicleMemberships' => static fn ($query) => $query->whereNull('left_at'),
+            'chronicleMemberships.chronicle',
         ]);
 
         return response()->json([

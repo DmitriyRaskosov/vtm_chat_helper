@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Enums\ChronicleRole;
-use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
@@ -13,10 +12,7 @@ use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
 
-/**
- * @property UserRole $role
- */
-#[Fillable(['name', 'login', 'email', 'password', 'role'])]
+#[Fillable(['name', 'login', 'email', 'password'])]
 #[Hidden(['password', 'remember_token'])]
 class User extends Authenticatable
 {
@@ -71,11 +67,6 @@ class User extends Authenticatable
         return $this->hasMany(CopilotRequest::class, 'storyteller_id');
     }
 
-    public function isStoryteller(): bool
-    {
-        return $this->role === UserRole::Storyteller;
-    }
-
     public function isStorytellerIn(Chronicle $chronicle): bool
     {
         return ChronicleMember::query()
@@ -94,7 +85,6 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
-            'role' => UserRole::class,
         ];
     }
 }

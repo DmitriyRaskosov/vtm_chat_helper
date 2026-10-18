@@ -7,7 +7,6 @@ use App\Enums\ChronicleStatus;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneParticipantRole;
 use App\Enums\SceneStatus;
-use App\Enums\UserRole;
 use App\Enums\WorldEntityStatus;
 use App\Enums\WorldEntityType;
 use App\Models\CanonClan;
@@ -43,7 +42,6 @@ class DemoSeeder extends Seeder
             ['login' => 'admin'],
             [
                 'name' => 'admin',
-                'role' => UserRole::Storyteller,
                 'password' => Hash::make('admin'),
             ],
         );

@@ -20,8 +20,12 @@ class UserResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'login' => $this->login,
-            'role' => $this->role->value,
-            'is_storyteller' => $this->isStoryteller(),
+            'memberships' => ChronicleMembershipResource::collection(
+                $this->whenLoaded(
+                    'chronicleMemberships',
+                    default: collect(),
+                ),
+            ),
         ];
     }
 }

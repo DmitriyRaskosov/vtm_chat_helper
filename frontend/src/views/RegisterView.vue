@@ -23,7 +23,7 @@
 
                 <button type="submit">Создать аккаунт</button>
             </form>
-            <p class="muted">Первый зарегистрированный становится рассказчиком, остальные — игроками.</p>
+            <p class="muted">Хронику можно создать после входа.</p>
             <p class="muted">Уже есть аккаунт? <RouterLink to="/login">Войти</RouterLink></p>
         </div>
     </div>

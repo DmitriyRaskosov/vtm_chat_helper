@@ -67,7 +67,7 @@ final class AccessMatrixFixtures
 
         $fixtures = new self;
 
-        $fixtures->storyteller = User::factory()->storyteller()->create();
+        $fixtures->storyteller = User::factory()->create();
         $fixtures->playerOwner = User::factory()->create();
         $fixtures->playerForeign = User::factory()->create();
 

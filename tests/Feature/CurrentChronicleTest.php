@@ -26,7 +26,7 @@ class CurrentChronicleTest extends TestCase
         $this->seed(CanonSectSeeder::class);
         $this->seed(CanonClanSeeder::class);
 
-        $this->storyteller = User::factory()->storyteller()->create();
+        $this->storyteller = User::factory()->create();
     }
 
     public function test_current_chronicle_without_route_parameter_returns_409(): void

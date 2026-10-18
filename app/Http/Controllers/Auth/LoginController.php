@@ -24,6 +24,11 @@ class LoginController extends Controller
             ]);
         }
 
+        $user->load([
+            'chronicleMemberships' => static fn ($query) => $query->whereNull('left_at'),
+            'chronicleMemberships.chronicle',
+        ]);
+
         return response()->json([
             'token' => $user->createToken('spa')->plainTextToken,
             'user' => UserResource::make($user)->resolve(),

@@ -8,7 +8,9 @@ const user = ref(null);
 
 let onUnauthorized = null;
 
-export const isStoryteller = computed(() => user.value?.is_storyteller === true);
+export const isStoryteller = computed(() =>
+    (user.value?.memberships ?? []).some((membership) => membership.role === 'storyteller'),
+);
 
 export function registerUnauthorizedHandler(handler) {
     onUnauthorized = handler;

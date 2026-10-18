@@ -30,7 +30,7 @@ class MessageTest extends TestCase
         $this->seed(CanonSectSeeder::class);
         $this->seed(CanonClanSeeder::class);
 
-        $this->storyteller = User::factory()->storyteller()->create();
+        $this->storyteller = User::factory()->create();
         $this->chronicle = Chronicle::factory()->create([
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
@@ -157,7 +157,7 @@ class MessageTest extends TestCase
     {
         $npcId = $this->createNpcInScene();
         $copilotRequestId = $this->createCopilotRequest($npcId);
-        $other = User::factory()->storyteller()->create();
+        $other = User::factory()->create();
         $this->joinChronicle($other, $this->chronicle, ChronicleRole::Storyteller);
 
         $this->actingAs($other, 'sanctum')

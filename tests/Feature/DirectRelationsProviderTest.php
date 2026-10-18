@@ -31,7 +31,7 @@ class DirectRelationsProviderTest extends TestCase
         $this->seed(CanonSectSeeder::class);
         $this->seed(CanonClanSeeder::class);
 
-        $storyteller = User::factory()->storyteller()->create();
+        $storyteller = User::factory()->create();
         $this->chronicle = Chronicle::factory()->create([
             'title' => 'Тестовая хроника',
             'created_by' => $storyteller->id,
