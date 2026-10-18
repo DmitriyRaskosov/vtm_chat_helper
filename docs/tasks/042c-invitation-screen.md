@@ -1,7 +1,7 @@
 # 042c — Экран принятия приглашения
 
 - **Stage:** 3
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 037, 042a
 - **Risk:** med
 - **Part:** 4

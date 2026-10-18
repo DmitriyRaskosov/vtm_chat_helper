@@ -1,7 +1,7 @@
 # 042d — Роль из членства выбранной хроники
 
 - **Stage:** 3
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 041, 042a, 042b
 - **Risk:** med
 - **Part:** 4

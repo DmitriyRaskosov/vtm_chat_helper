@@ -8,6 +8,7 @@ import CharacterListView from './views/CharacterListView.vue';
 import CharacterSheetView from './views/CharacterSheetView.vue';
 import DiaryView from './views/DiaryView.vue';
 import ChronicleListView from './views/ChronicleListView.vue';
+import InvitationAcceptView from './views/InvitationAcceptView.vue';
 
 function legacyChronicleRedirect(suffix) {
     return resolveChroniclePath(suffix);
@@ -44,6 +45,12 @@ const router = createRouter({
             meta: { auth: true, storyteller: true },
         },
         { path: '/chronicles', name: 'chronicles', component: ChronicleListView, meta: { auth: true } },
+        {
+            path: '/invitations/:token',
+            name: 'invitation',
+            component: InvitationAcceptView,
+            meta: { auth: true },
+        },
         { path: '/chat', redirect: () => resolveChroniclePath('chat') },
         { path: '/characters', redirect: () => resolveChroniclePath('characters') },
         {
@@ -70,6 +77,13 @@ router.beforeEach(async (to) => {
     }
 
     if (to.meta.auth && !auth.token.value) {
+        if (to.name === 'invitation' && to.params.token) {
+            return {
+                name: 'login',
+                query: { redirect: `/invitations/${to.params.token}` },
+            };
+        }
+
         return { name: 'login' };
     }
 
@@ -99,7 +113,7 @@ router.beforeEach(async (to) => {
             };
         }
 
-        return { path: resolveChroniclePath('chat') };
+        return { name: 'chronicles' };
     }
 
     return true;

@@ -10,7 +10,8 @@
         </h1>
         <span class="muted">
             {{ auth.user.value?.name }}
-            <template v-if="isStoryteller"> · рассказчик</template>
+            <template v-if="currentChronicleRole === 'storyteller'"> · рассказчик</template>
+            <template v-else-if="currentChronicleRole === 'player'"> · игрок</template>
             ·
             <button class="link" type="button" @click="logout">Выйти</button>
         </span>
@@ -21,7 +22,7 @@
 import { computed } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import ChronicleSwitcher from './ChronicleSwitcher.vue';
-import { isStoryteller, useAuth } from '../../auth';
+import { currentChronicleRole, useAuth } from '../../auth';
 import { resolveChronicleId, useCurrentChronicle } from '../../composables/useCurrentChronicle';
 
 defineProps({

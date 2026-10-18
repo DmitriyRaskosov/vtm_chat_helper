@@ -2,15 +2,54 @@ import axios from 'axios';
 import { computed, ref } from 'vue';
 
 const TOKEN_KEY = 'game-chat-token';
+export const CHRONICLE_STORAGE_KEY = 'game-chat-chronicle';
+
+function readStoredChronicleId() {
+    const raw = localStorage.getItem(CHRONICLE_STORAGE_KEY);
+    const id = Number.parseInt(raw ?? '', 10);
+
+    if (!Number.isFinite(id) || id <= 0) {
+        return null;
+    }
+
+    return id;
+}
 
 const token = ref(localStorage.getItem(TOKEN_KEY) || '');
 const user = ref(null);
+export const currentChronicleId = ref(readStoredChronicleId());
 
 let onUnauthorized = null;
 
-export const isStoryteller = computed(() =>
-    (user.value?.memberships ?? []).some((membership) => membership.role === 'storyteller'),
-);
+function membershipInCurrentChronicle() {
+    const chronicleId = currentChronicleId.value;
+
+    if (!chronicleId) {
+        return null;
+    }
+
+    return (user.value?.memberships ?? []).find(
+        (membership) =>
+            membership.chronicle_id === chronicleId
+            && (membership.left_at === null || membership.left_at === undefined),
+    ) ?? null;
+}
+
+export const currentChronicleRole = computed(() => {
+    const membership = membershipInCurrentChronicle();
+
+    if (!membership) {
+        return null;
+    }
+
+    if (membership.role === 'storyteller' || membership.role === 'player') {
+        return membership.role;
+    }
+
+    return null;
+});
+
+export const isStoryteller = computed(() => currentChronicleRole.value === 'storyteller');
 
 export function registerUnauthorizedHandler(handler) {
     onUnauthorized = handler;

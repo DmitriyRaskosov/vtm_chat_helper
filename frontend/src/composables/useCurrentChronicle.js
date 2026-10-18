@@ -1,12 +1,11 @@
 import { computed, ref, toValue } from 'vue';
-import { api } from '../auth';
+import { api, CHRONICLE_STORAGE_KEY, currentChronicleId } from '../auth';
 import { apiErrorMessage } from '../utils/apiError';
 
-export const STORAGE_KEY = 'game-chat-chronicle';
+export const STORAGE_KEY = CHRONICLE_STORAGE_KEY;
 export const CHRONICLE_NOT_SELECTED = 'Хроника не выбрана';
 
 const chronicles = ref([]);
-const currentId = ref(null);
 const loading = ref(false);
 const error = ref('');
 
@@ -56,7 +55,7 @@ export function chronicleCollectionPath(chronicleId, suffix) {
 function syncCurrentIdWithList() {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) {
-        currentId.value = null;
+        currentChronicleId.value = null;
 
         return;
     }
@@ -66,12 +65,12 @@ function syncCurrentIdWithList() {
 
     if (!Number.isFinite(id) || !exists) {
         localStorage.removeItem(STORAGE_KEY);
-        currentId.value = null;
+        currentChronicleId.value = null;
 
         return;
     }
 
-    currentId.value = id;
+    currentChronicleId.value = id;
 }
 
 function select(id) {
@@ -82,7 +81,7 @@ function select(id) {
         return;
     }
 
-    currentId.value = numericId;
+    currentChronicleId.value = numericId;
     localStorage.setItem(STORAGE_KEY, String(numericId));
 }
 
@@ -94,7 +93,7 @@ function syncFromRoute(routeChronicleId) {
     }
 
     if (!chronicles.value.length) {
-        currentId.value = numericId;
+        currentChronicleId.value = numericId;
         localStorage.setItem(STORAGE_KEY, String(numericId));
 
         return;
@@ -127,7 +126,7 @@ async function load() {
         syncCurrentIdWithList();
     } catch (err) {
         chronicles.value = [];
-        currentId.value = null;
+        currentChronicleId.value = null;
         error.value = apiErrorMessage(err, 'Не удалось загрузить хроники.');
     } finally {
         loading.value = false;
@@ -151,13 +150,13 @@ async function create({ title, description, setting }) {
 }
 
 const currentChronicle = computed(() =>
-    chronicles.value.find((item) => item.id === currentId.value) ?? null,
+    chronicles.value.find((item) => item.id === currentChronicleId.value) ?? null,
 );
 
 export function useCurrentChronicle() {
     return {
         chronicles,
-        currentId,
+        currentId: currentChronicleId,
         currentChronicle,
         loading,
         error,
