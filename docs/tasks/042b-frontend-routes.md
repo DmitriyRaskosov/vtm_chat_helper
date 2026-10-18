@@ -1,7 +1,7 @@
 # 042b — Маршруты фронта с id хроники
 
 - **Stage:** 3
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 039, 042a
 - **Risk:** high (много экранов)
 - **Part:** 4

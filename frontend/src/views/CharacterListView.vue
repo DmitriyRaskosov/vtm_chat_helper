@@ -34,7 +34,7 @@
             <ul class="character-tree">
                 <li v-for="row in characters" :key="row.id">
                     <div class="character-row">
-                        <RouterLink :to="`/characters/${row.id}`">{{ row.canonical_name }}</RouterLink>
+                        <RouterLink :to="characterLink(row.id)">{{ row.canonical_name }}</RouterLink>
                         <span class="muted"> · {{ characterTypeLabel(row.character_type) }}</span>
                         <button
                             v-if="isStoryteller"
@@ -55,7 +55,7 @@
             <ul v-else class="character-tree">
                 <li v-for="row in archived" :key="row.id">
                     <div class="character-row">
-                        <RouterLink :to="`/characters/${row.id}`">{{ row.canonical_name }}</RouterLink>
+                        <RouterLink :to="characterLink(row.id)">{{ row.canonical_name }}</RouterLink>
                         <span class="muted"> · {{ characterTypeLabel(row.character_type) }}</span>
                         <button class="link" type="button" @click="restoreCharacter(row.id)">Вернуть</button>
                     </div>
@@ -66,11 +66,18 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
-import { RouterLink } from 'vue-router';
+import { computed, onMounted } from 'vue';
+import { RouterLink, useRoute } from 'vue-router';
 import AppNav from '../components/layout/AppNav.vue';
 import { useCharacterList } from '../composables/useCharacterList';
 import { characterTypeLabel } from '../utils/labels';
+
+const route = useRoute();
+const chronicleId = computed(() => route.params.chronicleId);
+
+function characterLink(id) {
+    return `/c/${chronicleId.value}/characters/${id}`;
+}
 
 const {
     isStoryteller,
@@ -83,7 +90,7 @@ const {
     createCharacter,
     hideCharacter,
     restoreCharacter,
-} = useCharacterList();
+} = useCharacterList(chronicleId);
 
 onMounted(load);
 </script>

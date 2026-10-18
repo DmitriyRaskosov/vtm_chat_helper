@@ -2,9 +2,9 @@
     <div class="top">
         <h1>
             <ChronicleSwitcher />
-            <RouterLink to="/chat" :class="{ 'nav-current': current === 'chat' }">Чат</RouterLink>
+            <RouterLink :to="chatLink" :class="{ 'nav-current': current === 'chat' }">Чат</RouterLink>
             <span class="nav-sep">·</span>
-            <RouterLink to="/characters" :class="{ 'nav-current': current === 'characters' }">Персонажи</RouterLink>
+            <RouterLink :to="charactersLink" :class="{ 'nav-current': current === 'characters' }">Персонажи</RouterLink>
             <span class="nav-sep">·</span>
             <RouterLink to="/chronicles" :class="{ 'nav-current': current === 'chronicles' }">Хроники</RouterLink>
         </h1>
@@ -18,9 +18,11 @@
 </template>
 
 <script setup>
-import { RouterLink, useRouter } from 'vue-router';
+import { computed } from 'vue';
+import { RouterLink, useRoute, useRouter } from 'vue-router';
 import ChronicleSwitcher from './ChronicleSwitcher.vue';
 import { isStoryteller, useAuth } from '../../auth';
+import { resolveChronicleId, useCurrentChronicle } from '../../composables/useCurrentChronicle';
 
 defineProps({
     current: {
@@ -32,6 +34,30 @@ defineProps({
 
 const auth = useAuth();
 const router = useRouter();
+const route = useRoute();
+const { currentId } = useCurrentChronicle();
+
+const activeChronicleId = computed(() => {
+    const fromRoute = resolveChronicleId(route.params.chronicleId);
+
+    if (fromRoute !== null) {
+        return fromRoute;
+    }
+
+    return currentId.value;
+});
+
+const chatLink = computed(() => (
+    activeChronicleId.value
+        ? `/c/${activeChronicleId.value}/chat`
+        : '/chronicles'
+));
+
+const charactersLink = computed(() => (
+    activeChronicleId.value
+        ? `/c/${activeChronicleId.value}/characters`
+        : '/chronicles'
+));
 
 async function logout() {
     await auth.logout();

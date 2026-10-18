@@ -1,7 +1,8 @@
 import { nextTick, ref, watch } from 'vue';
 import { api } from '../auth';
+import { CHRONICLE_NOT_SELECTED, chronicleCollectionPath } from './useCurrentChronicle';
 
-export function useChatMessages({ selectedSceneId, canPost, getLog, myCharacterId }) {
+export function useChatMessages({ selectedSceneId, canPost, getLog, myCharacterId, chronicleId }) {
     const messages = ref([]);
     const body = ref('');
     const isOoc = ref(false);
@@ -50,7 +51,14 @@ export function useChatMessages({ selectedSceneId, canPost, getLog, myCharacterI
             params.include_deleted = true;
         }
 
-        const { data } = await api.get('/messages', { params });
+        let path;
+        try {
+            path = chronicleCollectionPath(chronicleId, 'messages');
+        } catch {
+            return;
+        }
+
+        const { data } = await api.get(path, { params });
 
         if (selectedSceneId.value !== sceneIdAtStart) {
             return;
@@ -79,7 +87,14 @@ export function useChatMessages({ selectedSceneId, canPost, getLog, myCharacterI
             payload.character_id = myCharacterId.value;
         }
     
-        const { data } = await api.post('/messages', payload);
+        let path;
+        try {
+            path = chronicleCollectionPath(chronicleId, 'messages');
+        } catch {
+            return;
+        }
+
+        const { data } = await api.post(path, payload);
         merge([data.message]);
         body.value = '';
         await scrollDown();

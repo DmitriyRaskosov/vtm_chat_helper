@@ -7,7 +7,7 @@
         <section class="card">
             <header class="diary-top">
                 <h1>{{ characterName }} — дневник</h1>
-                <RouterLink :to="`/characters/${characterId}`" class="link">← К листу</RouterLink>
+                <RouterLink :to="sheetLink" class="link">← К листу</RouterLink>
             </header>
 
             <p v-if="loading" class="muted">Загрузка…</p>
@@ -95,6 +95,7 @@ import { useDiary } from '../composables/useDiary';
 
 const route = useRoute();
 const characterId = computed(() => Number(route.params.id));
+const sheetLink = computed(() => `/c/${route.params.chronicleId}/characters/${route.params.id}`);
 
 const {
     entries,

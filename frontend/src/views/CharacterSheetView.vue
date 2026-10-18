@@ -5,7 +5,7 @@
         <p v-if="error" class="error">{{ error }}</p>
 
         <div v-if="isStoryteller" class="sheet-top-links">
-            <RouterLink :to="`/characters/${sheet.id}/diary`" class="link">Дневник</RouterLink>
+            <RouterLink :to="diaryLink" class="link">Дневник</RouterLink>
         </div>
 
         <SheetHeaderSection
@@ -69,6 +69,7 @@ import { useCharacterSheet } from '../composables/useCharacterSheet';
 
 const route = useRoute();
 const characterId = computed(() => route.params.id);
+const diaryLink = computed(() => `/c/${route.params.chronicleId}/characters/${route.params.id}/diary`);
 
 const {
     load,

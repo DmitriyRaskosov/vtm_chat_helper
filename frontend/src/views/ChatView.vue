@@ -66,6 +66,7 @@
                 v-model:selected-npc-id="selectedNpcId"
                 :scene-npcs="sceneNpcs"
                 :selected-scene-id="selectedSceneId"
+                :chronicle-id="chronicleId"
                 :can-post="canPost"
                 @sent="onNpcSent"
             />
@@ -74,7 +75,8 @@
 </template>
 
 <script setup>
-import { computed, onMounted, onUnmounted, ref } from 'vue';
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 import { isStoryteller, useAuth } from '../auth';
 import AppNav from '../components/layout/AppNav.vue';
 import ChatComposer from '../components/chat/ChatComposer.vue';
@@ -85,6 +87,8 @@ import { useChatMessages } from '../composables/useChatMessages';
 import { useSceneSession } from '../composables/useSceneSession';
 
 const auth = useAuth();
+const route = useRoute();
+const chronicleId = computed(() => route.params.chronicleId);
 const chatLog = ref(null);
 const copilotPanel = ref(null);
 
@@ -121,7 +125,7 @@ const {
     createScene,
     activateScene,
     closeScene,
-} = useSceneSession({ auth });
+} = useSceneSession({ auth, chronicleId });
 
 const {
     messages,
@@ -141,6 +145,7 @@ const {
     canPost,
     getLog: () => chatLog.value,
     myCharacterId,
+    chronicleId,
 });
 
 bindMessages(messages);
@@ -230,10 +235,20 @@ async function onNpcSent(message) {
     await scrollDown();
 }
 
-onMounted(async () => {
+async function bootstrapChat() {
+    messages.value = [];
+    resetCopilotDrafts();
     await loadGameSession();
     await loadParticipants();
     await load();
+}
+
+watch(chronicleId, async () => {
+    await bootstrapChat();
+});
+
+onMounted(async () => {
+    await bootstrapChat();
     timer = setInterval(poll, 3000);
 });
 

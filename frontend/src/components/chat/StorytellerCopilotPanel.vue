@@ -131,6 +131,7 @@ import { useCopilotPanel } from '../../composables/useCopilotPanel';
 const props = defineProps({
     sceneNpcs: { type: Array, required: true },
     selectedSceneId: { default: null },
+    chronicleId: { type: [String, Number], required: true },
     canPost: { type: Boolean, required: true },
 });
 
@@ -162,6 +163,7 @@ const {
 } = useCopilotPanel({
     selectedSceneId: toRef(props, 'selectedSceneId'),
     selectedNpcId,
+    chronicleId: toRef(props, 'chronicleId'),
     onSent: (message) => emit('sent', message),
 });
 

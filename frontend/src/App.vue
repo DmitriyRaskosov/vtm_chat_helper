@@ -15,7 +15,7 @@ import { isStoryteller } from './auth';
 
 const route = useRoute();
 const isWide = computed(() => (
-    (isStoryteller.value && route.name === 'chat')
+    (isStoryteller.value && route.name === 'chronicle-chat')
     || route.name === 'characters'
     || route.name === 'character'
 ));

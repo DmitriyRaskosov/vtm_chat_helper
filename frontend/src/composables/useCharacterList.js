@@ -1,9 +1,10 @@
 import { computed, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { api, isStoryteller } from '../auth';
+import { CHRONICLE_NOT_SELECTED, chronicleCollectionPath, resolveChronicleId } from './useCurrentChronicle';
 import { apiErrorMessage } from '../utils/apiError';
 
-export function useCharacterList() {
+export function useCharacterList(chronicleId) {
     const router = useRouter();
     const characters = ref([]);
     const archived = ref([]);
@@ -19,8 +20,18 @@ export function useCharacterList() {
 
     async function load() {
         error.value = '';
+
+        let path;
         try {
-            const { data } = await api.get('/characters');
+            path = chronicleCollectionPath(chronicleId, 'characters');
+        } catch {
+            error.value = CHRONICLE_NOT_SELECTED;
+
+            return;
+        }
+
+        try {
+            const { data } = await api.get(path);
             characters.value = data.characters ?? [];
             archived.value = data.archived ?? [];
         } catch (e) {
@@ -31,6 +42,19 @@ export function useCharacterList() {
     async function createCharacter() {
         saving.value = true;
         error.value = '';
+
+        let path;
+        let id;
+        try {
+            path = chronicleCollectionPath(chronicleId, 'characters');
+            id = resolveChronicleId(chronicleId);
+        } catch {
+            error.value = CHRONICLE_NOT_SELECTED;
+            saving.value = false;
+
+            return;
+        }
+
         try {
             const payload = {
                 canonical_name: form.canonical_name.trim(),
@@ -39,8 +63,14 @@ export function useCharacterList() {
             if (form.character_type === 'player' && form.user_id) {
                 payload.user_id = form.user_id;
             }
-            const { data } = await api.post('/characters', payload);
-            await router.push(`/characters/${data.character.id}`);
+            const { data } = await api.post(path, payload);
+            await router.push({
+                name: 'character',
+                params: {
+                    chronicleId: String(id),
+                    id: String(data.character.id),
+                },
+            });
         } catch (e) {
             error.value = apiErrorMessage(e, 'Не удалось создать персонажа.');
         } finally {
@@ -48,20 +78,22 @@ export function useCharacterList() {
         }
     }
 
-    async function hideCharacter(id) {
+    async function hideCharacter(characterRowId) {
         error.value = '';
+
         try {
-            await api.post(`/characters/${id}/archive`);
+            await api.post(`/characters/${characterRowId}/archive`);
             await load();
         } catch (e) {
             error.value = apiErrorMessage(e, 'Не удалось скрыть персонажа.');
         }
     }
 
-    async function restoreCharacter(id) {
+    async function restoreCharacter(characterRowId) {
         error.value = '';
+
         try {
-            await api.post(`/characters/${id}/restore`);
+            await api.post(`/characters/${characterRowId}/restore`);
             await load();
         } catch (e) {
             error.value = apiErrorMessage(e, 'Не удалось вернуть персонажа.');

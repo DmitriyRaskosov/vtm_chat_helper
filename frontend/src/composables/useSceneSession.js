@@ -1,5 +1,6 @@
 import { computed, ref, watch } from 'vue';
 import { api, isStoryteller } from '../auth';
+import { CHRONICLE_NOT_SELECTED, chronicleCollectionPath } from './useCurrentChronicle';
 import { useFlash } from './useFlash';
 import { apiErrorMessage } from '../utils/apiError';
 export function sceneStatusLabel(status) {
@@ -29,7 +30,7 @@ function flattenRoster(rows) {
     return out;
 }
 
-export function useSceneSession({ auth }) {
+export function useSceneSession({ auth, chronicleId }) {
     const gameSession = ref(null);
     const newGameSessionTitle = ref('');
     const selectedSceneId = ref(null);
@@ -93,7 +94,21 @@ export function useSceneSession({ auth }) {
     }
 
     async function loadGameSession(preferredSceneId = selectedSceneId.value) {
-        const { data } = await api.get('/game-sessions/active');
+        let path;
+        try {
+            path = chronicleCollectionPath(chronicleId, 'game-sessions/active');
+        } catch {
+            sceneError.value = CHRONICLE_NOT_SELECTED;
+            gameSession.value = null;
+            selectedSceneId.value = null;
+            if (boundMessages) {
+                boundMessages.value = [];
+            }
+
+            return;
+        }
+
+        const { data } = await api.get(path);
         gameSession.value = data.game_session;
 
         if (!gameSession.value) {
@@ -212,7 +227,7 @@ export function useSceneSession({ auth }) {
         }
     
         try {
-            const { data } = await api.get('/characters');
+            const { data } = await api.get(chronicleCollectionPath(chronicleId, 'characters'));
             if (selectedSceneId.value !== sceneId) {
                 return;
             }
@@ -286,7 +301,7 @@ export function useSceneSession({ auth }) {
         sceneError.value = '';
 
         try {
-            const { data } = await api.post('/game-sessions', { title });
+            const { data } = await api.post(chronicleCollectionPath(chronicleId, 'game-sessions'), { title });
             newGameSessionTitle.value = '';
             gameSession.value = data.game_session;
             selectedSceneId.value = gameSession.value.active_scene_id;

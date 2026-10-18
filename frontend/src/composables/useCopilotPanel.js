@@ -1,8 +1,9 @@
 import { computed, ref, toValue } from 'vue';
 import { api } from '../auth';
+import { chronicleCollectionPath } from './useCurrentChronicle';
 import { apiErrorMessage } from '../utils/apiError';
 
-export function useCopilotPanel({ selectedSceneId, selectedNpcId, onSent }) {
+export function useCopilotPanel({ selectedSceneId, selectedNpcId, onSent, chronicleId }) {
     const copilotPrompt = ref('');
     const copilotRequestId = ref(null);
     const drafts = ref([]);
@@ -39,7 +40,7 @@ export function useCopilotPanel({ selectedSceneId, selectedNpcId, onSent }) {
         resetDrafts();
 
         try {
-            const { data } = await api.post('/copilot/drafts', {
+            const { data } = await api.post(chronicleCollectionPath(chronicleId, 'copilot/drafts'), {
                 character_id: selectedNpcId.value,
                 prompt: copilotPrompt.value.trim(),
                 scene_id: toValue(selectedSceneId),
@@ -68,7 +69,7 @@ export function useCopilotPanel({ selectedSceneId, selectedNpcId, onSent }) {
         copilotError.value = '';
 
         try {
-            const { data } = await api.post('/messages', {
+            const { data } = await api.post(chronicleCollectionPath(chronicleId, 'messages'), {
                 body: text,
                 character_id: selectedNpcId.value,
                 scene_id: toValue(selectedSceneId),

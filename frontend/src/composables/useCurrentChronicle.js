@@ -1,13 +1,57 @@
-import { computed, ref } from 'vue';
+import { computed, ref, toValue } from 'vue';
 import { api } from '../auth';
 import { apiErrorMessage } from '../utils/apiError';
 
-const STORAGE_KEY = 'game-chat-chronicle';
+export const STORAGE_KEY = 'game-chat-chronicle';
+export const CHRONICLE_NOT_SELECTED = 'Хроника не выбрана';
 
 const chronicles = ref([]);
 const currentId = ref(null);
 const loading = ref(false);
 const error = ref('');
+
+export function readStoredChronicleId() {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const id = Number.parseInt(raw ?? '', 10);
+
+    if (!Number.isFinite(id) || id <= 0) {
+        return null;
+    }
+
+    return id;
+}
+
+export function resolveChroniclePath(subpath) {
+    const id = readStoredChronicleId();
+
+    if (id) {
+        return `/c/${id}/${subpath}`;
+    }
+
+    return '/chronicles';
+}
+
+export function resolveChronicleId(chronicleId) {
+    const id = Number(toValue(chronicleId));
+
+    if (!Number.isFinite(id) || id <= 0) {
+        return null;
+    }
+
+    return id;
+}
+
+export function chronicleCollectionPath(chronicleId, suffix) {
+    const id = resolveChronicleId(chronicleId);
+
+    if (id === null) {
+        throw new Error(CHRONICLE_NOT_SELECTED);
+    }
+
+    const path = suffix.startsWith('/') ? suffix.slice(1) : suffix;
+
+    return `/chronicles/${id}/${path}`;
+}
 
 function syncCurrentIdWithList() {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -40,6 +84,37 @@ function select(id) {
 
     currentId.value = numericId;
     localStorage.setItem(STORAGE_KEY, String(numericId));
+}
+
+function syncFromRoute(routeChronicleId) {
+    const numericId = Number(routeChronicleId);
+
+    if (!Number.isFinite(numericId) || numericId <= 0) {
+        return;
+    }
+
+    if (!chronicles.value.length) {
+        currentId.value = numericId;
+        localStorage.setItem(STORAGE_KEY, String(numericId));
+
+        return;
+    }
+
+    select(numericId);
+}
+
+function isKnownChronicle(routeChronicleId) {
+    const numericId = Number(routeChronicleId);
+
+    if (!Number.isFinite(numericId)) {
+        return false;
+    }
+
+    if (!chronicles.value.length) {
+        return true;
+    }
+
+    return chronicles.value.some((item) => item.id === numericId);
 }
 
 async function load() {
@@ -88,6 +163,8 @@ export function useCurrentChronicle() {
         error,
         load,
         select,
+        syncFromRoute,
+        isKnownChronicle,
         create,
     };
 }
