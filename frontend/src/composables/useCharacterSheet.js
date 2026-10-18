@@ -2,10 +2,6 @@ import { computed, reactive, ref, unref } from 'vue';
 import { api, isStoryteller } from '../auth';
 import { useFlash } from './useFlash';
 import { apiErrorMessage } from '../utils/apiError';
-import { characterTypeLabel } from '../utils/labels';
-
-export { characterTypeLabel as typeLabel };
-
 export const TRAIT_PRESETS = [
     {
         key: 'appearance',

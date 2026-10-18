@@ -8,6 +8,7 @@ use App\Http\Requests\PreviewDiaryRequest;
 use App\Http\Requests\UpdateDiaryEntryRequest;
 use App\Http\Resources\DiaryEntryListResource;
 use App\Http\Resources\DiaryEntryResource;
+use App\Http\Resources\DiaryPreviewResource;
 use App\Models\Character;
 use App\Models\CharacterDiaryEntry;
 use Illuminate\Http\JsonResponse;
@@ -53,7 +54,9 @@ class DiaryEntryController extends Controller
         $sceneId = $request->has('scene_id') ? (int) $request->validated('scene_id') : null;
         $prompt = (string) ($request->validated('prompt') ?? '');
 
-        return response()->json($this->previewer->preview($character, $sceneId, $prompt));
+        $preview = $this->previewer->preview($character, $sceneId, $prompt);
+
+        return response()->json((new DiaryPreviewResource($preview))->toArray($request));
     }
 
     public function update(

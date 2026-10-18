@@ -36,6 +36,41 @@ class DiaryJsonShapeTest extends TestCase
         'created_at',
     ];
 
+    private const PREVIEW_ROOT_KEYS = [
+        'character_id',
+        'scene_id',
+        'recent_first_message_id',
+        'prompt',
+        'budget',
+        'tokens_estimate',
+        'truncated',
+        'stats',
+        'selected',
+        'rendered',
+    ];
+
+    private const PREVIEW_SELECTED_KEYS = [
+        'id',
+        'level',
+        'scene_id',
+        'from_message_id',
+        'to_message_id',
+        'created_at',
+        'label',
+        'excerpt',
+        'importance',
+        'emotion',
+    ];
+
+    private const PREVIEW_STATS_KEYS = [
+        'total_entries',
+        'stale',
+        'filtered_by_recent',
+        'kept_by_current_scene',
+        'in_pool',
+        'selected',
+    ];
+
     private const FULL_ENTRY_KEYS = [
         'id',
         'character_id',
@@ -195,6 +230,35 @@ class DiaryJsonShapeTest extends TestCase
 
         $item = $response->json('entry');
         $this->assertSame(self::FULL_ENTRY_KEYS, array_keys($item));
+    }
+
+    public function test_post_character_diary_preview_shape(): void
+    {
+        $this->fakeEmbeddings();
+        $entry = $this->createDiaryEntry('Текст для превью дневника в Copilot');
+
+        $response = $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson("/api/characters/{$this->npc->id}/diary/preview", [
+                'scene_id' => $this->scene->id,
+                'prompt' => 'Синопсис для превью',
+            ]);
+
+        $response->assertStatus(200);
+        $payload = $response->json();
+        $this->assertSame(self::PREVIEW_ROOT_KEYS, array_keys($payload));
+        $this->assertSame((int) $this->npc->id, $payload['character_id']);
+        $this->assertSame((int) $this->scene->id, $payload['scene_id']);
+        $this->assertSame('Синопсис для превью', $payload['prompt']);
+        $this->assertIsBool($payload['truncated']);
+        $this->assertIsString($payload['rendered']);
+        $this->assertSame(self::PREVIEW_STATS_KEYS, array_keys($payload['stats']));
+        $this->assertNotEmpty($payload['selected']);
+
+        $item = $payload['selected'][0];
+        $this->assertSame(self::PREVIEW_SELECTED_KEYS, array_keys($item));
+        $this->assertSame((int) $entry->id, $item['id']);
+        $this->assertIsString($item['created_at']);
+        $this->assertLessThanOrEqual(200, mb_strlen($item['excerpt']));
     }
 
     public function test_copilot_drafts_response_shape(): void

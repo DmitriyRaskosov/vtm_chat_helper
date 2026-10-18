@@ -1,7 +1,7 @@
 # 034b — Фронт: превью дневника, вход, реэкспорты меток
 
 - **Stage:** 2
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 022, 034
 - **Risk:** low
 - **Part:** 3

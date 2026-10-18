@@ -2,10 +2,6 @@ import { computed, ref, watch } from 'vue';
 import { api, isStoryteller } from '../auth';
 import { useFlash } from './useFlash';
 import { apiErrorMessage } from '../utils/apiError';
-import { characterTypeLabel } from '../utils/labels';
-
-export { characterTypeLabel };
-
 export function sceneStatusLabel(status) {
     return {
         active: 'активна',

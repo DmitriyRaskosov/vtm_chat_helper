@@ -161,7 +161,8 @@
 </template>
 
 <script setup>
-import { characterTypeLabel, sceneStatusLabel } from '../../composables/useSceneSession';
+import { sceneStatusLabel } from '../../composables/useSceneSession';
+import { characterTypeLabel } from '../../utils/labels';
 
 defineProps({
     gameSession: { type: Object, default: null },

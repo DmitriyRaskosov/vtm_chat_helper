@@ -21,7 +21,7 @@
             <input v-model.number="identity.generation" type="number" min="4" max="15" />
         </label>
         <p class="muted">
-            {{ typeLabel(sheet.character_type) }}
+            {{ characterTypeLabel(sheet.character_type) }}
             <template v-if="sheet.clan?.name"> · {{ sheet.clan.name }}</template>
         </p>
         <div class="sheet-actions">
@@ -32,7 +32,7 @@
 </template>
 
 <script setup>
-import { typeLabel } from '../../composables/useCharacterSheet';
+import { characterTypeLabel } from '../../utils/labels';
 
 defineProps({
     identity: { type: Object, required: true },
