@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Models\Chronicle;
 use App\Models\Message;
 use App\Models\Scene;
 use App\Models\User;
@@ -31,7 +32,7 @@ class MessagePolicy
 
     private function denyUnlessCanEdit(User $user, Message $message): Response|bool
     {
-        if ($user->isStoryteller()) {
+        if ($user->isStorytellerIn($this->chronicleForMessage($message))) {
             return true;
         }
 
@@ -40,5 +41,12 @@ class MessagePolicy
         }
 
         return Response::deny('You cannot edit this message.');
+    }
+
+    private function chronicleForMessage(Message $message): Chronicle
+    {
+        $message->loadMissing('scene.gameSession.chronicle');
+
+        return $message->scene->gameSession->chronicle;
     }
 }

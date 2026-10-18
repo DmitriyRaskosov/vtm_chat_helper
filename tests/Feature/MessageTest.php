@@ -2,15 +2,19 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ChronicleRole;
 use App\Models\Chronicle;
 use App\Models\GameSession;
 use App\Models\User;
 use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
+use Tests\Support\JoinsChronicle;
 use Tests\TestCase;
 
 class MessageTest extends TestCase
 {
+    use JoinsChronicle;
+
     private User $storyteller;
 
     private Chronicle $chronicle;
@@ -31,6 +35,7 @@ class MessageTest extends TestCase
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);
+        $this->joinChronicle($this->storyteller, $this->chronicle, ChronicleRole::Storyteller);
         $this->gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $this->chronicle->id,
             'title' => 'Тестовая сессия',
@@ -153,6 +158,7 @@ class MessageTest extends TestCase
         $npcId = $this->createNpcInScene();
         $copilotRequestId = $this->createCopilotRequest($npcId);
         $other = User::factory()->storyteller()->create();
+        $this->joinChronicle($other, $this->chronicle, ChronicleRole::Storyteller);
 
         $this->actingAs($other, 'sanctum')
             ->postJson('/api/messages', [

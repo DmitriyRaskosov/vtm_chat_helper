@@ -2,15 +2,19 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ChronicleRole;
 use App\Models\Chronicle;
 use App\Models\GameSession;
 use App\Models\User;
 use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
+use Tests\Support\JoinsChronicle;
 use Tests\TestCase;
 
 class CurrentChronicleTest extends TestCase
 {
+    use JoinsChronicle;
+
     private User $storyteller;
 
     protected function setUp(): void
@@ -38,6 +42,7 @@ class CurrentChronicleTest extends TestCase
             'title' => 'Первая',
             'created_by' => $this->storyteller->id,
         ]);
+        $this->joinChronicle($this->storyteller, $first, ChronicleRole::Storyteller);
         $second = Chronicle::factory()->create([
             'title' => 'Вторая',
             'created_by' => $this->storyteller->id,
@@ -82,6 +87,7 @@ class CurrentChronicleTest extends TestCase
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);
+        $this->joinChronicle($this->storyteller, $chronicle, ChronicleRole::Storyteller);
 
         $response = $this->actingAs($this->storyteller, 'sanctum')
             ->postJson('/api/characters', [
@@ -100,6 +106,7 @@ class CurrentChronicleTest extends TestCase
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);
+        $this->joinChronicle($this->storyteller, $chronicle, ChronicleRole::Storyteller);
         $gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $chronicle->id,
             'title' => 'Сессия',
@@ -137,6 +144,7 @@ class CurrentChronicleTest extends TestCase
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);
+        $this->joinChronicle($this->storyteller, $chronicle, ChronicleRole::Storyteller);
         $gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $chronicle->id,
             'title' => 'Сессия',

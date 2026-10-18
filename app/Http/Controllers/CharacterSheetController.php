@@ -59,7 +59,9 @@ class CharacterSheetController extends Controller
 
         $query = Character::query()->where('chronicle_id', $chronicleId)->where('is_active', true);
 
-        if (! $user?->isStoryteller()) {
+        $isStorytellerInChronicle = $user !== null && $user->isStorytellerIn($this->currentChronicle->get());
+
+        if (! $isStorytellerInChronicle) {
             $pcId = Character::query()
                 ->where('user_id', $user?->id)
                 ->where('character_type', CharacterType::Player)
@@ -74,7 +76,7 @@ class CharacterSheetController extends Controller
 
         $characters = $query->with('entity')->orderBy('id')->get();
 
-        $archivedModels = $user?->isStoryteller()
+        $archivedModels = $isStorytellerInChronicle
             ? Character::query()
                 ->where('chronicle_id', $chronicleId)
                 ->where('is_active', false)

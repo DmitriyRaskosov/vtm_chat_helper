@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Diary\DiaryScheduler;
+use App\Enums\ChronicleRole;
 use App\Enums\SceneParticipantRole;
 use App\Jobs\SummarizeSceneDiaryJob;
 use App\Jobs\WriteDiaryJob;
@@ -18,11 +19,13 @@ use Database\Seeders\CanonSectSeeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Tests\Support\CreatesDiaryEntries;
+use Tests\Support\JoinsChronicle;
 use Tests\TestCase;
 
 class DiarySchedulerTest extends TestCase
 {
     use CreatesDiaryEntries;
+    use JoinsChronicle;
 
     private User $storyteller;
 
@@ -47,6 +50,7 @@ class DiarySchedulerTest extends TestCase
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);
+        $this->joinChronicle($this->storyteller, $this->chronicle, ChronicleRole::Storyteller);
 
         $this->gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $this->chronicle->id,

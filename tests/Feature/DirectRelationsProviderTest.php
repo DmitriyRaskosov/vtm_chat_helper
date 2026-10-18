@@ -6,6 +6,7 @@ use App\Context\ContextAssembly;
 use App\Context\ContextPass;
 use App\Context\ContextRequest;
 use App\Context\Providers\DirectRelationsProvider;
+use App\Enums\ChronicleRole;
 use App\Enums\WorldRelationKind;
 use App\Models\Character;
 use App\Models\Chronicle;
@@ -16,10 +17,13 @@ use App\Models\WorldEntity;
 use App\Models\WorldRelation;
 use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
+use Tests\Support\JoinsChronicle;
 use Tests\TestCase;
 
 class DirectRelationsProviderTest extends TestCase
 {
+    use JoinsChronicle;
+
     public function test_assemble_includes_active_neighbor_relation(): void
     {
         $this->seed(CanonSectSeeder::class);
@@ -30,6 +34,7 @@ class DirectRelationsProviderTest extends TestCase
             'title' => 'Тестовая хроника',
             'created_by' => $storyteller->id,
         ]);
+        $this->joinChronicle($storyteller, $chronicle, ChronicleRole::Storyteller);
 
         $gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $chronicle->id,

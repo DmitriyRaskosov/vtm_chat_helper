@@ -2,15 +2,19 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ChronicleRole;
 use App\Models\Chronicle;
 use App\Models\GameSession;
 use App\Models\User;
 use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
+use Tests\Support\JoinsChronicle;
 use Tests\TestCase;
 
 class ChatJsonShapeTest extends TestCase
 {
+    use JoinsChronicle;
+
     private const MESSAGE_KEYS = [
         'id',
         'scene_id',
@@ -45,6 +49,7 @@ class ChatJsonShapeTest extends TestCase
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);
+        $this->joinChronicle($this->storyteller, $this->chronicle, ChronicleRole::Storyteller);
 
         $gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $this->chronicle->id,

@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ChronicleRole;
 use App\Enums\SceneParticipantRole;
 use App\Models\Character;
 use App\Models\Chronicle;
@@ -13,12 +14,14 @@ use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
 use Tests\Support\CreatesDiaryEntries;
 use Tests\Support\CreatesSceneMessages;
+use Tests\Support\JoinsChronicle;
 use Tests\TestCase;
 
 class DiaryJsonShapeTest extends TestCase
 {
     use CreatesDiaryEntries;
     use CreatesSceneMessages;
+    use JoinsChronicle;
 
     private const LIST_ENTRY_KEYS = [
         'id',
@@ -111,6 +114,7 @@ class DiaryJsonShapeTest extends TestCase
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);
+        $this->joinChronicle($this->storyteller, $this->chronicle, ChronicleRole::Storyteller);
 
         $this->gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $this->chronicle->id,

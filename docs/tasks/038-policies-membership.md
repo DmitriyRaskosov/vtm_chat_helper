@@ -1,7 +1,7 @@
 # 038 — Policies по роли в хронике
 
 - **Stage:** 3
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 037
 - **Risk:** high (ломает всё, что зависело от isStoryteller())
 - **Part:** 4

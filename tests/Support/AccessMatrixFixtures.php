@@ -82,6 +82,18 @@ final class AccessMatrixFixtures
             ->storyteller()
             ->create();
 
+        ChronicleMember::factory()
+            ->for($fixtures->chronicle)
+            ->for($fixtures->playerOwner)
+            ->player()
+            ->create();
+
+        ChronicleMember::factory()
+            ->for($fixtures->chronicle)
+            ->for($fixtures->playerForeign)
+            ->player()
+            ->create();
+
         $fixtures->invitation = ChronicleInvitation::factory()->create([
             'chronicle_id' => $fixtures->chronicle->id,
             'created_by' => $fixtures->storyteller->id,

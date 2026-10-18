@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ChronicleRole;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneStatus;
 use App\Models\Chronicle;
@@ -11,10 +12,13 @@ use App\Models\SceneContext;
 use App\Models\User;
 use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
+use Tests\Support\JoinsChronicle;
 use Tests\TestCase;
 
 class GameSessionTest extends TestCase
 {
+    use JoinsChronicle;
+
     private User $storyteller;
 
     private Chronicle $chronicle;
@@ -31,6 +35,7 @@ class GameSessionTest extends TestCase
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);
+        $this->joinChronicle($this->storyteller, $this->chronicle, ChronicleRole::Storyteller);
     }
 
     public function test_active_without_session_returns_null(): void

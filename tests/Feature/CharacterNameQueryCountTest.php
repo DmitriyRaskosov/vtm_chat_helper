@@ -2,21 +2,25 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ChronicleRole;
 use App\Models\Chronicle;
 use App\Models\User;
 use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\JoinsChronicle;
 use Tests\TestCase;
 
 class CharacterNameQueryCountTest extends TestCase
 {
-    /** Зафиксировано до задачи 023 (DB::listen на демо-подобных данных). */
-    /** До задачи 023: 5. */
-    private const MAX_QUERIES_CHARACTER_SHOW = 5;
+    use JoinsChronicle;
 
-    /** До задачи 023: 5. */
-    private const MAX_QUERIES_CHARACTER_INDEX = 5;
+    /** Зафиксировано до задачи 023 (DB::listen на демо-подобных данных). */
+    /** До задачи 023: 5; после 038 (членство рассказчика): 6. */
+    private const MAX_QUERIES_CHARACTER_SHOW = 6;
+
+    /** До задачи 023: 5; после 038 (членство рассказчика): 6. */
+    private const MAX_QUERIES_CHARACTER_INDEX = 6;
 
     /** До задачи 023: 4. */
     private const MAX_QUERIES_MESSAGES_INDEX = 4;
@@ -44,6 +48,7 @@ class CharacterNameQueryCountTest extends TestCase
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);
+        $this->joinChronicle($this->storyteller, $this->chronicle, ChronicleRole::Storyteller);
 
         foreach (['NPC 1', 'NPC 2', 'NPC 3', 'NPC 4', 'NPC 5'] as $name) {
             $this->actingAs($this->storyteller, 'sanctum')

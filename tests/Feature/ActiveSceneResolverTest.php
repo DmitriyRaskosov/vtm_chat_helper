@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ChronicleRole;
 use App\Enums\GameSessionStatus;
 use App\Models\Character;
 use App\Models\Chronicle;
@@ -10,10 +11,13 @@ use App\Models\Message;
 use App\Models\User;
 use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
+use Tests\Support\JoinsChronicle;
 use Tests\TestCase;
 
 class ActiveSceneResolverTest extends TestCase
 {
+    use JoinsChronicle;
+
     private User $storyteller;
 
     private Chronicle $chronicle;
@@ -34,6 +38,7 @@ class ActiveSceneResolverTest extends TestCase
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);
+        $this->joinChronicle($this->storyteller, $this->chronicle, ChronicleRole::Storyteller);
         $this->gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $this->chronicle->id,
             'title' => 'Тестовая сессия',
@@ -137,6 +142,7 @@ class ActiveSceneResolverTest extends TestCase
             'title' => 'Другая',
             'created_by' => $this->storyteller->id,
         ]);
+        $this->joinChronicle($this->storyteller, $otherChronicle, ChronicleRole::Storyteller);
 
         $foreign = Character::factory()
             ->forChronicle($otherChronicle)
@@ -159,6 +165,7 @@ class ActiveSceneResolverTest extends TestCase
             'title' => 'Другая',
             'created_by' => $this->storyteller->id,
         ]);
+        $this->joinChronicle($this->storyteller, $otherChronicle, ChronicleRole::Storyteller);
 
         $foreign = Character::factory()
             ->forChronicle($otherChronicle)

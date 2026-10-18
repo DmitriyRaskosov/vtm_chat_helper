@@ -3,14 +3,21 @@
 namespace App\Policies;
 
 use App\Character\Exceptions\CharacterNotInChronicleException;
+use App\Chronicle\CurrentChronicle;
 use App\Enums\CharacterType;
+use App\Enums\ChronicleRole;
 use App\Models\Character;
+use App\Models\ChronicleMember;
 use App\Models\Scene;
 use App\Models\User;
 use Illuminate\Auth\Access\Response;
 
 class CharacterPolicy
 {
+    public function __construct(
+        private CurrentChronicle $currentChronicle,
+    ) {}
+
     public function view(User $user, Character $character): Response|bool
     {
         return $this->denyUnlessManagesSheet($user, $character);
@@ -23,30 +30,24 @@ class CharacterPolicy
 
     public function create(User $user): Response|bool
     {
-        return $user->isStoryteller()
+        return $user->isStorytellerIn($this->currentChronicle->get())
             ? true
             : Response::deny('Только рассказчик.');
     }
 
     public function archive(User $user, Character $character): Response|bool
     {
-        return $user->isStoryteller()
-            ? true
-            : Response::deny('Только рассказчик.');
+        return $this->denyUnlessStorytellerInCharacterChronicle($user, $character);
     }
 
     public function restore(User $user, Character $character): Response|bool
     {
-        return $user->isStoryteller()
-            ? true
-            : Response::deny('Только рассказчик.');
+        return $this->denyUnlessStorytellerInCharacterChronicle($user, $character);
     }
 
     public function updatePlace(User $user, Character $character): Response|bool
     {
-        return $user->isStoryteller()
-            ? true
-            : Response::deny('Только рассказчик.');
+        return $this->denyUnlessStorytellerInCharacterChronicle($user, $character);
     }
 
     public function speakAs(User $user, Character $character): bool
@@ -56,7 +57,7 @@ class CharacterPolicy
         }
 
         return match ($character->character_type) {
-            CharacterType::Npc => $user->isStoryteller(),
+            CharacterType::Npc => $this->userIsStorytellerInChronicleId($user, (int) $character->chronicle_id),
             CharacterType::Player => $character->isPlayableBy($user),
         };
     }
@@ -74,24 +75,37 @@ class CharacterPolicy
 
     public function viewDiary(User $user, Character $character): Response|bool
     {
-        return $user->isStoryteller()
-            ? true
-            : Response::deny('Только рассказчик.');
+        return $this->denyUnlessStorytellerInCharacterChronicle($user, $character);
     }
 
     public function previewDiary(User $user, Character $character): Response|bool
     {
-        return $user->isStoryteller()
-            ? true
-            : Response::deny('Только рассказчик.');
+        return $this->denyUnlessStorytellerInCharacterChronicle($user, $character);
     }
 
     private function denyUnlessManagesSheet(User $user, Character $character): Response|bool
     {
-        if ($user->isStoryteller() || $character->isPlayableBy($user)) {
+        if ($this->userIsStorytellerInChronicleId($user, (int) $character->chronicle_id) || $character->isPlayableBy($user)) {
             return true;
         }
 
         return Response::deny('You cannot access this character sheet.');
+    }
+
+    private function denyUnlessStorytellerInCharacterChronicle(User $user, Character $character): Response|bool
+    {
+        return $this->userIsStorytellerInChronicleId($user, (int) $character->chronicle_id)
+            ? true
+            : Response::deny('Только рассказчик.');
+    }
+
+    private function userIsStorytellerInChronicleId(User $user, int $chronicleId): bool
+    {
+        return ChronicleMember::query()
+            ->where('chronicle_id', $chronicleId)
+            ->where('user_id', $user->id)
+            ->whereNull('left_at')
+            ->where('role', ChronicleRole::Storyteller)
+            ->exists();
     }
 }

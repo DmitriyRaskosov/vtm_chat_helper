@@ -2,6 +2,7 @@
 
 namespace Tests\Support;
 
+use App\Enums\ChronicleRole;
 use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\GameSession;
@@ -12,6 +13,8 @@ use Database\Seeders\CanonSectSeeder;
 
 trait CreatesCopilotScene
 {
+    use JoinsChronicle;
+
     protected User $storyteller;
 
     protected Chronicle $chronicle;
@@ -36,6 +39,7 @@ trait CreatesCopilotScene
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);
+        $this->joinChronicle($this->storyteller, $this->chronicle, ChronicleRole::Storyteller);
         $this->gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $this->chronicle->id,
             'title' => 'Тестовая сессия',

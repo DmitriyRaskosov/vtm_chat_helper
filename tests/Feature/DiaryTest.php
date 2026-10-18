@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Diary\DiaryEntryEditor;
 use App\Diary\DiaryRetrievalService;
 use App\Diary\Exceptions\InvalidDiaryEntryInputException;
+use App\Enums\ChronicleRole;
 use App\Enums\SceneParticipantRole;
 use App\Jobs\SummarizeSceneDiaryJob;
 use App\Jobs\WriteDiaryJob;
@@ -20,12 +21,14 @@ use Database\Seeders\CanonSectSeeder;
 use Illuminate\Support\Facades\Queue;
 use Tests\Support\CreatesDiaryEntries;
 use Tests\Support\CreatesSceneMessages;
+use Tests\Support\JoinsChronicle;
 use Tests\TestCase;
 
 class DiaryTest extends TestCase
 {
     use CreatesDiaryEntries;
     use CreatesSceneMessages;
+    use JoinsChronicle;
 
     private User $storyteller;
 
@@ -50,6 +53,7 @@ class DiaryTest extends TestCase
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);
+        $this->joinChronicle($this->storyteller, $this->chronicle, ChronicleRole::Storyteller);
 
         $this->gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $this->chronicle->id,

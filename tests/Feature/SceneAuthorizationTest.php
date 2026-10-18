@@ -2,16 +2,20 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ChronicleRole;
 use App\Models\Chronicle;
 use App\Models\GameSession;
 use App\Models\Scene;
 use App\Models\User;
 use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
+use Tests\Support\JoinsChronicle;
 use Tests\TestCase;
 
 class SceneAuthorizationTest extends TestCase
 {
+    use JoinsChronicle;
+
     private User $storyteller;
 
     private Chronicle $chronicle;
@@ -28,6 +32,7 @@ class SceneAuthorizationTest extends TestCase
             'title' => 'Тестовая хроника',
             'created_by' => $this->storyteller->id,
         ]);
+        $this->joinChronicle($this->storyteller, $this->chronicle, ChronicleRole::Storyteller);
     }
 
     public function test_player_cannot_create_game_session(): void

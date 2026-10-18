@@ -2,15 +2,19 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ChronicleRole;
 use App\Models\Chronicle;
 use App\Models\User;
 use App\Models\WorldEntity;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
+use Tests\Support\JoinsChronicle;
 use Tests\TestCase;
 
 class WorldEntityDeleteTest extends TestCase
 {
+    use JoinsChronicle;
+
     public function test_world_entity_cannot_be_deleted_from_database(): void
     {
         $storyteller = User::factory()->storyteller()->create();
@@ -18,6 +22,7 @@ class WorldEntityDeleteTest extends TestCase
             'title' => 'Тестовая хроника',
             'created_by' => $storyteller->id,
         ]);
+        $this->joinChronicle($storyteller, $chronicle, ChronicleRole::Storyteller);
 
         $response = $this->actingAs($storyteller, 'sanctum')
             ->postJson('/api/characters', [

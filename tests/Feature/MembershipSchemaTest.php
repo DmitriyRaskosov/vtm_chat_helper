@@ -7,7 +7,6 @@ use App\Enums\WorldEntityType;
 use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\User;
-use App\Policies\CharacterPolicy;
 use App\World\Exceptions\PlayerNotChronicleMemberException;
 use App\World\WorldEntityService;
 use Database\Seeders\CanonClanSeeder;
@@ -115,11 +114,9 @@ class MembershipSchemaTest extends TestCase
         $this->assertFalse($foreignPc->isPlayableBy($user));
         $this->assertFalse($ownA->isPlayableBy($foreign));
 
-        $policy = new CharacterPolicy;
-
-        $this->assertTrue($policy->speakAs($user, $ownA));
-        $this->assertTrue($policy->speakAs($user, $ownB));
-        $this->assertFalse($policy->speakAs($user, $foreignPc));
+        $this->assertTrue(Gate::forUser($user)->allows('speakAs', $ownA));
+        $this->assertTrue(Gate::forUser($user)->allows('speakAs', $ownB));
+        $this->assertFalse(Gate::forUser($user)->allows('speakAs', $foreignPc));
 
         $this->assertTrue(Gate::forUser($user)->allows('update', $ownA));
         $this->assertTrue(Gate::forUser($user)->allows('update', $ownB));
