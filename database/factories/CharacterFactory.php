@@ -3,10 +3,12 @@
 namespace Database\Factories;
 
 use App\Enums\CharacterType;
+use App\Enums\ChronicleRole;
 use App\Enums\WorldEntityStatus;
 use App\Enums\WorldEntityType;
 use App\Models\Character;
 use App\Models\Chronicle;
+use App\Models\ChronicleMember;
 use App\Models\User;
 use App\Models\WorldEntity;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -63,6 +65,22 @@ class CharacterFactory extends Factory
 
             $character->id = $entity->id;
             $character->entity_type = WorldEntityType::Character->value;
+
+            if (
+                $character->character_type === CharacterType::Player
+                && $character->user_id !== null
+            ) {
+                ChronicleMember::query()->firstOrCreate(
+                    [
+                        'chronicle_id' => $chronicleId,
+                        'user_id' => (int) $character->user_id,
+                    ],
+                    [
+                        'role' => ChronicleRole::Player,
+                        'joined_at' => now(),
+                    ],
+                );
+            }
         });
     }
 

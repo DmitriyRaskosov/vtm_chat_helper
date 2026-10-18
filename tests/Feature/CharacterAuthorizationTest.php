@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Models\Chronicle;
+use App\Models\ChronicleMember;
 use App\Models\GameSession;
 use App\Models\User;
 use Database\Seeders\CanonClanSeeder;
@@ -90,6 +91,12 @@ class CharacterAuthorizationTest extends TestCase
 
     private function createPlayerCharacter(User $player, string $name): int
     {
+        ChronicleMember::factory()
+            ->for($this->chronicle)
+            ->for($player)
+            ->player()
+            ->create();
+
         $response = $this->actingAs($this->storyteller, 'sanctum')
             ->postJson('/api/characters', [
                 'canonical_name' => $name,

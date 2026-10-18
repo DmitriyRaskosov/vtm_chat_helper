@@ -58,6 +58,22 @@ class Chronicle extends Model
         return $this->hasMany(GameSession::class);
     }
 
+    /**
+     * @return HasMany<ChronicleMember, $this>
+     */
+    public function members(): HasMany
+    {
+        return $this->hasMany(ChronicleMember::class);
+    }
+
+    /**
+     * @return HasMany<ChronicleInvitation, $this>
+     */
+    public function invitations(): HasMany
+    {
+        return $this->hasMany(ChronicleInvitation::class);
+    }
+
     protected function casts(): array
     {
         return [

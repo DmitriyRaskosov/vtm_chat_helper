@@ -19,7 +19,7 @@ return new class extends Migration
                 ->after('clan_id')
                 ->constrained('canon_sects')
                 ->nullOnDelete();
-            $table->foreignId('user_id')->nullable()->unique()->constrained()->restrictOnDelete();
+            $table->foreignId('user_id')->nullable()->constrained()->restrictOnDelete();
             $table->unsignedBigInteger('sire_character_id')->nullable();
             $table->unsignedTinyInteger('generation')->nullable();
             $table->unsignedSmallInteger('apparent_age')->nullable();
@@ -56,6 +56,17 @@ ALTER TABLE characters ADD CONSTRAINT characters_player_user_check CHECK (
 )
 SQL);
         DB::statement('ALTER TABLE characters ADD CONSTRAINT characters_sire_not_self_check CHECK (sire_character_id IS NULL OR sire_character_id <> id)');
+
+        DB::statement(<<<'SQL'
+CREATE UNIQUE INDEX characters_one_active_player_per_chronicle
+ON characters (chronicle_id, user_id)
+WHERE character_type = 'player' AND is_active = true
+SQL);
+
+        DB::statement(<<<'SQL'
+ALTER TABLE characters ADD CONSTRAINT characters_chronicle_member_foreign
+FOREIGN KEY (chronicle_id, user_id) REFERENCES chronicle_members (chronicle_id, user_id) ON DELETE RESTRICT
+SQL);
 
         DB::statement('ALTER TABLE messages ADD CONSTRAINT messages_author_character_id_foreign FOREIGN KEY (author_character_id) REFERENCES characters (id) ON DELETE RESTRICT');
         DB::statement('ALTER TABLE copilot_requests ADD CONSTRAINT copilot_requests_character_id_foreign FOREIGN KEY (character_id) REFERENCES characters (id) ON DELETE RESTRICT');

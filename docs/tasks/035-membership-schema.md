@@ -1,7 +1,7 @@
 # 035 — Схема членства и приглашений
 
 - **Stage:** 3
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 034, 018
 - **Risk:** high (меняет схему, затрагивает Character)
 - **Part:** 4

@@ -11,6 +11,7 @@ use App\Jobs\WriteDiaryJob;
 use App\Models\Character;
 use App\Models\CharacterDiaryEntry;
 use App\Models\Chronicle;
+use App\Models\ChronicleMember;
 use App\Models\GameSession;
 use App\Models\Scene;
 use App\Models\SceneParticipant;
@@ -340,6 +341,12 @@ class DiaryLlmServicesTest extends TestCase
         $this->fakeEmbeddings();
 
         $playerUser = User::factory()->create();
+
+        ChronicleMember::factory()
+            ->for($this->chronicle)
+            ->for($playerUser)
+            ->player()
+            ->create();
 
         $playerResponse = $this->actingAs($this->storyteller, 'sanctum')
             ->postJson('/api/characters', [

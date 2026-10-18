@@ -85,6 +85,11 @@ class FactoriesTest extends TestCase
             'user_id' => $character->user_id,
         ]);
         $this->assertDatabaseHas('world_entities', ['id' => $character->id]);
+        $this->assertDatabaseHas('chronicle_members', [
+            'chronicle_id' => $character->chronicle_id,
+            'user_id' => $character->user_id,
+            'role' => 'player',
+        ]);
     }
 
     public function test_player_without_user_id_fails_check_constraint(): void

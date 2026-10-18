@@ -21,6 +21,43 @@ return new class extends Migration
             $table->timestamps();
         });
 
+        Schema::create('chronicle_members', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('chronicle_id')->constrained()->restrictOnDelete();
+            $table->foreignId('user_id')->constrained()->restrictOnDelete();
+            $table->string('role', 20);
+            $table->timestamp('joined_at');
+            $table->timestamp('left_at')->nullable();
+            $table->timestamps();
+
+            $table->unique(['chronicle_id', 'user_id']);
+        });
+
+        DB::statement(<<<'SQL'
+ALTER TABLE chronicle_members ADD CONSTRAINT chronicle_members_role_check CHECK (
+    role IN ('storyteller', 'player')
+)
+SQL);
+
+        Schema::create('chronicle_invitations', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('chronicle_id')->constrained()->restrictOnDelete();
+            $table->string('token_hash')->unique();
+            $table->string('role', 20);
+            $table->foreignId('created_by')->constrained('users')->restrictOnDelete();
+            $table->timestamp('expires_at');
+            $table->unsignedInteger('max_uses')->nullable();
+            $table->unsignedInteger('uses')->default(0);
+            $table->timestamp('revoked_at')->nullable();
+            $table->timestamps();
+        });
+
+        DB::statement(<<<'SQL'
+ALTER TABLE chronicle_invitations ADD CONSTRAINT chronicle_invitations_role_check CHECK (
+    role IN ('storyteller', 'player')
+)
+SQL);
+
         Schema::create('game_sessions', function (Blueprint $table) {
             $table->id();
             $table->foreignId('chronicle_id')
@@ -46,6 +83,8 @@ return new class extends Migration
         DB::statement('DROP INDEX IF EXISTS game_sessions_single_active');
 
         Schema::dropIfExists('game_sessions');
+        Schema::dropIfExists('chronicle_invitations');
+        Schema::dropIfExists('chronicle_members');
         Schema::dropIfExists('chronicles');
     }
 };

@@ -8,9 +8,11 @@ use App\Enums\WorldEntityType;
 use App\Models\CanonClan;
 use App\Models\Character;
 use App\Models\Chronicle;
+use App\Models\ChronicleMember;
 use App\Models\Location;
 use App\Models\WorldEntity;
 use App\World\Exceptions\InvalidWorldEntityInputException;
+use App\World\Exceptions\PlayerNotChronicleMemberException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
 
@@ -188,6 +190,18 @@ class WorldEntityService
 
         if ($characterType === CharacterType::Npc && $userId !== null) {
             throw new InvalidWorldEntityInputException('An NPC cannot belong to a user.');
+        }
+
+        if ($characterType === CharacterType::Player) {
+            $isMember = ChronicleMember::query()
+                ->where('chronicle_id', $entity->chronicle_id)
+                ->where('user_id', $userId)
+                ->whereNull('left_at')
+                ->exists();
+
+            if (! $isMember) {
+                throw new PlayerNotChronicleMemberException;
+            }
         }
 
         $clanId = isset($typed['clan_id']) ? (int) $typed['clan_id'] : null;

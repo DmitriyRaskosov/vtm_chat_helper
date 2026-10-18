@@ -2,13 +2,13 @@
 
 namespace App\Models;
 
+use App\Enums\ChronicleRole;
 use App\Enums\UserRole;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
@@ -32,13 +32,19 @@ class User extends Authenticatable
     }
 
     /**
-     * У пользователя глобально не больше одного игрового персонажа.
-     *
-     * @return HasOne<Character, $this>
+     * @return HasMany<Character, $this>
      */
-    public function character(): HasOne
+    public function characters(): HasMany
     {
-        return $this->hasOne(Character::class);
+        return $this->hasMany(Character::class);
+    }
+
+    /**
+     * @return HasMany<ChronicleMember, $this>
+     */
+    public function chronicleMemberships(): HasMany
+    {
+        return $this->hasMany(ChronicleMember::class);
     }
 
     /**
@@ -68,6 +74,16 @@ class User extends Authenticatable
     public function isStoryteller(): bool
     {
         return $this->role === UserRole::Storyteller;
+    }
+
+    public function isStorytellerIn(Chronicle $chronicle): bool
+    {
+        return ChronicleMember::query()
+            ->where('chronicle_id', $chronicle->id)
+            ->where('user_id', $this->id)
+            ->whereNull('left_at')
+            ->where('role', ChronicleRole::Storyteller)
+            ->exists();
     }
 
     /**
