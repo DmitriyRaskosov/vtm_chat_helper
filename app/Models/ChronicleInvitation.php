@@ -8,7 +8,15 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property ChronicleRole $role
+ * @property Carbon $expires_at
+ * @property Carbon|null $revoked_at
+ * @property int $uses
+ * @property int|null $max_uses
+ */
 #[Fillable([
     'chronicle_id',
     'token_hash',

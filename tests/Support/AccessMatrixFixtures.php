@@ -6,6 +6,7 @@ use App\Models\CanonDiscipline;
 use App\Models\Character;
 use App\Models\CharacterDiaryEntry;
 use App\Models\Chronicle;
+use App\Models\ChronicleInvitation;
 use App\Models\ChronicleMember;
 use App\Models\CopilotRequest;
 use App\Models\GameSession;
@@ -29,6 +30,8 @@ final class AccessMatrixFixtures
     public User $playerForeign;
 
     public Chronicle $chronicle;
+
+    public ChronicleInvitation $invitation;
 
     public GameSession $gameSession;
 
@@ -78,6 +81,11 @@ final class AccessMatrixFixtures
             ->for($fixtures->storyteller)
             ->storyteller()
             ->create();
+
+        $fixtures->invitation = ChronicleInvitation::factory()->create([
+            'chronicle_id' => $fixtures->chronicle->id,
+            'created_by' => $fixtures->storyteller->id,
+        ]);
 
         $fixtures->gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $fixtures->chronicle->id,
@@ -157,6 +165,8 @@ final class AccessMatrixFixtures
         $map = [
             '{scene}' => (string) $this->scene->id,
             '{chronicle}' => (string) $this->chronicle->id,
+            '{invitation}' => (string) $this->invitation->id,
+            '{token}' => 'missing-token',
             '{gameSession}' => (string) $this->gameSession->id,
             '{npc}' => (string) $this->npc->id,
             '{playerCharacter}' => (string) $this->playerCharacter->id,
@@ -229,6 +239,14 @@ final class AccessMatrixFixtures
 
         if ($method === 'POST' && $uriTemplate === 'chronicles') {
             return ['title' => 'Хроника матрицы'];
+        }
+
+        if ($method === 'POST' && $uriTemplate === 'chronicles/{chronicle}/invitations') {
+            return [
+                'role' => 'player',
+                'expires_at' => now()->addDay()->toIso8601String(),
+                'max_uses' => 1,
+            ];
         }
 
         if ($method === 'POST' && $uriTemplate === 'game-sessions') {

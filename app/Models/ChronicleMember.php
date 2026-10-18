@@ -8,7 +8,13 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property ChronicleRole $role
+ * @property Carbon $joined_at
+ * @property Carbon|null $left_at
+ */
 #[Fillable([
     'chronicle_id',
     'user_id',

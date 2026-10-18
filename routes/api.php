@@ -6,6 +6,7 @@ use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\CharacterSheetController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChronicleController;
+use App\Http\Controllers\ChronicleInvitationController;
 use App\Http\Controllers\CopilotController;
 use App\Http\Controllers\DiaryEntryController;
 use App\Http\Controllers\GameSessionController;
@@ -25,6 +26,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/chronicles', [ChronicleController::class, 'index']);
     Route::post('/chronicles', [ChronicleController::class, 'store']);
     Route::get('/chronicles/{chronicle}', [ChronicleController::class, 'show']);
+    Route::post('/chronicles/{chronicle}/invitations', [ChronicleInvitationController::class, 'store']);
+    Route::delete('/chronicles/{chronicle}/invitations/{invitation}', [ChronicleInvitationController::class, 'destroy']);
+    Route::post('/invitations/{token}/accept', [ChronicleInvitationController::class, 'accept']);
     Route::get('/game-sessions/active', [GameSessionController::class, 'active']);
     Route::get('/messages', [ChatController::class, 'index']);
     Route::post('/messages', [ChatController::class, 'store']);

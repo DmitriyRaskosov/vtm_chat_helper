@@ -1,7 +1,7 @@
 # 037 — Приглашения в хронику
 
 - **Stage:** 3
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 036
 - **Risk:** med
 - **Part:** 4
