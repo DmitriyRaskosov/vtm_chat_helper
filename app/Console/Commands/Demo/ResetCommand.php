@@ -31,6 +31,8 @@ class ResetCommand extends Command
             DB::statement('TRUNCATE characters RESTART IDENTITY CASCADE');
             DB::statement('TRUNCATE world_relations RESTART IDENTITY CASCADE');
             DB::statement('TRUNCATE world_entities RESTART IDENTITY CASCADE');
+            DB::statement('TRUNCATE chronicle_invitations RESTART IDENTITY CASCADE');
+            DB::statement('TRUNCATE chronicle_members RESTART IDENTITY CASCADE');
             DB::statement('TRUNCATE chronicles RESTART IDENTITY CASCADE');
 
             $this->info('Game data cleared.');

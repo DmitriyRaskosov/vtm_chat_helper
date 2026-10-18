@@ -3,6 +3,7 @@
 namespace Database\Seeders;
 
 use App\Enums\CharacterType;
+use App\Enums\ChronicleRole;
 use App\Enums\ChronicleStatus;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneParticipantRole;
@@ -15,6 +16,7 @@ use App\Models\Character;
 use App\Models\CharacterBiography;
 use App\Models\CharacterTrait;
 use App\Models\Chronicle;
+use App\Models\ChronicleMember;
 use App\Models\GameSession;
 use App\Models\Scene;
 use App\Models\SceneContext;
@@ -50,6 +52,14 @@ class DemoSeeder extends Seeder
             'title' => 'Demo Chronicle',
             'status' => ChronicleStatus::Active,
             'created_by' => $storyteller->id,
+        ]);
+
+        ChronicleMember::query()->create([
+            'chronicle_id' => $chronicle->id,
+            'user_id' => $storyteller->id,
+            'role' => ChronicleRole::Storyteller,
+            'joined_at' => now(),
+            'left_at' => null,
         ]);
 
         $session = GameSession::query()->create([

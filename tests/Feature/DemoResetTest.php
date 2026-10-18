@@ -2,14 +2,19 @@
 
 namespace Tests\Feature;
 
+use App\Enums\ChronicleRole;
 use App\Models\CanonClan;
 use App\Models\Chronicle;
+use App\Models\ChronicleInvitation;
+use App\Models\ChronicleMember;
 use App\Models\GameSession;
 use App\Models\Message;
 use App\Models\Scene;
 use App\Models\User;
 use App\Models\WorldEntity;
+use Database\Seeders\ChronicleSeeder;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Hash;
 use Tests\TestCase;
 
 class DemoResetTest extends TestCase
@@ -30,13 +35,17 @@ class DemoResetTest extends TestCase
 
         $this->assertSame(0, $this->exitCode('demo:reset'));
 
-        $this->assertDatabaseHas('users', ['login' => 'admin']);
+        $admin = User::query()->where('login', 'admin')->first();
+        $this->assertNotNull($admin);
         $this->assertGreaterThanOrEqual($usersBefore, User::query()->count());
 
         $this->assertSame($canonClansBefore, CanonClan::query()->count());
 
         $chronicle = Chronicle::query()->where('title', 'Demo Chronicle')->first();
         $this->assertNotNull($chronicle);
+
+        $this->assertDemoAdminMembership($admin, $chronicle);
+        $this->assertSame(0, ChronicleInvitation::query()->count());
 
         $session = GameSession::query()->where('title', 'Demo Session')->where('chronicle_id', $chronicle->id)->first();
         $this->assertNotNull($session);
@@ -73,10 +82,41 @@ class DemoResetTest extends TestCase
     {
         Artisan::call('migrate:fresh', ['--seed' => true]);
 
+        $this->assertDatabaseCount('chronicle_members', 0);
+
         $this->assertSame(0, $this->exitCode('demo:reset'));
 
         $this->assertSame(1, Chronicle::query()->where('title', 'Demo Chronicle')->count());
         $this->assertSame(5, WorldEntity::query()->where('entity_type', 'character')->count());
+        $this->assertSame(1, ChronicleMember::query()->count());
+        $this->assertSame(0, ChronicleInvitation::query()->count());
+    }
+
+    public function test_chronicle_seeder_without_users_creates_chronicle_without_membership(): void
+    {
+        $this->seed(ChronicleSeeder::class);
+
+        $this->assertSame(1, Chronicle::query()->where('title', 'Моя первая хроника')->count());
+        $this->assertDatabaseCount('chronicle_members', 0);
+    }
+
+    public function test_chronicle_seeder_with_admin_grants_storyteller_membership_listed_in_api(): void
+    {
+        $admin = User::factory()->create([
+            'login' => 'admin',
+            'password' => Hash::make('admin'),
+        ]);
+
+        $this->seed(ChronicleSeeder::class);
+
+        $chronicle = Chronicle::query()->where('title', 'Моя первая хроника')->firstOrFail();
+        $this->assertDemoAdminMembership($admin, $chronicle);
+
+        $this->actingAs($admin, 'sanctum')
+            ->getJson('/api/chronicles')
+            ->assertOk()
+            ->assertJsonCount(1, 'chronicles')
+            ->assertJsonPath('chronicles.0.title', 'Моя первая хроника');
     }
 
     /**
@@ -90,7 +130,20 @@ class DemoResetTest extends TestCase
             'scenes' => Scene::query()->count(),
             'world_entities' => WorldEntity::query()->count(),
             'messages' => Message::query()->count(),
+            'chronicle_members' => ChronicleMember::query()->count(),
+            'chronicle_invitations' => ChronicleInvitation::query()->count(),
         ];
+    }
+
+    private function assertDemoAdminMembership(User $admin, Chronicle $chronicle): void
+    {
+        $this->assertSame(1, ChronicleMember::query()->count());
+        $this->assertDatabaseHas('chronicle_members', [
+            'user_id' => $admin->id,
+            'chronicle_id' => $chronicle->id,
+            'role' => ChronicleRole::Storyteller->value,
+            'left_at' => null,
+        ]);
     }
 
     private function exitCode(string $command): int

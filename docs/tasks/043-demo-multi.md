@@ -1,7 +1,7 @@
 # 043 — Демо-данные с членством
 
 - **Stage:** 3
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 035
 - **Risk:** low
 - **Part:** 4
