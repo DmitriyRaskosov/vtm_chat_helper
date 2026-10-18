@@ -1,7 +1,7 @@
 # 044 — Матрица доступа: чужая хроника
 
 - **Stage:** 3
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 038, 039
 - **Risk:** med
 - **Part:** 4

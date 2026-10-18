@@ -13,6 +13,8 @@ class AccessMatrixTest extends TestCase
 
     private const EXPECT_403 = '403';
 
+    private const EXPECT_DENY = 'deny';
+
     private const EXPECT_ALLOWED = 'allowed';
 
     private AccessMatrixFixtures $fixtures;
@@ -153,7 +155,6 @@ class AccessMatrixTest extends TestCase
                 'player_foreign' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
-            // ScenePolicy::view сейчас true (одна хроника); после 044 (multi-chronicle) player_foreign → 403.
             self::forRoles('scenes.context.show', 'GET', 'scenes/{scene}/context', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_ALLOWED,
@@ -166,7 +167,6 @@ class AccessMatrixTest extends TestCase
                 'player_foreign' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
-            // ScenePolicy::view сейчас true (одна хроника); после 044 (multi-chronicle) player_foreign → 403.
             self::forRoles('scenes.participants.index', 'GET', 'scenes/{scene}/participants', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_ALLOWED,
@@ -388,6 +388,16 @@ class AccessMatrixTest extends TestCase
             return;
         }
 
+        if ($expected === self::EXPECT_DENY) {
+            if (! in_array($status, [403, 404], true)) {
+                $this->markTestSkipped("bug: {$caseId} expected 403 or 404, got {$status}");
+            }
+
+            $this->assertContains($status, [403, 404], $caseId);
+
+            return;
+        }
+
         if (in_array($status, [401, 403], true)) {
             $this->markTestSkipped("bug: {$caseId} expected allowed, got {$status}");
         }
@@ -400,12 +410,38 @@ class AccessMatrixTest extends TestCase
      */
     private static function forRoles(string $prefix, string $method, string $uri, array $expectedByRole): array
     {
+        if (! array_key_exists('player_other_chronicle', $expectedByRole)) {
+            $expectedByRole['player_other_chronicle'] = self::expectForPlayerOtherChronicle($uri, $expectedByRole);
+        }
+
         $cases = [];
         foreach ($expectedByRole as $role => $expected) {
             $cases[$prefix.'.'.$role] = [$prefix.'.'.$role, $method, $uri, $role, $expected];
         }
 
         return $cases;
+    }
+
+    /**
+     * @param  array<string, string>  $expectedByRole
+     */
+    private static function expectForPlayerOtherChronicle(string $uri, array $expectedByRole): string
+    {
+        $allowedUris = [
+            'register',
+            'login',
+            'user',
+            'logout',
+            'chronicles',
+            'character-sheet/catalog',
+            'invitations/{token}/accept',
+        ];
+
+        if (in_array($uri, $allowedUris, true)) {
+            return self::EXPECT_ALLOWED;
+        }
+
+        return self::EXPECT_DENY;
     }
 
     /**

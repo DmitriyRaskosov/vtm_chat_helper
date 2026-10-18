@@ -29,7 +29,11 @@ final class AccessMatrixFixtures
 
     public User $playerForeign;
 
+    public User $playerOtherChronicle;
+
     public Chronicle $chronicle;
+
+    public Chronicle $otherChronicle;
 
     public ChronicleInvitation $invitation;
 
@@ -91,6 +95,19 @@ final class AccessMatrixFixtures
         ChronicleMember::factory()
             ->for($fixtures->chronicle)
             ->for($fixtures->playerForeign)
+            ->player()
+            ->create();
+
+        $fixtures->playerOtherChronicle = User::factory()->create();
+
+        $fixtures->otherChronicle = Chronicle::factory()->create([
+            'title' => 'Чужая хроника матрицы',
+            'created_by' => $fixtures->storyteller->id,
+        ]);
+
+        ChronicleMember::factory()
+            ->for($fixtures->otherChronicle)
+            ->for($fixtures->playerOtherChronicle)
             ->player()
             ->create();
 
@@ -167,6 +184,7 @@ final class AccessMatrixFixtures
             'guest' => null,
             'player_owner' => $this->playerOwner,
             'player_foreign' => $this->playerForeign,
+            'player_other_chronicle' => $this->playerOtherChronicle,
             'storyteller' => $this->storyteller,
             default => throw new \InvalidArgumentException("Unknown role [{$role}]."),
         };

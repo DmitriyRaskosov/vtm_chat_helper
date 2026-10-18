@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Models\Chronicle;
+use App\Models\ChronicleMember;
 use App\Models\Message;
 use App\Models\Scene;
 use App\Models\User;
@@ -10,9 +11,18 @@ use Illuminate\Auth\Access\Response;
 
 class MessagePolicy
 {
-    public function create(User $user, Scene $scene): bool
+    public function create(User $user, Scene $scene): Response|bool
     {
-        return true;
+        $scene->loadMissing('gameSession.chronicle');
+        $chronicle = $scene->gameSession->chronicle;
+
+        return ChronicleMember::query()
+            ->where('chronicle_id', $chronicle->id)
+            ->where('user_id', $user->id)
+            ->whereNull('left_at')
+            ->exists()
+            ? true
+            : Response::deny('Вы не участник этой хроники.');
     }
 
     public function update(User $user, Message $message): Response|bool
