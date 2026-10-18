@@ -11,15 +11,17 @@ NPC ведут долговременный дневник, который по�
 
 **Не в проекте:** механика (кубы, статы, здоровье), рулбук, world events.
 
-## Что работает сейчас (17.10.2026)
+## Что работает сейчас (18.10.2026)
 
 ### Auth / Game / Chat
 - Регистрация, логин, логаут, /user.
-- Хроники, сессии, сцены, участники, контекст сцены.
+- Несколько хроник на инстансе. Членство — `chronicle_members` (роль storyteller или player). Приглашение — ссылка с кодом, без почты: API создания и отзыва есть у рассказчика, на фронте только экран принятия `/invitations/:token`.
+- Пикер `/chronicles`: список своих хроник, создание, выбор текущей. Роль в интерфейсе — из членства выбранной хроники.
+- Сессии, сцены, участники, контекст сцены.
 - Сообщения от мастера, игрока, NPC.
 
 ### Copilot
-- `POST /api/copilot/drafts` — синопсис → 3 драфта.
+- `POST /api/chronicles/{chronicle}/copilot/drafts` — синопсис → 3 драфта.
 - DeepSeek (`deepseek-chat`).
 - Промпты вынесены в `resources/prompts/` + `PromptRepository`.
 - Контекст: NPC-identity, сцена, лор, storyteller-промпт, recent_messages, direct_relations, personality, biography, diary, closing.
@@ -45,13 +47,17 @@ NPC ведут долговременный дневник, который по�
 - 30 статей лора в `resources/canon/lore/*.md`, импорт `canon:import-lore`.
 
 ### Демо-данные
-- `DatabaseSeeder` — только канон + `ChronicleSeeder` (хроника «Моя первая хроника» без сцен) + `canon:import-lore`; **не** вызывает `DemoSeeder`.
-- `php artisan demo:reset` — сброс данных игры (TRUNCATE) с сохранением канона и пользователей, затем `DemoSeeder`: рассказчик `admin` / `admin`, «Demo Chronicle», «Demo Session», активная сцена «Встреча на пустыре», 5 NPC-участников (Абрахам Леру, Август Сент-Клер, Гидеон Эш, Ильзе Фогель, Порижана) с биографиями и traits; **сообщений в чате не создаёт**.
+- `DatabaseSeeder` — только канон + `ChronicleSeeder` (хроника «Моя первая хроника» без сцен) + `canon:import-lore`; **не** вызывает `DemoSeeder`. Если есть пользователь `admin`, `ChronicleSeeder` создаёт ему членство storyteller в «Моей первой хронике»; если `admin` нет — первому пользователю по id; если пользователей нет, членство не создаётся.
+- `php artisan demo:reset` — сброс данных игры (TRUNCATE) с сохранением канона и пользователей, затем `DemoSeeder`: пользователь `admin` / `admin`, членство storyteller в «Demo Chronicle», «Demo Session», активная сцена «Встреча на пустыре», 5 NPC-участников (Абрахам Леру, Август Сент-Клер, Гидеон Эш, Ильзе Фогель, Порижана) с биографиями и traits; **сообщений в чате не создаёт**.
 
 ### Tests
-- 84 теста: 80 Feature + 4 Unit (`rg -c "function test_" tests`).
-- Feature: Auth (5), Character (11), CharacterTrait (2), CharacterVisibility (4), Scene (8), Message (3), MessageEdit (8), Copilot (4), Diary (16), DiaryLlmServices (12), DemoReset (3), DirectRelationsProvider (1), Smoke (2), WorldEntityDelete (1).
-- Unit: DiaryMetadataParser (4).
+- PHPUnit: 460 passed (18.10.2026).
+
+### Известные ограничения
+- Чужая хроника: `GET /api/chronicles/{id}` для не-участника — 404; Policy на коллекции и `ScenePolicy::view` — 403. Единого правила нет.
+- Выхода из хроники нет. Что делать с персонажем игрока при `left_at`, не задано.
+- Несколько рассказчиков в одной хронике схема позволяет, отдельного запрета и переключателя роли в UI нет.
+- Рассказчик одной хроники может быть игроком другой. Переключателя роли нет: роль берётся из членства выбранной хроники.
 
 ## Правила
 

@@ -1,7 +1,7 @@
 # 045 — Документы этапа 3 и утверждение ADR-007
 
 - **Stage:** 3
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 044
 - **Risk:** low
 - **Part:** 4
@@ -56,12 +56,23 @@
 
 ## Definition of Done
 
-- [ ] в ADR-007 нет Status Draft и нет пустых `<!-- TODO -->`
-- [ ] открытые вопросы, которые остались, совпадают с отчётом и не содержат выдуманного решения
-- [ ] `rg "users\.role|EnsureStoryteller|CharacterAccess" docs/ARCHITECTURE.md docs/Scope.md` — только как история «было», не как текущее устройство; если фраза звучит как «сейчас так» — её нет
-- [ ] `git diff --stat -- app frontend database tests` → пусто
-- [ ] pint, phpstan, artisan test, migrate:fresh, npm build не требуются (код не менялся)
+- [x] в ADR-007 нет Status Draft и нет пустых `<!-- TODO -->`
+- [x] открытые вопросы, которые остались, совпадают с отчётом и не содержат выдуманного решения
+- [x] `rg "users\.role|EnsureStoryteller|CharacterAccess" docs/ARCHITECTURE.md docs/Scope.md` — только как история «было», не как текущее устройство; если фраза звучит как «сейчас так» — её нет
+- [x] `git diff --stat -- app frontend database tests` → пусто
+- [x] pint, phpstan, artisan test, migrate:fresh, npm build не требуются (код не менялся)
 
 ## Report
 
 Формат — `.cursor/rules/task-execution.mdc` §5. Дополнительно: таблица шага 1; список открытых вопросов, оставленных в ADR.
+
+## Хвосты (на будущее, не эта задача)
+
+Код не менять, пока нет отдельной задачи. Откатывать ничего из списка не нужно.
+
+- **CurrentChronicle.** В `CurrentChronicle::get()` остаётся запасной `Chronicle::query()->find((int) $chronicle)`, если параметр маршрута пришёл строкой, а не моделью. На запросе коллекции это лишний SQL. Убрать после стабильного route model binding (или кэша хроники на запрос).
+- **Query budget.** Потолки в `CharacterNameQueryCountTest` выросли из‑за проверок членства: messages 4 → 7, characters index 5 → 8, participants 2 → 5. Кэшировать проверку `chronicle_members` в рамках запроса (`once()` или request-scoped сервис). После этого опустить бюджеты.
+- **CharacterNameQueryCountTest:** show 5 → 6 (проверка членства в `CharacterPolicy`). Все query budget растут из‑за `chronicle_members.exists()`. Кэшировать в рамках запроса.
+- **Логин и регистрация.** `useLogin` и `useRegister` делают `router.push('/chat')`. Дальше срабатывает редирект `resolveChroniclePath` на `/c/{storedId}/chat` или `/chronicles`. Явный переход на `/c/{storedId}/chat` или `/chronicles` — отдельная правка.
+- **403 и 404.** Решить, унифицировать или оставить как в ADR-007. Если унифицировать — отдельная задача (044b или позже), не эта.
+- **ChronicleSwitcher.** В `AppNav` есть dropdown `ChronicleSwitcher` и ссылка «Хроники». План этапа 3 (задача 042) dropdown не описывает. Задача 042a включила dropdown в свой Scope и просила заменить им ссылку; ссылка в шапке осталась. Оставить как есть.
