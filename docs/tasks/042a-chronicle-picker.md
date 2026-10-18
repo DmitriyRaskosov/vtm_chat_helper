@@ -1,7 +1,7 @@
 # 042a — Выбор текущей хроники
 
 - **Stage:** 3
-- **Status:** todo
+- **Status:** done
 - **Depends on:** 036, 041
 - **Risk:** med
 - **Part:** 4
