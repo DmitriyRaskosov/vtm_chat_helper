@@ -30,7 +30,7 @@ CRITICAL — VOICE.
 The diary is written IN THE NPC'S VOICE, not in a neutral narrator's.
 Voice comes from:
 
-1. The traits (appearance, speech, tone, attitude, mannerisms).
+1. The traits (appearance, speech_style, tone, attitude, habits, voice, distinctive_detail).
    These are DIRECTIVES for HOW to write, not WHAT to write about.
    If traits say "говорит короткими фразами, редко смеётся" — the diary
    is written in short phrases, no jokes.

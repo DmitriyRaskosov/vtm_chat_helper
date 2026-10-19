@@ -196,6 +196,7 @@ async function onCreateScene() {
         return;
     }
     messages.value = [];
+    resetCopilotDrafts();
     await loadParticipants();
     await load();
 }

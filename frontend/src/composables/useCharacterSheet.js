@@ -45,6 +45,21 @@ export const TRAIT_PRESETS = [
     },
 ];
 
+/** Legacy trait keys from older demo data → TRAIT_PRESETS */
+export const TRAIT_KEY_ALIASES = {
+    speech: 'speech_style',
+    mannerisms: 'habits',
+    signature: 'distinctive_detail',
+};
+
+function normalizeTraitKey(key) {
+    if (key === '' || key == null) {
+        return '';
+    }
+
+    return TRAIT_KEY_ALIASES[key] ?? key;
+}
+
 function optionalId(value) {
     return value === '' ? null : Number(value);
 }
@@ -125,16 +140,18 @@ export function useCharacterSheet(characterId) {
     }
 
     function isPresetTraitKey(key) {
-        return TRAIT_PRESETS.some((preset) => preset.key === key);
+        const normalized = normalizeTraitKey(key);
+
+        return TRAIT_PRESETS.some((preset) => preset.key === normalized);
     }
 
     function applyTraitsFromSheet(characterTraits) {
         const fromApi = characterTraits ?? [];
         const byKey = new Map();
         for (const row of fromApi) {
-            const key = row.key ?? '';
+            const key = normalizeTraitKey(row.key ?? '');
             if (key !== '') {
-                byKey.set(key, row);
+                byKey.set(key, { ...row, key });
             }
         }
 
@@ -150,11 +167,11 @@ export function useCharacterSheet(characterId) {
         });
 
         for (const row of fromApi) {
-            const key = row.key ?? '';
+            const key = normalizeTraitKey(row.key ?? '');
             if (key === '' || isPresetTraitKey(key)) {
                 continue;
             }
-            rows.push(makeTraitRow(row));
+            rows.push(makeTraitRow({ ...row, key }));
         }
 
         traits.value = rows;
@@ -267,7 +284,7 @@ export function useCharacterSheet(characterId) {
             const payload = traits.value
                 .filter((row) => row.value.trim() !== '')
                 .map((row, index) => ({
-                    key: row.key.trim(),
+                    key: normalizeTraitKey(row.key.trim()),
                     label: row.label.trim(),
                     value: row.value.trim(),
                     sort_order: index,

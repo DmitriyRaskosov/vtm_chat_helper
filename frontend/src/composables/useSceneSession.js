@@ -120,18 +120,8 @@ export function useSceneSession({ auth, chronicleId }) {
         }
 
         const scenes = gameSession.value.scenes;
-        const liveId = selectedSceneId.value;
-        if (
-            preferredSceneId != null
-            && liveId !== preferredSceneId
-            && scenes.some((scene) => scene.id === liveId)
-        ) {
-            return;
-        }
-
-        const preferredExists = scenes.some(
-            (scene) => scene.id === preferredSceneId,
-        );
+        const preferredExists = preferredSceneId != null
+            && scenes.some((scene) => scene.id === preferredSceneId);
         selectedSceneId.value = preferredExists
             ? preferredSceneId
             : gameSession.value.active_scene_id ?? scenes[0]?.id ?? null;
@@ -194,14 +184,15 @@ export function useSceneSession({ auth, chronicleId }) {
     });
 
     async function loadParticipants() {
+        const sceneId = selectedSceneId.value;
+        const previousNpcId = selectedNpcId.value;
+
         participants.value = [];
-        selectedNpcId.value = null;
         addCharacterId.value = null;
         participantError.value = '';
-    
-        const sceneId = selectedSceneId.value;
         if (!sceneId) {
             chronicleCharacters.value = [];
+            selectedNpcId.value = null;
             return;
         }
     
@@ -232,7 +223,12 @@ export function useSceneSession({ auth, chronicleId }) {
                 return;
             }
             chronicleCharacters.value = flattenRoster(data.characters ?? []);
-            selectedNpcId.value = sceneNpcs.value[0]?.character_id ?? null;
+            const npcIds = sceneNpcs.value.map((row) => row.character_id);
+            if (previousNpcId != null && npcIds.includes(previousNpcId)) {
+                selectedNpcId.value = previousNpcId;
+            } else {
+                selectedNpcId.value = sceneNpcs.value[0]?.character_id ?? null;
+            }
         } catch (error) {
             if (selectedSceneId.value === sceneId) {
                 participantError.value = apiErrorMessage(error, 'Не удалось загрузить список персонажей.');

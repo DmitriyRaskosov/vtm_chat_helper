@@ -8,6 +8,9 @@ use App\Context\ContextBuilder;
 use App\Context\ContextPass;
 use App\Context\ContextRequest;
 use App\Enums\WorldRelationKind;
+use App\Models\CanonClan;
+use App\Models\CanonSect;
+use App\Models\Character;
 use App\Models\CopilotRequest;
 use App\Models\WorldRelation;
 use InvalidArgumentException;
@@ -92,6 +95,30 @@ class ContextAssemblerTest extends TestCase
         }
         $this->assertTrue($optionalDropped, 'Expected at least one optional section omitted with reason budget.');
         $this->assertLessThanOrEqual($build->metadata['input_token_budget'], $build->metadata['input_token_estimate']);
+    }
+
+    public function test_npc_identity_includes_clan_and_sect_when_character_has_canon_fields(): void
+    {
+        $brujah = CanonClan::query()->where('slug', 'brujah')->firstOrFail();
+        $camarilla = CanonSect::query()->where('slug', 'camarilla')->firstOrFail();
+
+        Character::query()->whereKey($this->npcId)->update([
+            'clan_id' => $brujah->id,
+            'sect_id' => $camarilla->id,
+        ]);
+
+        $build = $this->assembleReply();
+        $userContent = $build->messages[1]['content'];
+
+        $this->assertStringContainsString('## NPC identity', $userContent);
+        $this->assertStringContainsString('clan '.$brujah->name, $userContent);
+        $this->assertStringContainsString('sect '.$camarilla->name, $userContent);
+        $this->assertStringContainsString('Clan: '.$brujah->name, $userContent);
+        $this->assertStringContainsString('Sect: '.$camarilla->name, $userContent);
+
+        $section = $build->metadata['sections']['npc_identity'];
+        $this->assertSame($brujah->name, $section['provenance']['clan'] ?? null);
+        $this->assertSame($camarilla->name, $section['provenance']['sect'] ?? null);
     }
 
     public function test_required_sections_always_included_when_messages_exist(): void

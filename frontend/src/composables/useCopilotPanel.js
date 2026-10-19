@@ -1,4 +1,4 @@
-import { computed, ref, toValue } from 'vue';
+import { computed, ref, toValue, watch } from 'vue';
 import { api } from '../auth';
 import { chronicleCollectionPath } from './useCurrentChronicle';
 import { apiErrorMessage } from '../utils/apiError';
@@ -6,6 +6,7 @@ import { apiErrorMessage } from '../utils/apiError';
 export function useCopilotPanel({ selectedSceneId, selectedNpcId, onSent, chronicleId }) {
     const copilotPrompt = ref('');
     const copilotRequestId = ref(null);
+    const copilotNpcId = ref(null);
     const drafts = ref([]);
     const selectedDraftIndex = ref(null);
     const editedDraft = ref('');
@@ -29,10 +30,20 @@ export function useCopilotPanel({ selectedSceneId, selectedNpcId, onSent, chroni
 
     function resetDrafts() {
         copilotRequestId.value = null;
+        copilotNpcId.value = null;
         drafts.value = [];
         selectedDraftIndex.value = null;
         editedDraft.value = '';
     }
+
+    watch(selectedNpcId, (npcId, previousNpcId) => {
+        if (previousNpcId === undefined || npcId === previousNpcId) {
+            return;
+        }
+        if (copilotRequestId.value !== null || drafts.value.length > 0) {
+            resetDrafts();
+        }
+    });
 
     async function generateDrafts() {
         copilotError.value = '';
@@ -46,6 +57,7 @@ export function useCopilotPanel({ selectedSceneId, selectedNpcId, onSent, chroni
                 scene_id: toValue(selectedSceneId),
             });
             copilotRequestId.value = data.copilot_request_id ?? null;
+            copilotNpcId.value = selectedNpcId.value;
             drafts.value = data.drafts ?? [];
             if (drafts.value.length > 0) {
                 selectDraft(0);
@@ -62,7 +74,8 @@ export function useCopilotPanel({ selectedSceneId, selectedNpcId, onSent, chroni
 
     async function sendAsNpc() {
         const text = editedDraft.value.trim();
-        if (!text || selectedNpcId.value === null) {
+        const npcId = copilotNpcId.value ?? selectedNpcId.value;
+        if (!text || npcId === null) {
             return;
         }
 
@@ -71,7 +84,7 @@ export function useCopilotPanel({ selectedSceneId, selectedNpcId, onSent, chroni
         try {
             const { data } = await api.post(chronicleCollectionPath(chronicleId, 'messages'), {
                 body: text,
-                character_id: selectedNpcId.value,
+                character_id: npcId,
                 scene_id: toValue(selectedSceneId),
                 copilot_request_id: copilotRequestId.value,
                 copilot_draft_index: selectedDraftIndex.value,
