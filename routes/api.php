@@ -9,6 +9,7 @@ use App\Http\Controllers\ChronicleController;
 use App\Http\Controllers\ChronicleInvitationController;
 use App\Http\Controllers\CopilotController;
 use App\Http\Controllers\DiaryEntryController;
+use App\Http\Controllers\DiceRollController;
 use App\Http\Controllers\GameSessionController;
 use App\Http\Controllers\SceneContextController;
 use App\Http\Controllers\SceneController;
@@ -36,6 +37,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/characters', [CharacterSheetController::class, 'store']);
         Route::post('/game-sessions', [GameSessionController::class, 'store']);
         Route::post('/copilot/drafts', [CopilotController::class, 'drafts']);
+        Route::post('/scenes/{scene}/dice-rolls', [DiceRollController::class, 'store'])
+            ->can('view', 'scene');
+        Route::get('/scenes/{scene}/logs', [DiceRollController::class, 'index'])
+            ->can('view', 'scene');
     });
 
     Route::patch('/messages/{message}/ooc', [ChatController::class, 'toggleOoc']);

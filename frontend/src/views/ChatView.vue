@@ -32,7 +32,7 @@
             @save-situation="saveSceneSituation"
         />
 
-        <div :class="{ stage: isStoryteller }">
+        <div class="stage">
             <div class="chat-column">
                 <div class="chat-controls">
                     <label class="toggle">
@@ -57,20 +57,41 @@
                     :placeholder="composerPlaceholder"
                     :my-character-name="myCharacterName"
                     @send="send"
+                    @open-dice="diceOpen = true"
                 />
             </div>
 
-            <StorytellerCopilotPanel
-                v-if="isStoryteller"
-                ref="copilotPanel"
-                v-model:selected-npc-id="selectedNpcId"
-                :scene-npcs="sceneNpcs"
-                :selected-scene-id="selectedSceneId"
-                :chronicle-id="chronicleId"
-                :can-post="canPost"
-                @sent="onNpcSent"
-            />
+            <aside class="side-panel">
+                <BattleLog
+                    :logs="logs"
+                    :log-error="logError"
+                    :selected-scene-id="selectedSceneId"
+                />
+
+                <StorytellerCopilotPanel
+                    v-if="isStoryteller"
+                    ref="copilotPanel"
+                    v-model:selected-npc-id="selectedNpcId"
+                    :scene-npcs="sceneNpcs"
+                    :selected-scene-id="selectedSceneId"
+                    :chronicle-id="chronicleId"
+                    :can-post="canPost"
+                    @sent="onNpcSent"
+                />
+            </aside>
         </div>
+
+        <DiceRoller
+            v-model:open="diceOpen"
+            :is-storyteller="isStoryteller"
+            :character-options="diceCharacterOptions"
+            :rolling="rolling"
+            :roll-error="rollError"
+            :last-result="lastResult"
+            :can-roll="canPost"
+            @roll="onDiceRoll"
+            @clear-result="clearLastResult"
+        />
     </div>
 </template>
 
@@ -79,11 +100,14 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { isStoryteller, useAuth } from '../auth';
 import AppNav from '../components/layout/AppNav.vue';
+import BattleLog from '../components/chat/BattleLog.vue';
 import ChatComposer from '../components/chat/ChatComposer.vue';
 import ChatLog from '../components/chat/ChatLog.vue';
+import DiceRoller from '../components/chat/DiceRoller.vue';
 import SceneToolbar from '../components/chat/SceneToolbar.vue';
 import StorytellerCopilotPanel from '../components/chat/StorytellerCopilotPanel.vue';
 import { useChatMessages } from '../composables/useChatMessages';
+import { useDiceRoll, useSceneBattleLog } from '../composables/useSceneBattleLog';
 import { useSceneSession } from '../composables/useSceneSession';
 
 const auth = useAuth();
@@ -91,6 +115,7 @@ const route = useRoute();
 const chronicleId = computed(() => route.params.chronicleId);
 const chatLog = ref(null);
 const copilotPanel = ref(null);
+const diceOpen = ref(false);
 
 const {
     gameSession,
@@ -150,6 +175,27 @@ const {
 
 bindMessages(messages);
 
+const {
+    logs,
+    logError,
+    reloadLogs,
+    pollLogs,
+    resetLogs,
+    mergeLogs,
+} = useSceneBattleLog({
+    chronicleId,
+    selectedSceneId,
+    isStoryteller,
+});
+
+const {
+    rolling,
+    rollError,
+    lastResult,
+    rollDice,
+    clearLastResult,
+} = useDiceRoll({ chronicleId, selectedSceneId });
+
 const composerPlaceholder = computed(() => {
     if (!gameSession.value) {
         return 'Нет активной игровой сессии';
@@ -168,6 +214,19 @@ const myCharacterName = computed(() => {
     return pc?.character_name ?? null;
 });
 
+const diceCharacterOptions = computed(() => {
+    if (isStoryteller.value) {
+        return currentParticipants.value;
+    }
+
+    if (!myCharacterId.value) {
+        return [];
+    }
+
+    const pc = currentParticipants.value.find((p) => p.character_id === myCharacterId.value);
+    return pc ? [pc] : [];
+});
+
 let timer;
 let polling = false;
 
@@ -178,8 +237,10 @@ function resetCopilotDrafts() {
 async function switchScene() {
     messages.value = [];
     resetCopilotDrafts();
+    resetLogs();
     await loadParticipants();
     await load();
+    await reloadLogs();
 }
 
 async function onCreateGameSession() {
@@ -223,6 +284,7 @@ async function poll() {
             await load();
         } else {
             await load(lastId());
+            await pollLogs();
         }
     } catch {
         // A later poll retries transient API failures.
@@ -236,12 +298,21 @@ async function onNpcSent(message) {
     await scrollDown();
 }
 
+async function onDiceRoll(payload) {
+    const data = await rollDice(payload);
+    if (data?.log) {
+        mergeLogs([data.log]);
+    }
+}
+
 async function bootstrapChat() {
     messages.value = [];
     resetCopilotDrafts();
+    resetLogs();
     await loadGameSession();
     await loadParticipants();
     await load();
+    await reloadLogs();
 }
 
 watch(chronicleId, async () => {

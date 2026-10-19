@@ -7,7 +7,17 @@
         <div v-if="myCharacterName" class="composer-as">
             Вы пишете за: <strong>{{ myCharacterName }}</strong>
         </div>
-        <div class="composer-row">
+        <div class="composer-body">
+            <textarea
+                v-model="body"
+                maxlength="8000"
+                required
+                :disabled="!canPost"
+                :placeholder="isOoc ? 'Вопрос мастеру, мета-обсуждение…' : placeholder"
+            ></textarea>
+        </div>
+
+        <div class="composer-actions">
             <button
                 type="button"
                 class="composer-label"
@@ -18,15 +28,15 @@
                 {{ isOoc ? 'Out Of Character' : 'In Character' }}
             </button>
 
-            <textarea
-                v-model="body"
-                maxlength="8000"
-                required
+            <button
+                type="button"
+                class="composer-dice"
                 :disabled="!canPost"
-                :placeholder="isOoc ? 'Вопрос мастеру, мета-обсуждение…' : placeholder"
-            ></textarea>
+                title="Бросок кубиков"
+                @click="emit('open-dice')"
+            >🎲</button>
 
-            <button type="submit" :disabled="!canPost">Отправить</button>
+            <button type="submit" class="composer-send" :disabled="!canPost">Отправить</button>
         </div>
     </form>
 </template>
@@ -41,5 +51,5 @@ defineProps({
 const body = defineModel('body', { type: String });
 const isOoc = defineModel('isOoc', { type: Boolean, default: false });
 
-const emit = defineEmits(['send']);
+const emit = defineEmits(['send', 'open-dice']);
 </script>

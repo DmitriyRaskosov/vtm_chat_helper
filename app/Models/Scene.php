@@ -81,6 +81,14 @@ class Scene extends Model
         return $this->hasMany(CopilotRequest::class);
     }
 
+    /**
+     * @return HasMany<SceneLog, $this>
+     */
+    public function logs(): HasMany
+    {
+        return $this->hasMany(SceneLog::class);
+    }
+
     protected function casts(): array
     {
         return [

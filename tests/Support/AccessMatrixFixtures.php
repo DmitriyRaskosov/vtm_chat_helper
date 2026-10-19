@@ -344,6 +344,13 @@ final class AccessMatrixFixtures
             ];
         }
 
+        if ($method === 'POST' && $uriTemplate === 'chronicles/{chronicle}/scenes/{scene}/dice-rolls') {
+            return [
+                'pool' => 1,
+                'difficulty' => 6,
+            ];
+        }
+
         if ($method === 'POST' && str_contains($uriTemplate, '/participants')) {
             return [
                 'character_id' => $this->playerCharacter->id,

@@ -11,11 +11,9 @@
 <script setup>
 import { computed } from 'vue';
 import { RouterView, useRoute } from 'vue-router';
-import { isStoryteller } from './auth';
-
 const route = useRoute();
 const isWide = computed(() => (
-    (isStoryteller.value && route.name === 'chronicle-chat')
+    route.name === 'chronicle-chat'
     || route.name === 'characters'
     || route.name === 'character'
 ));

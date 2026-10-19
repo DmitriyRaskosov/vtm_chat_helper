@@ -6,14 +6,12 @@ use App\Context\ContextAssembly;
 use App\Context\ContextSection;
 use App\Context\LineTrimmer;
 use App\Context\TokenEstimator;
-use App\Prompt\PromptRepository;
 
 class NpcIdentityProvider implements ContextProvider
 {
     public function __construct(
         private TokenEstimator $estimator,
         private LineTrimmer $trimmer,
-        private PromptRepository $prompts,
     ) {}
 
     public function key(): string

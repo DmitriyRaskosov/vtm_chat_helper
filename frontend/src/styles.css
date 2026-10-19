@@ -21,7 +21,7 @@ a { color: var(--accent); }
     margin: 0 auto;
     padding: 1.5rem 1rem 2rem;
 }
-.wrap.wide { max-width: 1100px; }
+.wrap.wide { max-width: 1250px; }
 .stage {
     display: grid;
     grid-template-columns: minmax(0, 1fr) 320px;
@@ -30,6 +30,44 @@ a { color: var(--accent); }
 }
 @media (max-width: 800px) {
     .stage { grid-template-columns: 1fr; }
+}
+.side-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    min-width: 0;
+}
+.battle-log h2 {
+    margin: 0 0 0.5rem;
+    font-size: 1rem;
+}
+.battle-log-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    max-height: 220px;
+    overflow-y: auto;
+    font-size: 0.85rem;
+}
+.battle-log-item {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem 0.5rem;
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--border, #3a3a3a);
+}
+.battle-log-time {
+    color: var(--muted, #888);
+    flex: 0 0 auto;
+}
+.battle-log-hidden {
+    font-size: 0.75rem;
+    color: #c9a227;
+    flex: 0 0 auto;
+}
+.battle-log-message {
+    flex: 1 1 100%;
+    line-height: 1.35;
 }
 .storyteller-panel h2 {
     margin: 0 0 0.5rem;
@@ -243,8 +281,22 @@ button.link {
 .msg.mine { background: var(--mine); }
 .msg .meta { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.25rem; }
 .composer { display: flex; flex-direction: column; gap: 0.5rem; align-items: stretch; }
-.composer textarea { margin: 0; flex: 1; }
 .composer button { margin: 0; }
+.composer .composer-body textarea {
+    width: 100%;
+    margin: 0;
+    min-height: 4.5rem;
+    resize: vertical;
+}
+.composer .composer-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+.composer .composer-actions .composer-send {
+    margin-left: auto;
+}
 
 .character-tree { list-style: none; padding: 0; margin: 0; }
 .character-tree ul { list-style: none; padding: 0.25rem 0 0 1.25rem; }
@@ -504,12 +556,6 @@ summary {
     vertical-align: middle;
 }
 
-.composer .composer-row {
-    display: flex;
-    align-items: stretch;
-    gap: 0.5rem;
-}
-
 .composer .composer-label {
     display: flex;
     align-items: center;
@@ -536,12 +582,54 @@ summary {
     border-color: #6b8e23;
 }
 
-.composer .composer-row textarea {
-    flex: 1;
+.composer .composer-dice {
+    min-width: 2.75rem;
+    padding: 0.55rem 0.75rem;
+    font-size: 1.1rem;
+    line-height: 1;
 }
-
-.composer .composer-row button[type="submit"] {
-    align-self: stretch;
+.dice-roller label {
+    display: block;
+    margin-top: 0.75rem;
+}
+.dice-roller input,
+.dice-roller select {
+    width: 100%;
+    margin-top: 0.25rem;
+}
+.dice-hidden-toggle {
+    margin-top: 0.75rem;
+}
+.dice-result {
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border, #3a3a3a);
+}
+.dice-faces {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+.dice-face {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 2rem;
+    padding: 0.25rem 0.4rem;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.08);
+    font-weight: 600;
+}
+.dice-face.dice-one {
+    background: rgba(200, 76, 76, 0.35);
+    color: #ffb4b4;
+}
+.dice-face.dice-success {
+    background: rgba(76, 160, 100, 0.35);
+    color: #b8f0c8;
+}
+.dice-outcome {
+    margin: 0.75rem 0 0;
 }
 /* === Message actions === */
 

@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 #[Fillable([
     'title',
@@ -56,6 +57,14 @@ class Chronicle extends Model
     public function gameSessions(): HasMany
     {
         return $this->hasMany(GameSession::class);
+    }
+
+    /**
+     * @return HasManyThrough<Scene, GameSession, $this>
+     */
+    public function scenes(): HasManyThrough
+    {
+        return $this->hasManyThrough(Scene::class, GameSession::class);
     }
 
     /**
