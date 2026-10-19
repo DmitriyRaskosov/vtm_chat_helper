@@ -328,6 +328,15 @@ final class AccessMatrixFixtures
             return ['location_entity_id' => null];
         }
 
+        if ($method === 'PUT' && str_contains($uriTemplate, '/state')) {
+            return [
+                'blood_pool' => 1,
+                'temporary_willpower' => 0,
+                'health_level' => 0,
+                'health_damage' => 'bashing',
+            ];
+        }
+
         if ($method === 'POST' && str_contains($uriTemplate, '/diary/preview')) {
             return ['prompt' => 'Превью'];
         }

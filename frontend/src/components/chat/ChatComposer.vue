@@ -36,6 +36,14 @@
                 @click="emit('open-dice')"
             >🎲</button>
 
+            <button
+                type="button"
+                class="composer-sheet"
+                :disabled="!characterSheetEnabled"
+                :title="characterSheetTitle"
+                @click="emit('open-character-sheet')"
+            >📋</button>
+
             <button type="submit" class="composer-send" :disabled="!canPost">Отправить</button>
         </div>
     </form>
@@ -46,10 +54,12 @@ defineProps({
     canPost: { type: Boolean, required: true },
     placeholder: { type: String, required: true },
     myCharacterName: { type: String, default: null },
+    characterSheetEnabled: { type: Boolean, default: true },
+    characterSheetTitle: { type: String, default: 'Чарлист' },
 });
 
 const body = defineModel('body', { type: String });
 const isOoc = defineModel('isOoc', { type: Boolean, default: false });
 
-const emit = defineEmits(['send', 'open-dice']);
+const emit = defineEmits(['send', 'open-dice', 'open-character-sheet']);
 </script>

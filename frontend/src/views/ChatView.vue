@@ -56,8 +56,11 @@
                     :can-post="canPost"
                     :placeholder="composerPlaceholder"
                     :my-character-name="myCharacterName"
+                    :character-sheet-enabled="characterSheetEnabled"
+                    :character-sheet-title="characterSheetTitle"
                     @send="send"
                     @open-dice="diceOpen = true"
+                    @open-character-sheet="openCharacterDrawer"
                 />
             </div>
 
@@ -81,9 +84,20 @@
             </aside>
         </div>
 
+        <ChatCharacterDrawer
+            :open="characterDrawerOpen"
+            :is-storyteller="isStoryteller"
+            :participants="drawerParticipants"
+            :selected-character-id="drawerCharacterId"
+            :my-character-id="myCharacterId"
+            @close="characterDrawerOpen = false"
+            @select-character="drawerCharacterId = $event"
+        />
+
         <DiceRoller
             v-model:open="diceOpen"
             :is-storyteller="isStoryteller"
+            :character-drawer-open="characterDrawerOpen"
             :character-options="diceCharacterOptions"
             :rolling="rolling"
             :roll-error="rollError"
@@ -101,6 +115,7 @@ import { useRoute } from 'vue-router';
 import { isStoryteller, useAuth } from '../auth';
 import AppNav from '../components/layout/AppNav.vue';
 import BattleLog from '../components/chat/BattleLog.vue';
+import ChatCharacterDrawer from '../components/chat/ChatCharacterDrawer.vue';
 import ChatComposer from '../components/chat/ChatComposer.vue';
 import ChatLog from '../components/chat/ChatLog.vue';
 import DiceRoller from '../components/chat/DiceRoller.vue';
@@ -116,6 +131,8 @@ const chronicleId = computed(() => route.params.chronicleId);
 const chatLog = ref(null);
 const copilotPanel = ref(null);
 const diceOpen = ref(false);
+const characterDrawerOpen = ref(false);
+const drawerCharacterId = ref(null);
 
 const {
     gameSession,
@@ -226,6 +243,43 @@ const diceCharacterOptions = computed(() => {
     const pc = currentParticipants.value.find((p) => p.character_id === myCharacterId.value);
     return pc ? [pc] : [];
 });
+
+const characterSheetEnabled = computed(() => (
+    isStoryteller.value ? true : myCharacterId.value !== null
+));
+
+const characterSheetTitle = computed(() => (
+    isStoryteller.value ? 'Чарлист' : 'Мой персонаж'
+));
+
+const drawerParticipants = computed(() => {
+    if (isStoryteller.value) {
+        return currentParticipants.value;
+    }
+
+    return diceCharacterOptions.value;
+});
+
+function openCharacterDrawer() {
+    if (!characterSheetEnabled.value) {
+        return;
+    }
+
+    if (characterDrawerOpen.value) {
+        characterDrawerOpen.value = false;
+
+        return;
+    }
+
+    if (isStoryteller.value) {
+        const first = currentParticipants.value[0];
+        drawerCharacterId.value = first?.character_id ?? null;
+    } else {
+        drawerCharacterId.value = myCharacterId.value;
+    }
+
+    characterDrawerOpen.value = true;
+}
 
 let timer;
 let polling = false;

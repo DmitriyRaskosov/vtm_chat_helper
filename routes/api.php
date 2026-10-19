@@ -5,6 +5,7 @@ use App\Http\Controllers\Auth\MeController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\CharacterSheetController;
 use App\Http\Controllers\CharacterSheetImageController;
+use App\Http\Controllers\CharacterStateController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChronicleController;
 use App\Http\Controllers\ChronicleInvitationController;
@@ -68,6 +69,7 @@ Route::middleware('auth:sanctum')->group(function () {
         ->can('restore', 'character');
     Route::put('/characters/{character}/place', [CharacterSheetController::class, 'updatePlace'])
         ->can('updatePlace', 'character');
+    Route::put('/characters/{character}/state', [CharacterStateController::class, 'update']);
 
     Route::get('/scenes/{scene}/context', [SceneContextController::class, 'show'])
         ->can('view', 'scene');

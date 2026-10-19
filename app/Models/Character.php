@@ -131,6 +131,14 @@ class Character extends Model
     }
 
     /**
+     * @return HasOne<CharacterState, $this>
+     */
+    public function state(): HasOne
+    {
+        return $this->hasOne(CharacterState::class);
+    }
+
+    /**
      * @return HasMany<CharacterTrait, $this>
      */
     public function traits(): HasMany
