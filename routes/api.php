@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\MeController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\CharacterSheetController;
+use App\Http\Controllers\CharacterSheetImageController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChronicleController;
 use App\Http\Controllers\ChronicleInvitationController;
@@ -52,6 +53,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/character-sheet/catalog', [CharacterSheetController::class, 'catalog']);
 
     Route::get('/characters/{character}', [CharacterSheetController::class, 'show']);
+    Route::get('/characters/{character}/sheet-image', [CharacterSheetImageController::class, 'show']);
+    Route::post('/characters/{character}/sheet-image', [CharacterSheetImageController::class, 'store']);
 
     Route::patch('/characters/{character}', [CharacterSheetController::class, 'update']);
     Route::put('/characters/{character}/disciplines', [CharacterSheetController::class, 'updateDisciplines']);

@@ -30,6 +30,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'demeanor',
     'concept',
     'is_active',
+    'sheet_image_path',
 ])]
 class Character extends Model
 {

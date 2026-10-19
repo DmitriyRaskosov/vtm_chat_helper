@@ -8,6 +8,8 @@
             <RouterLink :to="diaryLink" class="link">Дневник</RouterLink>
         </div>
 
+        <SheetImageSection :character-id="characterId" :can-upload="isStoryteller" />
+
         <SheetHeaderSection
             :identity="identity"
             :sheet="sheet"
@@ -61,6 +63,7 @@ import AppNav from '../components/layout/AppNav.vue';
 import SheetAdvantagesSection from '../components/sheet/SheetAdvantagesSection.vue';
 import SheetBiographySection from '../components/sheet/SheetBiographySection.vue';
 import SheetHeaderSection from '../components/sheet/SheetHeaderSection.vue';
+import SheetImageSection from '../components/sheet/SheetImageSection.vue';
 import SheetPlaceSection from '../components/sheet/SheetPlaceSection.vue';
 import SheetTraitsSection from '../components/sheet/SheetTraitsSection.vue';
 import { computed, onMounted, watch } from 'vue';

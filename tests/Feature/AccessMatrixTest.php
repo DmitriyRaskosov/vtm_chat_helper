@@ -263,6 +263,30 @@ class AccessMatrixTest extends TestCase
                 'player_foreign' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
+            self::forRoles('characters.sheet-image.show.npc', 'GET', 'characters/{npc}/sheet-image', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('characters.sheet-image.show.own', 'GET', 'characters/{playerCharacter}/sheet-image', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_ALLOWED,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('characters.sheet-image.store.npc', 'POST', 'characters/{npc}/sheet-image', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('characters.sheet-image.store.own', 'POST', 'characters/{playerCharacter}/sheet-image', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
             self::forRoles('characters.update.own', 'PATCH', 'characters/{playerCharacter}', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_ALLOWED,
