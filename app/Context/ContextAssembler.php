@@ -3,6 +3,7 @@
 namespace App\Context;
 
 use App\Context\Providers\BiographyProvider;
+use App\Context\Providers\CharacterStateProvider;
 use App\Context\Providers\ClosingInstructionProvider;
 use App\Context\Providers\ContextProvider;
 use App\Context\Providers\DiaryProvider;
@@ -34,6 +35,7 @@ class ContextAssembler
     public const USER_ORDER = [
         'npc_identity',
         'scene',
+        'character_state',
         'world_lore',
         'storyteller_prompt',
         'recent_messages',
@@ -65,6 +67,7 @@ class ContextAssembler
         SystemPromptProvider $system,
         NpcIdentityProvider $identity,
         SceneProvider $scene,
+        CharacterStateProvider $characterState,
         StorytellerPromptProvider $prompt,
         private RecentMessagesProvider $recentMessages,
         DirectRelationsProvider $relations,
@@ -78,6 +81,7 @@ class ContextAssembler
             $system->key() => $system,
             $identity->key() => $identity,
             $scene->key() => $scene,
+            $characterState->key() => $characterState,
             $prompt->key() => $prompt,
             $this->recentMessages->key() => $this->recentMessages,
             $relations->key() => $relations,
@@ -212,7 +216,7 @@ class ContextAssembler
      */
     private function requiredWithoutHistory(ContextAssembly $assembly, array &$timings): array
     {
-        $keys = ['system', 'npc_identity', 'scene', 'storyteller_prompt', 'closing'];
+        $keys = ['system', 'npc_identity', 'scene', 'character_state', 'storyteller_prompt', 'closing'];
         $sections = [];
         foreach ($keys as $key) {
             $sections[$key] = $this->assembleTimed($key, $assembly, $this->sectionMax($key), $timings);

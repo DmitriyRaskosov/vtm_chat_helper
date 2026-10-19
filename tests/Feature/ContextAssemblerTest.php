@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
+use App\Character\CharacterStateService;
 use App\Context\ContextAssembler;
 use App\Context\ContextBuild;
 use App\Context\ContextBuilder;
 use App\Context\ContextPass;
 use App\Context\ContextRequest;
+use App\Enums\CharacterHealthDamage;
 use App\Enums\WorldRelationKind;
 use App\Models\CanonClan;
 use App\Models\CanonSect;
@@ -31,6 +33,7 @@ class ContextAssemblerTest extends TestCase
     private const SECTION_MARKERS = [
         'npc_identity' => '## NPC identity',
         'scene' => '## Scene',
+        'character_state' => '## Character state',
         'world_lore' => '## World',
         'storyteller_prompt' => '## Storyteller prompt',
         'recent_messages' => '## Scene speech',
@@ -128,9 +131,109 @@ class ContextAssemblerTest extends TestCase
         $build = $this->assembleReply();
         $sections = $build->metadata['sections'];
 
-        foreach (['system', 'storyteller_prompt', 'npc_identity', 'scene', 'closing', 'recent_messages'] as $key) {
+        foreach (['system', 'storyteller_prompt', 'npc_identity', 'scene', 'character_state', 'closing', 'recent_messages'] as $key) {
             $this->assertTrue($sections[$key]['included'], "Expected required section {$key} to be included.");
         }
+    }
+
+    public function test_character_state_provider_includes_blood_and_health(): void
+    {
+        $character = Character::query()->findOrFail($this->npcId);
+        app(CharacterStateService::class)->apply($character, [
+            'blood_pool' => 2,
+            'temporary_willpower' => 5,
+            'health_level' => 4,
+            'health_damage' => CharacterHealthDamage::Lethal,
+        ]);
+
+        $build = $this->assembleReply();
+        $userContent = $build->messages[1]['content'];
+
+        $this->assertStringContainsString('## Character state', $userContent);
+        $this->assertStringContainsString('Blood pool: 2', $userContent);
+        $this->assertStringContainsString('Health: Wounded (Penalty: -2)', $userContent);
+
+        $section = $build->metadata['sections']['character_state'];
+        $this->assertTrue($section['included']);
+        $this->assertSame(2, $section['provenance']['blood_pool'] ?? null);
+        $this->assertSame(4, $section['provenance']['health_level'] ?? null);
+        $this->assertSame(-2, $section['provenance']['health_penalty'] ?? null);
+    }
+
+    public function test_character_state_provider_omits_willpower(): void
+    {
+        $character = Character::query()->findOrFail($this->npcId);
+        app(CharacterStateService::class)->apply($character, [
+            'blood_pool' => 7,
+            'temporary_willpower' => 9,
+            'health_level' => 0,
+            'health_damage' => CharacterHealthDamage::Bashing,
+        ]);
+
+        $build = $this->assembleReply();
+        $userContent = $build->messages[1]['content'];
+
+        $this->assertStringNotContainsString('willpower', strtolower($userContent));
+        $this->assertStringNotContainsString('Willpower', $userContent);
+    }
+
+    public function test_character_state_provider_handles_missing_character(): void
+    {
+        $assembly = app(ContextAssembler::class);
+        $request = new ContextRequest(
+            npcName: 'Без листа',
+            prompt: 'Тест',
+            sceneId: $this->sceneId,
+            draftCount: 3,
+            storytellerId: $this->storyteller->id,
+            gameSessionId: $this->gameSession->id,
+            characterId: null,
+            pass: ContextPass::Reply,
+            maxInputTokens: 5000,
+            maxOutputTokens: 100,
+        );
+
+        $build = $assembly->assemble($request);
+        $section = $build->metadata['sections']['character_state'];
+
+        $this->assertFalse($section['included']);
+        $this->assertSame('no_character', $section['provenance']['reason'] ?? null);
+    }
+
+    public function test_character_state_in_full_context(): void
+    {
+        $character = Character::query()->findOrFail($this->npcId);
+        app(CharacterStateService::class)->apply($character, [
+            'blood_pool' => 2,
+            'temporary_willpower' => 5,
+            'health_level' => 4,
+            'health_damage' => CharacterHealthDamage::Lethal,
+        ]);
+
+        $fakeChat = $this->fakeChat()
+            ->push('{"topics":["test topic"]}')
+            ->push('{"drafts":["one","two","three"]}');
+
+        $response = $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson($this->chronicleApi($this->chronicle, 'copilot/drafts'), [
+                'character_id' => $this->npcId,
+                'prompt' => 'Мрачно смотрит',
+                'scene_id' => $this->sceneId,
+            ]);
+
+        $response->assertStatus(200);
+
+        $row = CopilotRequest::query()->findOrFail((int) $response->json('copilot_request_id'));
+        $metadata = $row->context_metadata;
+        $this->assertIsArray($metadata);
+        $this->assertTrue($metadata['sections']['character_state']['included']);
+
+        $draftRequest = $fakeChat->requests()[1] ?? null;
+        $this->assertIsArray($draftRequest);
+        $userMessage = collect($draftRequest['messages'])->firstWhere('role', 'user');
+        $this->assertIsArray($userMessage);
+        $this->assertStringContainsString('Blood pool: 2', (string) ($userMessage['content'] ?? ''));
+        $this->assertStringContainsString('Health: Wounded', (string) ($userMessage['content'] ?? ''));
     }
 
     public function test_throws_when_input_budget_too_small_for_required_prompt(): void

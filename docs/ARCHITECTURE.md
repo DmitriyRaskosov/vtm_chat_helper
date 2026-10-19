@@ -50,7 +50,7 @@ flowchart TD
 
 ## 3. Границы модулей
 
-- **Character** — лист персонажа: идентичность, место (клан, секта), черты, дисциплины, биография, архив. Гавани нет (ADR-002, задача 008).
+- **Character** — лист персонажа: идентичность, место (клан, секта), черты, дисциплины, биография, архив, активное состояние (`character_states`: кровь, временная воля, уровень и тип урона). Гавани нет (ADR-002, задача 008).
 - **Scene** — игровые сессии, сцены, участники, контекст сцены. `ActiveSceneResolver` — единственный поиск активной сцены.
 - **Messages** — создание, редактирование, удаление сообщений.
 - **Diary** — L0/L1, retrieval, persistence, `DiaryScheduler`. Единственный владелец `character_diary_entries`.
@@ -70,7 +70,7 @@ flowchart TD
 
 **Канон против хроники:**
 - `canon_*` — справочник VtM, только чтение, заполняется сидерами идемпотентным upsert.
-- `chronicles`, `chronicle_members`, `chronicle_invitations`, `world_*`, `characters`, `scenes`, `messages`, `character_diary_entries` — данные хроники.
+- `chronicles`, `chronicle_members`, `chronicle_invitations`, `world_*`, `characters`, `character_states`, `scenes`, `messages`, `character_diary_entries` — данные хроники.
 - Хроника ссылается на канон (`clan_id`, `sect_id`, `discipline_id`), обратных ссылок нет.
 
 **Инварианты в PostgreSQL** (должны пережить любую правку миграций, см. задачу 015):
@@ -86,7 +86,7 @@ flowchart TD
 
 **Copilot:** `POST /api/chronicles/{chronicle}/copilot/drafts` → `CopilotController` → `NpcCopilotService`:
 1. проход topics: лёгкий контекст → список тем;
-2. проход reply: `ContextBuilder` → `ContextAssembler` опрашивает провайдеров. Обязательные: system, identity, scene, storyteller prompt, closing, recent messages. Опциональные (в пределах бюджета токенов): direct_relations, personality, biography, lore, diary;
+2. проход reply: `ContextBuilder` → `ContextAssembler` опрашивает провайдеров. Обязательные: system, identity, scene, character_state (blood pool и health для NPC с листом; без character — секция omitted), storyteller prompt, closing, recent messages. Опциональные (в пределах бюджета токенов): direct_relations, personality, biography, lore, diary;
 3. `DeepSeekChatProvider` → разбор JSON → 3 черновика → запись `CopilotRequest` с метаданными сборки (включённые и отброшенные секции, токены).
 
 **Дневник:**

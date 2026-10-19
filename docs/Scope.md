@@ -9,9 +9,9 @@
 NPC ведут долговременный дневник, который подмешивается в контекст.
 Проект уже не MVP, скорее Early Access с ограниченным и постоянно дополняющимся функционалом.
 
-**Не в проекте (пока):** полная боёвка (чарлисты, здоровье, состояния НПС), рулбук, world events. Простые броски кубов VtM — см. ниже.
+**Не в проекте (пока):** полная боёвка по рулбуку, автоматический расчёт механик в LLM, рулбук как справочник, world events. Уже есть: броски кубов, лог боя, чарлисты-картинки, упрощённые **активные состояния** персонажа (см. Characters) — часть полей уходит в промпт Copilot.
 
-## Что работает сейчас (19.10.2026)
+## Что работает сейчас (20.10.2026)
 
 ### Auth / Game / Chat
 - Регистрация, логин, логаут, /user.
@@ -32,7 +32,8 @@ NPC ведут долговременный дневник, который по�
 - `POST /api/chronicles/{chronicle}/copilot/drafts` — синопсис → 3 драфта.
 - DeepSeek (`deepseek-chat`).
 - Промпты вынесены в `resources/prompts/` + `PromptRepository`.
-- Контекст: NPC-identity, сцена, лор, storyteller-промпт, recent_messages, direct_relations, personality, biography, diary, closing.
+- Контекст: NPC-identity, сцена, **character_state** (запас крови и уровень здоровья с штрафом; временная сила воли в промпт **не** передаётся), лор, storyteller-промпт, recent_messages, direct_relations, personality, biography, diary, closing.
+- Модель учитывает blood pool и ранения при генерации реплик NPC (секция `character_state` в метаданных сборки контекста).
 - Anti-anchor, quote discipline, speech act, trait examples, length rules.
 
 ### Дневник
@@ -43,7 +44,10 @@ NPC ведут долговременный дневник, который по�
 - UI: список, открыть, редактировать, удалить, пересоздать.
 
 ### Characters
-- Создание, чтение, идентичность, дисциплины, биография, traits, место (клан/секта), архив.
+- Создание, чтение, идентичность, дисциплины, биография, traits, место (клан/секта), архив, лист-картинка (sheet).
+- **Активные состояния** (`character_states`): владелец PC и рассказчик правят через `PUT /api/characters/{character}/state` — запас крови (`blood_pool`), временная сила воли (`temporary_willpower`), уровень здоровья 0–7 (`health_level`, Healthy … Incapacitated), тип урона (`health_damage`: bashing / lethal / aggravated); штраф к броскам (`health_penalty`) считается на сервере.
+- UI: блок состояний на листе и в боковой панели чата (drawer персонажа); игрок меняет своего PC, рассказчик — любого.
+- В Copilot для выбранного NPC в контекст попадают только **blood pool** и **health** (читаемый уровень + penalty); сила воли остаётся на листе для стола, но не подмешивается в LLM.
 
 ### World
 - `world_entities` — identity для characters/locations; `world_relations` — read-only связи (ADR-002). `WorldRelationKind` — 13 унаследованных значений enum, в коде приложения не используются.
@@ -59,7 +63,7 @@ NPC ведут долговременный дневник, который по�
 - `php artisan demo:reset` — сброс данных игры (TRUNCATE) с сохранением канона и пользователей, затем `DemoSeeder`: пользователь `admin` / `admin`, членство storyteller в «Demo Chronicle», «Demo Session», активная сцена «Встреча на пустыре», 5 NPC-участников (Абрахам Леру, Август Сент-Клер, Гидеон Эш, Ильзе Фогель, Порижана) с биографиями и traits; **сообщений в чате не создаёт**.
 
 ### Tests
-- PHPUnit: ~490 passed (19.10.2026), в т.ч. `DiceService`, `SceneLogService`, API бросков.
+- PHPUnit: ~554 passed (20.10.2026), в т.ч. `DiceService`, `SceneLogService`, `CharacterState`, `CharacterStateProvider` / контекст Copilot.
 
 ### Известные ограничения
 - Чужая хроника: `GET /api/chronicles/{id}` для не-участника — 404; Policy на коллекции и `ScenePolicy::view` — 403. Единого правила нет.
@@ -90,7 +94,8 @@ NPC ведут долговременный дневник, который по�
 - [x] Миграция `create_chronicles` больше не вставляет данные
 - [x] Demo теперь id=1, ручных DELETE не нужно
 - [x] Retrieval: L1 + L0 в одном пуле, семантика по storyteller prompt, из пула исключаются записи с from_message_id >= min(id) окна recent_messages (устранение дублей с секцией recent).
-- [x] Броски кубов + лог боя (`scene_logs`), изолировано от чата и LLM — первый шаг к боёвке (далее: чарлисты, состояния НПС).
+- [x] Броски кубов + лог боя (`scene_logs`), изолировано от чата и LLM.
+- [x] Чарлисты-картинки, активные состояния персонажа (кровь, воля, здоровье); blood pool и health — в промпте Copilot (`CharacterStateProvider`).
 
 ## Ваншот (08.10.2026) — прошёл
 

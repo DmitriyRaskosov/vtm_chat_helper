@@ -28,7 +28,7 @@ alwaysApply: false
 
 ## Параметры LLM (config)
 - `config/copilot.php`: `history_limit`, `topic_history_limit`, `topic_max_output_tokens`, `topic_temperature`, `topic_max_count`, `draft_count`.
-- `config/context.php`: `token_estimator.characters_per_token`; `copilot.max_input_tokens`; `topic.max_input_tokens`; `assembler.sections` (лимиты `max` по ключам секций: system, storyteller_prompt, npc_identity, scene, recent_messages, diary, direct_relations, biography, personality, world_lore, closing).
+- `config/context.php`: `token_estimator.characters_per_token`; `copilot.max_input_tokens`; `topic.max_input_tokens`; `assembler.sections` (лимиты `max` по ключам секций: system, storyteller_prompt, npc_identity, scene, character_state, recent_messages, diary, direct_relations, biography, personality, world_lore, closing).
 - `config/diary.php`: `write_threshold`, `write_timeout`; `write.max_output_tokens`, `write.temperature`; `summarize.max_output_tokens`, `summarize.temperature`.
 - Модель DeepSeek и таймауты HTTP — в `config/services.php` (не дублировать в модуле).
 

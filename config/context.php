@@ -27,6 +27,9 @@ return [
             'scene' => [
                 'max' => 400,
             ],
+            'character_state' => [
+                'max' => 150,
+            ],
             'recent_messages' => [
                 'max' => 4000,
             ],
