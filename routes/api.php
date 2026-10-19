@@ -25,6 +25,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/chronicles', [ChronicleController::class, 'index']);
     Route::post('/chronicles', [ChronicleController::class, 'store']);
     Route::get('/chronicles/{chronicle}', [ChronicleController::class, 'show']);
+    Route::get('/chronicles/{chronicle}/invitations', [ChronicleInvitationController::class, 'index']);
     Route::post('/chronicles/{chronicle}/invitations', [ChronicleInvitationController::class, 'store']);
     Route::delete('/chronicles/{chronicle}/invitations/{invitation}', [ChronicleInvitationController::class, 'destroy']);
     Route::post('/invitations/{token}/accept', [ChronicleInvitationController::class, 'accept']);

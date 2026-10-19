@@ -57,6 +57,66 @@ class ChronicleInvitationTest extends TestCase
         $this->assertNull($stored->revoked_at);
     }
 
+    public function test_storyteller_can_list_invitations(): void
+    {
+        $storyteller = User::factory()->create();
+        $chronicleId = $this->createChronicle($storyteller);
+        $invitation = $this->createInvitation($storyteller, $chronicleId);
+
+        $response = $this->actingAs($storyteller, 'sanctum')
+            ->getJson("/api/chronicles/{$chronicleId}/invitations");
+
+        $response->assertOk();
+        $response->assertJsonStructure([
+            'invitations' => [
+                ['id', 'expires_at', 'max_uses', 'role'],
+            ],
+        ]);
+        $response->assertJsonPath('invitations.0.id', $invitation['id']);
+        $response->assertJsonPath('invitations.0.role', ChronicleRole::Player->value);
+    }
+
+    public function test_player_cannot_list_invitations(): void
+    {
+        $storyteller = User::factory()->create();
+        $player = User::factory()->create();
+        $chronicleId = $this->createChronicle($storyteller);
+        ChronicleMember::factory()->player()->create([
+            'chronicle_id' => $chronicleId,
+            'user_id' => $player->id,
+        ]);
+        $this->createInvitation($storyteller, $chronicleId);
+
+        $this->actingAs($player, 'sanctum')
+            ->getJson("/api/chronicles/{$chronicleId}/invitations")
+            ->assertStatus(403)
+            ->assertJsonPath('message', 'This action is unauthorized.');
+    }
+
+    public function test_index_excludes_revoked_and_expired(): void
+    {
+        $storyteller = User::factory()->create();
+        $chronicleId = $this->createChronicle($storyteller);
+        $active = $this->createInvitation($storyteller, $chronicleId);
+        $revoked = $this->createInvitation($storyteller, $chronicleId);
+        $expired = $this->createInvitation($storyteller, $chronicleId);
+
+        $this->actingAs($storyteller, 'sanctum')
+            ->deleteJson("/api/chronicles/{$chronicleId}/invitations/{$revoked['id']}")
+            ->assertNoContent();
+
+        ChronicleInvitation::query()->whereKey($expired['id'])->update([
+            'expires_at' => now()->subMinute(),
+        ]);
+
+        $response = $this->actingAs($storyteller, 'sanctum')
+            ->getJson("/api/chronicles/{$chronicleId}/invitations");
+
+        $response->assertOk();
+        $response->assertJsonCount(1, 'invitations');
+        $response->assertJsonPath('invitations.0.id', $active['id']);
+    }
+
     public function test_player_cannot_create_or_revoke(): void
     {
         $storyteller = User::factory()->create();

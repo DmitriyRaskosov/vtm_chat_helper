@@ -20,6 +20,22 @@ class ChronicleInvitationController extends Controller
         private InvitationService $invitations,
     ) {}
 
+    public function index(Request $request, Chronicle $chronicle): JsonResponse
+    {
+        $this->authorize('viewInvitations', $chronicle);
+
+        $invitations = ChronicleInvitation::query()
+            ->where('chronicle_id', $chronicle->id)
+            ->whereNull('revoked_at')
+            ->where('expires_at', '>', now())
+            ->orderByDesc('id')
+            ->get();
+
+        return response()->json([
+            'invitations' => ChronicleInvitationResource::collection($invitations)->toArray($request),
+        ]);
+    }
+
     public function store(StoreChronicleInvitationRequest $request, Chronicle $chronicle): JsonResponse
     {
         $this->authorize('createInvitation', $chronicle);

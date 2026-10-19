@@ -30,6 +30,11 @@ class ChroniclePolicy
             : Response::deny('Только рассказчик.');
     }
 
+    public function viewInvitations(User $user, Chronicle $chronicle): bool
+    {
+        return $user->isStorytellerIn($chronicle);
+    }
+
     public function createInvitation(User $user, Chronicle $chronicle): Response|bool
     {
         return $user->isStorytellerIn($chronicle)

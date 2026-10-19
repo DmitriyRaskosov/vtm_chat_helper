@@ -14,13 +14,23 @@
                         <strong>{{ item.title }}</strong>
                         <span class="muted"> · {{ chronicleRoleLabel(item.role) }}</span>
                     </span>
-                    <button
-                        type="button"
-                        :disabled="item.id === currentId"
-                        @click="chooseChronicle(item.id)"
-                    >
-                        {{ item.id === currentId ? 'Выбрана' : 'Выбрать' }}
-                    </button>
+                    <span class="chronicle-list-actions">
+                        <button
+                            v-if="item.role === 'storyteller'"
+                            type="button"
+                            class="secondary"
+                            @click="openInvitationChronicleId = item.id"
+                        >
+                            Пригласить
+                        </button>
+                        <button
+                            type="button"
+                            :disabled="item.id === currentId"
+                            @click="chooseChronicle(item.id)"
+                        >
+                            {{ item.id === currentId ? 'Выбрана' : 'Выбрать' }}
+                        </button>
+                    </span>
                 </li>
             </ul>
         </section>
@@ -42,12 +52,19 @@
                 <button type="submit" :disabled="creating || !form.title.trim()">Создать</button>
             </form>
         </section>
+
+        <InvitationManager
+            v-if="openInvitationChronicle"
+            :chronicle="openInvitationChronicle"
+            @close="openInvitationChronicleId = null"
+        />
     </div>
 </template>
 
 <script setup>
-import { onMounted, reactive, ref } from 'vue';
+import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import InvitationManager from '../components/chronicle/InvitationManager.vue';
 import AppNav from '../components/layout/AppNav.vue';
 import { useCurrentChronicle } from '../composables/useCurrentChronicle';
 import { apiErrorMessage } from '../utils/apiError';
@@ -62,6 +79,15 @@ const form = reactive({
 });
 const creating = ref(false);
 const createError = ref('');
+const openInvitationChronicleId = ref(null);
+
+const openInvitationChronicle = computed(() => {
+    if (openInvitationChronicleId.value === null) {
+        return null;
+    }
+
+    return chronicles.value.find((item) => item.id === openInvitationChronicleId.value) ?? null;
+});
 
 function chronicleRoleLabel(role) {
     if (role === 'storyteller') {
@@ -128,5 +154,11 @@ onMounted(() => {
 
 .chronicle-list-row:last-child {
     border-bottom: none;
+}
+
+.chronicle-list-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
 }
 </style>
