@@ -617,6 +617,14 @@ summary {
     border-bottom: none;
 }
 
+.diary-backdrop.dice-roller-backdrop {
+    pointer-events: none;
+}
+
+.diary-backdrop.dice-roller-backdrop .dice-roller {
+    pointer-events: auto;
+}
+
 .diary-backdrop.dice-backdrop-beside-drawer {
     right: var(--chat-character-drawer-width);
 }
@@ -708,13 +716,24 @@ summary {
     display: block;
     margin-top: 0.75rem;
 }
-.dice-roller input,
+.dice-roller input:not([type='checkbox']),
 .dice-roller select {
     width: 100%;
     margin-top: 0.25rem;
 }
-.dice-hidden-toggle {
+
+.dice-roller label.dice-hidden-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
     margin-top: 0.75rem;
+    width: auto;
+}
+
+.dice-roller label.dice-hidden-toggle input {
+    width: auto;
+    margin: 0;
+    flex-shrink: 0;
 }
 .dice-result {
     margin-top: 1rem;

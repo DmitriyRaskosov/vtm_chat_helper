@@ -1,9 +1,8 @@
 <template>
     <div
         v-if="open"
-        class="diary-backdrop"
+        class="diary-backdrop dice-roller-backdrop"
         :class="{ 'dice-backdrop-beside-drawer': characterDrawerOpen }"
-        @click.self="close"
     >
         <div class="diary-modal card dice-roller">
             <header class="diary-modal-header">

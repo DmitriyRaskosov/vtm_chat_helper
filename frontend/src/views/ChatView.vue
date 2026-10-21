@@ -59,7 +59,7 @@
                     :character-sheet-enabled="characterSheetEnabled"
                     :character-sheet-title="characterSheetTitle"
                     @send="send"
-                    @open-dice="diceOpen = true"
+                    @open-dice="toggleDiceRoller"
                     @open-character-sheet="openCharacterDrawer"
                 />
             </div>
@@ -259,6 +259,10 @@ const drawerParticipants = computed(() => {
 
     return diceCharacterOptions.value;
 });
+
+function toggleDiceRoller() {
+    diceOpen.value = !diceOpen.value;
+}
 
 function openCharacterDrawer() {
     if (!characterSheetEnabled.value) {
