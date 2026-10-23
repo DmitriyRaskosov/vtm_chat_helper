@@ -23,7 +23,10 @@ services:
         networks:
             - sail
         depends_on:
-            - pgsql
+            pgsql:
+                condition: service_started
+            ollama:
+                condition: service_healthy
     worker:
         build:
             context: './vendor/laravel/sail/runtimes/8.4'
@@ -42,7 +45,33 @@ services:
         networks:
             - sail
         depends_on:
-            - pgsql
+            pgsql:
+                condition: service_started
+            ollama:
+                condition: service_healthy
+        restart: unless-stopped
+    ollama:
+        image: 'ollama/ollama:0.40.9'
+        volumes:
+            - 'ollama:/root/.ollama'
+        networks:
+            - sail
+        deploy:
+            resources:
+                reservations:
+                    devices:
+                        - driver: nvidia
+                          count: all
+                          capabilities: [gpu]
+        healthcheck:
+            test:
+                - CMD
+                - ollama
+                - list
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
         restart: unless-stopped
     pgsql:
         image: 'pgvector/pgvector:pg18'
@@ -74,4 +103,6 @@ networks:
         driver: bridge
 volumes:
     sail-pgsql:
+        driver: local
+    ollama:
         driver: local

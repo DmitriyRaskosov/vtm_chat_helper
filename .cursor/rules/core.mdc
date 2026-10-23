@@ -24,7 +24,7 @@ alwaysApply: true
 - PHP, artisan, composer, тесты, миграции — только в контейнере Sail (`laravel.test`, PHP 8.4, PostgreSQL в контейнере).
 - Запуск `php artisan test` на хостовом PHP успехом не считается.
 - Окружение тестов не подменяй обходными путями (`QUEUE_CONNECTION`, БД testing — как в контейнере).
-- Исключение: эмбеддинг-модель (Ollama `bge-m3`) работает на хосте; в тестах её подменяют фейком `EmbeddingProvider`.
+- Исключение: эмбеддинг-модель (Ollama `bge-m3`) работает в сервисе compose `ollama`; в тестах её подменяют фейком `FakeEmbeddingProvider`.
 
 ## Защищённые зоны
 - `ContextAssembler` и набор провайдеров контекста — менять только по задаче.

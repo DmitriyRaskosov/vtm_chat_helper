@@ -21,29 +21,23 @@
 - **Backend:** PHP 8.4, Laravel 13, Sanctum, PostgreSQL 18 + **pgvector**, очереди в БД
 - **Frontend:** Vue 3, Vue Router, Vite 7 (dev на порту **5173**)
 - **Генерация текста:** [DeepSeek API](https://platform.deepseek.com) (Copilot, записи дневника)
-- **Эмбеддинги дневника:** [BGE-M3](https://ollama.com/library/bge-m3) через **Ollama на хосте** (не в Docker — чтобы использовать GPU)
-- **Контейнеры:** Docker Desktop, Laravel Sail (`laravel.test`, `pgsql`, `worker`)
+- **Эмбеддинги дневника:** [BGE-M3](https://ollama.com/library/bge-m3) через сервис compose **Ollama на GPU** (модель **bge-m3**, dense-вектор **1024** измерения)
+- **Контейнеры:** Docker Desktop, Laravel Sail (`laravel.test`, `pgsql`, `worker`, `ollama`)
 - **Node.js** 20+
 
 ## Требования
 
-- Docker Desktop
+- Docker Desktop с NVIDIA GPU, доступным контейнерам
 - Node.js 20+
 - API-ключ DeepSeek
-- Ollama на локальной машине (для эмбеддингов дневника)
 
 ## Запуск локально
 
-### 1. Эмбеддинги (Ollama на хосте)
+### 1. Эмбеддинги (Ollama в compose, GPU)
 
-Backend в контейнере обращается к Ollama на вашей машине (`OLLAMA_URL`, по умолчанию `http://host.docker.internal:11434`).
+Сервис `ollama` — образ `ollama/ollama` с тегом, зафиксированным в `compose.yaml` (не `latest`). Он поднимается вместе с остальными контейнерами и использует NVIDIA GPU. Backend ходит в него по `OLLAMA_URL` (по умолчанию `http://ollama:11434`). Порт 11434 на хост не публикуется.
 
-```bash
-# установить Ollama с https://ollama.com, затем:
-ollama pull bge-m3
-```
-
-Модель **bge-m3**: мультиязычные эмбеддинги, dense-вектор **1024** измерения (как в БД). Контекст входа — до 8192 токенов.
+Модель **bge-m3**: мультиязычные эмбеддинги, dense-вектор **1024** измерения (как в БД). Контекст входа — до 8192 токенов. После старта контейнеров её один раз скачивают в том сервиса (команда в шаге 2).
 
 ### 2. Backend
 
@@ -53,6 +47,8 @@ cp .env.example .env
 
 docker compose up -d
 # или: ./vendor/bin/sail up -d
+
+docker compose exec ollama ollama pull bge-m3
 
 docker compose exec laravel.test php artisan key:generate
 docker compose exec laravel.test php artisan migrate:fresh --seed
@@ -122,10 +118,10 @@ composer test
 
 - `DB_HOST=pgsql`, `DB_USERNAME=sail`, `DB_PASSWORD=password`
 
-**Эмбеддинги (BGE-M3 через Ollama на хосте)**
+**Эмбеддинги (BGE-M3, сервис compose `ollama` на GPU)**
 
 - `EMBEDDING_DRIVER=ollama`
-- `OLLAMA_URL=http://host.docker.internal:11434`
+- `OLLAMA_URL=http://ollama:11434`
 - `EMBEDDING_MODEL=bge-m3`
 - `EMBEDDING_DIMENSIONS=1024`
 - `EMBEDDING_TIMEOUT=60`

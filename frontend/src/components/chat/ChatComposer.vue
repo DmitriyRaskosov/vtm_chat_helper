@@ -14,6 +14,7 @@
                 required
                 :disabled="!canPost"
                 :placeholder="isOoc ? 'Вопрос мастеру, мета-обсуждение…' : placeholder"
+                @keydown="onTextareaKeydown"
             ></textarea>
         </div>
 
@@ -50,7 +51,7 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
     canPost: { type: Boolean, required: true },
     placeholder: { type: String, required: true },
     myCharacterName: { type: String, default: null },
@@ -62,4 +63,23 @@ const body = defineModel('body', { type: String });
 const isOoc = defineModel('isOoc', { type: Boolean, default: false });
 
 const emit = defineEmits(['send', 'open-dice', 'open-character-sheet']);
+
+function onTextareaKeydown(event) {
+    if (event.key !== 'Enter' || event.shiftKey) {
+        return;
+    }
+
+    event.preventDefault();
+
+    if (!props.canPost) {
+        return;
+    }
+
+    const trimmed = (body.value ?? '').trim();
+    if (!trimmed) {
+        return;
+    }
+
+    emit('send');
+}
 </script>

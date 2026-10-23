@@ -15,8 +15,8 @@ NPC ведут долговременный дневник (L0 — записи 
 
 - Backend: PHP 8.4, Laravel 13, PostgreSQL 18 + pgvector, Sanctum. Тесты — PHPUnit 12 (не Pest).
 - Frontend: Vue 3 (`<script setup>`), Vite, axios. Без Pinia. Папка `frontend/`.
-- LLM: DeepSeek (`deepseek-chat`). Эмбеддинги: Ollama `bge-m3` на хосте (`host.docker.internal`), не в контейнере.
-- Окружение: Laravel Sail / Docker Compose, сервисы `laravel.test`, `worker`, `pgsql`.
+- LLM: DeepSeek (`deepseek-chat`). Эмбеддинги: Ollama `bge-m3` в сервисе compose `ollama` на GPU (`http://ollama:11434`), вектор 1024.
+- Окружение: Laravel Sail / Docker Compose, сервисы `laravel.test`, `worker`, `pgsql`, `ollama`.
 
 ## Команды
 
