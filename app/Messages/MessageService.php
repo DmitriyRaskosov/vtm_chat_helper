@@ -119,6 +119,19 @@ final class MessageService
         return $message->load('user:id,name');
     }
 
+    public function postSystem(Scene $scene, User $storyteller, string $body): Message
+    {
+        return $storyteller->messages()->create([
+            'scene_id' => $scene->id,
+            'body' => $body,
+            'npc_name' => null,
+            'author_character_id' => null,
+            'copilot_request_id' => null,
+            'is_ooc' => false,
+            'is_system' => true,
+        ])->load('user:id,name');
+    }
+
     /**
      * @param  Collection<int, Message>  $messages
      * @return array<int, array{name: string, type: CharacterType, playable: bool}>

@@ -19,6 +19,8 @@ class UpdateCharacterIdentityRequest extends FormRequest
             'nature' => ['sometimes', 'nullable', 'string', 'max:64'],
             'demeanor' => ['sometimes', 'nullable', 'string', 'max:64'],
             'concept' => ['sometimes', 'nullable', 'string', 'max:120'],
+            'description' => ['sometimes', 'nullable', 'string', 'max:10000'],
+            'inventory' => ['sometimes', 'nullable', 'string', 'max:10000'],
         ];
     }
 }

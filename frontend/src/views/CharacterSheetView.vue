@@ -12,9 +12,13 @@
 
         <SheetHeaderSection
             :identity="identity"
+            :role-details="roleDetails"
             :sheet="sheet"
             :flash="flash.identity"
+            :role-flash="flash.role"
+            :is-storyteller="isStoryteller"
             @save="saveIdentity"
+            @save-role="saveRoleDetails"
         />
 
         <SheetAdvantagesSection
@@ -80,6 +84,7 @@ const {
     error,
     isStoryteller,
     identity,
+    roleDetails,
     biography,
     place,
     newDisciplineId,
@@ -93,6 +98,7 @@ const {
     formatSigned,
     missingPlaceOption,
     saveIdentity,
+    saveRoleDetails,
     saveBiography,
     saveTraits,
     addTraitPreset,

@@ -25,6 +25,7 @@ class ChatJsonShapeTest extends TestCase
         'npc_name',
         'author_character_id',
         'is_ooc',
+        'is_system',
         'is_deleted',
         'created_at',
     ];

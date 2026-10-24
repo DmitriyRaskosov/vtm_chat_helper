@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Chronicle\CurrentChronicle;
 use App\Http\Requests\StoreMessageRequest;
+use App\Http\Requests\UpdateMessageRequest;
 use App\Http\Resources\MessageResource;
 use App\Messages\MessageEditService;
 use App\Messages\MessageService;
@@ -96,6 +97,19 @@ class ChatController extends Controller
         return response()->json([
             'message' => (new MessageResource($message, $characterLookup, $user))->toArray($request),
         ], 201);
+    }
+
+    public function update(UpdateMessageRequest $request, Message $message): JsonResponse
+    {
+        $user = $request->user();
+        $this->authorize('update', $message);
+
+        $updated = $this->messageEdit->updateBody($message, $user, $request->validated('body'));
+        $characterLookup = $this->messages->characterLookup(collect([$updated]), $user);
+
+        return response()->json([
+            'message' => (new MessageResource($updated, $characterLookup, $user))->toArray($request),
+        ]);
     }
 
     public function toggleOoc(Request $request, Message $message): JsonResponse

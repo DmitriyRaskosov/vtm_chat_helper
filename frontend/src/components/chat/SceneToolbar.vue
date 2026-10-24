@@ -124,6 +124,14 @@
                 <p v-else class="muted">Пока никого. Добавьте персонажа из списка ниже.</p>
             </div>
             <div v-if="canEditParticipants" class="scene-cast-add">
+                <label for="scene-participant-event">Что происходит?</label>
+                <input
+                    id="scene-participant-event"
+                    v-model="participantSystemMessage"
+                    type="text"
+                    maxlength="500"
+                    placeholder="Необязательно — иначе стандартная фраза в чат"
+                />
                 <label for="scene-add-character">Добавить на сцену</label>
                 <select
                     id="scene-add-character"
@@ -219,6 +227,8 @@ watch(
         turnCharacterId.value = isPlayerOnScene ? value : null;
     },
 );
+
+const participantSystemMessage = defineModel('participantSystemMessage', { type: String, required: true });
 
 const selectedSceneId = defineModel('selectedSceneId');
 const sceneSituation = defineModel('sceneSituation', { type: String });

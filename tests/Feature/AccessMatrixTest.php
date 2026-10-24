@@ -239,6 +239,30 @@ class AccessMatrixTest extends TestCase
                 'player_foreign' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
+            self::forRoles('messages.update.foreign', 'PATCH', 'messages/{storytellerMessage}', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('messages.update.owner', 'PATCH', 'messages/{playerMessage}', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_ALLOWED,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('user-notes.index', 'GET', 'user-notes', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_ALLOWED,
+                'player_foreign' => self::EXPECT_ALLOWED,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('user-notes.update', 'PUT', 'user-notes', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_ALLOWED,
+                'player_foreign' => self::EXPECT_ALLOWED,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
             self::forRoles('catalog', 'GET', 'character-sheet/catalog', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_ALLOWED,

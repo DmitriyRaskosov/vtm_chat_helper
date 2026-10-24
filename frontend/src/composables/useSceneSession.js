@@ -43,6 +43,7 @@ export function useSceneSession({ auth, chronicleId }) {
     const participantBusy = ref(false);
     const participantError = ref('');
     const participantFlash = ref('');
+    const participantSystemMessage = ref('');
     const selectedNpcId = ref(null);
     const sceneSituation = ref('');
     const sceneSituationRevision = ref(0);
@@ -328,10 +329,16 @@ export function useSceneSession({ auth, chronicleId }) {
         participantError.value = '';
 
         try {
-            await api.post(`/scenes/${selectedSceneId.value}/participants`, {
+            const payload = {
                 character_id: picked.id,
                 role: sceneRoleFor(picked.character_type),
-            });
+            };
+            const customText = participantSystemMessage.value.trim();
+            if (customText !== '') {
+                payload.system_message = customText;
+            }
+            await api.post(`/scenes/${selectedSceneId.value}/participants`, payload);
+            participantSystemMessage.value = '';
             const addedId = picked.id;
             addCharacterId.value = null;
             await loadParticipants();
@@ -355,7 +362,13 @@ export function useSceneSession({ auth, chronicleId }) {
         participantError.value = '';
 
         try {
-            await api.patch(`/scenes/${selectedSceneId.value}/participants/${characterId}`);
+            const payload = {};
+            const customText = participantSystemMessage.value.trim();
+            if (customText !== '') {
+                payload.system_message = customText;
+            }
+            await api.patch(`/scenes/${selectedSceneId.value}/participants/${characterId}`, payload);
+            participantSystemMessage.value = '';
             await loadParticipants();
             flashParticipant('Убрано');
         } catch (error) {
@@ -461,6 +474,7 @@ export function useSceneSession({ auth, chronicleId }) {
         participantBusy,
         participantError,
         participantFlash,
+        participantSystemMessage,
         selectedNpcId,
         sceneSituation,
         sceneSituationSaving,

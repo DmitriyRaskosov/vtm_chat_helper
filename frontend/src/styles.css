@@ -640,6 +640,19 @@ summary {
     color: #6b8e23;
 }
 
+.msg.msg-system {
+    text-align: center;
+    border: none;
+    background: transparent;
+    padding: 0.35rem 0.5rem;
+}
+
+.msg-system-body {
+    color: #888;
+    font-style: italic;
+    font-size: 0.92rem;
+}
+
 .ooc-badge {
     display: inline-block;
     padding: 1px 6px;

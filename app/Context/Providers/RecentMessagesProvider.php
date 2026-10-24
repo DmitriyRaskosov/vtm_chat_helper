@@ -68,8 +68,12 @@ class RecentMessagesProvider implements ContextProvider
             $ids[] = (int) $message->id;
             $authorId = $message->author_character_id;
             $canonical = is_numeric($authorId) ? ($names[(int) $authorId] ?? null) : null;
-            $author = $message->displayAuthor(is_string($canonical) ? $canonical : null);
-            $lines[] = '[speech] '.$author.': '.$message->body;
+            if ($message->is_system) {
+                $lines[] = '[system] '.$message->body;
+            } else {
+                $author = $message->displayAuthor(is_string($canonical) ? $canonical : null);
+                $lines[] = '[speech] '.$author.': '.$message->body;
+            }
         }
 
         [$content, $truncated] = $this->trimmer->prefix('## Scene speech', $lines, $tokenBudget);

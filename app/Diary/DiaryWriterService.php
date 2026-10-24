@@ -118,9 +118,17 @@ class DiaryWriterService
             return new WriteEntryResult(false, 0);
         }
 
-        $formattedMessages = $this->formatMessages($messages);
-        $fromMessageId = (int) $messages->first()->id;
         $toMessageId = (int) $messages->last()->id;
+        $roleplayMessages = $messages->where('is_system', false)->values();
+
+        if ($roleplayMessages->isEmpty()) {
+            $participant->update(['last_diary_message_id' => $toMessageId]);
+
+            return new WriteEntryResult(false, 0);
+        }
+
+        $formattedMessages = $this->formatMessages($messages);
+        $fromMessageId = (int) $roleplayMessages->first()->id;
 
         try {
             $raw = $this->generateEntryText(
@@ -235,6 +243,10 @@ class DiaryWriterService
         }
 
         $formattedMessages = $this->formatMessages($messages);
+        if ($formattedMessages === '') {
+            return false;
+        }
+
         $raw = $this->generateEntryText($character, $formattedMessages, $fromId, $toId, $entry->id);
 
         if ($raw === '') {
@@ -343,6 +355,7 @@ class DiaryWriterService
     private function formatMessages(Collection $messages): string
     {
         return $messages
+            ->filter(fn (Message $m): bool => ! $m->is_system)
             ->map(fn (Message $m): string => $m->displayAuthor().': '.trim((string) $m->body))
             ->implode("\n");
     }

@@ -18,6 +18,7 @@
             :participant-busy="participantBusy"
             :participant-error="participantError"
             :participant-flash="participantFlash"
+            v-model:participant-system-message="participantSystemMessage"
             v-model:scene-situation="sceneSituation"
             :scene-situation-saving="sceneSituationSaving"
             :scene-situation-error="sceneSituationError"
@@ -28,8 +29,8 @@
             @create-scene="onCreateScene"
             @activate="activateScene"
             @close="closeScene"
-            @add="addToScene"
-            @remove="removeFromScene"
+            @add="onAddToScene"
+            @remove="onRemoveFromScene"
             @create-session="onCreateGameSession"
             @save-situation="saveSceneSituation"
             @pass-turn="passTurn"
@@ -42,6 +43,9 @@
                         <input v-model="showDeleted" type="checkbox" />
                         Показать удалённые
                     </label>
+                    <button type="button" class="secondary" title="Личные заметки" @click="openNotes">
+                        📝 Заметки
+                    </button>
                 </div>
 
                 <ChatLog
@@ -51,6 +55,7 @@
                     @toggle-ooc="toggleOoc"
                     @delete="deleteMessage"
                     @restore="restoreMessage"
+                    @edit="onEditMessage"
                 />
 
                 <ChatComposer
@@ -100,6 +105,16 @@
             @select-character="drawerCharacterId = $event"
         />
 
+        <ChatNotesModal
+            v-model:content="notesContent"
+            :open="notesOpen"
+            :loading="notesLoading"
+            :saving="notesSaving"
+            :error="notesError"
+            @close="closeNotes"
+            @save="saveNotes"
+        />
+
         <DiceRoller
             v-model:open="diceOpen"
             :is-storyteller="isStoryteller"
@@ -125,12 +140,14 @@ import BattleLog from '../components/chat/BattleLog.vue';
 import ChatCharacterDrawer from '../components/chat/ChatCharacterDrawer.vue';
 import ChatComposer from '../components/chat/ChatComposer.vue';
 import ChatLog from '../components/chat/ChatLog.vue';
+import ChatNotesModal from '../components/chat/ChatNotesModal.vue';
 import DiceRoller from '../components/chat/DiceRoller.vue';
 import SceneToolbar from '../components/chat/SceneToolbar.vue';
 import StorytellerCopilotPanel from '../components/chat/StorytellerCopilotPanel.vue';
 import { useChatMessages } from '../composables/useChatMessages';
 import { useDiceRoll, useSceneBattleLog } from '../composables/useSceneBattleLog';
 import { useSceneSession } from '../composables/useSceneSession';
+import { useUserNotes } from '../composables/useUserNotes';
 
 const auth = useAuth();
 const route = useRoute();
@@ -153,6 +170,7 @@ const {
     participantBusy,
     participantError,
     participantFlash,
+    participantSystemMessage,
     sceneSituation,
     sceneSituationSaving,
     sceneSituationError,
@@ -194,6 +212,7 @@ const {
     toggleOoc,
     deleteMessage,
     restoreMessage,
+    editMessage,
 } = useChatMessages({
     selectedSceneId,
     canPost,
@@ -205,6 +224,17 @@ const {
 });
 
 bindMessages(messages);
+
+const {
+    open: notesOpen,
+    content: notesContent,
+    loading: notesLoading,
+    saving: notesSaving,
+    error: notesError,
+    openModal: openNotes,
+    closeModal: closeNotes,
+    save: saveNotes,
+} = useUserNotes(selectedSceneId);
 
 const {
     logs,
@@ -364,6 +394,20 @@ async function poll() {
     } finally {
         polling = false;
     }
+}
+
+async function onAddToScene() {
+    await addToScene();
+    await load(lastId());
+}
+
+async function onRemoveFromScene(characterId) {
+    await removeFromScene(characterId);
+    await load(lastId());
+}
+
+async function onEditMessage({ message, body }) {
+    await editMessage(message, body);
 }
 
 async function onNpcSent(message) {

@@ -16,8 +16,8 @@ class CharacterNameQueryCountTest extends TestCase
     use JoinsChronicle;
 
     /** Зафиксировано до задачи 023 (DB::listen на демо-подобных данных). */
-    /** До задачи 023: 5; после 038 (членство рассказчика): 6; после character_states: 7 (+1 eager load state). */
-    private const MAX_QUERIES_CHARACTER_SHOW = 7;
+    /** До задачи 023: 5; после 038 (членство рассказчика): 6; после character_states: 7 (+1 eager load state); после pack-4 role tools: 8 (+1 inventory visibility). */
+    private const MAX_QUERIES_CHARACTER_SHOW = 8;
 
     /** До задачи 023: 5; после 038: 6; после 039: 8 (+2 authorize('view', chronicle) → chronicle_members.exists() + CurrentChronicle::get() → find((int) $chronicle)). */
     private const MAX_QUERIES_CHARACTER_INDEX = 8;

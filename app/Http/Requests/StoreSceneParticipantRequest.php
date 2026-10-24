@@ -17,6 +17,7 @@ class StoreSceneParticipantRequest extends FormRequest
             'character_id' => ['required', 'integer', 'exists:characters,id'],
             'role' => ['required', 'string', Rule::enum(SceneParticipantRole::class)],
             'visible' => ['sometimes', 'boolean'],
+            'system_message' => ['sometimes', 'nullable', 'string', 'max:500'],
         ];
     }
 }

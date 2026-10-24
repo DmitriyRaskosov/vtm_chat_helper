@@ -55,6 +55,8 @@ class CharacterSheetReader
             'nature' => $character->nature,
             'demeanor' => $character->demeanor,
             'concept' => $character->concept,
+            'description' => $character->description,
+            'inventory' => $character->inventory,
             'is_active' => (bool) $character->is_active,
             'disciplines' => $character->disciplines->map(fn ($row): array => [
                 'discipline_id' => (int) $row->discipline_id,

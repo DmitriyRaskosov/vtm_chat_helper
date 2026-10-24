@@ -14,6 +14,7 @@ use App\Models\CharacterDiaryEntry;
 use App\Models\Chronicle;
 use App\Models\ChronicleMember;
 use App\Models\GameSession;
+use App\Models\Message;
 use App\Models\Scene;
 use App\Models\SceneParticipant;
 use App\Models\User;
@@ -108,6 +109,72 @@ class DiaryLlmServicesTest extends TestCase
             ->where('character_id', $this->npc->id)
             ->first();
         $this->assertNull($participant->last_diary_message_id);
+    }
+
+    public function test_only_system_messages_do_not_create_l0(): void
+    {
+        $this->fakeEmbeddings();
+
+        $first = Message::factory()->create([
+            'user_id' => $this->storyteller->id,
+            'scene_id' => $this->scene->id,
+            'body' => 'Первое системное.',
+            'is_system' => true,
+            'is_ooc' => false,
+        ]);
+        $second = Message::factory()->create([
+            'user_id' => $this->storyteller->id,
+            'scene_id' => $this->scene->id,
+            'body' => 'Второе системное.',
+            'is_system' => true,
+            'is_ooc' => false,
+        ]);
+
+        $service = app(DiaryWriterService::class);
+        $result = $service->writeForScene($this->scene->fresh());
+
+        $this->assertSame(0, $result->created);
+        $this->assertSame(0, $result->processedMessages);
+        $this->assertSame(
+            0,
+            CharacterDiaryEntry::query()->where('character_id', $this->npc->id)->count(),
+        );
+
+        $participant = SceneParticipant::query()
+            ->where('scene_id', $this->scene->id)
+            ->where('character_id', $this->npc->id)
+            ->first();
+        $this->assertSame((int) $second->id, (int) $participant->last_diary_message_id);
+        $this->assertGreaterThan((int) $first->id, (int) $participant->last_diary_message_id);
+    }
+
+    public function test_system_messages_are_excluded_from_diary_prompt(): void
+    {
+        $systemBody = 'УникальныйТекстСистемногоСообщенияXYZ';
+        $speechBody = 'Обычная реплика для дневника';
+
+        Message::factory()->create([
+            'user_id' => $this->storyteller->id,
+            'scene_id' => $this->scene->id,
+            'body' => $systemBody,
+            'is_system' => true,
+            'is_ooc' => false,
+        ]);
+        $this->createSceneMessage($speechBody);
+
+        $chat = $this->fakeChat();
+        $chat->push('Запись L0 без системного шума.');
+        $this->fakeEmbeddings();
+
+        $service = app(DiaryWriterService::class);
+        $result = $service->writeForScene($this->scene->fresh());
+
+        $this->assertSame(1, $result->created);
+        $requests = $chat->requests();
+        $this->assertNotEmpty($requests);
+        $userContent = (string) ($requests[0]['messages'][1]['content'] ?? '');
+        $this->assertStringContainsString($speechBody, $userContent);
+        $this->assertStringNotContainsString($systemBody, $userContent);
     }
 
     public function test_write_for_scene_creates_no_entry_when_no_new_messages(): void

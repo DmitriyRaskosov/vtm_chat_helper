@@ -46,11 +46,19 @@ class MessagePolicy
             return true;
         }
 
-        if ((int) $message->user_id === (int) $user->id) {
-            return true;
+        if ((int) $message->user_id !== (int) $user->id) {
+            return Response::deny('You cannot edit this message.');
         }
 
-        return Response::deny('You cannot edit this message.');
+        $maxId = (int) Message::query()
+            ->where('scene_id', $message->scene_id)
+            ->max('id');
+
+        if ($maxId <= 0 || (int) $message->id <= $maxId - 10) {
+            return Response::deny('You cannot edit this message.');
+        }
+
+        return true;
     }
 
     private function chronicleForMessage(Message $message): Chronicle

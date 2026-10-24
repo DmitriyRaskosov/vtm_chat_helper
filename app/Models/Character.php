@@ -31,6 +31,8 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'concept',
     'is_active',
     'sheet_image_path',
+    'description',
+    'inventory',
 ])]
 class Character extends Model
 {

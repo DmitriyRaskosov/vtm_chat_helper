@@ -44,4 +44,18 @@ class MessageEditService
 
         $this->diaryScheduler->markStale($message, 'restore');
     }
+
+    public function updateBody(Message $message, User $user, string $body): Message
+    {
+        $body = trim($body);
+        if ($body === $message->body) {
+            return $message;
+        }
+
+        $message->update(['body' => $body]);
+
+        $this->diaryScheduler->markStale($message, 'edit');
+
+        return $message->refresh();
+    }
 }

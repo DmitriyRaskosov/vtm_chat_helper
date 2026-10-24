@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'token_estimate',
     'token_estimator_version',
     'is_ooc',
+    'is_system',
 ])]
 #[ObservedBy(MessageObserver::class)]
 class Message extends Model
@@ -94,6 +95,7 @@ class Message extends Model
     {
         return [
             'is_ooc' => 'boolean',
+            'is_system' => 'boolean',
         ];
     }
 }

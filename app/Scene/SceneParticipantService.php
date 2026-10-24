@@ -3,13 +3,17 @@
 namespace App\Scene;
 
 use App\Diary\DiaryScheduler;
+use App\Enums\ChronicleRole;
 use App\Enums\SceneParticipantRole;
 use App\Exceptions\ConflictException;
 use App\Exceptions\InvalidInputException;
+use App\Messages\MessageService;
 use App\Models\Character;
+use App\Models\ChronicleMember;
 use App\Models\Message;
 use App\Models\Scene;
 use App\Models\SceneParticipant;
+use App\Models\User;
 use App\Scene\Exceptions\InvalidSceneParticipantInputException;
 use App\World\MixedChronicleException;
 use Illuminate\Support\Collection;
@@ -20,6 +24,7 @@ class SceneParticipantService
     public function __construct(
         private SceneContextService $contexts,
         private DiaryScheduler $diaryScheduler,
+        private MessageService $messages,
     ) {}
 
     /**
@@ -29,13 +34,15 @@ class SceneParticipantService
         Scene $scene,
         int $characterId,
         SceneParticipantRole $role,
+        User $actor,
         bool $visible = true,
+        ?string $systemMessage = null,
     ): array {
         $character = Character::query()
             ->with('entity')
             ->findOrFail($characterId);
 
-        $participant = $this->enter($scene, $character, $role, $visible);
+        $participant = $this->enter($scene, $character, $role, $actor, $visible, $systemMessage);
 
         return [
             'participant' => $participant,
@@ -73,7 +80,9 @@ class SceneParticipantService
         Scene $scene,
         Character $character,
         SceneParticipantRole $role,
+        User $actor,
         bool $visible = true,
+        ?string $systemMessage = null,
     ): SceneParticipant {
         $scene->loadMissing('gameSession');
 
@@ -85,7 +94,7 @@ class SceneParticipantService
             throw new InvalidSceneParticipantInputException('An archived character cannot enter a scene.');
         }
 
-        return DB::transaction(function () use ($scene, $character, $role, $visible): SceneParticipant {
+        return DB::transaction(function () use ($scene, $character, $role, $actor, $visible, $systemMessage): SceneParticipant {
             $lockedScene = Scene::query()->lockForUpdate()->findOrFail($scene->id);
             $this->contexts->assertMutable($lockedScene);
 
@@ -106,7 +115,7 @@ class SceneParticipantService
 
             $enteredMessageId = $lastMessageId === null ? null : (int) $lastMessageId;
 
-            return SceneParticipant::query()->create([
+            $participant = SceneParticipant::query()->create([
                 'scene_id' => $lockedScene->id,
                 'chronicle_id' => $character->chronicle_id,
                 'character_id' => $character->id,
@@ -117,12 +126,20 @@ class SceneParticipantService
                 'entered_message_id' => $enteredMessageId,
                 'last_diary_message_id' => $enteredMessageId,  // всё до входа не считаем
             ])->refresh();
+
+            $this->messages->postSystem(
+                $lockedScene,
+                $actor,
+                $this->resolveSystemMessage($systemMessage, $character, true),
+            );
+
+            return $participant;
         });
     }
 
-    public function leave(Scene $scene, Character $character): SceneParticipant
+    public function leave(Scene $scene, Character $character, User $actor, ?string $systemMessage = null): SceneParticipant
     {
-        $participant = DB::transaction(function () use ($scene, $character): SceneParticipant {
+        $participant = DB::transaction(function () use ($scene, $character, $actor, $systemMessage): SceneParticipant {
             $lockedScene = Scene::query()->lockForUpdate()->findOrFail($scene->id);
             $this->contexts->assertMutable($lockedScene);
 
@@ -146,6 +163,13 @@ class SceneParticipantService
             $current->left_message_id = $lastMessageId === null ? null : (int) $lastMessageId;
             $current->save();
 
+            $character->loadMissing('entity');
+            $this->messages->postSystem(
+                $lockedScene,
+                $actor,
+                $this->resolveSystemMessage($systemMessage, $character, false),
+            );
+
             return $current->refresh();
         });
 
@@ -159,6 +183,12 @@ class SceneParticipantService
 
     public function leaveMutableScenes(Character $character): void
     {
+        $character->loadMissing('chronicle');
+        $actor = $this->resolveChronicleStoryteller((int) $character->chronicle_id);
+        if ($actor === null) {
+            return;
+        }
+
         $rows = SceneParticipant::query()
             ->where('character_id', $character->id)
             ->where('is_current', true)
@@ -171,7 +201,7 @@ class SceneParticipantService
             }
 
             try {
-                $this->leave($scene, $character);
+                $this->leave($scene, $character, $actor);
             } catch (ConflictException|InvalidInputException) {
                 continue;
             }
@@ -187,5 +217,33 @@ class SceneParticipantService
             ->where('scene_id', $scene->id)
             ->orderBy('id')
             ->get();
+    }
+
+    private function resolveSystemMessage(?string $custom, Character $character, bool $entering): string
+    {
+        $trimmed = is_string($custom) ? trim($custom) : '';
+        if ($trimmed !== '') {
+            return $trimmed;
+        }
+
+        $character->loadMissing('entity');
+        $name = $character->entity?->canonical_name;
+        $name = is_string($name) && $name !== '' ? $name : 'Персонаж';
+
+        return $entering
+            ? "{$name} появляется на сцене."
+            : "{$name} покидает сцену.";
+    }
+
+    private function resolveChronicleStoryteller(int $chronicleId): ?User
+    {
+        $member = ChronicleMember::query()
+            ->where('chronicle_id', $chronicleId)
+            ->where('role', ChronicleRole::Storyteller)
+            ->whereNull('left_at')
+            ->with('user')
+            ->first();
+
+        return $member?->user;
     }
 }

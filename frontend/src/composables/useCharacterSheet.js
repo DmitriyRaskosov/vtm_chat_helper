@@ -75,6 +75,10 @@ export function useCharacterSheet(characterId) {
         concept: '',
         generation: null,
     });
+    const roleDetails = reactive({
+        description: '',
+        inventory: '',
+    });
     const biography = reactive({
         summary: '',
         full_text: '',
@@ -94,6 +98,7 @@ export function useCharacterSheet(characterId) {
     let traitSeq = 0;
     const flash = reactive({
         identity: false,
+        role: false,
         biography: false,
         traits: false,
         place: false,
@@ -210,6 +215,8 @@ export function useCharacterSheet(characterId) {
         identity.demeanor = character.demeanor ?? '';
         identity.concept = character.concept ?? '';
         identity.generation = character.generation;
+        roleDetails.description = character.description ?? '';
+        roleDetails.inventory = character.inventory ?? '';
         biography.summary = character.biography?.summary ?? '';
         biography.full_text = character.biography?.full_text ?? '';
         biography.principles = character.biography?.principles ?? '';
@@ -261,6 +268,24 @@ export function useCharacterSheet(characterId) {
             flashSaved('identity');
         } catch (e) {
             error.value = apiErrorMessage(e, 'Не удалось сохранить шапку.');
+        }
+    }
+
+    async function saveRoleDetails() {
+        if (!isStoryteller.value) {
+            return;
+        }
+
+        error.value = '';
+        try {
+            const { data } = await api.patch(`/characters/${sheet.value.id}`, {
+                description: roleDetails.description,
+                inventory: roleDetails.inventory,
+            });
+            applySheet(data.character);
+            flashSaved('role');
+        } catch (e) {
+            error.value = apiErrorMessage(e, 'Не удалось сохранить описание и инвентарь.');
         }
     }
 
@@ -362,6 +387,7 @@ export function useCharacterSheet(characterId) {
         error,
         isStoryteller,
         identity,
+        roleDetails,
         biography,
         place,
         newDisciplineId,
@@ -375,6 +401,7 @@ export function useCharacterSheet(characterId) {
         formatSigned,
         missingPlaceOption,
         saveIdentity,
+        saveRoleDetails,
         saveBiography,
         saveTraits,
         addTraitPreset,

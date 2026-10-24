@@ -49,10 +49,13 @@ class MessageResource extends JsonResource
             'body' => $message->body,
             'author' => $author,
             'user_name' => $userName,
-            'mine' => ! $isNpc && (int) $message->user_id === (int) $this->viewer->id,
+            'mine' => ! $message->is_system
+                && ! $isNpc
+                && (int) $message->user_id === (int) $this->viewer->id,
             'npc_name' => $message->npc_name,
             'author_character_id' => $characterId,
             'is_ooc' => (bool) $message->is_ooc,
+            'is_system' => (bool) $message->is_system,
             'is_deleted' => $message->trashed(),
             'created_at' => $message->created_at?->timezone(config('app.timezone'))->format('H:i'),
         ];

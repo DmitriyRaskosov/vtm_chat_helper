@@ -119,7 +119,14 @@ class CharacterSheetController extends Controller
     {
         $this->authorize('update', $character);
 
-        $this->identity->update($character, $request->validated());
+        $fields = $request->validated();
+        $user = $request->user();
+        $character->loadMissing('chronicle');
+        if ($user === null || ! $user->isStorytellerIn($character->chronicle)) {
+            unset($fields['description'], $fields['inventory']);
+        }
+
+        $this->identity->update($character, $fields);
 
         return response()->json([
             'character' => (new CharacterSheetResource($character->refresh(), $this->reader))->toArray($request),

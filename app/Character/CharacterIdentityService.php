@@ -29,7 +29,7 @@ class CharacterIdentityService
 
         $typed = [];
 
-        foreach (['nature', 'demeanor', 'concept'] as $field) {
+        foreach (['nature', 'demeanor', 'concept', 'description', 'inventory'] as $field) {
             if (! array_key_exists($field, $fields)) {
                 continue;
             }

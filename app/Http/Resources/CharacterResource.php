@@ -27,6 +27,7 @@ class CharacterResource extends JsonResource
                 : (string) $character->entity->canonical_name,
             'character_type' => $character->character_type->value,
             'user_id' => $character->user_id === null ? null : (int) $character->user_id,
+            'description' => $character->description,
         ];
     }
 }

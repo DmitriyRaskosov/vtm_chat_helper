@@ -297,6 +297,17 @@ final class AccessMatrixFixtures
             return ['is_ooc' => true];
         }
 
+        if ($method === 'PATCH' && str_starts_with($uriTemplate, 'messages/{')) {
+            return ['body' => 'Обновлённый текст сообщения.'];
+        }
+
+        if ($method === 'PUT' && $uriTemplate === 'user-notes') {
+            return [
+                'scene_id' => $this->scene->id,
+                'content' => 'Заметка матрицы доступа',
+            ];
+        }
+
         if ($method === 'PUT' && str_contains($uriTemplate, '/context')) {
             return [
                 'expected_revision' => $this->sceneContextRevision,

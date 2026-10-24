@@ -161,6 +161,11 @@ export function useChatMessages({
         updateMessage(data.message);
     }
 
+    async function editMessage(message, body) {
+        const { data } = await api.patch(`/messages/${message.id}`, { body });
+        updateMessage(data.message);
+    }
+
     return {
         messages,
         body,
@@ -174,5 +179,6 @@ export function useChatMessages({
         toggleOoc,
         deleteMessage,
         restoreMessage,
+        editMessage,
     };
 }

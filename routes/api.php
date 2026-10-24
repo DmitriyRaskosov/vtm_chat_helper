@@ -16,6 +16,7 @@ use App\Http\Controllers\GameSessionController;
 use App\Http\Controllers\SceneContextController;
 use App\Http\Controllers\SceneController;
 use App\Http\Controllers\SceneParticipantController;
+use App\Http\Controllers\UserNoteController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [RegisterController::class, 'store']);
@@ -46,7 +47,10 @@ Route::middleware('auth:sanctum')->group(function () {
             ->can('view', 'scene');
     });
 
+    Route::patch('/messages/{message}', [ChatController::class, 'update']);
     Route::patch('/messages/{message}/ooc', [ChatController::class, 'toggleOoc']);
+    Route::get('/user-notes', [UserNoteController::class, 'index']);
+    Route::put('/user-notes', [UserNoteController::class, 'update']);
     Route::delete('/messages/{message}', [ChatController::class, 'destroy']);
     Route::post('/messages/{message}/restore', [ChatController::class, 'restore'])
         ->withTrashed();
