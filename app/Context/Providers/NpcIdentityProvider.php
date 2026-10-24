@@ -6,6 +6,7 @@ use App\Context\ContextAssembly;
 use App\Context\ContextSection;
 use App\Context\LineTrimmer;
 use App\Context\TokenEstimator;
+use App\Models\Character;
 
 class NpcIdentityProvider implements ContextProvider
 {
@@ -37,6 +38,7 @@ class NpcIdentityProvider implements ContextProvider
         $lines = [
             "You are {$npcName}, clan {$clanLabel}, sect {$sectLabel}. This is who you are. Do not claim other clans or sects as yours when they are mentioned in conversation.",
             "NPC: {$npcName}",
+            'Social Status: '.$this->socialStatus($character),
         ];
 
         if ($character !== null) {
@@ -83,6 +85,29 @@ class NpcIdentityProvider implements ContextProvider
             'discipline_ids' => $disciplineIds,
             'compact' => $assembly->request->compactIdentity,
         ], $truncated ? 'lines_tail' : null);
+    }
+
+    private function socialStatus(?Character $character): string
+    {
+        if ($character === null) {
+            return 'Neonate';
+        }
+
+        $character->loadMissing('traits');
+
+        foreach (['title', 'status'] as $key) {
+            $trait = $character->traits->firstWhere('key', $key);
+            if ($trait === null) {
+                continue;
+            }
+
+            $value = trim((string) $trait->value);
+            if ($value !== '') {
+                return $value;
+            }
+        }
+
+        return 'Neonate';
     }
 
     private function canonName(mixed $name): string

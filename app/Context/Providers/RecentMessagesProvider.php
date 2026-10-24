@@ -72,7 +72,7 @@ class RecentMessagesProvider implements ContextProvider
                 $lines[] = '[system] '.$message->body;
             } else {
                 $author = $message->displayAuthor(is_string($canonical) ? $canonical : null);
-                $lines[] = '[speech] '.$author.': '.$message->body;
+                $lines[] = '[author] '.$author.': '.$message->body;
             }
         }
 

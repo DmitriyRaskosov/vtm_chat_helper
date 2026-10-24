@@ -122,6 +122,55 @@ class ContextAssemblerTest extends TestCase
         $section = $build->metadata['sections']['npc_identity'];
         $this->assertSame($brujah->name, $section['provenance']['clan'] ?? null);
         $this->assertSame($camarilla->name, $section['provenance']['sect'] ?? null);
+        $this->assertStringContainsString('Social Status: Neonate', $userContent);
+    }
+
+    public function test_npc_identity_social_status_uses_title_trait_over_status(): void
+    {
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->putJson('/api/characters/'.$this->npcId.'/traits', [
+                'traits' => [
+                    ['key' => 'status', 'label' => 'Статус', 'value' => 'Анарх'],
+                    ['key' => 'title', 'label' => 'Титул', 'value' => 'Примоген'],
+                ],
+            ])
+            ->assertStatus(200);
+
+        $userContent = $this->assembleReply()->messages[1]['content'];
+
+        $this->assertStringContainsString('Social Status: Примоген', $userContent);
+        $this->assertStringNotContainsString('Social Status: Анарх', $userContent);
+    }
+
+    public function test_npc_identity_social_status_uses_status_trait_when_title_is_absent(): void
+    {
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->putJson('/api/characters/'.$this->npcId.'/traits', [
+                'traits' => [
+                    ['key' => 'status', 'label' => 'Статус', 'value' => 'Князь'],
+                ],
+            ])
+            ->assertStatus(200);
+
+        $userContent = $this->assembleReply()->messages[1]['content'];
+
+        $this->assertStringContainsString('Social Status: Князь', $userContent);
+    }
+
+    public function test_recent_messages_include_author_tag_and_body(): void
+    {
+        $this->createSceneMessage('Бьёт и блокирует.');
+
+        $build = $this->assembleReply();
+        $userContent = $build->messages[1]['content'];
+
+        $this->assertTrue($build->metadata['sections']['recent_messages']['included']);
+        $this->assertStringContainsString('## Scene speech', $userContent);
+        $this->assertStringContainsString(
+            '[author] '.$this->storyteller->name.': Бьёт и блокирует.',
+            $userContent,
+        );
+        $this->assertStringNotContainsString('[speech]', $userContent);
     }
 
     public function test_required_sections_always_included_when_messages_exist(): void
@@ -175,6 +224,34 @@ class ContextAssemblerTest extends TestCase
 
         $this->assertStringNotContainsString('willpower', strtolower($userContent));
         $this->assertStringNotContainsString('Willpower', $userContent);
+    }
+
+    public function test_reply_system_keeps_hard_overrides_within_token_budget(): void
+    {
+        $request = new ContextRequest(
+            npcName: 'Без листа',
+            prompt: 'Тест',
+            sceneId: $this->sceneId,
+            draftCount: 3,
+            storytellerId: $this->storyteller->id,
+            gameSessionId: $this->gameSession->id,
+            characterId: null,
+            pass: ContextPass::Reply,
+            maxInputTokens: 5000,
+            maxOutputTokens: 100,
+        );
+
+        $build = app(ContextAssembler::class)->assemble($request);
+        $system = $build->messages[0]['content'];
+
+        $this->assertSame('npc-drafts-v9', $build->metadata['prompt_version']);
+        $this->assertLessThanOrEqual(5000, $build->metadata['input_token_estimate']);
+        $this->assertStringContainsString('## HARD OVERRIDES (ABSOLUTE PRIORITY)', $system);
+        $this->assertStringContainsString('NO DIRECT SPEECH', $system);
+        $this->assertStringContainsString('MUTE PROTOCOL', $system);
+        $this->assertStringContainsString('CHAT AUTHORSHIP', $system);
+        $this->assertStringContainsString('SOCIAL HIERARCHY', $system);
+        $this->assertStringNotContainsString('## HARD OVERRIDES (ABSOLUTE PRIORITY)', $build->messages[1]['content']);
     }
 
     public function test_character_state_provider_handles_missing_character(): void

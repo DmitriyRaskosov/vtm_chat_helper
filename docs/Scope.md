@@ -34,7 +34,7 @@ NPC ведут долговременный дневник, который по�
 - `POST /api/chronicles/{chronicle}/copilot/drafts` — синопсис → 3 драфта.
 - DeepSeek (`deepseek-chat`).
 - Промпты вынесены в `resources/prompts/` + `PromptRepository`.
-- Контекст: NPC-identity, сцена, **character_state** (запас крови и уровень здоровья с штрафом; временная сила воли в промпт **не** передаётся), лор, storyteller-промпт, recent_messages (реплики `[speech] …`, системные — `[system] …`), direct_relations, personality, biography, diary, closing.
+- Контекст: NPC-identity, сцена, **character_state** (запас крови и уровень здоровья с штрафом; временная сила воли в промпт **не** передаётся), лор, storyteller-промпт, recent_messages (реплики `[author] Имя: текст`, системные — `[system] …`), direct_relations, personality, biography, diary, closing.
 - Модель учитывает blood pool и ранения при генерации реплик NPC (секция `character_state` в метаданных сборки контекста).
 - Anti-anchor, quote discipline, speech act, trait examples, length rules.
 
