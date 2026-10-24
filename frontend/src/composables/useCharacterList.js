@@ -1,11 +1,12 @@
 import { computed, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
-import { api, isStoryteller } from '../auth';
+import { api, isStoryteller, useAuth } from '../auth';
 import { CHRONICLE_NOT_SELECTED, chronicleCollectionPath, resolveChronicleId } from './useCurrentChronicle';
 import { apiErrorMessage } from '../utils/apiError';
 
 export function useCharacterList(chronicleId) {
     const router = useRouter();
+    const { user } = useAuth();
     const characters = ref([]);
     const archived = ref([]);
     const error = ref('');
@@ -16,7 +17,20 @@ export function useCharacterList(chronicleId) {
         user_id: null,
     });
 
-    const visibleCharacters = computed(() => characters.value);
+    const visibleCharacters = computed(() => {
+        if (isStoryteller.value) {
+            return characters.value;
+        }
+
+        const userId = user.value?.id;
+        if (userId == null) {
+            return [];
+        }
+
+        return characters.value.filter(
+            (row) => row.character_type === 'player' && Number(row.user_id) === Number(userId),
+        );
+    });
 
     async function load() {
         error.value = '';

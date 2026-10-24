@@ -38,11 +38,17 @@ class MessageResource extends JsonResource
             ? $lookup['type'] === CharacterType::Npc
             : ($message->npc_name !== null && $message->npc_name !== '');
 
+        $userName = $message->user?->name;
+        $author = $message->is_ooc
+            ? ($userName !== null && $userName !== '' ? $userName : 'Аноним')
+            : $message->displayAuthor($lookup['name'] ?? null);
+
         return [
             'id' => $message->id,
             'scene_id' => $message->scene_id,
             'body' => $message->body,
-            'author' => $message->displayAuthor($lookup['name'] ?? null),
+            'author' => $author,
+            'user_name' => $userName,
             'mine' => ! $isNpc && (int) $message->user_id === (int) $this->viewer->id,
             'npc_name' => $message->npc_name,
             'author_character_id' => $characterId,

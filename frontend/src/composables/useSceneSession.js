@@ -151,6 +151,28 @@ export function useSceneSession({ auth, chronicleId }) {
         }
     }
 
+    async function pollSceneSituation() {
+        const sceneId = selectedSceneId.value;
+        if (!sceneId || isStoryteller.value) {
+            return;
+        }
+
+        try {
+            const { data } = await api.get(`/scenes/${sceneId}/context`);
+            if (selectedSceneId.value !== sceneId) {
+                return;
+            }
+            const revision = Number(data.context?.revision ?? 0);
+            if (revision === sceneSituationRevision.value) {
+                return;
+            }
+            sceneSituation.value = data.context?.situation ?? '';
+            sceneSituationRevision.value = revision;
+        } catch {
+            // poll retries on the next tick
+        }
+    }
+
     async function saveSceneSituation() {
         const sceneId = selectedSceneId.value;
         if (!sceneId || selectedScene.value?.status === 'closed' || sceneSituationSaving.value) {
@@ -398,6 +420,7 @@ export function useSceneSession({ auth, chronicleId }) {
         bindMessages,
         loadGameSession,
         saveSceneSituation,
+        pollSceneSituation,
         loadParticipants,
         addToScene,
         removeFromScene,

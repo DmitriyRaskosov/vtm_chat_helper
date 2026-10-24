@@ -357,6 +357,28 @@ class ContextAssemblerTest extends TestCase
         $this->assertSame('budget', $sections['biography']['provenance']['reason'] ?? null);
     }
 
+    public function test_recent_messages_excludes_ooc_from_copilot_context(): void
+    {
+        $icIds = [];
+        foreach (range(1, 5) as $i) {
+            $icIds[] = $this->createSceneMessage("IC {$i}")->id;
+        }
+        foreach (range(1, 5) as $i) {
+            $this->createSceneMessage("OOC {$i}", isOoc: true);
+        }
+
+        $build = $this->assembleReply();
+        $messageIds = $build->metadata['sections']['recent_messages']['provenance']['message_ids'] ?? [];
+
+        $this->assertCount(5, $messageIds);
+        foreach ($icIds as $id) {
+            $this->assertContains($id, $messageIds);
+        }
+
+        $userContent = $build->messages[1]['content'];
+        $this->assertStringNotContainsString('[OOC]', $userContent);
+    }
+
     public function test_copilot_end_to_end_records_context_metadata_with_fake_chat(): void
     {
         $this->fakeChat()

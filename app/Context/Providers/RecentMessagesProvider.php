@@ -35,6 +35,8 @@ class RecentMessagesProvider implements ContextProvider
         return Message::query()
             ->with('user:id,name')
             ->where('scene_id', $assembly->scene->id)
+            ->where('is_ooc', false)
+            ->whereNull('deleted_at')
             ->orderByDesc('id')
             ->limit($assembly->request->historyLimit())
             ->get()
@@ -67,8 +69,7 @@ class RecentMessagesProvider implements ContextProvider
             $authorId = $message->author_character_id;
             $canonical = is_numeric($authorId) ? ($names[(int) $authorId] ?? null) : null;
             $author = $message->displayAuthor(is_string($canonical) ? $canonical : null);
-            $prefix = $message->is_ooc ? '[OOC]' : '[speech]';
-            $lines[] = $prefix.' '.$author.': '.$message->body;
+            $lines[] = '[speech] '.$author.': '.$message->body;
         }
 
         [$content, $truncated] = $this->trimmer->prefix('## Scene speech', $lines, $tokenBudget);

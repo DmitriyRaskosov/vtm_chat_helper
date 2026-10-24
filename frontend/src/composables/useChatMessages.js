@@ -2,11 +2,25 @@ import { nextTick, ref, watch } from 'vue';
 import { api } from '../auth';
 import { CHRONICLE_NOT_SELECTED, chronicleCollectionPath } from './useCurrentChronicle';
 
+const COMPOSER_MODE_KEY = 'chat-composer-mode';
+
+function readComposerOocFromStorage() {
+    return localStorage.getItem(COMPOSER_MODE_KEY) === 'ooc';
+}
+
+function writeComposerOocToStorage(isOoc) {
+    localStorage.setItem(COMPOSER_MODE_KEY, isOoc ? 'ooc' : 'ic');
+}
+
 export function useChatMessages({ selectedSceneId, canPost, getLog, myCharacterId, chronicleId }) {
     const messages = ref([]);
     const body = ref('');
-    const isOoc = ref(false);
+    const isOoc = ref(readComposerOocFromStorage());
     const showDeleted = ref(false);
+
+    watch(isOoc, (value) => {
+        writeComposerOocToStorage(value);
+    });
 
     watch(showDeleted, async () => {
         messages.value = [];

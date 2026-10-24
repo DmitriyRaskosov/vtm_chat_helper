@@ -74,6 +74,7 @@ const open = defineModel('open', { type: Boolean, default: false });
 
 const props = defineProps({
     isStoryteller: { type: Boolean, required: true },
+    myCharacterId: { type: [Number, String], default: null },
     characterDrawerOpen: { type: Boolean, default: false },
     characterOptions: { type: Array, required: true },
     rolling: { type: Boolean, default: false },
@@ -103,7 +104,9 @@ watch(open, (visible) => {
     pool.value = 5;
     difficulty.value = 6;
     diceType.value = 10;
-    characterId.value = null;
+    characterId.value = props.isStoryteller
+        ? null
+        : (props.myCharacterId ?? null);
     isHidden.value = false;
     localResult.value = null;
 });

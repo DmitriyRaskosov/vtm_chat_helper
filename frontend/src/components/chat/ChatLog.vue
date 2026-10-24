@@ -13,7 +13,7 @@
             <div class="meta">
                 <span v-if="message.is_ooc" class="ooc-badge">OOC</span>
                 <span v-if="message.is_deleted" class="deleted-badge">УДАЛЕНО</span>
-                {{ message.author }} · {{ message.created_at }}
+                {{ authorLabel(message) }} · {{ message.created_at }}
             </div>
             <div class="msg-body">{{ message.body }}</div>
 
@@ -51,6 +51,14 @@ const logEl = ref(null);
 
 function canManage(message) {
     return props.isStoryteller || message.mine;
+}
+
+function authorLabel(message) {
+    if (message.is_ooc) {
+        return message.user_name ?? message.author;
+    }
+
+    return message.author;
 }
 
 defineExpose({

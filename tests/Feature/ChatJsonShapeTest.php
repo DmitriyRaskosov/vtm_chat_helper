@@ -20,6 +20,7 @@ class ChatJsonShapeTest extends TestCase
         'scene_id',
         'body',
         'author',
+        'user_name',
         'mine',
         'npc_name',
         'author_character_id',

@@ -36,6 +36,7 @@ final class DiaryScheduler
         $pending = Message::query()
             ->where('scene_id', $scene->id)
             ->where('id', '>', $minCursor)
+            ->where('is_ooc', false)
             ->count();
 
         if ($pending < $threshold) {

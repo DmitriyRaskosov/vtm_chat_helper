@@ -105,6 +105,31 @@ class DiaryTest extends TestCase
         });
     }
 
+    public function test_write_diary_job_not_dispatched_when_threshold_is_only_ooc_messages(): void
+    {
+        config(['diary.write_threshold' => 15]);
+        Queue::fake();
+
+        foreach (range(1, 15) as $i) {
+            $this->actingAs($this->storyteller, 'sanctum')
+                ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
+                    'scene_id' => $this->scene->id,
+                    'body' => "OOC {$i}",
+                    'is_ooc' => true,
+                ])
+                ->assertStatus(201);
+        }
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
+                'scene_id' => $this->scene->id,
+                'body' => 'Единственное IC-сообщение',
+            ])
+            ->assertStatus(201);
+
+        Queue::assertNotPushed(WriteDiaryJob::class);
+    }
+
     public function test_summarize_scene_diary_job_dispatched_on_close(): void
     {
         Queue::fake();

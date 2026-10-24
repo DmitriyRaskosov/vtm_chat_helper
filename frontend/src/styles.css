@@ -598,7 +598,7 @@ summary {
     bottom: 0;
     right: var(--chat-character-drawer-width);
     z-index: 90;
-    background: rgba(0, 0, 0, 0.45);
+    background: transparent;
     pointer-events: none;
 }
 
@@ -618,6 +618,7 @@ summary {
 }
 
 .diary-backdrop.dice-roller-backdrop {
+    background: transparent;
     pointer-events: none;
 }
 
@@ -821,6 +822,10 @@ summary {
 
 .msg.msg-deleted {
     opacity: 0.55;
+}
+
+.msg-body {
+    white-space: pre-wrap;
 }
 
 .msg.msg-deleted .msg-body {

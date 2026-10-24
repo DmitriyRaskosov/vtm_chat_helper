@@ -97,6 +97,7 @@
         <DiceRoller
             v-model:open="diceOpen"
             :is-storyteller="isStoryteller"
+            :my-character-id="myCharacterId"
             :character-drawer-open="characterDrawerOpen"
             :character-options="diceCharacterOptions"
             :rolling="rolling"
@@ -160,6 +161,7 @@ const {
     bindMessages,
     loadGameSession,
     saveSceneSituation,
+    pollSceneSituation,
     loadParticipants,
     addToScene,
     removeFromScene,
@@ -343,6 +345,7 @@ async function poll() {
         } else {
             await load(lastId());
             await pollLogs();
+            await pollSceneSituation();
         }
     } catch {
         // A later poll retries transient API failures.

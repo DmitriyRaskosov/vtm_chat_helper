@@ -63,7 +63,7 @@ NPC ведут долговременный дневник, который по�
 - `php artisan demo:reset` — сброс данных игры (TRUNCATE) с сохранением канона и пользователей, затем `DemoSeeder`: пользователь `admin` / `admin`, членство storyteller в «Demo Chronicle», «Demo Session», активная сцена «Встреча на пустыре», 5 NPC-участников (Абрахам Леру, Август Сент-Клер, Гидеон Эш, Ильзе Фогель, Порижана) с биографиями и traits; **сообщений в чате не создаёт**.
 
 ### Tests
-- PHPUnit: ~554 passed (20.10.2026), в т.ч. `DiceService`, `SceneLogService`, `CharacterState`, `CharacterStateProvider` / контекст Copilot.
+- PHPUnit: ~556 passed (24.10.2026), в т.ч. `DiceService`, `SceneLogService`, `CharacterState`, `CharacterStateProvider` / контекст Copilot, OOC в контексте и пороге дневника.
 
 ### Известные ограничения
 - Чужая хроника: `GET /api/chronicles/{id}` для не-участника — 404; Policy на коллекции и `ScenePolicy::view` — 403. Единого правила нет.
@@ -96,6 +96,8 @@ NPC ведут долговременный дневник, который по�
 - [x] Retrieval: L1 + L0 в одном пуле, семантика по storyteller prompt, из пула исключаются записи с from_message_id >= min(id) окна recent_messages (устранение дублей с секцией recent).
 - [x] Броски кубов + лог боя (`scene_logs`), изолировано от чата и LLM.
 - [x] Чарлисты-картинки, активные состояния персонажа (кровь, воля, здоровье); blood pool и health — в промпте Copilot (`CharacterStateProvider`).
+- [x] После тестовой игры (пачка 1): OOC не попадает в контекст Copilot (`recent_messages`) и в порог дневника L0; чат без затемнения при кубиках и чарлисте; переносы строк в сообщениях; игрок не создаёт хроники на `/chronicles`.
+- [x] После тестовой игры (пачка 2): OOC в чате — имя пользователя, режим IC/OOC в `localStorage`; игрок видит в списке персонажей только своего PC; локация сцены у игрока обновляется по polling; в кубиках у игрока по умолчанию выбран его персонаж.
 
 ## Ваншот (08.10.2026) — прошёл
 
