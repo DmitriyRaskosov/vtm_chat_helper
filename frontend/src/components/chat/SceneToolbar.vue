@@ -110,6 +110,11 @@
                     <li v-for="row in currentParticipants" :key="row.character_id">
                         {{ row.character_name }}
                         <span class="muted"> · {{ characterTypeLabel(row.character_type) }}</span>
+                        <span
+                            v-if="row.character_description"
+                            class="muted scene-cast-description"
+                            :title="row.character_description"
+                        > · {{ row.character_description }}</span>
                         <button
                             v-if="canEditParticipants"
                             type="button"

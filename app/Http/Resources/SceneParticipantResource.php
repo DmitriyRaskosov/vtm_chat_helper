@@ -42,6 +42,9 @@ class SceneParticipantResource extends JsonResource
             'character_id' => (int) $participant->character_id,
             'character_name' => is_string($name) && $name !== '' ? $name : null,
             'character_type' => $characterType instanceof CharacterType ? $characterType->value : $characterType,
+            'character_description' => is_string($character?->description) && trim($character->description) !== ''
+                ? trim($character->description)
+                : null,
             'user_id' => $character?->user_id === null ? null : (int) $character->user_id,
             'role' => $participant->role->value,
             'visible' => (bool) $participant->visible,

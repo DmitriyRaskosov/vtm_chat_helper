@@ -65,6 +65,7 @@ class SceneJsonShapeTest extends TestCase
         'character_id',
         'character_name',
         'character_type',
+        'character_description',
         'user_id',
         'role',
         'visible',

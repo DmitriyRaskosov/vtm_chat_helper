@@ -10,6 +10,10 @@ function playUrl(url) {
     void audio.play().catch(() => {});
 }
 
+export function playPlayerTurnSound() {
+    playUrl(SOUNDS.player);
+}
+
 export function playSoundForMessage(message, { myCharacterId, myUserId, isStoryteller }) {
     if (myCharacterId != null && Number(message.author_character_id) === Number(myCharacterId)) {
         playUrl(SOUNDS.player);

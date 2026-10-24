@@ -24,11 +24,63 @@ a { color: var(--accent); }
 }
 .wrap.wide { max-width: 1250px; }
 .stage {
+    position: relative;
     display: grid;
     grid-template-columns: minmax(0, 1fr) 320px;
     gap: 1rem;
     align-items: start;
 }
+
+.chat-tools-dismiss-scrim {
+    position: fixed;
+    inset: 0;
+    z-index: 90;
+    background: transparent;
+}
+
+.chat-tools-dock {
+    position: relative;
+    z-index: 100;
+}
+
+.chat-tools-panels {
+    position: absolute;
+    bottom: 100%;
+    left: 0;
+    right: 0;
+    z-index: 1;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 0.5rem;
+    max-height: min(88vh, 52rem);
+    overflow-y: auto;
+    padding-bottom: 0.35rem;
+    pointer-events: none;
+}
+
+.chat-tools-dock-drawer-open .chat-tools-panels {
+    right: var(--chat-character-drawer-width);
+}
+
+.chat-tools-panels > * {
+    pointer-events: auto;
+}
+
+.chat-tools-dock-bar {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.chat-tools-dock-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    align-items: center;
+}
+
 @media (max-width: 800px) {
     .stage { grid-template-columns: 1fr; }
 }
@@ -75,7 +127,7 @@ a { color: var(--accent); }
 
 .battle-log-scroll-down {
     position: absolute;
-    right: 0.5rem;
+    right: 1.35rem;
     bottom: 0.5rem;
     z-index: 2;
     min-width: 2rem;
@@ -361,6 +413,10 @@ button.link {
     text-decoration: underline;
 }
 .error { color: #e07070; font-size: 0.85rem; margin: 0.25rem 0 0; }
+.chat-log-wrap {
+    position: relative;
+}
+
 .chat-log {
     height: min(60vh, 480px);
     overflow-y: auto;
@@ -370,6 +426,23 @@ button.link {
     display: flex;
     flex-direction: column;
     gap: 0.65rem;
+}
+
+.chat-log-scroll-down {
+    position: absolute;
+    right: 1.35rem;
+    bottom: 0.5rem;
+    z-index: 2;
+    min-width: 2rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--border, #3a3a3a);
+    background: rgba(20, 20, 20, 0.92);
+    cursor: pointer;
+}
+
+.scene-cast-description {
+    font-style: italic;
 }
 .msg {
     padding: 0.5rem 0.65rem;
@@ -701,22 +774,37 @@ summary {
     line-height: 1;
 }
 
-.chat-character-drawer-scrim {
-    position: fixed;
-    top: 0;
-    left: 0;
-    bottom: 0;
-    right: var(--chat-character-drawer-width);
-    z-index: 90;
-    background: transparent;
-    pointer-events: none;
+.chat-floating-panel {
+    max-width: min(28rem, 100%);
+    width: 100%;
+    max-height: min(50vh, 28rem);
+    overflow-y: auto;
+}
+
+.chat-floating-panel.dice-roller {
+    max-width: min(32rem, 100%);
+    max-height: none;
+    overflow: visible;
+}
+
+.chat-floating-panel.chat-notes-panel {
+    max-height: min(50vh, 28rem);
+    overflow-y: auto;
+}
+
+.chat-notes-panel textarea {
+    width: 100%;
+    min-height: 10rem;
+    margin-top: 0.5rem;
+    font-family: inherit;
+    line-height: 1.45;
 }
 
 .chat-character-drawer {
     position: fixed;
     top: 0;
     right: 0;
-    z-index: 110;
+    z-index: 100;
     width: var(--chat-character-drawer-width);
     height: 100%;
     margin: 0;
@@ -725,19 +813,6 @@ summary {
     border-right: none;
     border-top: none;
     border-bottom: none;
-}
-
-.diary-backdrop.dice-roller-backdrop {
-    background: transparent;
-    pointer-events: none;
-}
-
-.diary-backdrop.dice-roller-backdrop .dice-roller {
-    pointer-events: auto;
-}
-
-.diary-backdrop.dice-backdrop-beside-drawer {
-    right: var(--chat-character-drawer-width);
 }
 
 .chat-character-drawer-header {

@@ -1,10 +1,5 @@
 <template>
-    <div
-        v-if="open"
-        class="diary-backdrop dice-roller-backdrop"
-        :class="{ 'dice-backdrop-beside-drawer': characterDrawerOpen }"
-    >
-        <div class="diary-modal card dice-roller">
+    <div v-if="open" class="chat-floating-panel card dice-roller">
             <header class="diary-modal-header">
                 <h2>Бросок кубиков</h2>
                 <button type="button" class="link" @click="close">Закрыть</button>
@@ -90,7 +85,6 @@
                     </template>
                 </p>
             </div>
-        </div>
     </div>
 </template>
 
@@ -102,7 +96,6 @@ const open = defineModel('open', { type: Boolean, default: false });
 const props = defineProps({
     isStoryteller: { type: Boolean, required: true },
     myCharacterId: { type: [Number, String], default: null },
-    characterDrawerOpen: { type: Boolean, default: false },
     characterOptions: { type: Array, required: true },
     rolling: { type: Boolean, default: false },
     rollError: { type: String, default: '' },

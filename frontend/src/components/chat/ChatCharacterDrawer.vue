@@ -1,29 +1,28 @@
 <template>
-    <div v-if="open" class="chat-character-drawer-scrim" aria-hidden="true"></div>
     <aside v-if="open" class="chat-character-drawer card">
-            <header class="chat-character-drawer-header">
-                <h2>{{ title }}</h2>
-                <button type="button" class="link" @click="emit('close')">Закрыть</button>
-            </header>
+        <header class="chat-character-drawer-header">
+            <h2>{{ title }}</h2>
+            <button type="button" class="link" @click="emit('close')">Закрыть</button>
+        </header>
 
-            <div v-if="isStoryteller" class="chat-character-drawer-select">
-                <label for="chat-character-select">Персонаж в сцене</label>
-                <select
-                    id="chat-character-select"
-                    :value="selectedCharacterId ?? ''"
-                    @change="onSelectChange"
-                >
-                    <option v-for="row in participants" :key="row.character_id" :value="row.character_id">
-                        {{ row.character_name }}
-                    </option>
-                </select>
-            </div>
+        <div v-if="isStoryteller" class="chat-character-drawer-select">
+            <label for="chat-character-select">Персонаж в сцене</label>
+            <select
+                id="chat-character-select"
+                :value="selectedCharacterId ?? ''"
+                @change="onSelectChange"
+            >
+                <option v-for="row in participants" :key="row.character_id" :value="row.character_id">
+                    {{ row.character_name }}
+                </option>
+            </select>
+        </div>
 
-            <div v-if="selectedCharacterId" class="chat-character-drawer-body">
-                <SheetImageSection :character-id="selectedCharacterId" :can-upload="false" />
-                <SheetStateSection :character-id="selectedCharacterId" :can-edit="canEditState" />
-            </div>
-            <p v-else class="muted">Выберите персонажа.</p>
+        <div v-if="selectedCharacterId" class="chat-character-drawer-body">
+            <SheetImageSection :character-id="selectedCharacterId" :can-upload="false" />
+            <SheetStateSection :character-id="selectedCharacterId" :can-edit="canEditState" />
+        </div>
+        <p v-else class="muted">Выберите персонажа.</p>
     </aside>
 </template>
 

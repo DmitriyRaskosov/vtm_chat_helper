@@ -64,7 +64,7 @@ class SceneParticipantService
         return Character::query()
             ->whereIn('id', $ids)
             ->with('entity')
-            ->get(['id', 'character_type', 'user_id'])
+            ->get(['id', 'character_type', 'user_id', 'description'])
             ->keyBy('id');
     }
 
@@ -73,7 +73,7 @@ class SceneParticipantService
         return Character::query()
             ->with('entity')
             ->whereKey($participant->character_id)
-            ->first(['id', 'character_type', 'user_id']);
+            ->first(['id', 'character_type', 'user_id', 'description']);
     }
 
     public function enter(
