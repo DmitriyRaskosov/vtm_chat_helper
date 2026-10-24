@@ -5,6 +5,7 @@ namespace App\Scene;
 use App\Character\Exceptions\CharacterNotInChronicleException;
 use App\Dice\DiceRollResult;
 use App\Dice\DiceService;
+use App\Enums\DiceRollMode;
 use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\Scene;
@@ -31,6 +32,8 @@ final class SceneDiceRollService
         int $diceType,
         ?int $characterId,
         bool $isHidden,
+        DiceRollMode $mode = DiceRollMode::Successes,
+        ?string $comment = null,
     ): array {
         $character = null;
         if ($characterId !== null) {
@@ -48,8 +51,8 @@ final class SceneDiceRollService
             }
         }
 
-        $result = $this->dice->roll($pool, $difficulty, $diceType);
-        $log = $this->sceneLogs->logDiceRoll($scene, $user, $character, $result, $isHidden);
+        $result = $this->dice->roll($pool, $difficulty, $diceType, $mode);
+        $log = $this->sceneLogs->logDiceRoll($scene, $user, $character, $result, $isHidden, $comment);
 
         return [
             'result' => $result,

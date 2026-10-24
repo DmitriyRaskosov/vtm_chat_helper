@@ -1,9 +1,23 @@
 <template>
     <form
         class="composer"
-        :class="{ 'composer-ooc': isOoc }"
+        :class="{
+            'composer-ooc': isOoc,
+            'composer-your-turn': isMyTurn,
+        }"
         @submit.prevent="emit('send')"
     >
+        <div v-if="isMyTurn" class="composer-turn-banner">
+            <span class="composer-turn-label">ВАШ ХОД</span>
+            <button
+                type="button"
+                class="composer-turn-done"
+                :disabled="turnReleasing"
+                @click="emit('end-turn')"
+            >
+                {{ turnReleasing ? '…' : 'Готово' }}
+            </button>
+        </div>
         <div v-if="myCharacterName" class="composer-as">
             Вы пишете за: <strong>{{ myCharacterName }}</strong>
         </div>
@@ -57,12 +71,14 @@ const props = defineProps({
     myCharacterName: { type: String, default: null },
     characterSheetEnabled: { type: Boolean, default: true },
     characterSheetTitle: { type: String, default: 'Чарлист' },
+    isMyTurn: { type: Boolean, default: false },
+    turnReleasing: { type: Boolean, default: false },
 });
 
 const body = defineModel('body', { type: String });
 const isOoc = defineModel('isOoc', { type: Boolean, default: false });
 
-const emit = defineEmits(['send', 'open-dice', 'open-character-sheet']);
+const emit = defineEmits(['send', 'open-dice', 'open-character-sheet', 'end-turn']);
 
 function onTextareaKeydown(event) {
     if (event.key !== 'Enter' || event.shiftKey) {

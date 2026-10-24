@@ -16,7 +16,7 @@ use Illuminate\Support\Carbon;
  * @property GameSessionStatus $status
  * @property Carbon|null $activated_at
  */
-#[Fillable(['chronicle_id', 'title', 'status', 'created_by', 'activated_at'])]
+#[Fillable(['chronicle_id', 'title', 'status', 'created_by', 'activated_at', 'active_character_id'])]
 class GameSession extends Model
 {
     /** @use HasFactory<GameSessionFactory> */
@@ -55,11 +55,20 @@ class GameSession extends Model
         return $this->hasMany(Scene::class)->orderBy('position');
     }
 
+    /**
+     * @return BelongsTo<Character, $this>
+     */
+    public function activeCharacter(): BelongsTo
+    {
+        return $this->belongsTo(Character::class, 'active_character_id');
+    }
+
     protected function casts(): array
     {
         return [
             'status' => GameSessionStatus::class,
             'activated_at' => 'datetime',
+            'active_character_id' => 'integer',
         ];
     }
 }

@@ -1,5 +1,6 @@
 import { nextTick, ref, watch } from 'vue';
 import { api } from '../auth';
+import { playSoundForMessage } from '../utils/chatMessageSound';
 import { CHRONICLE_NOT_SELECTED, chronicleCollectionPath } from './useCurrentChronicle';
 
 const COMPOSER_MODE_KEY = 'chat-composer-mode';
@@ -12,7 +13,15 @@ function writeComposerOocToStorage(isOoc) {
     localStorage.setItem(COMPOSER_MODE_KEY, isOoc ? 'ooc' : 'ic');
 }
 
-export function useChatMessages({ selectedSceneId, canPost, getLog, myCharacterId, chronicleId }) {
+export function useChatMessages({
+    selectedSceneId,
+    canPost,
+    getLog,
+    myCharacterId,
+    chronicleId,
+    auth,
+    isStoryteller,
+}) {
     const messages = ref([]);
     const body = ref('');
     const isOoc = ref(readComposerOocFromStorage());
@@ -31,11 +40,28 @@ export function useChatMessages({ selectedSceneId, canPost, getLog, myCharacterI
         return messages.value.at(-1)?.id ?? 0;
     }
 
-    function merge(incoming) {
+    function merge(incoming, { playSounds = false } = {}) {
+        const added = [];
+
         for (const message of incoming) {
             if (!messages.value.some((item) => item.id === message.id)) {
                 messages.value.push(message);
+                added.push(message);
             }
+        }
+
+        if (!playSounds || !added.length) {
+            return;
+        }
+
+        const context = {
+            myCharacterId: myCharacterId?.value ?? null,
+            myUserId: auth.user.value?.id ?? null,
+            isStoryteller: isStoryteller.value,
+        };
+
+        for (const message of added) {
+            playSoundForMessage(message, context);
         }
     }
 
@@ -79,7 +105,7 @@ export function useChatMessages({ selectedSceneId, canPost, getLog, myCharacterI
         }
 
         const stick = afterId === 0 || (getLog()?.isAtBottom?.() ?? true);
-        merge(data.messages);
+        merge(data.messages ?? [], { playSounds: afterId > 0 });
         if (stick) {
             await scrollDown();
         }

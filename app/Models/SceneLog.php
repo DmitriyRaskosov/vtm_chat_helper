@@ -24,6 +24,7 @@ use Illuminate\Support\Carbon;
     'type',
     'visibility',
     'message',
+    'comment',
     'payload',
 ])]
 class SceneLog extends Model

@@ -13,8 +13,21 @@
             <label for="dice-pool">Пул</label>
             <input id="dice-pool" v-model.number="pool" type="number" min="1" max="100" />
 
-            <label for="dice-difficulty">Сложность</label>
-            <input id="dice-difficulty" v-model.number="difficulty" type="number" min="1" max="20" />
+            <label for="dice-mode">Режим</label>
+            <select id="dice-mode" v-model="rollMode">
+                <option value="successes">Успехи (V20)</option>
+                <option value="sum">Сумма кубов</option>
+            </select>
+
+            <label v-if="rollMode === 'successes'" for="dice-difficulty">Сложность</label>
+            <input
+                v-if="rollMode === 'successes'"
+                id="dice-difficulty"
+                v-model.number="difficulty"
+                type="number"
+                min="1"
+                max="20"
+            />
 
             <label for="dice-type">Тип кубика</label>
             <select id="dice-type" v-model.number="diceType">
@@ -38,6 +51,15 @@
                 </option>
             </select>
 
+            <label for="dice-comment">Комментарий</label>
+            <input
+                id="dice-comment"
+                v-model="comment"
+                type="text"
+                maxlength="200"
+                placeholder="Уклонение, урон, проверка…"
+            />
+
             <label v-if="isStoryteller" class="toggle dice-hidden-toggle">
                 <input v-model="isHidden" type="checkbox" />
                 Скрытый бросок
@@ -59,8 +81,13 @@
                     >{{ face }}</span>
                 </div>
                 <p class="dice-outcome">
-                    Итог: <strong>{{ outcomeLabel(displayResult.outcome) }}</strong>
-                    <span v-if="displayResult.outcome === 'success'"> (чистых: {{ displayResult.net }})</span>
+                    <template v-if="displayResult.mode === 'sum'">
+                        Сумма: <strong>{{ displayResult.sum ?? displayResult.net }}</strong>
+                    </template>
+                    <template v-else>
+                        Итог: <strong>{{ outcomeLabel(displayResult.outcome) }}</strong>
+                        <span v-if="displayResult.outcome === 'success'"> (чистых: {{ displayResult.net }})</span>
+                    </template>
                 </p>
             </div>
         </div>
@@ -89,8 +116,12 @@ const pool = ref(5);
 const difficulty = ref(6);
 const diceType = ref(10);
 const characterId = ref(null);
+const rollMode = ref('successes');
+const comment = ref('');
 const isHidden = ref(false);
 const localResult = ref(null);
+
+const isSumMode = computed(() => rollMode.value === 'sum');
 
 const displayResult = computed(() => localResult.value ?? props.lastResult?.result ?? null);
 
@@ -107,6 +138,8 @@ watch(open, (visible) => {
     characterId.value = props.isStoryteller
         ? null
         : (props.myCharacterId ?? null);
+    rollMode.value = 'successes';
+    comment.value = '';
     isHidden.value = false;
     localResult.value = null;
 });
@@ -118,6 +151,9 @@ watch(() => props.lastResult, (value) => {
 });
 
 function diceFaceClass(face) {
+    if (isSumMode.value) {
+        return '';
+    }
     if (face === 1) {
         return 'dice-one';
     }
@@ -142,13 +178,20 @@ function close() {
 }
 
 async function onRoll() {
-    emit('roll', {
+    const payload = {
         pool: pool.value,
-        difficulty: difficulty.value,
         dice_type: diceType.value,
+        mode: rollMode.value,
         character_id: characterId.value,
         is_hidden: props.isStoryteller ? isHidden.value : false,
-    });
+        comment: comment.value.trim() || null,
+    };
+
+    if (rollMode.value === 'successes') {
+        payload.difficulty = difficulty.value;
+    }
+
+    emit('roll', payload);
 }
 
 </script>

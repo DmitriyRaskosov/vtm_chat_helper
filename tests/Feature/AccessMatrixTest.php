@@ -149,6 +149,12 @@ class AccessMatrixTest extends TestCase
                 'player_foreign' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
+            self::forRoles('game_sessions.turn', 'PATCH', 'game-sessions/{gameSession}/turn', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
             self::forRoles('scenes.activate', 'PATCH', 'scenes/{scene}/activate', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_403,

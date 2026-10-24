@@ -3,6 +3,7 @@
 namespace App\Policies;
 
 use App\Chronicle\CurrentChronicle;
+use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\ChronicleMember;
 use App\Models\GameSession;
@@ -28,6 +29,32 @@ class GameSessionPolicy
     public function archive(User $user, GameSession $gameSession): Response|bool
     {
         return $this->denyUnlessStoryteller($user, $this->chronicleForGameSession($gameSession));
+    }
+
+    public function setTurn(User $user, GameSession $gameSession): Response|bool
+    {
+        return $this->denyUnlessStoryteller($user, $this->chronicleForGameSession($gameSession));
+    }
+
+    public function releaseTurn(User $user, GameSession $gameSession): Response|bool
+    {
+        $chronicle = $this->chronicleForGameSession($gameSession);
+        $memberCheck = $this->denyUnlessActiveMember($user, $chronicle);
+        if ($memberCheck !== true) {
+            return $memberCheck;
+        }
+
+        $activeId = $gameSession->active_character_id;
+        if ($activeId === null) {
+            return Response::deny('Сейчас никому не передан ход.');
+        }
+
+        $character = Character::query()->find($activeId);
+        if ($character === null || ! $character->isPlayableBy($user)) {
+            return Response::deny('Сейчас не ваш ход.');
+        }
+
+        return true;
     }
 
     private function denyUnlessActiveMember(User $user, Chronicle $chronicle): Response|bool

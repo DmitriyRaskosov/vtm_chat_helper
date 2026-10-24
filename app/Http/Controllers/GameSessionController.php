@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Chronicle\CurrentChronicle;
+use App\Http\Requests\SetGameSessionTurnRequest;
 use App\Http\Requests\StoreGameSessionRequest;
 use App\Http\Resources\GameSessionResource;
 use App\Models\GameSession;
@@ -49,5 +50,26 @@ class GameSessionController extends Controller
         return response()->json([
             'game_session' => (new GameSessionResource($gameSession))->toArray($request),
         ], 201);
+    }
+
+    public function setTurn(SetGameSessionTurnRequest $request, GameSession $gameSession): JsonResponse
+    {
+        $characterId = $request->validated('character_id');
+        $characterId = $characterId === null ? null : (int) $characterId;
+
+        $gameSession->loadMissing('chronicle');
+        $user = $request->user();
+
+        if ($characterId === null && ! $user->isStorytellerIn($gameSession->chronicle)) {
+            $this->authorize('releaseTurn', $gameSession);
+            $updated = $this->sessions->releaseActiveCharacterForPlayer($gameSession, $user);
+        } else {
+            $this->authorize('setTurn', $gameSession);
+            $updated = $this->sessions->setActiveCharacter($gameSession, $characterId);
+        }
+
+        return response()->json([
+            'game_session' => (new GameSessionResource($updated->load('scenes')))->toArray($request),
+        ]);
     }
 }

@@ -82,6 +82,27 @@
             </button>
         </div>
 
+        <div v-if="isStoryteller && selectedScene?.status === 'active'" class="scene-turn">
+            <label for="scene-turn-character">Чей ход (игрок)</label>
+            <select
+                id="scene-turn-character"
+                v-model="turnCharacterId"
+                :disabled="turnBusy || !playerParticipants.length"
+            >
+                <option :value="null">Никого</option>
+                <option
+                    v-for="row in playerParticipants"
+                    :key="row.character_id"
+                    :value="row.character_id"
+                >
+                    {{ row.character_name }}
+                </option>
+            </select>
+            <button type="button" :disabled="turnBusy" @click="emit('pass-turn', turnCharacterId)">
+                Передать ход
+            </button>
+        </div>
+
         <div class="scene-cast">
             <div>
                 <span class="muted">На сцене</span>
@@ -161,10 +182,11 @@
 </template>
 
 <script setup>
+import { computed, ref, watch } from 'vue';
 import { sceneStatusLabel } from '../../composables/useSceneSession';
 import { characterTypeLabel } from '../../utils/labels';
 
-defineProps({
+const props = defineProps({
     gameSession: { type: Object, default: null },
     isStoryteller: { type: Boolean, required: true },
     scenes: { type: Array, required: true },
@@ -179,7 +201,24 @@ defineProps({
     participantFlash: { type: String, required: true },
     sceneSituationSaving: { type: Boolean, required: true },
     sceneSituationError: { type: String, required: true },
+    activeCharacterId: { type: Number, default: null },
+    turnBusy: { type: Boolean, default: false },
 });
+
+const turnCharacterId = ref(props.activeCharacterId);
+
+const playerParticipants = computed(() =>
+    props.currentParticipants.filter((row) => row.character_type === 'player'),
+);
+
+watch(
+    () => props.activeCharacterId,
+    (value) => {
+        const isPlayerOnScene = value == null
+            || playerParticipants.value.some((row) => Number(row.character_id) === Number(value));
+        turnCharacterId.value = isPlayerOnScene ? value : null;
+    },
+);
 
 const selectedSceneId = defineModel('selectedSceneId');
 const sceneSituation = defineModel('sceneSituation', { type: String });
@@ -196,5 +235,6 @@ const emit = defineEmits([
     'remove',
     'create-session',
     'save-situation',
+    'pass-turn',
 ]);
 </script>

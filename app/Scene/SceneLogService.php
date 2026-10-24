@@ -3,6 +3,7 @@
 namespace App\Scene;
 
 use App\Dice\DiceRollResult;
+use App\Enums\DiceRollMode;
 use App\Enums\SceneLogType;
 use App\Enums\SceneLogVisibility;
 use App\Models\Character;
@@ -19,6 +20,7 @@ final class SceneLogService
         ?Character $character,
         DiceRollResult $result,
         bool $isHidden,
+        ?string $comment = null,
     ): SceneLog {
         $visibility = $isHidden
             ? SceneLogVisibility::StorytellerOnly
@@ -28,17 +30,33 @@ final class SceneLogService
         $label = $this->characterLabel($character);
 
         $diceList = implode(', ', array_map('strval', $result->dice));
-        $outcomeLabel = strtoupper($result->outcome->value);
 
-        $message = sprintf(
-            '%s: бросок %dd%d (сл. %d). Выпало: %s. Итог: %s',
-            $label,
-            $result->pool,
-            $result->diceType,
-            $result->difficulty,
-            $diceList,
-            $outcomeLabel,
-        );
+        if ($result->mode === DiceRollMode::Sum) {
+            $message = sprintf(
+                '%s: бросок %dd%d (сумма). Выпало: %s. Сумма: %d',
+                $label,
+                $result->pool,
+                $result->diceType,
+                $diceList,
+                $result->net,
+            );
+        } else {
+            $outcomeLabel = strtoupper($result->outcome->value);
+            $message = sprintf(
+                '%s: бросок %dd%d (сл. %d). Выпало: %s. Итог: %s',
+                $label,
+                $result->pool,
+                $result->diceType,
+                $result->difficulty,
+                $diceList,
+                $outcomeLabel,
+            );
+        }
+
+        $trimmedComment = $comment !== null ? trim($comment) : '';
+        if ($trimmedComment !== '') {
+            $message .= ' — '.$trimmedComment;
+        }
 
         return SceneLog::query()->create([
             'scene_id' => $scene->id,
@@ -47,6 +65,7 @@ final class SceneLogService
             'type' => SceneLogType::DiceRoll,
             'visibility' => $visibility,
             'message' => $message,
+            'comment' => $trimmedComment !== '' ? $trimmedComment : null,
             'payload' => $result->toPayload(),
         ]);
     }

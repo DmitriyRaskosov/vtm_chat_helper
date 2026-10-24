@@ -25,6 +25,9 @@ class GameSessionResource extends JsonResource
             'chronicle_id' => $gameSession->chronicle_id,
             'title' => $gameSession->title,
             'status' => $gameSession->status->value,
+            'active_character_id' => $gameSession->active_character_id === null
+                ? null
+                : (int) $gameSession->active_character_id,
             'active_scene_id' => $gameSession->scenes
                 ->firstWhere('status', SceneStatus::Active)?->id,
             'scenes' => $gameSession->scenes

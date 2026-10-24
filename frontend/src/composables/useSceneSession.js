@@ -93,6 +93,62 @@ export function useSceneSession({ auth, chronicleId }) {
         flashRef(participantFlash, text, 'participant');
     }
 
+    async function passTurn(characterId) {
+        const session = gameSession.value;
+        if (!session?.id || !isStoryteller.value) {
+            return;
+        }
+
+        participantBusy.value = true;
+        participantError.value = '';
+
+        try {
+            const { data } = await api.patch(`/game-sessions/${session.id}/turn`, {
+                character_id: characterId,
+            });
+            gameSession.value = data.game_session;
+            flashParticipant(characterId == null ? 'Ход сброшен' : 'Ход передан');
+        } catch (error) {
+            participantError.value = apiErrorMessage(error, 'Не удалось передать ход.');
+        } finally {
+            participantBusy.value = false;
+        }
+    }
+
+    async function releaseMyTurn() {
+        const session = gameSession.value;
+        if (!session?.id || !isMyTurn.value || isStoryteller.value) {
+            return;
+        }
+
+        participantBusy.value = true;
+
+        try {
+            const { data } = await api.patch(`/game-sessions/${session.id}/turn`, {
+                character_id: null,
+            });
+            gameSession.value = data.game_session;
+        } catch (error) {
+            participantError.value = apiErrorMessage(error, 'Не удалось завершить ход.');
+        } finally {
+            participantBusy.value = false;
+        }
+    }
+
+    const activeCharacterId = computed(() => {
+        const id = gameSession.value?.active_character_id;
+
+        return id == null ? null : Number(id);
+    });
+
+    const isMyTurn = computed(() => {
+        if (activeCharacterId.value == null || myCharacterId.value == null) {
+            return false;
+        }
+
+        return activeCharacterId.value === Number(myCharacterId.value);
+    });
+
     async function loadGameSession(preferredSceneId = selectedSceneId.value) {
         let path;
         try {
@@ -417,8 +473,12 @@ export function useSceneSession({ auth, chronicleId }) {
         currentParticipants,
         availableToAdd,
         sceneNpcs,
+        activeCharacterId,
+        isMyTurn,
         bindMessages,
         loadGameSession,
+        passTurn,
+        releaseMyTurn,
         saveSceneSituation,
         pollSceneSituation,
         loadParticipants,

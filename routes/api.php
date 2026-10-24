@@ -77,6 +77,7 @@ Route::middleware('auth:sanctum')->group(function () {
         ->can('view', 'scene');
 
     Route::post('/game-sessions/{gameSession}/scenes', [SceneController::class, 'store']);
+    Route::patch('/game-sessions/{gameSession}/turn', [GameSessionController::class, 'setTurn']);
 
     Route::patch('/scenes/{scene}/activate', [SceneController::class, 'activate'])
         ->can('activate', 'scene');

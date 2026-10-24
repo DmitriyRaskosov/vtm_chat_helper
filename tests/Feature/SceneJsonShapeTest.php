@@ -41,6 +41,7 @@ class SceneJsonShapeTest extends TestCase
         'chronicle_id',
         'title',
         'status',
+        'active_character_id',
         'active_scene_id',
         'scenes',
     ];

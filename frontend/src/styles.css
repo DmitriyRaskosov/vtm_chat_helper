@@ -46,8 +46,6 @@ a { color: var(--accent); }
     list-style: none;
     margin: 0;
     padding: 0;
-    max-height: 220px;
-    overflow-y: auto;
     font-size: 0.85rem;
 }
 .battle-log-item {
@@ -66,6 +64,105 @@ a { color: var(--accent); }
     color: #c9a227;
     flex: 0 0 auto;
 }
+.battle-log-wrap {
+    position: relative;
+}
+
+.battle-log-list {
+    max-height: 16rem;
+    overflow-y: auto;
+}
+
+.battle-log-scroll-down {
+    position: absolute;
+    right: 0.5rem;
+    bottom: 0.5rem;
+    z-index: 2;
+    min-width: 2rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 999px;
+    border: 1px solid var(--border, #3a3a3a);
+    background: rgba(20, 20, 20, 0.92);
+    cursor: pointer;
+}
+
+.battle-log-comment {
+    margin: 0.15rem 0 0;
+    font-size: 0.85rem;
+}
+
+.battle-log-sum {
+    margin: 0.15rem 0 0;
+    font-size: 0.9rem;
+}
+
+.scene-turn {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 0.5rem;
+    margin-bottom: 0.75rem;
+}
+
+.scene-turn label {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    margin: 0;
+}
+
+.composer-turn-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin: 0 0 0.5rem;
+    padding: 0.35rem 0.75rem;
+    border-radius: 4px;
+    font-weight: 800;
+    letter-spacing: 0.08em;
+    color: #1a1a1a;
+    background: #e8b84a;
+    animation: composer-turn-pulse 1.4s ease-in-out infinite;
+}
+
+.composer-turn-label {
+    flex: 1;
+    text-align: center;
+}
+
+.composer-turn-done {
+    flex-shrink: 0;
+    padding: 0.2rem 0.65rem;
+    border-radius: 4px;
+    border: 1px solid rgba(0, 0, 0, 0.25);
+    background: rgba(255, 255, 255, 0.85);
+    color: #1a1a1a;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+}
+
+.composer-turn-done:disabled {
+    opacity: 0.6;
+    cursor: default;
+}
+
+.composer.composer-your-turn {
+    box-shadow: 0 0 0 2px rgba(232, 184, 74, 0.55);
+}
+
+@keyframes composer-turn-pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.72;
+    }
+}
+
 .battle-log-message {
     flex: 1 1 100%;
     line-height: 1.35;

@@ -283,6 +283,12 @@ final class AccessMatrixFixtures
             return ['title' => 'Новая сессия'];
         }
 
+        if ($method === 'PATCH' && $uriTemplate === 'game-sessions/{gameSession}/turn') {
+            return [
+                'character_id' => $this->playerCharacter->id,
+            ];
+        }
+
         if ($method === 'POST' && $uriTemplate === 'game-sessions/{gameSession}/scenes') {
             return ['title' => 'Дополнительная сцена', 'activate' => false];
         }

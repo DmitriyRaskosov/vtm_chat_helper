@@ -5,6 +5,7 @@ namespace Tests\Unit;
 use App\Dice\DiceRollResult;
 use App\Dice\DiceService;
 use App\Dice\Exceptions\InvalidDiceInputException;
+use App\Enums\DiceRollMode;
 use App\Enums\DiceRollOutcome;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
@@ -18,6 +19,16 @@ class DiceServiceTest extends TestCase
         parent::setUp();
 
         $this->dice = new DiceService;
+    }
+
+    public function test_roll_sum_mode_sets_net_to_dice_total(): void
+    {
+        $result = DiceRollResult::fromDice(3, 6, 10, [4, 7, 10], DiceRollMode::Sum);
+
+        $this->assertSame(DiceRollMode::Sum, $result->mode);
+        $this->assertSame(21, $result->net);
+        $this->assertSame(21, $result->toPayload()['sum']);
+        $this->assertSame(DiceRollOutcome::Success, $result->outcome);
     }
 
     public function test_roll_returns_expected_shape(): void

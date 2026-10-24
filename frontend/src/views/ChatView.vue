@@ -22,6 +22,8 @@
             :scene-situation-saving="sceneSituationSaving"
             :scene-situation-error="sceneSituationError"
             v-model:new-game-session-title="newGameSessionTitle"
+            :active-character-id="activeCharacterId"
+            :turn-busy="participantBusy"
             @switch="switchScene"
             @create-scene="onCreateScene"
             @activate="activateScene"
@@ -30,6 +32,7 @@
             @remove="removeFromScene"
             @create-session="onCreateGameSession"
             @save-situation="saveSceneSituation"
+            @pass-turn="passTurn"
         />
 
         <div class="stage">
@@ -58,7 +61,10 @@
                     :my-character-name="myCharacterName"
                     :character-sheet-enabled="characterSheetEnabled"
                     :character-sheet-title="characterSheetTitle"
+                    :is-my-turn="isMyTurn"
+                    :turn-releasing="participantBusy"
                     @send="send"
+                    @end-turn="releaseMyTurn"
                     @open-dice="toggleDiceRoller"
                     @open-character-sheet="openCharacterDrawer"
                 />
@@ -158,10 +164,14 @@ const {
     currentParticipants,
     availableToAdd,
     sceneNpcs,
+    activeCharacterId,
+    isMyTurn,
     bindMessages,
     loadGameSession,
     saveSceneSituation,
     pollSceneSituation,
+    passTurn,
+    releaseMyTurn,
     loadParticipants,
     addToScene,
     removeFromScene,
@@ -190,6 +200,8 @@ const {
     getLog: () => chatLog.value,
     myCharacterId,
     chronicleId,
+    auth,
+    isStoryteller,
 });
 
 bindMessages(messages);

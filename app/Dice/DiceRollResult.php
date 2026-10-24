@@ -2,6 +2,7 @@
 
 namespace App\Dice;
 
+use App\Enums\DiceRollMode;
 use App\Enums\DiceRollOutcome;
 
 final readonly class DiceRollResult
@@ -18,13 +19,35 @@ final readonly class DiceRollResult
         public int $ones,
         public int $net,
         public DiceRollOutcome $outcome,
+        public DiceRollMode $mode = DiceRollMode::Successes,
     ) {}
 
     /**
      * @param  list<int>  $dice
      */
-    public static function fromDice(int $pool, int $difficulty, int $diceType, array $dice): self
-    {
+    public static function fromDice(
+        int $pool,
+        int $difficulty,
+        int $diceType,
+        array $dice,
+        DiceRollMode $mode = DiceRollMode::Successes,
+    ): self {
+        if ($mode === DiceRollMode::Sum) {
+            $sum = array_sum($dice);
+
+            return new self(
+                pool: $pool,
+                difficulty: $difficulty,
+                diceType: $diceType,
+                dice: $dice,
+                successes: 0,
+                ones: 0,
+                net: $sum,
+                outcome: DiceRollOutcome::Success,
+                mode: $mode,
+            );
+        }
+
         $successes = 0;
         $ones = 0;
 
@@ -56,6 +79,7 @@ final readonly class DiceRollResult
             ones: $ones,
             net: $net,
             outcome: $outcome,
+            mode: $mode,
         );
     }
 
@@ -64,7 +88,7 @@ final readonly class DiceRollResult
      */
     public function toPayload(): array
     {
-        return [
+        $payload = [
             'pool' => $this->pool,
             'difficulty' => $this->difficulty,
             'dice_type' => $this->diceType,
@@ -73,6 +97,13 @@ final readonly class DiceRollResult
             'ones' => $this->ones,
             'net' => $this->net,
             'outcome' => $this->outcome->value,
+            'mode' => $this->mode->value,
         ];
+
+        if ($this->mode === DiceRollMode::Sum) {
+            $payload['sum'] = $this->net;
+        }
+
+        return $payload;
     }
 }

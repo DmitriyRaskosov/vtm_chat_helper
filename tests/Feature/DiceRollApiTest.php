@@ -82,6 +82,25 @@ class DiceRollApiTest extends TestCase
         $response->assertStatus(422);
     }
 
+    public function test_roll_with_comment_and_sum_mode(): void
+    {
+        $uri = $this->fixtures->resolveUri('chronicles/{chronicle}/scenes/{scene}/dice-rolls');
+
+        $response = $this->actingAs($this->fixtures->storyteller, 'sanctum')->postJson($uri, [
+            'pool' => 3,
+            'dice_type' => 10,
+            'mode' => 'sum',
+            'comment' => 'Уклонение от выстрела',
+            'character_id' => $this->fixtures->npc->id,
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('log.comment', 'Уклонение от выстрела');
+        $response->assertJsonPath('result.mode', 'sum');
+        $this->assertIsInt($response->json('result.sum'));
+        $this->assertSame($response->json('result.sum'), $response->json('result.net'));
+    }
+
     public function test_wrong_chronicle_scene_returns_not_found(): void
     {
         $otherChronicle = $this->fixtures->otherChronicle;

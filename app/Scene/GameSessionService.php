@@ -2,10 +2,16 @@
 
 namespace App\Scene;
 
+use App\Character\Exceptions\CharacterNotInChronicleException;
+use App\Enums\CharacterType;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneStatus;
+use App\Models\Character;
 use App\Models\GameSession;
 use App\Models\Scene;
+use App\Models\User;
+use App\Scene\Exceptions\InvalidSceneParticipantInputException;
+use App\Scene\Exceptions\SceneDiceRollForbiddenException;
 use Illuminate\Support\Facades\DB;
 
 final class GameSessionService
@@ -74,5 +80,40 @@ final class GameSessionService
 
             return $session->load('scenes');
         });
+    }
+
+    public function setActiveCharacter(GameSession $gameSession, ?int $characterId): GameSession
+    {
+        if ($characterId !== null) {
+            $character = Character::query()->findOrFail($characterId);
+            if ((int) $character->chronicle_id !== (int) $gameSession->chronicle_id) {
+                throw new CharacterNotInChronicleException;
+            }
+
+            if ($character->character_type !== CharacterType::Player) {
+                throw new InvalidSceneParticipantInputException(
+                    'Ход можно передать только персонажу игрока.',
+                );
+            }
+        }
+
+        $gameSession->update(['active_character_id' => $characterId]);
+
+        return $gameSession->refresh();
+    }
+
+    public function releaseActiveCharacterForPlayer(GameSession $gameSession, User $user): GameSession
+    {
+        $activeId = $gameSession->active_character_id;
+        if ($activeId === null) {
+            return $gameSession;
+        }
+
+        $character = Character::query()->findOrFail($activeId);
+        if (! $character->isPlayableBy($user)) {
+            throw new SceneDiceRollForbiddenException;
+        }
+
+        return $this->setActiveCharacter($gameSession, null);
     }
 }

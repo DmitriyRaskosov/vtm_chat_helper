@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\DiceRollMode;
 use App\Http\Requests\RollDiceRequest;
 use App\Http\Resources\SceneLogResource;
 use App\Models\Chronicle;
@@ -23,15 +24,21 @@ class DiceRollController extends Controller
         $validated = $request->validated();
         $characterId = isset($validated['character_id']) ? (int) $validated['character_id'] : null;
 
+        $mode = isset($validated['mode'])
+            ? DiceRollMode::from($validated['mode'])
+            : DiceRollMode::Successes;
+
         $rolled = $this->diceRolls->roll(
             $chronicle,
             $scene,
             $request->user(),
             (int) $validated['pool'],
-            (int) $validated['difficulty'],
+            (int) ($validated['difficulty'] ?? 6),
             (int) $validated['dice_type'],
             $characterId,
             $request->boolean('is_hidden'),
+            $mode,
+            $validated['comment'] ?? null,
         );
 
         return response()->json([
