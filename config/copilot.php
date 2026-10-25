@@ -7,4 +7,6 @@ return [
     'topic_temperature' => (float) env('COPILOT_TOPIC_TEMPERATURE', 0.1),
     'topic_max_count' => 8,
     'draft_count' => (int) env('COPILOT_DRAFT_COUNT', 3),
+    'event_max_output_tokens' => (int) env('COPILOT_EVENT_MAX_OUTPUT_TOKENS', 500),
+    'event_temperature' => (float) env('COPILOT_EVENT_TEMPERATURE', 0.7),
 ];

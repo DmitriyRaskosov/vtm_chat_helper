@@ -8,7 +8,7 @@
 Чат для настольной ролевой игры VtM V20 с Copilot-помощником рассказчика.
 Рассказчик пишет синопсис, Copilot (DeepSeek, два прохода) разворачивает его в 3 варианта реплики NPC.
 NPC ведут долговременный дневник (L0 — записи по ходу сцены, L1 — сводка сцены), он подмешивается в контекст Copilot.
-Полной боёвки и рулбука нет; есть упрощённые броски кубов, лог боя, активные состояния персонажа (кровь, здоровье, временная воля на листе). Запас крови и уровень здоровья подмешиваются в контекст Copilot (`CharacterStateProvider`).
+Полной боёвки и рулбука нет; есть упрощённые броски кубов, лог боя и описание уже посчитанного встречного действия (`EventGeneratorService`: один вызов DeepSeek, без сборки контекста Copilot). Кнопка «Описать событие» пока стоит у лога боя, место временное. Активные состояния персонажа (кровь, здоровье, временная воля на листе) есть. Запас крови и уровень здоровья подмешиваются в контекст Copilot (`CharacterStateProvider`).
 Сейчас одна хроника на инстанс; multi-chronicle — этап 3 (ADR-007).
 
 ## Стек
@@ -40,11 +40,11 @@ NPC ведут долговременный дневник (L0 — записи 
 - `Http/Requests` — валидация входа. `Http/Resources` — сериализация JSON (сейчас только `UserResource`).
 - `Models` — Eloquent: связи, casts, scopes. `Enums` — все перечисления домена.
 - `Character/` — сервисы листа персонажа (идентичность, место, черты, биография, `CharacterStateService`).
-- `Scene/` — сцены, участники, контекст сцены (`SceneContextService` с оптимистичной блокировкой).
+- `Scene/` — сцены, участники, контекст сцены (`SceneContextService` с оптимистичной блокировкой), описание события (`EventGeneratorService`).
 - `Messages/` — создание и редактирование сообщений.
 - `Diary/` — дневник NPC: запись L0, сводка L1, retrieval, парсер метаданных.
 - `Context/` — сборка промпта Copilot: `ContextAssembler`, провайдеры секций, `TokenEstimator`. Потребитель остальных модулей (`MessageObserver` — исключение, ADR-001).
-- `Llm/` — `ChatProvider`, DeepSeek, `NpcCopilotService` (два прохода: topics → reply).
+- `Llm/` — `ChatProvider`, DeepSeek, `NpcCopilotService` (два прохода: topics → reply). Тот же `ChatProvider` вызывает `EventGeneratorService` для прозы боя.
 - `Rag/` — `EmbeddingProvider`, Ollama.
 - `Prompt/` — `PromptRepository`, промпты лежат в `resources/prompts/*.md`.
 - `World/` — `world_entities` как identity персонажей и локаций; связи только на чтение (ADR-002).

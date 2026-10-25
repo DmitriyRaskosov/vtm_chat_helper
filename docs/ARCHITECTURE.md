@@ -51,11 +51,11 @@ flowchart TD
 ## 3. Границы модулей
 
 - **Character** — лист персонажа: идентичность, место (клан, секта), черты, дисциплины, биография, архив, активное состояние (`character_states`: кровь, временная воля, уровень и тип урона). Гавани нет (ADR-002, задача 008).
-- **Scene** — игровые сессии, сцены, участники, контекст сцены. `ActiveSceneResolver` — единственный поиск активной сцены.
+- **Scene** — игровые сессии, сцены, участники, контекст сцены, описание исхода боя (`EventGeneratorService`). `ActiveSceneResolver` — единственный поиск активной сцены.
 - **Messages** — создание, редактирование, удаление сообщений.
 - **Diary** — L0/L1, retrieval, persistence, `DiaryScheduler`. Единственный владелец `character_diary_entries`.
 - **Context** — `ContextAssembler` (не трогать без задачи), провайдеры, `DiaryRenderer`, `LineTrimmer`, `TokenEstimator` (в Context, ADR-001 п. 4), `DiaryPreviewService`.
-- **Llm** — `ChatProvider`, `DeepSeekChatProvider`, `NpcCopilotService` (два прохода topics → reply).
+- **Llm** — `ChatProvider`, `DeepSeekChatProvider`, `NpcCopilotService` (два прохода topics → reply). Описание события живёт в `Scene` и только вызывает `ChatProvider`.
 - **Rag** — `EmbeddingProvider`, Ollama, `VectorLiteral`.
 - **World** — `WorldEntityService` (создание identity, `assertSameChronicle`), `WorldRelationService` (только чтение). ADR-002.
 - **Chronicle** — членство и приглашения: `ChronicleService`, `InvitationService`, `CurrentChronicle` (хроника из параметра маршрута `{chronicle}`). `ChroniclePolicy` лежит в `app/Policies` (ADR-007).
@@ -89,6 +89,8 @@ flowchart TD
 2. проход reply: `ContextBuilder` → `ContextAssembler` опрашивает провайдеров. Обязательные: system, identity, scene, character_state (blood pool и health для NPC с листом; без character — секция omitted), storyteller prompt, closing, recent messages. Опциональные (в пределах бюджета токенов): direct_relations, personality, biography, lore, diary;
 3. `DeepSeekChatProvider` → разбор JSON → 3 черновика → запись `CopilotRequest` с метаданными сборки (включённые и отброшенные секции, токены).
 
+**Описание события:** `POST /api/chronicles/{chronicle}/scenes/{scene}/events/generate` → `EventGeneratorController` → `EventGeneratorService`. Только рассказчик (`ScenePolicy::update`). В промпт `copilot.event.system` подставляются действие, `environment_details` сцены и два независимых итога броска (net, ботч, трата воли). Один `chatTurn` (`copilot.event_temperature`, `copilot.event_max_output_tokens`). Ответ `{ "description" }`; сбой модели — `EventGenerationFailedException` (503). В чат и в `scene_logs` текст не пишется. Кнопка «Описать событие» сейчас у лога боя; место временное.
+
 **Дневник:**
 - каждые N сообщений (`config/diary.php`, ключ `write_threshold`) — порог проверяет `DiaryScheduler::scheduleForScene`, его вызывает `MessageService`; прямой вызов `DiaryWriterService::writeForScene` порог не проверяет и пишет всё накопленное после курсора участника;
 - `WriteDiaryJob` → `DiaryWriterService::writeForScene` (L0 по каждому NPC сцены, сдвиг `last_diary_message_id`);
@@ -105,7 +107,7 @@ flowchart TD
 
 ### Маршруты
 
-Коллекции стоят под `/api/chronicles/{chronicle}/...`: активная сессия, сообщения, персонажи, создание сессии, черновики Copilot. Рядом, тоже с `{chronicle}`: просмотр хроники, создание и отзыв приглашения. Плоские маршруты остаются по модели: `/scenes/{scene}`, `/characters/{character}`, `/messages/{message}`, `/diary-entries/{diaryEntry}`, `/game-sessions/{gameSession}/scenes`. Принятие приглашения — `POST /api/invitations/{token}/accept`.
+Коллекции стоят под `/api/chronicles/{chronicle}/...`: активная сессия, сообщения, персонажи, создание сессии, черновики Copilot, описание события (`scenes/{scene}/events/generate`). Рядом, тоже с `{chronicle}`: просмотр хроники, создание и отзыв приглашения. Плоские маршруты остаются по модели: `/scenes/{scene}`, `/characters/{character}`, `/messages/{message}`, `/diary-entries/{diaryEntry}`, `/game-sessions/{gameSession}/scenes`. Принятие приглашения — `POST /api/invitations/{token}/accept`.
 
 `CurrentChronicle` читает параметр `{chronicle}` текущего маршрута. Контроллеры коллекций вызывают `authorize('view', chronicle)` — это `ChroniclePolicy`. На плоском маршруте отказ даёт Policy модели.
 

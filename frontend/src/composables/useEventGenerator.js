@@ -7,7 +7,7 @@ export function useEventGenerator({ chronicleId, selectedSceneId }) {
     const generating = ref(false);
     const generateError = ref('');
 
-    async function generateEvent(payload) {
+    async function generate(payload) {
         const sceneId = toValue(selectedSceneId);
         const chronicle = toValue(chronicleId);
 
@@ -21,10 +21,18 @@ export function useEventGenerator({ chronicleId, selectedSceneId }) {
         try {
             const { data } = await api.post(
                 chronicleCollectionPath(chronicle, `scenes/${sceneId}/events/generate`),
-                payload,
+                {
+                    action_description: payload.action_description,
+                    attack_successes: payload.attack_successes,
+                    attack_botch: payload.attack_botch === true,
+                    attack_willpower: payload.attack_willpower === true,
+                    defense_successes: payload.defense_successes,
+                    defense_botch: payload.defense_botch === true,
+                    defense_willpower: payload.defense_willpower === true,
+                },
             );
 
-            return data.text ?? '';
+            return data.description ?? '';
         } catch (error) {
             generateError.value = apiErrorMessage(error, 'Не удалось сгенерировать описание.');
             return null;
@@ -36,6 +44,6 @@ export function useEventGenerator({ chronicleId, selectedSceneId }) {
     return {
         generating,
         generateError,
-        generateEvent,
+        generate,
     };
 }
