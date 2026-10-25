@@ -52,13 +52,13 @@
                     @edit="onEditMessage"
                 />
 
-                <ChatToolsDock
-                    :drawer-open="characterDrawerOpen"
-                    :show-panels="diceOpen || notesOpen"
-                >
-                    <template #panels>
+                <div class="chat-composer-stack">
+                    <div
+                        v-if="isDiceOpen || isNotesOpen"
+                        class="chat-panel-popovers"
+                    >
                         <DiceRoller
-                            v-model:open="diceOpen"
+                            v-if="isDiceOpen"
                             :is-storyteller="isStoryteller"
                             :my-character-id="myCharacterId"
                             :character-options="diceCharacterOptions"
@@ -66,51 +66,44 @@
                             :roll-error="rollError"
                             :last-result="lastResult"
                             :can-roll="canPost"
+                            @close="isDiceOpen = false"
                             @roll="onDiceRoll"
                             @clear-result="clearLastResult"
                         />
                         <ChatNotesPanel
+                            v-if="isNotesOpen"
                             v-model:content="notesContent"
-                            :open="notesOpen"
                             :loading="notesLoading"
                             :saving="notesSaving"
                             :error="notesError"
-                            @close="closeNotes"
+                            @close="isNotesOpen = false"
                             @save="saveNotes"
                         />
-                    </template>
-                    <template #bar>
-                        <div class="chat-tools-dock-actions">
-                            <label class="toggle">
-                                <input v-model="showDeleted" type="checkbox" />
-                                Показать удалённые
-                            </label>
-                            <button
-                                type="button"
-                                class="secondary"
-                                title="Личные заметки"
-                                @click="toggleNotes"
-                            >
-                                📝 Заметки
-                            </button>
-                        </div>
-                        <ChatComposer
-                            v-model:body="body"
-                            v-model:is-ooc="isOoc"
-                            :can-post="canPost"
-                            :placeholder="composerPlaceholder"
-                            :my-character-name="myCharacterName"
-                            :character-sheet-enabled="characterSheetEnabled"
-                            :character-sheet-title="characterSheetTitle"
-                            :is-my-turn="isMyTurn"
-                            :turn-releasing="participantBusy"
-                            @send="send"
-                            @end-turn="releaseMyTurn"
-                            @open-dice="toggleDiceRoller"
-                            @open-character-sheet="openCharacterDrawer"
-                        />
-                    </template>
-                </ChatToolsDock>
+                    </div>
+                    <ChatToolsDock>
+                        <template #bar>
+                            <div class="chat-tools-dock-actions">
+                                <label class="toggle">
+                                    <input v-model="showDeleted" type="checkbox" />
+                                    Показать удалённые
+                                </label>
+                            </div>
+                            <ChatComposer
+                                v-model:body="body"
+                                v-model:is-ooc="isOoc"
+                                :can-post="canPost"
+                                :placeholder="composerPlaceholder"
+                                :my-character-name="myCharacterName"
+                                :is-storyteller="isStoryteller"
+                                :my-character-id="myCharacterId"
+                                :is-my-turn="isMyTurn"
+                                :turn-releasing="participantBusy"
+                                @send="send"
+                                @end-turn="releaseMyTurn"
+                            />
+                        </template>
+                    </ChatToolsDock>
+                </div>
             </div>
 
             <aside class="side-panel">
@@ -134,12 +127,12 @@
         </div>
 
         <ChatCharacterDrawer
-            :open="characterDrawerOpen"
+            v-if="isCharacterOpen"
             :is-storyteller="isStoryteller"
             :participants="drawerParticipants"
             :selected-character-id="drawerCharacterId"
             :my-character-id="myCharacterId"
-            @close="characterDrawerOpen = false"
+            @close="isCharacterOpen = false"
             @select-character="drawerCharacterId = $event"
         />
     </div>
@@ -155,11 +148,12 @@ import ChatCharacterDrawer from '../components/chat/ChatCharacterDrawer.vue';
 import ChatComposer from '../components/chat/ChatComposer.vue';
 import ChatLog from '../components/chat/ChatLog.vue';
 import ChatNotesPanel from '../components/chat/ChatNotesPanel.vue';
-import { playPlayerTurnSound } from '../utils/chatMessageSound';
 import DiceRoller from '../components/chat/DiceRoller.vue';
+import { playPlayerTurnSound } from '../utils/chatMessageSound';
 import SceneToolbar from '../components/chat/SceneToolbar.vue';
 import StorytellerCopilotPanel from '../components/chat/StorytellerCopilotPanel.vue';
 import { useChatMessages } from '../composables/useChatMessages';
+import { useChatPanels } from '../composables/useChatPanels';
 import { useDiceRoll, useSceneBattleLog } from '../composables/useSceneBattleLog';
 import { useSceneSession } from '../composables/useSceneSession';
 import { useUserNotes } from '../composables/useUserNotes';
@@ -170,9 +164,13 @@ const route = useRoute();
 const chronicleId = computed(() => route.params.chronicleId);
 const chatLog = ref(null);
 const copilotPanel = ref(null);
-const diceOpen = ref(false);
-const characterDrawerOpen = ref(false);
 const drawerCharacterId = ref(null);
+const {
+    isDiceOpen,
+    isNotesOpen,
+    isCharacterOpen,
+    closeAll,
+} = useChatPanels();
 
 const {
     gameSession,
@@ -244,7 +242,6 @@ const {
 bindMessages(messages);
 
 const {
-    open: notesOpen,
     content: notesContent,
     loading: notesLoading,
     saving: notesSaving,
@@ -306,14 +303,6 @@ const diceCharacterOptions = computed(() => {
     return pc ? [pc] : [];
 });
 
-const characterSheetEnabled = computed(() => (
-    isStoryteller.value ? true : myCharacterId.value !== null
-));
-
-const characterSheetTitle = computed(() => (
-    isStoryteller.value ? 'Чарлист' : 'Мой персонаж'
-));
-
 const drawerParticipants = computed(() => {
     if (isStoryteller.value) {
         return currentParticipants.value;
@@ -322,38 +311,29 @@ const drawerParticipants = computed(() => {
     return diceCharacterOptions.value;
 });
 
-function toggleDiceRoller() {
-    diceOpen.value = !diceOpen.value;
-}
-
-function toggleNotes() {
-    if (notesOpen.value) {
-        closeNotes();
-        return;
-    }
-    openNotes();
-}
-
-function openCharacterDrawer() {
-    if (!characterSheetEnabled.value) {
-        return;
-    }
-
-    if (characterDrawerOpen.value) {
-        characterDrawerOpen.value = false;
-
-        return;
-    }
-
+function initDrawerCharacter() {
     if (isStoryteller.value) {
         const first = currentParticipants.value[0];
         drawerCharacterId.value = first?.character_id ?? null;
     } else {
         drawerCharacterId.value = myCharacterId.value;
     }
-
-    characterDrawerOpen.value = true;
 }
+
+watch(isNotesOpen, (open, wasOpen) => {
+    if (open && !wasOpen) {
+        openNotes();
+    }
+    if (!open && wasOpen) {
+        closeNotes();
+    }
+});
+
+watch(isCharacterOpen, (open) => {
+    if (open) {
+        initDrawerCharacter();
+    }
+});
 
 let turnSoundReady = false;
 
@@ -490,5 +470,6 @@ onMounted(async () => {
 
 onUnmounted(() => {
     clearInterval(timer);
+    closeAll();
 });
 </script>

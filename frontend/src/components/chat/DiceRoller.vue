@@ -1,8 +1,8 @@
 <template>
-    <div v-if="open" class="chat-floating-panel card dice-roller">
-            <header class="diary-modal-header">
+    <div class="chat-panel-popover chat-floating-panel card dice-roller">
+            <header class="chat-panel-header">
                 <h2>Бросок кубиков</h2>
-                <button type="button" class="link" @click="close">Закрыть</button>
+                <button type="button" class="chat-panel-close" aria-label="Закрыть" @click="close">×</button>
             </header>
 
             <label for="dice-pool">Пул</label>
@@ -89,9 +89,7 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue';
-
-const open = defineModel('open', { type: Boolean, default: false });
+import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 
 const props = defineProps({
     isStoryteller: { type: Boolean, required: true },
@@ -103,7 +101,7 @@ const props = defineProps({
     canRoll: { type: Boolean, default: true },
 });
 
-const emit = defineEmits(['roll', 'clear-result']);
+const emit = defineEmits(['close', 'roll', 'clear-result']);
 
 const pool = ref(5);
 const difficulty = ref(6);
@@ -118,13 +116,7 @@ const isSumMode = computed(() => rollMode.value === 'sum');
 
 const displayResult = computed(() => localResult.value ?? props.lastResult?.result ?? null);
 
-watch(open, (visible) => {
-    if (!visible) {
-        localResult.value = null;
-        emit('clear-result');
-        return;
-    }
-
+function resetForm() {
     pool.value = 5;
     difficulty.value = 6;
     diceType.value = 10;
@@ -135,6 +127,15 @@ watch(open, (visible) => {
     comment.value = '';
     isHidden.value = false;
     localResult.value = null;
+}
+
+onMounted(() => {
+    resetForm();
+});
+
+onUnmounted(() => {
+    localResult.value = null;
+    emit('clear-result');
 });
 
 watch(() => props.lastResult, (value) => {
@@ -167,7 +168,7 @@ function outcomeLabel(outcome) {
 }
 
 function close() {
-    open.value = false;
+    emit('close');
 }
 
 async function onRoll() {

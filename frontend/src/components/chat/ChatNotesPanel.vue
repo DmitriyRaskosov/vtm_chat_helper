@@ -1,8 +1,8 @@
 <template>
-    <div v-if="open" class="chat-floating-panel card chat-notes-panel" role="dialog">
-        <header class="diary-modal-header">
+    <div class="chat-panel-popover chat-floating-panel card chat-notes-panel" role="dialog">
+        <header class="chat-panel-header">
             <h2>Личные заметки</h2>
-            <button type="button" class="link" @click="emit('close')">Закрыть</button>
+            <button type="button" class="chat-panel-close" aria-label="Закрыть" @click="emit('close')">×</button>
         </header>
         <p class="muted">Видны только вам. Привязаны к текущей сцене.</p>
         <textarea
@@ -24,7 +24,6 @@
 
 <script setup>
 defineProps({
-    open: { type: Boolean, required: true },
     loading: { type: Boolean, required: true },
     saving: { type: Boolean, required: true },
     error: { type: String, required: true },

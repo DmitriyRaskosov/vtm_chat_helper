@@ -43,21 +43,10 @@
                 {{ isOoc ? 'Out Of Character' : 'In Character' }}
             </button>
 
-            <button
-                type="button"
-                class="composer-dice"
-                :disabled="!canPost"
-                title="Бросок кубиков"
-                @click="emit('open-dice')"
-            >🎲</button>
-
-            <button
-                type="button"
-                class="composer-sheet"
-                :disabled="!characterSheetEnabled"
-                :title="characterSheetTitle"
-                @click="emit('open-character-sheet')"
-            >📋</button>
+            <ChatToolsToolbar
+                :is-storyteller="isStoryteller"
+                :my-character-id="myCharacterId"
+            />
 
             <button type="submit" class="composer-send" :disabled="!canPost">Отправить</button>
         </div>
@@ -65,12 +54,14 @@
 </template>
 
 <script setup>
+import ChatToolsToolbar from './ChatToolsToolbar.vue';
+
 const props = defineProps({
     canPost: { type: Boolean, required: true },
     placeholder: { type: String, required: true },
     myCharacterName: { type: String, default: null },
-    characterSheetEnabled: { type: Boolean, default: true },
-    characterSheetTitle: { type: String, default: 'Чарлист' },
+    isStoryteller: { type: Boolean, required: true },
+    myCharacterId: { type: [Number, String], default: null },
     isMyTurn: { type: Boolean, default: false },
     turnReleasing: { type: Boolean, default: false },
 });
@@ -78,7 +69,7 @@ const props = defineProps({
 const body = defineModel('body', { type: String });
 const isOoc = defineModel('isOoc', { type: Boolean, default: false });
 
-const emit = defineEmits(['send', 'open-dice', 'open-character-sheet', 'end-turn']);
+const emit = defineEmits(['send', 'end-turn']);
 
 function onTextareaKeydown(event) {
     if (event.key !== 'Enter' || event.shiftKey) {

@@ -1,8 +1,8 @@
 <template>
-    <aside v-if="open" class="chat-character-drawer card">
-        <header class="chat-character-drawer-header">
+    <aside class="chat-character-drawer card">
+        <header class="chat-panel-header chat-character-drawer-header">
             <h2>{{ title }}</h2>
-            <button type="button" class="link" @click="emit('close')">Закрыть</button>
+            <button type="button" class="chat-panel-close" aria-label="Закрыть" @click="emit('close')">×</button>
         </header>
 
         <div v-if="isStoryteller" class="chat-character-drawer-select">
@@ -32,7 +32,6 @@ import SheetImageSection from '../sheet/SheetImageSection.vue';
 import SheetStateSection from '../sheet/SheetStateSection.vue';
 
 const props = defineProps({
-    open: { type: Boolean, required: true },
     isStoryteller: { type: Boolean, required: true },
     participants: { type: Array, default: () => [] },
     selectedCharacterId: { type: [Number, String], default: null },
