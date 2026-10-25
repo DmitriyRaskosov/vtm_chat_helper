@@ -1,4 +1,4 @@
-import { nextTick, ref, watch } from 'vue';
+import { nextTick, onUnmounted, ref, watch } from 'vue';
 import { api } from '../auth';
 import { playSoundForMessage } from '../utils/chatMessageSound';
 import { CHRONICLE_NOT_SELECTED, chronicleCollectionPath } from './useCurrentChronicle';
@@ -26,6 +26,37 @@ export function useChatMessages({
     const body = ref('');
     const isOoc = ref(readComposerOocFromStorage());
     const showDeleted = ref(false);
+    const isTyping = ref(false);
+    const storytellerUserIds = ref([]);
+
+    let typingIdleTimer = null;
+
+    function clearTypingTimer() {
+        if (typingIdleTimer !== null) {
+            clearTimeout(typingIdleTimer);
+            typingIdleTimer = null;
+        }
+    }
+
+    watch(body, (value) => {
+        if (!value.trim()) {
+            isTyping.value = false;
+            clearTypingTimer();
+
+            return;
+        }
+
+        isTyping.value = true;
+        clearTypingTimer();
+        typingIdleTimer = setTimeout(() => {
+            isTyping.value = false;
+            typingIdleTimer = null;
+        }, 2000);
+    });
+
+    onUnmounted(() => {
+        clearTypingTimer();
+    });
 
     watch(isOoc, (value) => {
         writeComposerOocToStorage(value);
@@ -105,6 +136,10 @@ export function useChatMessages({
         }
 
         const stick = afterId === 0 || (getLog()?.isAtBottom?.() ?? true);
+        if (Array.isArray(data.storyteller_user_ids)) {
+            storytellerUserIds.value = data.storyteller_user_ids;
+        }
+
         merge(data.messages ?? [], { playSounds: afterId > 0 });
         if (stick) {
             await scrollDown();
@@ -137,6 +172,8 @@ export function useChatMessages({
         const { data } = await api.post(path, payload);
         merge([data.message]);
         body.value = '';
+        isTyping.value = false;
+        clearTypingTimer();
         await scrollDown();
     }
 
@@ -171,6 +208,8 @@ export function useChatMessages({
         body,
         isOoc,
         showDeleted,
+        isTyping,
+        storytellerUserIds,
         lastId,
         merge,
         scrollDown,

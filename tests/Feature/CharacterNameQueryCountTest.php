@@ -22,8 +22,8 @@ class CharacterNameQueryCountTest extends TestCase
     /** До задачи 023: 5; после 038: 6; после 039: 8 (+2 authorize('view', chronicle) → chronicle_members.exists() + CurrentChronicle::get() → find((int) $chronicle)). */
     private const MAX_QUERIES_CHARACTER_INDEX = 8;
 
-    /** До задачи 023: 4; после 039: 6; после 040: 7 (+1 ActiveSceneResolver::findInActiveSession всегда читает CurrentChronicle при явном scene_id). */
-    private const MAX_QUERIES_MESSAGES_INDEX = 7;
+    /** До задачи 023: 4; после 039: 6; после 040: 7 (+1 ActiveSceneResolver::findInActiveSession всегда читает CurrentChronicle при явном scene_id); pack-7: 9 (+2 storyteller_user_ids для раскраски чата). */
+    private const MAX_QUERIES_MESSAGES_INDEX = 9;
 
     /** До задачи 023: 2; после 044 (ScenePolicy::view → chronicle_members + gameSession.chronicle): 5. */
     private const MAX_QUERIES_SCENE_PARTICIPANTS = 5;

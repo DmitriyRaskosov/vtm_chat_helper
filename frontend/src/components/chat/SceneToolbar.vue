@@ -22,6 +22,29 @@
         <p v-if="selectedScene?.description" class="muted scene-description">
             {{ selectedScene.description }}
         </p>
+        <div v-if="selectedScene" class="scene-location-image">
+            <button
+                v-if="locationImageUrl"
+                type="button"
+                class="scene-location-thumb-btn"
+                title="Открыть фото локации"
+                @click="locationZoomOpen = true"
+            >
+                <img :src="locationImageUrl" alt="Фото локации" class="scene-location-thumb" />
+            </button>
+            <label v-if="isStoryteller" class="scene-location-upload">
+                <span class="secondary-btn">Загрузить фото</span>
+                <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    class="sheet-image-file-input"
+                    :disabled="locationImageLoading || selectedScene?.status === 'closed'"
+                    @change="onLocationImagePick"
+                />
+            </label>
+            <p v-if="locationImageError" class="error">{{ locationImageError }}</p>
+        </div>
+
         <div v-if="isStoryteller" class="scene-location">
             <label for="scene-situation">
                 Локация сцены
@@ -163,6 +186,15 @@
             </div>
             <p v-if="participantError" class="error">{{ participantError }}</p>
         </div>
+        <div v-if="locationZoomOpen && locationImageUrl" class="diary-backdrop" @click.self="locationZoomOpen = false">
+            <div class="diary-modal card sheet-image-zoom">
+                <header class="diary-modal-header">
+                    <h2>Фото локации</h2>
+                    <button type="button" class="link" @click="locationZoomOpen = false">Закрыть</button>
+                </header>
+                <img :src="locationImageUrl" alt="Фото локации" class="sheet-image-zoom-img" />
+            </div>
+        </div>
     </section>
     <section v-else class="card session-empty">
         <template v-if="isStoryteller">
@@ -197,6 +229,7 @@
 <script setup>
 import { computed, ref, watch } from 'vue';
 import { sceneStatusLabel } from '../../composables/useSceneSession';
+import { useSceneContextImage } from '../../composables/useSceneContextImage';
 import { characterTypeLabel } from '../../utils/labels';
 
 const props = defineProps({
@@ -237,6 +270,30 @@ const participantSystemMessage = defineModel('participantSystemMessage', { type:
 
 const selectedSceneId = defineModel('selectedSceneId');
 const sceneSituation = defineModel('sceneSituation', { type: String });
+
+const locationZoomOpen = ref(false);
+
+const {
+    imageUrl: locationImageUrl,
+    loading: locationImageLoading,
+    error: locationImageError,
+    upload: uploadLocationImage,
+} = useSceneContextImage(selectedSceneId);
+
+watch(selectedSceneId, () => {
+    locationZoomOpen.value = false;
+});
+
+async function onLocationImagePick(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+
+    if (!file || selectedSceneId.value == null) {
+        return;
+    }
+
+    await uploadLocationImage(selectedSceneId.value, file);
+}
 const newSceneTitle = defineModel('newSceneTitle', { type: String });
 const addCharacterId = defineModel('addCharacterId');
 const newGameSessionTitle = defineModel('newGameSessionTitle', { type: String });

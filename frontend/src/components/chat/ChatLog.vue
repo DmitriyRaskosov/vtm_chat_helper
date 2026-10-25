@@ -6,12 +6,7 @@
                 :key="message.id"
                 :data-message-id="message.id"
                 class="msg"
-                :class="{
-                    mine: message.mine,
-                    'msg-ooc': message.is_ooc,
-                    'msg-deleted': message.is_deleted,
-                    'msg-system': message.is_system,
-                }"
+                :class="messageClasses(message)"
             >
                 <template v-if="message.is_system">
                     <div class="msg-system-body">{{ message.body }}</div>
@@ -57,6 +52,9 @@
                 </template>
             </article>
             <p v-if="!messages.length" class="muted">Пока пусто. Напишите первое сообщение.</p>
+            <p v-if="isTyping && typingLabel" class="chat-typing-indicator muted">
+                {{ typingLabel }} печатает…
+            </p>
         </div>
         <button
             v-if="showScrollDown"
@@ -76,6 +74,10 @@ import { computed, nextTick, ref, watch } from 'vue';
 const props = defineProps({
     messages: { type: Array, required: true },
     isStoryteller: { type: Boolean, required: true },
+    currentUserId: { type: Number, default: null },
+    storytellerUserIds: { type: Array, default: () => [] },
+    isTyping: { type: Boolean, default: false },
+    typingLabel: { type: String, default: '' },
 });
 
 const emit = defineEmits(['toggle-ooc', 'delete', 'restore', 'edit']);
@@ -96,6 +98,50 @@ const maxMessageId = computed(() => {
     }
     return max;
 });
+
+function isStorytellerAuthor(message) {
+    const userId = Number(message.user_id);
+
+    if (!Number.isFinite(userId)) {
+        return false;
+    }
+
+    return props.storytellerUserIds.some((id) => Number(id) === userId);
+}
+
+function messageClasses(message) {
+    const classes = {
+        'msg-deleted': message.is_deleted,
+        'msg-system': message.is_system,
+    };
+
+    if (message.is_system) {
+        return classes;
+    }
+
+    if (message.is_ooc) {
+        classes['msg-ooc'] = true;
+
+        return classes;
+    }
+
+    if (message.npc_name) {
+        classes['msg-npc'] = true;
+
+        return classes;
+    }
+
+    const userId = Number(message.user_id);
+    const currentId = props.currentUserId == null ? null : Number(props.currentUserId);
+
+    if (isStorytellerAuthor(message)) {
+        classes['msg-storyteller'] = true;
+    } else if (currentId !== null && userId === currentId) {
+        classes['msg-player'] = true;
+    }
+
+    return classes;
+}
 
 function canManage(message) {
     if (message.is_system) {

@@ -173,6 +173,18 @@ class AccessMatrixTest extends TestCase
                 'player_foreign' => self::EXPECT_ALLOWED,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
+            self::forRoles('scenes.image.show', 'GET', 'scenes/{scene}/image', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_ALLOWED,
+                'player_foreign' => self::EXPECT_ALLOWED,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('scenes.image.store', 'POST', 'scenes/{scene}/image', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
             self::forRoles('scenes.context.update', 'PUT', 'scenes/{scene}/context', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_403,

@@ -37,18 +37,15 @@
         />
 
         <div class="stage">
-            <div
-                v-if="anyChatToolOpen"
-                class="chat-tools-dismiss-scrim"
-                aria-hidden="true"
-                @click="closeAllChatTools"
-            />
-
             <div class="chat-column">
                 <ChatLog
                     ref="chatLog"
                     :messages="messages"
                     :is-storyteller="isStoryteller"
+                    :current-user-id="auth.user?.id ?? null"
+                    :storyteller-user-ids="storytellerUserIds"
+                    :is-typing="isTyping"
+                    :typing-label="myCharacterName ?? auth.user?.name ?? ''"
                     @toggle-ooc="toggleOoc"
                     @delete="deleteMessage"
                     @restore="restoreMessage"
@@ -165,7 +162,6 @@ import StorytellerCopilotPanel from '../components/chat/StorytellerCopilotPanel.
 import { useChatMessages } from '../composables/useChatMessages';
 import { useDiceRoll, useSceneBattleLog } from '../composables/useSceneBattleLog';
 import { useSceneSession } from '../composables/useSceneSession';
-import { useChatToolPanels } from '../composables/useChatToolPanels';
 import { useUserNotes } from '../composables/useUserNotes';
 import ChatToolsDock from '../components/chat/ChatToolsDock.vue';
 
@@ -224,6 +220,8 @@ const {
     body,
     isOoc,
     showDeleted,
+    isTyping,
+    storytellerUserIds,
     lastId,
     merge,
     scrollDown,
@@ -255,13 +253,6 @@ const {
     closeModal: closeNotes,
     save: saveNotes,
 } = useUserNotes(selectedSceneId);
-
-const { anyOpen: anyChatToolOpen, closeAll: closeAllChatTools } = useChatToolPanels({
-    diceOpen,
-    notesOpen,
-    characterDrawerOpen,
-    closeNotes,
-});
 
 const {
     logs,

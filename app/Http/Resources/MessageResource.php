@@ -49,6 +49,7 @@ class MessageResource extends JsonResource
             'body' => $message->body,
             'author' => $author,
             'user_name' => $userName,
+            'user_id' => (int) $message->user_id,
             'mine' => ! $message->is_system
                 && ! $isNpc
                 && (int) $message->user_id === (int) $this->viewer->id,

@@ -4,10 +4,12 @@ namespace App\Messages;
 
 use App\Diary\DiaryScheduler;
 use App\Enums\CharacterType;
+use App\Enums\ChronicleRole;
 use App\Messages\Exceptions\CopilotDraftNotFoundException;
 use App\Messages\Exceptions\CopilotRequestAlreadyUsedException;
 use App\Messages\Exceptions\CopilotRequestMismatchException;
 use App\Models\Character;
+use App\Models\ChronicleMember;
 use App\Models\CopilotRequest;
 use App\Models\Message;
 use App\Models\Scene;
@@ -136,6 +138,21 @@ final class MessageService
      * @param  Collection<int, Message>  $messages
      * @return array<int, array{name: string, type: CharacterType, playable: bool}>
      */
+    /**
+     * @return list<int>
+     */
+    public function storytellerUserIdsForChronicle(int $chronicleId): array
+    {
+        return ChronicleMember::query()
+            ->where('chronicle_id', $chronicleId)
+            ->whereNull('left_at')
+            ->where('role', ChronicleRole::Storyteller)
+            ->pluck('user_id')
+            ->map(fn ($id): int => (int) $id)
+            ->values()
+            ->all();
+    }
+
     public function characterLookup(Collection $messages, User $viewer): array
     {
         $ids = $messages->pluck('author_character_id')->filter()->unique()->values()->all();

@@ -49,11 +49,14 @@ class ChatController extends Controller
         );
 
         $characterLookup = $this->messages->characterLookup($messages, $user);
+        $scene->loadMissing('gameSession');
+        $storytellerUserIds = $this->messages->storytellerUserIdsForChronicle((int) $scene->gameSession->chronicle_id);
 
         return response()->json([
             'messages' => $messages
                 ->map(fn (Message $message) => (new MessageResource($message, $characterLookup, $user))->toArray($request))
                 ->values(),
+            'storyteller_user_ids' => $storytellerUserIds,
         ]);
     }
 

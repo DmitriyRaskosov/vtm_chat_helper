@@ -14,6 +14,7 @@ use App\Http\Controllers\DiaryEntryController;
 use App\Http\Controllers\DiceRollController;
 use App\Http\Controllers\GameSessionController;
 use App\Http\Controllers\SceneContextController;
+use App\Http\Controllers\SceneContextImageController;
 use App\Http\Controllers\SceneController;
 use App\Http\Controllers\SceneParticipantController;
 use App\Http\Controllers\UserNoteController;
@@ -77,6 +78,10 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/scenes/{scene}/context', [SceneContextController::class, 'show'])
         ->can('view', 'scene');
+    Route::get('/scenes/{scene}/image', [SceneContextImageController::class, 'show'])
+        ->can('view', 'scene');
+    Route::post('/scenes/{scene}/image', [SceneContextImageController::class, 'store'])
+        ->can('update', 'scene');
     Route::get('/scenes/{scene}/participants', [SceneParticipantController::class, 'index'])
         ->can('view', 'scene');
 

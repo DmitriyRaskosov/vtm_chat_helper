@@ -21,6 +21,7 @@ class ChatJsonShapeTest extends TestCase
         'body',
         'author',
         'user_name',
+        'user_id',
         'mine',
         'npc_name',
         'author_character_id',
@@ -81,7 +82,10 @@ class ChatJsonShapeTest extends TestCase
             ->getJson($this->chronicleApi($this->chronicle, 'messages').'?scene_id='.$this->sceneId);
 
         $response->assertStatus(200);
-        $response->assertJsonStructure(['messages' => ['*' => self::MESSAGE_KEYS]]);
+        $response->assertJsonStructure([
+            'messages' => ['*' => self::MESSAGE_KEYS],
+            'storyteller_user_ids',
+        ]);
 
         $item = $response->json('messages.0');
         $this->assertSame(self::MESSAGE_KEYS, array_keys($item));

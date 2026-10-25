@@ -31,13 +31,6 @@ a { color: var(--accent); }
     align-items: start;
 }
 
-.chat-tools-dismiss-scrim {
-    position: fixed;
-    inset: 0;
-    z-index: 90;
-    background: transparent;
-}
-
 .chat-tools-dock {
     position: relative;
     z-index: 100;
@@ -449,8 +442,64 @@ button.link {
     border: 1px solid var(--line);
     background: var(--panel);
 }
-.msg.mine { background: var(--mine); }
 .msg .meta { font-size: 0.8rem; color: var(--muted); margin-bottom: 0.25rem; }
+
+.msg.msg-storyteller {
+    background: rgba(72, 36, 44, 0.55);
+    border-color: rgba(120, 56, 64, 0.45);
+}
+
+.msg.msg-player {
+    background: rgba(32, 44, 68, 0.55);
+    border-color: rgba(56, 80, 112, 0.4);
+}
+
+.msg.msg-npc {
+    background: rgba(38, 48, 42, 0.55);
+    border-color: rgba(64, 88, 72, 0.4);
+}
+
+.chat-typing-indicator {
+    position: sticky;
+    bottom: 0;
+    margin: 0.35rem 0 0;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.85rem;
+    font-style: italic;
+    background: rgba(18, 18, 18, 0.85);
+    border-radius: 4px;
+}
+
+.scene-location-image {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem;
+    margin-bottom: 0.75rem;
+}
+
+.scene-location-thumb-btn {
+    padding: 0;
+    border: 1px solid var(--line);
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    line-height: 0;
+}
+
+.scene-location-thumb {
+    display: block;
+    width: 4.5rem;
+    height: 3rem;
+    object-fit: cover;
+    border-radius: 3px;
+}
+
+.scene-location-upload .secondary-btn {
+    display: inline-block;
+    cursor: pointer;
+}
+
 .composer { display: flex; flex-direction: column; gap: 0.5rem; align-items: stretch; }
 .composer button { margin: 0; }
 .composer .composer-body textarea {
@@ -705,8 +754,10 @@ summary {
 /* === Chat log (OOC-сообщения) === */
 
 .msg.msg-ooc {
-    opacity: 0.7;
+    opacity: 0.92;
     font-style: italic;
+    background: rgba(56, 64, 40, 0.45);
+    border-color: rgba(107, 142, 35, 0.35);
 }
 
 .msg.msg-ooc .meta {
