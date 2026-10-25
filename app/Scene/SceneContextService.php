@@ -29,6 +29,7 @@ class SceneContextService
             'atmosphere',
             'situation',
             'storyteller_notes',
+            'environment_details',
         ];
 
         foreach (array_keys($fields) as $field) {

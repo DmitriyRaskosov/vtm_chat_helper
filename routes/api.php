@@ -12,6 +12,7 @@ use App\Http\Controllers\ChronicleInvitationController;
 use App\Http\Controllers\CopilotController;
 use App\Http\Controllers\DiaryEntryController;
 use App\Http\Controllers\DiceRollController;
+use App\Http\Controllers\EventGeneratorController;
 use App\Http\Controllers\GameSessionController;
 use App\Http\Controllers\SceneContextController;
 use App\Http\Controllers\SceneContextImageController;
@@ -46,6 +47,8 @@ Route::middleware('auth:sanctum')->group(function () {
             ->can('view', 'scene');
         Route::get('/scenes/{scene}/logs', [DiceRollController::class, 'index'])
             ->can('view', 'scene');
+        Route::post('/scenes/{scene}/events/generate', [EventGeneratorController::class, 'store'])
+            ->can('update', 'scene');
     });
 
     Route::patch('/messages/{message}', [ChatController::class, 'update']);

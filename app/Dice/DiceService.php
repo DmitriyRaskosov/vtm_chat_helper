@@ -17,6 +17,7 @@ final class DiceService
         int $difficulty = 6,
         int $diceType = 10,
         DiceRollMode $mode = DiceRollMode::Successes,
+        bool $useWillpower = false,
     ): DiceRollResult {
         $this->assertValidRoll($pool, $difficulty, $diceType, $mode);
 
@@ -25,7 +26,13 @@ final class DiceService
             $dice[] = random_int(1, $diceType);
         }
 
-        return DiceRollResult::fromDice($pool, $difficulty, $diceType, $dice, $mode);
+        $result = DiceRollResult::fromDice($pool, $difficulty, $diceType, $dice, $mode);
+
+        if ($useWillpower) {
+            return $result->withWillpowerSpent();
+        }
+
+        return $result;
     }
 
     private function assertValidRoll(int $pool, int $difficulty, int $diceType, DiceRollMode $mode): void

@@ -20,6 +20,7 @@
             :participant-flash="participantFlash"
             v-model:participant-system-message="participantSystemMessage"
             v-model:scene-situation="sceneSituation"
+            v-model:environment-details="environmentDetails"
             :scene-situation-saving="sceneSituationSaving"
             :scene-situation-error="sceneSituationError"
             v-model:new-game-session-title="newGameSessionTitle"
@@ -111,6 +112,8 @@
                     :logs="logs"
                     :log-error="logError"
                     :selected-scene-id="selectedSceneId"
+                    :chronicle-id="chronicleId"
+                    :is-storyteller="isStoryteller"
                 />
 
                 <StorytellerCopilotPanel
@@ -186,6 +189,7 @@ const {
     participantFlash,
     participantSystemMessage,
     sceneSituation,
+    environmentDetails,
     sceneSituationSaving,
     sceneSituationError,
     selectedNpcId,

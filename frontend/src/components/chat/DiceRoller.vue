@@ -55,6 +55,11 @@
                 placeholder="Уклонение, урон, проверка…"
             />
 
+            <label v-if="rollMode === 'successes'" class="toggle dice-willpower-toggle">
+                <input v-model="useWillpower" type="checkbox" />
+                Использовать Силу Воли (1 успех)
+            </label>
+
             <label v-if="isStoryteller" class="toggle dice-hidden-toggle">
                 <input v-model="isHidden" type="checkbox" />
                 Скрытый бросок
@@ -81,6 +86,11 @@
                     </template>
                     <template v-else>
                         Итог: <strong>{{ outcomeLabel(displayResult.outcome) }}</strong>
+                        <span
+                            v-if="displayResult.willpower_spent"
+                            class="dice-wp-badge"
+                            title="Сила Воли"
+                        >WP</span>
                         <span v-if="displayResult.outcome === 'success'"> (чистых: {{ displayResult.net }})</span>
                     </template>
                 </p>
@@ -110,6 +120,7 @@ const characterId = ref(null);
 const rollMode = ref('successes');
 const comment = ref('');
 const isHidden = ref(false);
+const useWillpower = ref(false);
 const localResult = ref(null);
 
 const isSumMode = computed(() => rollMode.value === 'sum');
@@ -126,6 +137,7 @@ function resetForm() {
     rollMode.value = 'successes';
     comment.value = '';
     isHidden.value = false;
+    useWillpower.value = false;
     localResult.value = null;
 }
 
@@ -178,6 +190,7 @@ async function onRoll() {
         mode: rollMode.value,
         character_id: characterId.value,
         is_hidden: props.isStoryteller ? isHidden.value : false,
+        use_willpower: rollMode.value === 'successes' ? useWillpower.value : false,
         comment: comment.value.trim() || null,
     };
 

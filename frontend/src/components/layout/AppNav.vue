@@ -8,7 +8,11 @@
             <span class="nav-sep">·</span>
             <RouterLink to="/chronicles" :class="{ 'nav-current': current === 'chronicles' }">Хроники</RouterLink>
         </h1>
-        <span class="muted">
+        <span class="muted nav-user">
+            <label class="toggle nav-sounds-toggle" title="Звуковые оповещения в чате">
+                <input v-model="soundsMuted" type="checkbox" />
+                Без звуков
+            </label>
             {{ auth.user.value?.name }}
             <template v-if="currentChronicleRole === 'storyteller'"> · рассказчик</template>
             <template v-else-if="currentChronicleRole === 'player'"> · игрок</template>
@@ -24,6 +28,9 @@ import { RouterLink, useRoute, useRouter } from 'vue-router';
 import ChronicleSwitcher from './ChronicleSwitcher.vue';
 import { currentChronicleRole, useAuth } from '../../auth';
 import { resolveChronicleId, useCurrentChronicle } from '../../composables/useCurrentChronicle';
+import { useSoundSettings } from '../../composables/useSoundSettings';
+
+const { soundsMuted } = useSoundSettings();
 
 defineProps({
     current: {

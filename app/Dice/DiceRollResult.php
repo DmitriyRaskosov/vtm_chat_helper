@@ -20,6 +20,7 @@ final readonly class DiceRollResult
         public int $net,
         public DiceRollOutcome $outcome,
         public DiceRollMode $mode = DiceRollMode::Successes,
+        public bool $willpowerSpent = false,
     ) {}
 
     /**
@@ -80,6 +81,37 @@ final readonly class DiceRollResult
             net: $net,
             outcome: $outcome,
             mode: $mode,
+            willpowerSpent: false,
+        );
+    }
+
+    public function withWillpowerSpent(): self
+    {
+        if ($this->mode === DiceRollMode::Sum) {
+            return $this;
+        }
+
+        $successes = $this->successes + 1;
+        $net = $successes - $this->ones;
+
+        if ($this->successes === 0 && $this->ones > 0) {
+            $net = 1;
+            $successes = 1;
+        }
+
+        $outcome = $net > 0 ? DiceRollOutcome::Success : DiceRollOutcome::Failure;
+
+        return new self(
+            pool: $this->pool,
+            difficulty: $this->difficulty,
+            diceType: $this->diceType,
+            dice: $this->dice,
+            successes: $successes,
+            ones: $this->ones,
+            net: $net,
+            outcome: $outcome,
+            mode: $this->mode,
+            willpowerSpent: true,
         );
     }
 
@@ -98,6 +130,7 @@ final readonly class DiceRollResult
             'net' => $this->net,
             'outcome' => $this->outcome->value,
             'mode' => $this->mode->value,
+            'willpower_spent' => $this->willpowerSpent,
         ];
 
         if ($this->mode === DiceRollMode::Sum) {

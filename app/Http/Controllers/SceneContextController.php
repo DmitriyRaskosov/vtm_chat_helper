@@ -28,6 +28,7 @@ class SceneContextController extends Controller
             'atmosphere',
             'situation',
             'storyteller_notes',
+            'environment_details',
         ]);
 
         $context = $this->contexts->apply(

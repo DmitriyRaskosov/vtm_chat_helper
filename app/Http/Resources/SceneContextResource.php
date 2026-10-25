@@ -37,6 +37,7 @@ class SceneContextResource extends JsonResource
             'atmosphere' => $context?->atmosphere,
             'situation' => $context?->situation,
             'storyteller_notes' => $context?->storyteller_notes,
+            'environment_details' => $context?->environment_details,
             'revision' => $context === null ? 0 : (int) $context->revision,
             'frozen_revision' => $context?->frozen_revision,
             'updated_by' => $context?->updated_by,

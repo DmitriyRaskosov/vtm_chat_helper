@@ -39,6 +39,7 @@ class DiceRollController extends Controller
             $request->boolean('is_hidden'),
             $mode,
             $validated['comment'] ?? null,
+            $request->boolean('use_willpower'),
         );
 
         return response()->json([

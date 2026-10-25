@@ -46,6 +46,7 @@ export function useSceneSession({ auth, chronicleId }) {
     const participantSystemMessage = ref('');
     const selectedNpcId = ref(null);
     const sceneSituation = ref('');
+    const environmentDetails = ref('');
     const sceneSituationRevision = ref(0);
     const sceneSituationSaving = ref(false);
     const sceneSituationError = ref('');
@@ -189,6 +190,7 @@ export function useSceneSession({ auth, chronicleId }) {
 
         if (!sceneId) {
             sceneSituation.value = '';
+            environmentDetails.value = '';
             sceneSituationRevision.value = 0;
             return;
         }
@@ -199,6 +201,7 @@ export function useSceneSession({ auth, chronicleId }) {
                 return;
             }
             sceneSituation.value = data.context?.situation ?? '';
+            environmentDetails.value = data.context?.environment_details ?? '';
             sceneSituationRevision.value = Number(data.context?.revision ?? 0);
         } catch (error) {
             if (selectedSceneId.value !== sceneId) {
@@ -243,6 +246,7 @@ export function useSceneSession({ auth, chronicleId }) {
             const { data } = await api.put(`/scenes/${sceneId}/context`, {
                 expected_revision: sceneSituationRevision.value,
                 situation: sceneSituation.value,
+                environment_details: environmentDetails.value,
             });
             if (selectedSceneId.value !== sceneId) {
                 return;
@@ -477,6 +481,7 @@ export function useSceneSession({ auth, chronicleId }) {
         participantSystemMessage,
         selectedNpcId,
         sceneSituation,
+        environmentDetails,
         sceneSituationSaving,
         sceneSituationError,
         scenes,

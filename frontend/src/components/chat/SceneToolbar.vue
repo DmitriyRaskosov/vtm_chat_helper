@@ -67,6 +67,17 @@
                 </button>
             </div>
             <p v-if="sceneSituationError" class="error">{{ sceneSituationError }}</p>
+            <label for="scene-environment">
+                Детали окружения
+                <textarea
+                    id="scene-environment"
+                    v-model="environmentDetails"
+                    maxlength="4000"
+                    rows="3"
+                    :disabled="selectedScene?.status === 'closed'"
+                    placeholder="запахи, звуки, освещение, препятствия — для генератора событий и заметок мастера."
+                />
+            </label>
         </div>
         <p v-else-if="sceneSituation" class="muted scene-description">{{ sceneSituation }}</p>
         <p v-if="sceneError" class="error">{{ sceneError }}</p>
@@ -270,6 +281,7 @@ const participantSystemMessage = defineModel('participantSystemMessage', { type:
 
 const selectedSceneId = defineModel('selectedSceneId');
 const sceneSituation = defineModel('sceneSituation', { type: String });
+const environmentDetails = defineModel('environmentDetails', { type: String, default: '' });
 
 const locationZoomOpen = ref(false);
 

@@ -51,6 +51,10 @@ final class SceneLogService
                 $diceList,
                 $outcomeLabel,
             );
+
+            if ($result->willpowerSpent) {
+                $message .= ' [WP]';
+            }
         }
 
         $trimmedComment = $comment !== null ? trim($comment) : '';
@@ -66,6 +70,7 @@ final class SceneLogService
             'visibility' => $visibility,
             'message' => $message,
             'comment' => $trimmedComment !== '' ? $trimmedComment : null,
+            'willpower_spent' => $result->willpowerSpent,
             'payload' => $result->toPayload(),
         ]);
     }

@@ -34,6 +34,7 @@ final class SceneDiceRollService
         bool $isHidden,
         DiceRollMode $mode = DiceRollMode::Successes,
         ?string $comment = null,
+        bool $useWillpower = false,
     ): array {
         $character = null;
         if ($characterId !== null) {
@@ -51,7 +52,7 @@ final class SceneDiceRollService
             }
         }
 
-        $result = $this->dice->roll($pool, $difficulty, $diceType, $mode);
+        $result = $this->dice->roll($pool, $difficulty, $diceType, $mode, $useWillpower);
         $log = $this->sceneLogs->logDiceRoll($scene, $user, $character, $result, $isHidden, $comment);
 
         return [

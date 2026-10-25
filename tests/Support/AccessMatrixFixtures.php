@@ -377,6 +377,14 @@ final class AccessMatrixFixtures
             ];
         }
 
+        if ($method === 'POST' && $uriTemplate === 'chronicles/{chronicle}/scenes/{scene}/events/generate') {
+            return [
+                'action_description' => 'Удар когтями',
+                'attack_successes' => 2,
+                'defense_successes' => 1,
+            ];
+        }
+
         if ($method === 'POST' && str_contains($uriTemplate, '/participants')) {
             return [
                 'character_id' => $this->playerCharacter->id,

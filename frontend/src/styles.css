@@ -143,6 +143,20 @@ a { color: var(--accent); }
     gap: 1rem;
     min-width: 0;
 }
+.battle-log-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.battle-log-heading h2 {
+    margin: 0;
+    font-size: 1rem;
+}
+
 .battle-log h2 {
     margin: 0 0 0.5rem;
     font-size: 1rem;
@@ -169,6 +183,66 @@ a { color: var(--accent); }
     color: #c9a227;
     flex: 0 0 auto;
 }
+
+.battle-log-wp,
+.dice-wp-badge {
+    display: inline-block;
+    flex: 0 0 auto;
+    padding: 0.1rem 0.35rem;
+    border-radius: 3px;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #c9a227;
+    border: 1px solid #c9a227;
+    background: rgba(201, 162, 39, 0.12);
+    vertical-align: middle;
+}
+
+.nav-user {
+    display: inline-flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+}
+
+.nav-sounds-toggle {
+    font-size: 0.85rem;
+}
+
+.event-generator-modal label {
+    display: block;
+    margin-top: 0.65rem;
+}
+
+.event-generator-modal textarea,
+.event-generator-modal input[type="number"] {
+    width: 100%;
+    margin-top: 0.25rem;
+    font-family: inherit;
+}
+
+.event-generator-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem 0.75rem;
+    margin-top: 0.65rem;
+}
+
+.event-generator-row input[type="number"] {
+    width: 5rem;
+    margin-top: 0;
+}
+
+.event-generator-result {
+    margin: 0.75rem 0 0;
+    padding: 0.65rem 0.75rem;
+    border-left: 3px solid var(--accent);
+    background: rgba(196, 92, 38, 0.08);
+    white-space: pre-wrap;
+}
+
 .battle-log-wrap {
     position: relative;
 }

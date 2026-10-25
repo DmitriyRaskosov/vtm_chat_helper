@@ -15,6 +15,7 @@ use Illuminate\Support\Carbon;
  * @property SceneLogType $type
  * @property SceneLogVisibility $visibility
  * @property array<string, mixed> $payload
+ * @property bool $willpower_spent
  * @property Carbon $created_at
  */
 #[Fillable([
@@ -25,6 +26,7 @@ use Illuminate\Support\Carbon;
     'visibility',
     'message',
     'comment',
+    'willpower_spent',
     'payload',
 ])]
 class SceneLog extends Model
@@ -64,6 +66,7 @@ class SceneLog extends Model
             'type' => SceneLogType::class,
             'visibility' => SceneLogVisibility::class,
             'payload' => 'array',
+            'willpower_spent' => 'boolean',
             'created_at' => 'datetime',
         ];
     }

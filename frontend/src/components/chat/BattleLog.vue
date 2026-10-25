@@ -1,6 +1,16 @@
 <template>
     <section class="card battle-log">
-        <h2>Лог боя</h2>
+        <div class="battle-log-heading">
+            <h2>Лог боя</h2>
+            <button
+                v-if="isStoryteller && selectedSceneId"
+                type="button"
+                class="secondary"
+                @click="openEventModal"
+            >
+                Описать событие
+            </button>
+        </div>
         <p v-if="!selectedSceneId" class="muted">Выберите сцену, чтобы видеть броски кубиков.</p>
         <p v-else-if="logError" class="error">{{ logError }}</p>
         <div v-else class="battle-log-wrap">
@@ -12,6 +22,11 @@
                         class="battle-log-hidden"
                         title="Скрытый бросок"
                     >скрыто</span>
+                    <span
+                        v-if="entry.willpower_spent"
+                        class="battle-log-wp"
+                        title="Потрачена Сила Воли"
+                    >WP</span>
                     <span class="battle-log-message">{{ entry.message }}</span>
                     <p v-if="entry.comment" class="battle-log-comment muted">{{ entry.comment }}</p>
                     <p v-if="isSumRoll(entry)" class="battle-log-sum">
@@ -30,21 +45,45 @@
                 ↓
             </button>
         </div>
+
+        <EventGeneratorModal
+            :open="eventModalOpen"
+            :generating="eventGenerating"
+            :error="eventGenerateError"
+            :generated-text="eventGeneratedText"
+            @close="eventModalOpen = false"
+            @generate="onGenerateEvent"
+        />
     </section>
 </template>
 
 <script setup>
-import { nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
+import EventGeneratorModal from './EventGeneratorModal.vue';
+import { useEventGenerator } from '../../composables/useEventGenerator';
 
 const props = defineProps({
     logs: { type: Array, required: true },
     logError: { type: String, default: '' },
     selectedSceneId: { type: Number, default: null },
+    chronicleId: { type: [Number, String], default: null },
+    isStoryteller: { type: Boolean, default: false },
 });
 
 const listEl = ref(null);
 const showScrollDown = ref(false);
 const stickToBottom = ref(true);
+const eventModalOpen = ref(false);
+const eventGeneratedText = ref('');
+
+const {
+    generating: eventGenerating,
+    generateError: eventGenerateError,
+    generateEvent,
+} = useEventGenerator({
+    chronicleId: computed(() => props.chronicleId),
+    selectedSceneId: computed(() => props.selectedSceneId),
+});
 
 function isSumRoll(entry) {
     return entry?.payload?.mode === 'sum';
@@ -73,6 +112,18 @@ async function scrollToBottom() {
     el.scrollTop = el.scrollHeight;
     stickToBottom.value = true;
     showScrollDown.value = false;
+}
+
+function openEventModal() {
+    eventGeneratedText.value = '';
+    eventModalOpen.value = true;
+}
+
+async function onGenerateEvent(payload) {
+    const text = await generateEvent(payload);
+    if (text) {
+        eventGeneratedText.value = text;
+    }
 }
 
 watch(

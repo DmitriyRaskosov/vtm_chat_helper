@@ -17,6 +17,7 @@ use Illuminate\Support\Carbon;
     'atmosphere',
     'situation',
     'storyteller_notes',
+    'environment_details',
     'location_image_path',
     'revision',
     'frozen_revision',

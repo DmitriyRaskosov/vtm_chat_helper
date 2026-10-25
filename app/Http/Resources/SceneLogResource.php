@@ -26,6 +26,7 @@ class SceneLogResource extends JsonResource
             'visibility' => $log->visibility->value,
             'message' => $log->message,
             'comment' => $log->comment,
+            'willpower_spent' => $log->willpower_spent,
             'payload' => $log->payload,
             'created_at' => $log->created_at?->timezone(config('app.timezone'))->format('H:i'),
         ];

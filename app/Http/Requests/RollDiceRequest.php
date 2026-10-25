@@ -39,6 +39,7 @@ class RollDiceRequest extends FormRequest
                 'boolean',
                 Rule::prohibitedIf(fn (): bool => $this->boolean('is_hidden') && ! $isStoryteller),
             ],
+            'use_willpower' => ['sometimes', 'boolean'],
         ];
     }
 
@@ -50,6 +51,10 @@ class RollDiceRequest extends FormRequest
 
         if (! $this->has('is_hidden')) {
             $this->merge(['is_hidden' => false]);
+        }
+
+        if (! $this->has('use_willpower')) {
+            $this->merge(['use_willpower' => false]);
         }
 
         if (! $this->has('mode')) {

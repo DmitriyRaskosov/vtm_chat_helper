@@ -82,6 +82,22 @@ class DiceRollApiTest extends TestCase
         $response->assertStatus(422);
     }
 
+    public function test_roll_with_willpower_flag_persists_on_log(): void
+    {
+        $uri = $this->fixtures->resolveUri('chronicles/{chronicle}/scenes/{scene}/dice-rolls');
+
+        $response = $this->actingAs($this->fixtures->playerOwner, 'sanctum')->postJson($uri, [
+            'pool' => 2,
+            'difficulty' => 6,
+            'use_willpower' => true,
+        ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('result.willpower_spent', true);
+        $response->assertJsonPath('log.willpower_spent', true);
+        $this->assertStringContainsString('[WP]', (string) $response->json('log.message'));
+    }
+
     public function test_roll_with_comment_and_sum_mode(): void
     {
         $uri = $this->fixtures->resolveUri('chronicles/{chronicle}/scenes/{scene}/dice-rolls');

@@ -53,6 +53,7 @@ class SceneJsonShapeTest extends TestCase
         'atmosphere',
         'situation',
         'storyteller_notes',
+        'environment_details',
         'revision',
         'frozen_revision',
         'updated_by',

@@ -17,6 +17,7 @@ class UpdateSceneContextRequest extends FormRequest
             'atmosphere' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'situation' => ['sometimes', 'nullable', 'string', 'max:2000'],
             'storyteller_notes' => ['sometimes', 'nullable', 'string', 'max:4000'],
+            'environment_details' => ['sometimes', 'nullable', 'string', 'max:4000'],
         ];
     }
 }

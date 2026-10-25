@@ -31,6 +31,29 @@ class DiceServiceTest extends TestCase
         $this->assertSame(DiceRollOutcome::Success, $result->outcome);
     }
 
+    public function test_willpower_prevents_botch_and_grants_success(): void
+    {
+        $raw = DiceRollResult::fromDice(3, 6, 10, [1, 2, 3]);
+        $this->assertSame(DiceRollOutcome::Botch, $raw->outcome);
+
+        $withWp = $raw->withWillpowerSpent();
+
+        $this->assertTrue($withWp->willpowerSpent);
+        $this->assertSame(DiceRollOutcome::Success, $withWp->outcome);
+        $this->assertSame(1, $withWp->net);
+        $this->assertNotSame(DiceRollOutcome::Botch, $withWp->outcome);
+    }
+
+    public function test_willpower_adds_success_to_positive_roll(): void
+    {
+        $raw = DiceRollResult::fromDice(3, 6, 10, [8, 8, 1]);
+        $withWp = $raw->withWillpowerSpent();
+
+        $this->assertSame(3, $withWp->successes);
+        $this->assertSame(2, $withWp->net);
+        $this->assertSame(DiceRollOutcome::Success, $withWp->outcome);
+    }
+
     public function test_roll_returns_expected_shape(): void
     {
         $result = $this->dice->roll(3, 6, 10);

@@ -1,3 +1,5 @@
+import { areChatSoundsMuted } from '../composables/useSoundSettings';
+
 const SOUNDS = {
     player: '/sounds/msg-player.mp3',
     npc: '/sounds/msg-npc.mp3',
@@ -5,6 +7,10 @@ const SOUNDS = {
 };
 
 function playUrl(url) {
+    if (areChatSoundsMuted()) {
+        return;
+    }
+
     const audio = new Audio(url);
     audio.volume = 0.35;
     void audio.play().catch(() => {});
