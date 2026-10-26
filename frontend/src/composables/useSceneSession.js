@@ -227,6 +227,7 @@ export function useSceneSession({ auth, chronicleId }) {
                 return;
             }
             sceneSituation.value = data.context?.situation ?? '';
+            environmentDetails.value = data.context?.environment_details ?? '';
             sceneSituationRevision.value = revision;
         } catch {
             // poll retries on the next tick
@@ -499,6 +500,7 @@ export function useSceneSession({ auth, chronicleId }) {
         passTurn,
         releaseMyTurn,
         saveSceneSituation,
+        sceneSituationRevision,
         pollSceneSituation,
         loadParticipants,
         addToScene,

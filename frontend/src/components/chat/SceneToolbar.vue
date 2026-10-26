@@ -46,38 +46,82 @@
         </div>
 
         <div v-if="isStoryteller" class="scene-location">
-            <label for="scene-situation">
-                Локация сцены
-                <textarea
-                    id="scene-situation"
-                    v-model="sceneSituation"
-                    maxlength="2000"
-                    rows="3"
-                    :disabled="selectedScene?.status === 'closed'"
-                    placeholder="что персонажи могут воспринять и чем располагают — темнота, что видно, что под рукой, чего они не знают."
+            <div class="scene-field-block">
+                <label for="scene-situation">
+                    Локация сцены
+                    <textarea
+                        id="scene-situation"
+                        v-model="sceneSituation"
+                        maxlength="2000"
+                        rows="3"
+                        :disabled="selectedScene?.status === 'closed'"
+                        placeholder="что персонажи могут воспринять и чем располагают — темнота, что видно, что под рукой, чего они не знают."
+                    />
+                </label>
+                <SceneTemplateToolsPanel
+                    v-if="selectedScene?.status !== 'closed'"
+                    v-model:apply-template-id="situationApplyTemplateId"
+                    v-model:update-template-id="situationUpdateTemplateId"
+                    focus="situation"
+                    :locations="locations"
+                    :location-saving="locationSaving"
+                    :scene-situation-saving="sceneSituationSaving"
+                    hint="Общая библиотека шаблонов: локация, окружение и фото в одной записи."
+                    @open-library="libraryOpen = true"
+                    @save-new="onSaveCurrentAsTemplate"
+                    @apply-full="onApplyLocation"
+                    @apply-situation="(id) => applySituationFromTemplate(id, true)"
+                    @apply-environment="(id) => applyEnvironmentFromTemplate(id, true)"
+                    @update-both="(id) => updateTemplateFromScene('both', id)"
+                    @update-situation="(id) => updateTemplateFromScene('situation', id)"
+                    @update-environment="(id) => updateTemplateFromScene('environment', id)"
                 />
-            </label>
-            <div v-if="selectedScene?.status !== 'closed'" class="sheet-actions">
+            </div>
+            <div class="scene-field-block">
+                <label for="scene-environment">
+                    Детали окружения
+                    <textarea
+                        id="scene-environment"
+                        v-model="environmentDetails"
+                        maxlength="4000"
+                        rows="3"
+                        :disabled="selectedScene?.status === 'closed'"
+                        placeholder="запахи, звуки, освещение, препятствия — для генератора событий и заметок мастера."
+                    />
+                </label>
+                <SceneTemplateToolsPanel
+                    v-if="selectedScene?.status !== 'closed'"
+                    v-model:apply-template-id="environmentApplyTemplateId"
+                    v-model:update-template-id="environmentUpdateTemplateId"
+                    focus="environment"
+                    :locations="locations"
+                    :location-saving="locationSaving"
+                    :scene-situation-saving="sceneSituationSaving"
+                    hint="Тот же список шаблонов: можно подставить или сохранить только окружение, не трогая локацию."
+                    @open-library="libraryOpen = true"
+                    @save-new="onSaveCurrentAsTemplate"
+                    @apply-full="onApplyLocation"
+                    @apply-situation="(id) => applySituationFromTemplate(id, true)"
+                    @apply-environment="(id) => applyEnvironmentFromTemplate(id, true)"
+                    @update-both="(id) => updateTemplateFromScene('both', id)"
+                    @update-situation="(id) => updateTemplateFromScene('situation', id)"
+                    @update-environment="(id) => updateTemplateFromScene('environment', id)"
+                />
+            </div>
+            <div
+                v-if="selectedScene?.status !== 'closed'"
+                class="scene-scene-save-row sheet-actions"
+            >
                 <button
                     type="button"
                     :disabled="sceneSituationSaving"
                     @click="emit('save-situation')"
                 >
-                    Сохранить
+                    Сохранить на сцене
                 </button>
             </div>
             <p v-if="sceneSituationError" class="error">{{ sceneSituationError }}</p>
-            <label for="scene-environment">
-                Детали окружения
-                <textarea
-                    id="scene-environment"
-                    v-model="environmentDetails"
-                    maxlength="4000"
-                    rows="3"
-                    :disabled="selectedScene?.status === 'closed'"
-                    placeholder="запахи, звуки, освещение, препятствия — для генератора событий и заметок мастера."
-                />
-            </label>
+            <p v-if="locationsError" class="error">{{ locationsError }}</p>
         </div>
         <p v-else-if="sceneSituation" class="muted scene-description">{{ sceneSituation }}</p>
         <p v-if="sceneError" class="error">{{ sceneError }}</p>
@@ -197,6 +241,22 @@
             </div>
             <p v-if="participantError" class="error">{{ participantError }}</p>
         </div>
+        <LocationManagerModal
+            v-if="libraryOpen"
+            :locations="locations"
+            :loading="locationsLoading"
+            :error="locationsError"
+            :previews="locationPreviews"
+            :saving="locationSaving"
+            @close="libraryOpen = false"
+            @apply="onApplyFromLibrary"
+            @apply-situation="onApplySituationFromLibrary"
+            @apply-environment="onApplyEnvironmentFromLibrary"
+            @save="onLibrarySave"
+            @delete="onLibraryDelete"
+            @load-preview="loadLocationPreview"
+        />
+
         <div v-if="locationZoomOpen && locationImageUrl" class="diary-backdrop" @click.self="locationZoomOpen = false">
             <div class="diary-modal card sheet-image-zoom">
                 <header class="diary-modal-header">
@@ -238,10 +298,14 @@
 </template>
 
 <script setup>
-import { computed, ref, watch } from 'vue';
+import { computed, ref, toRef, watch } from 'vue';
 import { sceneStatusLabel } from '../../composables/useSceneSession';
+import { useChronicleLocationImage } from '../../composables/useChronicleLocationImage';
+import { useChronicleLocations } from '../../composables/useChronicleLocations';
 import { useSceneContextImage } from '../../composables/useSceneContextImage';
 import { characterTypeLabel } from '../../utils/labels';
+import LocationManagerModal from './LocationManagerModal.vue';
+import SceneTemplateToolsPanel from './SceneTemplateToolsPanel.vue';
 
 const props = defineProps({
     gameSession: { type: Object, default: null },
@@ -258,6 +322,8 @@ const props = defineProps({
     participantFlash: { type: String, required: true },
     sceneSituationSaving: { type: Boolean, required: true },
     sceneSituationError: { type: String, required: true },
+    chronicleId: { type: [Number, String], default: null },
+    sceneContextRevision: { type: Number, default: 0 },
     activeCharacterId: { type: Number, default: null },
     turnBusy: { type: Boolean, default: false },
 });
@@ -284,12 +350,42 @@ const sceneSituation = defineModel('sceneSituation', { type: String });
 const environmentDetails = defineModel('environmentDetails', { type: String, default: '' });
 
 const locationZoomOpen = ref(false);
+const libraryOpen = ref(false);
+const situationApplyTemplateId = ref(null);
+const situationUpdateTemplateId = ref(null);
+const environmentApplyTemplateId = ref(null);
+const environmentUpdateTemplateId = ref(null);
+const locationSaving = ref(false);
+
+function findTemplateLocation(locationId) {
+    return locations.value.find((item) => Number(item.id) === Number(locationId)) ?? null;
+}
+
+const chronicleIdRef = toRef(props, 'chronicleId');
+
+const {
+    locations,
+    loading: locationsLoading,
+    error: locationsError,
+    create: createLocation,
+    update: updateLocation,
+    remove: removeLocation,
+    uploadImage: uploadLocationTemplateImage,
+    applyTemplate,
+} = useChronicleLocations(chronicleIdRef);
+
+const {
+    previews: locationPreviews,
+    loadPreview: loadLocationPreview,
+    revokePreview,
+} = useChronicleLocationImage();
 
 const {
     imageUrl: locationImageUrl,
     loading: locationImageLoading,
     error: locationImageError,
     upload: uploadLocationImage,
+    load: reloadSceneImage,
 } = useSceneContextImage(selectedSceneId);
 
 watch(selectedSceneId, () => {
@@ -310,6 +406,148 @@ const newSceneTitle = defineModel('newSceneTitle', { type: String });
 const addCharacterId = defineModel('addCharacterId');
 const newGameSessionTitle = defineModel('newGameSessionTitle', { type: String });
 
+async function onApplyLocation(locationId) {
+    const sceneId = selectedSceneId.value;
+    if (!sceneId || locationId == null) {
+        return;
+    }
+
+    locationSaving.value = true;
+    try {
+        const context = await applyTemplate(sceneId, locationId, props.sceneContextRevision);
+        if (!context) {
+            return;
+        }
+
+        sceneSituation.value = context.situation ?? '';
+        environmentDetails.value = context.environment_details ?? '';
+        emit('location-applied', context);
+        await reloadSceneImage(sceneId);
+    } finally {
+        locationSaving.value = false;
+    }
+}
+
+async function onApplyFromLibrary(locationId) {
+    await onApplyLocation(locationId);
+    libraryOpen.value = false;
+}
+
+function onApplySituationFromLibrary(locationId) {
+    applySituationFromTemplate(locationId, true);
+    libraryOpen.value = false;
+}
+
+function onApplyEnvironmentFromLibrary(locationId) {
+    applyEnvironmentFromTemplate(locationId, true);
+    libraryOpen.value = false;
+}
+
+function applySituationFromTemplate(locationId, persistToScene = false) {
+    const location = findTemplateLocation(locationId);
+    if (!location) {
+        return;
+    }
+
+    sceneSituation.value = location.description ?? '';
+    if (persistToScene) {
+        emit('save-situation');
+    }
+}
+
+function applyEnvironmentFromTemplate(locationId, persistToScene = false) {
+    const location = findTemplateLocation(locationId);
+    if (!location) {
+        return;
+    }
+
+    environmentDetails.value = location.environment_details ?? '';
+    if (persistToScene) {
+        emit('save-situation');
+    }
+}
+
+async function updateTemplateFromScene(scope, locationId) {
+    if (locationId == null || !Number.isFinite(Number(locationId))) {
+        return;
+    }
+
+    const payload = {};
+    if (scope === 'both' || scope === 'situation') {
+        payload.description = sceneSituation.value.trim() || null;
+    }
+    if (scope === 'both' || scope === 'environment') {
+        payload.environment_details = environmentDetails.value.trim() || null;
+    }
+
+    locationSaving.value = true;
+    try {
+        await updateLocation(locationId, payload);
+    } finally {
+        locationSaving.value = false;
+    }
+}
+
+async function onSaveCurrentAsTemplate() {
+    const sceneId = selectedSceneId.value;
+    const name = window.prompt('Название шаблона локации');
+    if (!name?.trim() || sceneId == null) {
+        return;
+    }
+
+    locationSaving.value = true;
+    try {
+        await createLocation({
+            name: name.trim(),
+            description: sceneSituation.value,
+            environment_details: environmentDetails.value,
+            scene_id: sceneId,
+        });
+    } finally {
+        locationSaving.value = false;
+    }
+}
+
+async function onLibrarySave(payload) {
+    locationSaving.value = true;
+    try {
+        let locationId = payload.id;
+        if (locationId) {
+            await updateLocation(locationId, {
+                name: payload.name,
+                description: payload.description,
+                environment_details: payload.environment_details,
+            });
+        } else {
+            const created = await createLocation({
+                name: payload.name,
+                description: payload.description,
+                environment_details: payload.environment_details,
+            });
+            locationId = created.id;
+        }
+
+        if (payload.imageFile && locationId) {
+            await uploadLocationTemplateImage(locationId, payload.imageFile);
+            await loadLocationPreview(locationId);
+        }
+
+        payload.onDone?.();
+    } finally {
+        locationSaving.value = false;
+    }
+}
+
+async function onLibraryDelete(locationId) {
+    locationSaving.value = true;
+    try {
+        revokePreview(locationId);
+        await removeLocation(locationId);
+    } finally {
+        locationSaving.value = false;
+    }
+}
+
 const emit = defineEmits([
     'switch',
     'create-scene',
@@ -320,5 +558,6 @@ const emit = defineEmits([
     'create-session',
     'save-situation',
     'pass-turn',
+    'location-applied',
 ]);
 </script>

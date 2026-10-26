@@ -449,6 +449,48 @@ class AccessMatrixTest extends TestCase
                 'player_foreign' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
+            self::forRoles('chronicle_locations.index', 'GET', 'chronicles/{chronicle}/locations', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('chronicle_locations.store', 'POST', 'chronicles/{chronicle}/locations', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('chronicle_locations.update', 'PATCH', 'locations/{chronicleLocation}', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('chronicle_locations.destroy', 'DELETE', 'locations/{chronicleLocation}', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('chronicle_locations.image.show', 'GET', 'locations/{chronicleLocation}/image', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('chronicle_locations.image.store', 'POST', 'locations/{chronicleLocation}/image', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('scenes.context.apply_template', 'POST', 'chronicles/{chronicle}/scenes/{scene}/context/apply-template', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
         );
     }
 

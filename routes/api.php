@@ -9,6 +9,8 @@ use App\Http\Controllers\CharacterStateController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChronicleController;
 use App\Http\Controllers\ChronicleInvitationController;
+use App\Http\Controllers\ChronicleLocationController;
+use App\Http\Controllers\ChronicleLocationImageController;
 use App\Http\Controllers\CopilotController;
 use App\Http\Controllers\DiaryEntryController;
 use App\Http\Controllers\DiceRollController;
@@ -49,7 +51,22 @@ Route::middleware('auth:sanctum')->group(function () {
             ->can('view', 'scene');
         Route::post('/scenes/{scene}/events/generate', [EventGeneratorController::class, 'store'])
             ->can('update', 'scene');
+        Route::get('/locations', [ChronicleLocationController::class, 'index'])
+            ->can('update', 'chronicle');
+        Route::post('/locations', [ChronicleLocationController::class, 'store'])
+            ->can('update', 'chronicle');
+        Route::post('/scenes/{scene}/context/apply-template', [SceneContextController::class, 'applyTemplate'])
+            ->can('update', 'scene');
     });
+
+    Route::patch('/locations/{chronicleLocation}', [ChronicleLocationController::class, 'update'])
+        ->can('update', 'chronicleLocation');
+    Route::delete('/locations/{chronicleLocation}', [ChronicleLocationController::class, 'destroy'])
+        ->can('delete', 'chronicleLocation');
+    Route::get('/locations/{chronicleLocation}/image', [ChronicleLocationImageController::class, 'show'])
+        ->can('view', 'chronicleLocation');
+    Route::post('/locations/{chronicleLocation}/image', [ChronicleLocationImageController::class, 'store'])
+        ->can('update', 'chronicleLocation');
 
     Route::patch('/messages/{message}', [ChatController::class, 'update']);
     Route::patch('/messages/{message}/ooc', [ChatController::class, 'toggleOoc']);

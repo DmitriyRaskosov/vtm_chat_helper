@@ -1,4 +1,4 @@
-import { nextTick, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
 import { api } from '../auth';
 import { playSoundForMessage } from '../utils/chatMessageSound';
 import { CHRONICLE_NOT_SELECTED, chronicleCollectionPath } from './useCurrentChronicle';
@@ -16,7 +16,8 @@ function writeComposerOocToStorage(isOoc) {
 export function useChatMessages({
     selectedSceneId,
     canPost,
-    getLog,
+    getIcLog,
+    getOocLog,
     myCharacterId,
     chronicleId,
     auth,
@@ -28,6 +29,13 @@ export function useChatMessages({
     const showDeleted = ref(false);
     const isTyping = ref(false);
     const storytellerUserIds = ref([]);
+    const isIcAutoScroll = ref(true);
+    const isOocAutoScroll = ref(true);
+
+    const icMessages = computed(() => messages.value.filter((message) => !message.is_ooc));
+    const oocMessages = computed(() => messages.value.filter(
+        (message) => message.is_ooc && !message.is_system,
+    ));
 
     let typingIdleTimer = null;
 
@@ -103,9 +111,14 @@ export function useChatMessages({
         }
     }
 
-    async function scrollDown() {
+    async function scrollDown({ ic = true, ooc = true } = {}) {
         await nextTick();
-        getLog()?.scrollToBottom?.();
+        if (ic && isIcAutoScroll.value) {
+            getIcLog()?.scrollToBottom?.();
+        }
+        if (ooc && isOocAutoScroll.value) {
+            getOocLog()?.scrollToBottom?.();
+        }
     }
 
     async function load(afterId = 0) {
@@ -135,14 +148,15 @@ export function useChatMessages({
             return;
         }
 
-        const stick = afterId === 0 || (getLog()?.isAtBottom?.() ?? true);
+        const stickIc = afterId === 0 || isIcAutoScroll.value;
+        const stickOoc = afterId === 0 || isOocAutoScroll.value;
         if (Array.isArray(data.storyteller_user_ids)) {
             storytellerUserIds.value = data.storyteller_user_ids;
         }
 
         merge(data.messages ?? [], { playSounds: afterId > 0 });
-        if (stick) {
-            await scrollDown();
+        if (stickIc || stickOoc) {
+            await scrollDown({ ic: stickIc, ooc: stickOoc });
         }
     }
 
@@ -174,7 +188,7 @@ export function useChatMessages({
         body.value = '';
         isTyping.value = false;
         clearTypingTimer();
-        await scrollDown();
+        await scrollDown({ ic: !isOoc.value, ooc: isOoc.value });
     }
 
     async function toggleOoc(message) {
@@ -205,11 +219,15 @@ export function useChatMessages({
 
     return {
         messages,
+        icMessages,
+        oocMessages,
         body,
         isOoc,
         showDeleted,
         isTyping,
         storytellerUserIds,
+        isIcAutoScroll,
+        isOocAutoScroll,
         lastId,
         merge,
         scrollDown,

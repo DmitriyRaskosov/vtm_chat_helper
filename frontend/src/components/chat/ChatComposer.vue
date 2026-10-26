@@ -2,6 +2,7 @@
     <form
         class="composer"
         :class="{
+            'composer-ic': !isOoc,
             'composer-ooc': isOoc,
             'composer-your-turn': isMyTurn,
         }"
@@ -36,7 +37,10 @@
             <button
                 type="button"
                 class="composer-label"
-                :class="{ 'composer-label-ooc': isOoc }"
+                :class="{
+                    'composer-label-ic': !isOoc,
+                    'composer-label-ooc': isOoc,
+                }"
                 :disabled="!canPost"
                 @click="isOoc = !isOoc"
             >

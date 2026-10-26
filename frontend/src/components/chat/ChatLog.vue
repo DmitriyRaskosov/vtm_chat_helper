@@ -1,8 +1,8 @@
 <template>
-    <div class="chat-log-wrap">
+    <div class="chat-log-wrap" :class="`chat-log-wrap--${mode}`">
         <div ref="logEl" class="chat-log" aria-live="polite" @scroll="onScroll">
             <article
-                v-for="message in messages"
+                v-for="message in visibleMessages"
                 :key="message.id"
                 :data-message-id="message.id"
                 class="msg"
@@ -51,7 +51,7 @@
                     </div>
                 </template>
             </article>
-            <p v-if="!messages.length" class="muted">Пока пусто. Напишите первое сообщение.</p>
+            <p v-if="!visibleMessages.length" class="muted">{{ emptyHint }}</p>
             <p v-if="isTyping && typingLabel" class="chat-typing-indicator muted">
                 {{ typingLabel }} печатает…
             </p>
@@ -73,12 +73,19 @@ import { computed, nextTick, ref, watch } from 'vue';
 
 const props = defineProps({
     messages: { type: Array, required: true },
+    mode: {
+        type: String,
+        required: true,
+        validator: (value) => value === 'ic' || value === 'ooc',
+    },
     isStoryteller: { type: Boolean, required: true },
     currentUserId: { type: Number, default: null },
     storytellerUserIds: { type: Array, default: () => [] },
     isTyping: { type: Boolean, default: false },
     typingLabel: { type: String, default: '' },
 });
+
+const autoScroll = defineModel('autoScroll', { type: Boolean, default: true });
 
 const emit = defineEmits(['toggle-ooc', 'delete', 'restore', 'edit']);
 
@@ -87,7 +94,20 @@ const editPanelEl = ref(null);
 const editingId = ref(null);
 const editBody = ref('');
 const showScrollDown = ref(false);
-const stickToBottom = ref(true);
+
+const visibleMessages = computed(() => {
+    if (props.mode === 'ooc') {
+        return props.messages.filter((message) => message.is_ooc && !message.is_system);
+    }
+
+    return props.messages.filter((message) => !message.is_ooc || message.is_system);
+});
+
+const emptyHint = computed(() => (
+    props.mode === 'ooc'
+        ? 'Пока нет обсуждений вне сцены.'
+        : 'Пока пусто. Напишите первое сообщение.'
+));
 
 const maxMessageId = computed(() => {
     let max = 0;
@@ -185,8 +205,8 @@ function isNearBottom() {
 }
 
 function onScroll() {
-    stickToBottom.value = isNearBottom();
-    showScrollDown.value = !stickToBottom.value;
+    autoScroll.value = isNearBottom();
+    showScrollDown.value = !autoScroll.value;
 }
 
 async function startEdit(message) {
@@ -222,14 +242,14 @@ async function scrollToBottom() {
     }
 
     el.scrollTop = el.scrollHeight;
-    stickToBottom.value = true;
+    autoScroll.value = true;
     showScrollDown.value = false;
 }
 
 watch(
-    () => props.messages.length,
+    () => visibleMessages.value.length,
     async () => {
-        if (!stickToBottom.value) {
+        if (!autoScroll.value) {
             showScrollDown.value = true;
             return;
         }

@@ -7,6 +7,7 @@ use App\Models\Character;
 use App\Models\CharacterDiaryEntry;
 use App\Models\Chronicle;
 use App\Models\ChronicleInvitation;
+use App\Models\ChronicleLocation;
 use App\Models\ChronicleMember;
 use App\Models\CopilotRequest;
 use App\Models\GameSession;
@@ -60,6 +61,8 @@ final class AccessMatrixFixtures
     public CopilotRequest $copilotRequest;
 
     public SceneParticipant $sceneParticipant;
+
+    public ChronicleLocation $chronicleLocation;
 
     private function __construct() {}
 
@@ -125,6 +128,12 @@ final class AccessMatrixFixtures
 
         $context = SceneContext::query()->where('scene_id', $fixtures->scene->id)->first();
         $fixtures->sceneContextRevision = $context?->revision ?? 0;
+
+        $fixtures->chronicleLocation = ChronicleLocation::query()->create([
+            'chronicle_id' => $fixtures->chronicle->id,
+            'name' => 'Локация матрицы',
+            'description' => 'Описание для матрицы доступа',
+        ]);
 
         $fixtures->npc = Character::factory()->npc()->forChronicle($fixtures->chronicle)->create();
         $fixtures->playerCharacter = Character::factory()
@@ -207,6 +216,7 @@ final class AccessMatrixFixtures
             '{diaryEntry}' => (string) $this->diaryEntry->id,
             '{character}' => (string) $this->npc->id,
             '{message}' => (string) $this->storytellerMessage->id,
+            '{chronicleLocation}' => (string) $this->chronicleLocation->id,
         ];
 
         $path = $uriTemplate;
@@ -281,6 +291,21 @@ final class AccessMatrixFixtures
 
         if ($method === 'POST' && $uriTemplate === 'chronicles/{chronicle}/game-sessions') {
             return ['title' => 'Новая сессия'];
+        }
+
+        if ($method === 'POST' && $uriTemplate === 'chronicles/{chronicle}/locations') {
+            return ['name' => 'Локация матрицы POST'];
+        }
+
+        if ($method === 'PATCH' && $uriTemplate === 'locations/{chronicleLocation}') {
+            return ['name' => 'Локация матрицы PATCH'];
+        }
+
+        if ($method === 'POST' && $uriTemplate === 'chronicles/{chronicle}/scenes/{scene}/context/apply-template') {
+            return [
+                'location_id' => $this->chronicleLocation->id,
+                'expected_revision' => $this->sceneContextRevision,
+            ];
         }
 
         if ($method === 'PATCH' && $uriTemplate === 'game-sessions/{gameSession}/turn') {

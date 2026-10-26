@@ -52,6 +52,7 @@ flowchart TD
 
 - **Character** — лист персонажа: идентичность, место (клан, секта), черты, дисциплины, биография, архив, активное состояние (`character_states`: кровь, временная воля, уровень и тип урона). Гавани нет (ADR-002, задача 008).
 - **Scene** — игровые сессии, сцены, участники, контекст сцены, описание исхода боя (`EventGeneratorService`). `ActiveSceneResolver` — единственный поиск активной сцены.
+- **Chronicle** — членство, приглашения, **шаблоны локаций** (`ChronicleLocation`, `ChronicleLocationService`): текст локации и `environment_details` для быстрого применения к `scene_contexts` (`SceneContextController::applyTemplate`).
 - **Messages** — создание, редактирование, удаление сообщений.
 - **Diary** — L0/L1, retrieval, persistence, `DiaryScheduler`. Единственный владелец `character_diary_entries`.
 - **Context** — `ContextAssembler` (не трогать без задачи), провайдеры, `DiaryRenderer`, `LineTrimmer`, `TokenEstimator` (в Context, ADR-001 п. 4), `DiaryPreviewService`.

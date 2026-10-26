@@ -83,6 +83,14 @@ class Chronicle extends Model
         return $this->hasMany(ChronicleInvitation::class);
     }
 
+    /**
+     * @return HasMany<ChronicleLocation, $this>
+     */
+    public function locations(): HasMany
+    {
+        return $this->hasMany(ChronicleLocation::class);
+    }
+
     protected function casts(): array
     {
         return [

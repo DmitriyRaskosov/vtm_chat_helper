@@ -23,6 +23,8 @@
             v-model:environment-details="environmentDetails"
             :scene-situation-saving="sceneSituationSaving"
             :scene-situation-error="sceneSituationError"
+            :chronicle-id="chronicleId"
+            :scene-context-revision="sceneSituationRevision"
             v-model:new-game-session-title="newGameSessionTitle"
             :active-character-id="activeCharacterId"
             :turn-busy="participantBusy"
@@ -34,24 +36,61 @@
             @remove="onRemoveFromScene"
             @create-session="onCreateGameSession"
             @save-situation="saveSceneSituation"
+            @location-applied="onLocationApplied"
             @pass-turn="passTurn"
         />
 
         <div class="stage">
             <div class="chat-column">
-                <ChatLog
-                    ref="chatLog"
-                    :messages="messages"
-                    :is-storyteller="isStoryteller"
-                    :current-user-id="auth.user?.id ?? null"
-                    :storyteller-user-ids="storytellerUserIds"
-                    :is-typing="isTyping"
-                    :typing-label="myCharacterName ?? auth.user?.name ?? ''"
-                    @toggle-ooc="toggleOoc"
-                    @delete="deleteMessage"
-                    @restore="restoreMessage"
-                    @edit="onEditMessage"
-                />
+                <div ref="splitContainer" class="chat-split-container">
+                    <section class="chat-ic-pane">
+                        <h2 class="chat-pane-title">Сюжет</h2>
+                        <ChatLog
+                            ref="icChatLog"
+                            mode="ic"
+                            v-model:auto-scroll="isIcAutoScroll"
+                            :messages="icMessages"
+                            :is-storyteller="isStoryteller"
+                            :current-user-id="auth.user?.id ?? null"
+                            :storyteller-user-ids="storytellerUserIds"
+                            :is-typing="isTyping && !isOoc"
+                            :typing-label="myCharacterName ?? auth.user?.name ?? ''"
+                            @toggle-ooc="toggleOoc"
+                            @delete="deleteMessage"
+                            @restore="restoreMessage"
+                            @edit="onEditMessage"
+                        />
+                    </section>
+                    <section
+                        class="chat-ooc-pane"
+                        :style="oocPaneStyle"
+                        @mousedown="onOocPaneFocus"
+                    >
+                        <div
+                            class="chat-split-resizer"
+                            role="separator"
+                            aria-orientation="horizontal"
+                            aria-label="Изменить высоту панели обсуждения"
+                            @mousedown.prevent.stop="onSplitResizeStart"
+                        />
+                        <h2 class="chat-pane-title">Обсуждение</h2>
+                        <ChatLog
+                            ref="oocChatLog"
+                            mode="ooc"
+                            v-model:auto-scroll="isOocAutoScroll"
+                            :messages="oocMessages"
+                            :is-storyteller="isStoryteller"
+                            :current-user-id="auth.user?.id ?? null"
+                            :storyteller-user-ids="storytellerUserIds"
+                            :is-typing="isTyping && isOoc"
+                            :typing-label="myCharacterName ?? auth.user?.name ?? ''"
+                            @toggle-ooc="toggleOoc"
+                            @delete="deleteMessage"
+                            @restore="restoreMessage"
+                            @edit="onEditMessage"
+                        />
+                    </section>
+                </div>
 
                 <div class="chat-composer-stack">
                     <div
@@ -165,7 +204,31 @@ import ChatToolsDock from '../components/chat/ChatToolsDock.vue';
 const auth = useAuth();
 const route = useRoute();
 const chronicleId = computed(() => route.params.chronicleId);
-const chatLog = ref(null);
+const OOC_PANE_HEIGHT_KEY = 'chat-ooc-pane-height';
+const DEFAULT_OOC_PANE_HEIGHT = 180;
+const MIN_OOC_PANE_HEIGHT = 72;
+const MIN_IC_PANE_PEEK = 2.5;
+
+const icChatLog = ref(null);
+const oocChatLog = ref(null);
+const splitContainer = ref(null);
+
+function readOocPaneHeight() {
+    const raw = localStorage.getItem(OOC_PANE_HEIGHT_KEY);
+    const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
+
+    if (Number.isFinite(parsed) && parsed >= MIN_OOC_PANE_HEIGHT) {
+        return parsed;
+    }
+
+    return DEFAULT_OOC_PANE_HEIGHT;
+}
+
+const oocPaneHeight = ref(readOocPaneHeight());
+
+const oocPaneStyle = computed(() => ({
+    height: `${oocPaneHeight.value}px`,
+}));
 const copilotPanel = ref(null);
 const drawerCharacterId = ref(null);
 const {
@@ -205,6 +268,7 @@ const {
     bindMessages,
     loadGameSession,
     saveSceneSituation,
+    sceneSituationRevision,
     pollSceneSituation,
     passTurn,
     releaseMyTurn,
@@ -219,11 +283,15 @@ const {
 
 const {
     messages,
+    icMessages,
+    oocMessages,
     body,
     isOoc,
     showDeleted,
     isTyping,
     storytellerUserIds,
+    isIcAutoScroll,
+    isOocAutoScroll,
     lastId,
     merge,
     scrollDown,
@@ -236,7 +304,8 @@ const {
 } = useChatMessages({
     selectedSceneId,
     canPost,
-    getLog: () => chatLog.value,
+    getIcLog: () => icChatLog.value,
+    getOocLog: () => oocChatLog.value,
     myCharacterId,
     chronicleId,
     auth,
@@ -426,6 +495,10 @@ async function poll() {
     }
 }
 
+function onLocationApplied(context) {
+    sceneSituationRevision.value = Number(context?.revision ?? sceneSituationRevision.value);
+}
+
 async function onAddToScene() {
     await addToScene();
     await load(lastId());
@@ -440,9 +513,51 @@ async function onEditMessage({ message, body }) {
     await editMessage(message, body);
 }
 
+function clampOocPaneHeight(height, containerHeight) {
+    const maxHeight = Math.max(
+        MIN_OOC_PANE_HEIGHT,
+        containerHeight - MIN_IC_PANE_PEEK * 16,
+    );
+
+    return Math.min(maxHeight, Math.max(MIN_OOC_PANE_HEIGHT, height));
+}
+
+function onSplitResizeStart(event) {
+    const container = splitContainer.value;
+    if (!container) {
+        return;
+    }
+
+    const containerHeight = container.getBoundingClientRect().height;
+    const startY = event.clientY;
+    const startHeight = oocPaneHeight.value;
+
+    function onMove(moveEvent) {
+        const delta = startY - moveEvent.clientY;
+        oocPaneHeight.value = clampOocPaneHeight(startHeight + delta, containerHeight);
+    }
+
+    function onUp() {
+        localStorage.setItem(OOC_PANE_HEIGHT_KEY, String(oocPaneHeight.value));
+        document.removeEventListener('mousemove', onMove);
+        document.removeEventListener('mouseup', onUp);
+        document.body.classList.remove('chat-split-resizing');
+    }
+
+    document.body.classList.add('chat-split-resizing');
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+}
+
+function onOocPaneFocus() {
+    if (canPost.value) {
+        isOoc.value = true;
+    }
+}
+
 async function onNpcSent(message) {
     merge([message]);
-    await scrollDown();
+    await scrollDown({ ic: true, ooc: false });
 }
 
 async function onDiceRoll(payload) {
@@ -470,6 +585,11 @@ onMounted(async () => {
     await bootstrapChat();
     turnSoundReady = true;
     timer = setInterval(poll, 3000);
+
+    if (splitContainer.value) {
+        const containerHeight = splitContainer.value.getBoundingClientRect().height;
+        oocPaneHeight.value = clampOocPaneHeight(oocPaneHeight.value, containerHeight);
+    }
 });
 
 onUnmounted(() => {

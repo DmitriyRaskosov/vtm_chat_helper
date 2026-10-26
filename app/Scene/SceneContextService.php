@@ -30,6 +30,7 @@ class SceneContextService
             'situation',
             'storyteller_notes',
             'environment_details',
+            'location_image_path',
         ];
 
         foreach (array_keys($fields) as $field) {
@@ -188,6 +189,19 @@ class SceneContextService
 
     private function normalize(int $chronicleId, string $field, mixed $raw): mixed
     {
+        if ($field === 'location_image_path') {
+            if ($raw === null || $raw === '') {
+                return null;
+            }
+
+            $path = trim((string) $raw);
+            if ($path === '' || str_contains($path, '..')) {
+                throw new InvalidSceneContextInputException('Invalid scene location image path.');
+            }
+
+            return $path;
+        }
+
         if ($field === 'location_entity_id') {
             if ($raw === null || $raw === '') {
                 return null;
