@@ -51,6 +51,15 @@ export function useDiary(characterId) {
     }
 
     async function load() {
+        const id = Number(characterId.value);
+        if (!Number.isFinite(id) || id <= 0) {
+            entries.value = [];
+            characterName.value = 'Дневник';
+            loading.value = false;
+            error.value = '';
+            return;
+        }
+
         loading.value = true;
         error.value = '';
         try {

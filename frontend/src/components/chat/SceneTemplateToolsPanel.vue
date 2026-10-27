@@ -38,7 +38,7 @@
                     :disabled="!hasApplySelected || busy"
                     @click="emit('apply-full', applyTemplateId)"
                 >
-                    Всё (локация + окружение + фото)
+                    Всё (описание + детали + фото)
                 </button>
                 <button
                     type="button"
@@ -47,7 +47,7 @@
                     :disabled="!hasApplySelected || busy"
                     @click="emit('apply-situation', applyTemplateId)"
                 >
-                    Только локацию
+                    Только описание
                 </button>
                 <button
                     type="button"
@@ -56,7 +56,7 @@
                     :disabled="!hasApplySelected || busy"
                     @click="emit('apply-environment', applyTemplateId)"
                 >
-                    Только окружение
+                    Только детали локации
                 </button>
             </div>
         </div>
@@ -84,7 +84,7 @@
                     :disabled="!hasUpdateSelected || busy"
                     @click="emit('update-both', updateTemplateId)"
                 >
-                    Локацию и окружение
+                    Описание и детали
                 </button>
                 <button
                     type="button"
@@ -93,7 +93,7 @@
                     :disabled="!hasUpdateSelected || busy"
                     @click="emit('update-situation', updateTemplateId)"
                 >
-                    Только локацию
+                    Только описание
                 </button>
                 <button
                     type="button"
@@ -102,7 +102,7 @@
                     :disabled="!hasUpdateSelected || busy"
                     @click="emit('update-environment', updateTemplateId)"
                 >
-                    Только окружение
+                    Только детали локации
                 </button>
             </div>
         </div>

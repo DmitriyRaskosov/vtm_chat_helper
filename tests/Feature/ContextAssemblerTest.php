@@ -14,6 +14,7 @@ use App\Models\CanonClan;
 use App\Models\CanonSect;
 use App\Models\Character;
 use App\Models\CopilotRequest;
+use App\Models\SceneContext;
 use App\Models\WorldRelation;
 use InvalidArgumentException;
 use Tests\Support\CreatesCopilotScene;
@@ -49,6 +50,23 @@ class ContextAssemblerTest extends TestCase
 
         $this->fakeEmbeddings();
         $this->setUpCopilotScene();
+    }
+
+    public function test_scene_section_sends_situation_and_omits_environment_details(): void
+    {
+        $context = SceneContext::query()->firstOrNew([
+            'scene_id' => $this->sceneId,
+        ]);
+        $context->chronicle_id = $this->chronicle->id;
+        $context->situation = 'Общий зал пустыря';
+        $context->environment_details = 'Секретные балки на восьми метрах';
+        $context->save();
+
+        $userContent = $this->assembleReply()->messages[1]['content'];
+
+        $this->assertIsString($userContent);
+        $this->assertStringContainsString('Situation: Общий зал пустыря', $userContent);
+        $this->assertStringNotContainsString('Секретные балки на восьми метрах', $userContent);
     }
 
     public function test_user_sections_follow_user_order_in_assembled_prompt(): void

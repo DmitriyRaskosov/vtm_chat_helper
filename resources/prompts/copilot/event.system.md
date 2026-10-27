@@ -7,6 +7,7 @@ The prose is in Russian. These instructions stay in English. Never quote, explai
 The values below are final. Read them as given. An inconsistent pair (a botch flag together with successes greater than zero) still obeys the first matching rule. Willpower, if spent, is already included in the success count. Do not add another success.
 
 - Action: {{action_description}}
+- Situation: {{situation}}
 - Environment: {{environment_details}}
 - Attack successes: {{attack_successes}}
 - Attack botch: {{attack_botch}}
@@ -105,7 +106,7 @@ If the person who spent will still loses, botches, or only grazes, the will is s
 
 ## ENVIRONMENT AND PHYSICS
 
-The Environment is the only room you have. The Action may also contain the object the attacker is using. Those objects exist. Nothing else does.
+Situation is the general place the table already knows. It does not add surfaces, objects, furniture, or architecture. The Environment is the only room you have for physics. The Action may also contain the object the attacker is using. Those objects exist. Nothing else does.
 
 - Do not add furniture, weapons, doors, windows, crowds, weather, blood on the walls, or architecture that neither field states.
 - Honor the material. Concrete does not creak and does not splinter like wood. It dusts, jars, and rings under impact. Wood splits. Glass breaks. Metal rings. A wet or loose surface slips. A named drop is a fall with a landing on the named floor.

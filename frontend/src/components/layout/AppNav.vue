@@ -32,6 +32,14 @@
         <button
             type="button"
             class="nav-icon nav-icon-btn"
+            title="Сменить тему"
+            @click="toggleTheme"
+        >
+            🌓
+        </button>
+        <button
+            type="button"
+            class="nav-icon nav-icon-btn"
             :class="{ active: !soundsMuted }"
             :title="soundsMuted ? 'Звуки выключены' : 'Звуки включены'"
             @click="toggleSoundsMuted"
@@ -56,8 +64,10 @@ import ChronicleSwitcher from './ChronicleSwitcher.vue';
 import { currentChronicleRole, isStoryteller, useAuth } from '../../auth';
 import { resolveChronicleId, useCurrentChronicle } from '../../composables/useCurrentChronicle';
 import { useSoundSettings } from '../../composables/useSoundSettings';
+import { useTheme } from '../../composables/useTheme';
 
 const { soundsMuted, toggleSoundsMuted } = useSoundSettings();
+const { toggleTheme } = useTheme();
 
 defineProps({
     current: {

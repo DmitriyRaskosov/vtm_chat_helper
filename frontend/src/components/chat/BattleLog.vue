@@ -2,14 +2,6 @@
     <section class="card battle-log">
         <div class="battle-log-heading">
             <h2>Лог боя</h2>
-            <button
-                v-if="isStoryteller && selectedSceneId"
-                type="button"
-                class="secondary"
-                @click="openEventModal"
-            >
-                Описать событие
-            </button>
         </div>
         <p v-if="!selectedSceneId" class="muted">Выберите сцену, чтобы видеть броски кубиков.</p>
         <p v-else-if="logError" class="error">{{ logError }}</p>
@@ -74,48 +66,27 @@
             </button>
         </div>
 
-        <EventGeneratorModal
-            :open="eventModalOpen"
-            :generating="eventGenerating"
-            :error="eventGenerateError"
-            :generated-text="eventGeneratedText"
-            :seed="eventSeed"
-            @close="eventModalOpen = false"
-            @generate="onGenerateEvent"
-        />
     </section>
 </template>
 
 <script setup>
-import { computed, nextTick, ref, watch } from 'vue';
-import EventGeneratorModal from './EventGeneratorModal.vue';
-import { useEventGenerator } from '../../composables/useEventGenerator';
+import { nextTick, ref, watch } from 'vue';
 
 const props = defineProps({
     logs: { type: Array, required: true },
     logError: { type: String, default: '' },
     selectedSceneId: { type: Number, default: null },
-    chronicleId: { type: [Number, String], default: null },
     isStoryteller: { type: Boolean, default: false },
+    active: { type: Boolean, default: true },
 });
 
 const listEl = ref(null);
 const showScrollDown = ref(false);
 const stickToBottom = ref(true);
-const eventModalOpen = ref(false);
-const eventGeneratedText = ref('');
-const eventSeed = ref(null);
+const emit = defineEmits(['seed-change']);
+
 const attackLogId = ref(null);
 const defenseLogId = ref(null);
-
-const {
-    generating: eventGenerating,
-    generateError: eventGenerateError,
-    generate,
-} = useEventGenerator({
-    chronicleId: computed(() => props.chronicleId),
-    selectedSceneId: computed(() => props.selectedSceneId),
-});
 
 function isSumRoll(entry) {
     return entry?.payload?.mode === 'sum';
@@ -136,12 +107,18 @@ function onScroll() {
 }
 
 async function scrollToBottom() {
+    await nextTick();
     const el = listEl.value;
     if (!el) {
         return;
     }
 
-    el.scrollTop = el.scrollHeight;
+    const pin = () => {
+        el.scrollTop = el.scrollHeight;
+    };
+
+    pin();
+    requestAnimationFrame(pin);
     stickToBottom.value = true;
     showScrollDown.value = false;
 }
@@ -158,11 +135,14 @@ function canSeedFrom(entry) {
 function pickLog(side, id) {
     if (side === 'attack') {
         attackLogId.value = attackLogId.value === id ? null : id;
-
-        return;
+    } else {
+        defenseLogId.value = defenseLogId.value === id ? null : id;
     }
 
-    defenseLogId.value = defenseLogId.value === id ? null : id;
+    emit('seed-change', {
+        attack: attackLogId.value == null ? null : diceFacts(logById(attackLogId.value)),
+        defense: defenseLogId.value == null ? null : diceFacts(logById(defenseLogId.value)),
+    });
 }
 
 function logById(id) {
@@ -200,23 +180,6 @@ function diceFacts(entry) {
     };
 }
 
-function openEventModal() {
-    eventGeneratedText.value = '';
-    eventSeed.value = {
-        attack: diceFacts(logById(attackLogId.value)),
-        defense: diceFacts(logById(defenseLogId.value)),
-    };
-    eventModalOpen.value = true;
-}
-
-async function onGenerateEvent(payload) {
-    eventGeneratedText.value = '';
-    const text = await generate(payload);
-    if (text) {
-        eventGeneratedText.value = text;
-    }
-}
-
 watch(
     () => props.selectedSceneId,
     () => {
@@ -226,15 +189,18 @@ watch(
 );
 
 watch(
-    () => props.logs.length,
+    () => [props.logs.length, props.active],
     async () => {
+        if (!props.active) {
+            return;
+        }
+
         if (!stickToBottom.value) {
             showScrollDown.value = true;
 
             return;
         }
 
-        await nextTick();
         await scrollToBottom();
     },
 );

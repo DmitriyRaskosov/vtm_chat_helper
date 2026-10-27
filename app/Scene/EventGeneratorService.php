@@ -25,15 +25,14 @@ final class EventGeneratorService
         bool $defenseBotch,
         bool $defenseWillpower,
     ): string {
-        $environment = $this->sceneContext->current($scene)?->environment_details;
-        $environment = is_string($environment) ? trim($environment) : '';
-        if ($environment === '') {
-            $environment = 'No details provided';
-        }
+        $context = $this->sceneContext->current($scene);
+        $situation = $this->promptField($context?->situation, 'No situation provided');
+        $environment = $this->promptField($context?->environment_details, 'No details provided');
 
         // Промпт считает флаг истинным только при литерале true, не при "1".
         $system = $this->prompts->get('copilot.event.system', [
             'action_description' => $actionDescription,
+            'situation' => $situation,
             'environment_details' => $environment,
             'attack_successes' => $attackSuccesses,
             'attack_botch' => $attackBotch ? 'true' : 'false',
@@ -63,5 +62,12 @@ final class EventGeneratorService
         }
 
         return $text;
+    }
+
+    private function promptField(mixed $value, string $fallback): string
+    {
+        $text = is_string($value) ? trim($value) : '';
+
+        return $text === '' ? $fallback : $text;
     }
 }

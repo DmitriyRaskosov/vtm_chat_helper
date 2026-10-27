@@ -23,6 +23,14 @@
                 >
                     Настроить локацию
                 </button>
+                <button
+                    v-if="isStoryteller"
+                    type="button"
+                    class="btn-sm"
+                    @click="emit('open-manage')"
+                >
+                    Управление сценой
+                </button>
                 <button type="button" class="btn-sm" @click="collapsed = !collapsed">
                     {{ collapsed ? 'Развернуть' : 'Свернуть' }}
                 </button>
@@ -40,6 +48,6 @@ defineProps({
     isStoryteller: { type: Boolean, required: true },
 });
 
-const emit = defineEmits(['zoom', 'open-settings']);
+const emit = defineEmits(['zoom', 'open-settings', 'open-manage']);
 const collapsed = ref(false);
 </script>

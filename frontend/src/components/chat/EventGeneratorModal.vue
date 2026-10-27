@@ -1,10 +1,20 @@
 <template>
-    <div v-if="open" class="diary-backdrop" @click.self="emit('close')">
-        <div class="diary-modal card event-generator-modal" role="dialog" :aria-busy="generating">
-            <header class="chat-panel-header">
+    <div
+        v-if="embedded || open"
+        :class="embedded ? 'event-generator-panel' : 'diary-backdrop'"
+        @click.self="onBackdrop"
+    >
+        <div
+            class="event-generator-modal"
+            :class="{ 'diary-modal card': !embedded }"
+            role="dialog"
+            :aria-busy="generating"
+        >
+            <header v-if="!embedded" class="chat-panel-header">
                 <h2>Описать событие</h2>
                 <button type="button" class="chat-panel-close" aria-label="Закрыть" @click="emit('close')">×</button>
             </header>
+            <h2 v-else class="event-generator-panel-title">Описать событие</h2>
 
             <label for="event-action">Действие</label>
             <textarea
@@ -71,6 +81,7 @@ const props = defineProps({
     error: { type: String, default: '' },
     generatedText: { type: String, default: '' },
     seed: { type: Object, default: null },
+    embedded: { type: Boolean, default: false },
 });
 
 const emit = defineEmits(['close', 'generate']);
@@ -85,9 +96,9 @@ const defenseWillpower = ref(false);
 const copied = ref(false);
 
 watch(
-    () => [props.open, props.seed],
-    ([isOpen, seed]) => {
-        if (!isOpen || !seed) {
+    () => [props.open, props.embedded, props.seed],
+    ([isOpen, isEmbedded, seed]) => {
+        if ((!isOpen && !isEmbedded) || !seed) {
             return;
         }
 
@@ -95,6 +106,12 @@ watch(
         applySide(seed.defense, 'defense');
     },
 );
+
+function onBackdrop() {
+    if (!props.embedded) {
+        emit('close');
+    }
+}
 
 watch(() => props.generatedText, () => {
     copied.value = false;
@@ -147,6 +164,13 @@ async function copyResult() {
 <style scoped>
 .event-generator-result {
     white-space: pre-wrap;
+}
+
+.event-generator-panel-title {
+    margin: 0 0 0.75rem;
+    font-family: var(--font-lore);
+    color: var(--gold);
+    font-size: 1.05rem;
 }
 
 .event-generator-spinner {

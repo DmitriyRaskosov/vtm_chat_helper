@@ -172,6 +172,33 @@ class SceneTest extends TestCase
         ]);
     }
 
+    public function test_scene_context_keeps_situation_and_environment_details_independent(): void
+    {
+        $sceneId = $this->createScene();
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->putJson("/api/scenes/{$sceneId}/context", [
+                'expected_revision' => 0,
+                'situation' => 'Общий зал',
+            ])
+            ->assertOk();
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->putJson("/api/scenes/{$sceneId}/context", [
+                'expected_revision' => 1,
+                'environment_details' => 'Пол бетонный',
+            ])
+            ->assertOk()
+            ->assertJsonPath('context.situation', 'Общий зал')
+            ->assertJsonPath('context.environment_details', 'Пол бетонный');
+
+        $this->assertDatabaseHas('scene_contexts', [
+            'scene_id' => $sceneId,
+            'situation' => 'Общий зал',
+            'environment_details' => 'Пол бетонный',
+        ]);
+    }
+
     public function test_scene_context_rejects_stale_revision(): void
     {
         $sceneId = $this->createScene();

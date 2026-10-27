@@ -23,6 +23,7 @@ class EventGeneratorApiTest extends TestCase
             'scene_id' => $this->fixtures->scene->id,
         ]);
         $context->chronicle_id = $this->fixtures->chronicle->id;
+        $context->situation = 'Ночь на пустыре';
         $context->environment_details = 'Пол бетонный';
         $context->save();
 
@@ -53,7 +54,8 @@ class EventGeneratorApiTest extends TestCase
         $system = $requests[0]['messages'][0]['content'];
         $this->assertIsString($system);
         $this->assertStringContainsString('Порижана швыряет скамью', $system);
-        $this->assertStringContainsString('Пол бетонный', $system);
+        $this->assertStringContainsString('Situation: Ночь на пустыре', $system);
+        $this->assertStringContainsString('Environment: Пол бетонный', $system);
         $this->assertStringContainsString('Attack successes: 3', $system);
         $this->assertStringContainsString('Attack botch: false', $system);
         $this->assertStringContainsString('Attack willpower spent: true', $system);
@@ -78,7 +80,8 @@ class EventGeneratorApiTest extends TestCase
         $response->assertOk();
         $system = $fake->requests()[0]['messages'][0]['content'];
         $this->assertIsString($system);
-        $this->assertStringContainsString('No details provided', $system);
+        $this->assertStringContainsString('Situation: No situation provided', $system);
+        $this->assertStringContainsString('Environment: No details provided', $system);
         $this->assertStringContainsString('Attack willpower spent: false', $system);
         $this->assertStringContainsString('Defense botch: false', $system);
     }

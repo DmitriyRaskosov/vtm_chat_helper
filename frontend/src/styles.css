@@ -1476,19 +1476,47 @@ summary {
     font-size: 0.88rem;
 }
 
+.scene-location-cards {
+    display: grid;
+    gap: 1rem;
+}
+
+.scene-location-card {
+    margin: 0;
+}
+
+.scene-location-card h3 {
+    margin: 0 0 0.65rem;
+    font-family: var(--font-lore);
+    color: var(--gold);
+    font-size: 1.05rem;
+}
+
+.scene-template-block {
+    margin-top: 1rem;
+}
+
 .scene-template-apply-row,
 .scene-template-update-row {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.65rem;
-    align-items: flex-end;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.5rem;
+    margin-top: 0.85rem;
+    padding-top: 0.85rem;
+    border-top: 1px solid var(--border);
 }
 
 .scene-template-apply-modes {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    align-items: center;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+    gap: 0.5rem;
+    width: 100%;
+}
+
+.scene-template-apply-modes button,
+.scene-template-tools .sheet-actions button {
+    margin-top: 0;
 }
 
 .location-library-snippet-label {
@@ -2298,6 +2326,27 @@ body.chat-split-resizing .gothic-layout .chat-split-resizer {
     overflow-y: auto;
 }
 
+.participants-heading {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.5rem;
+}
+
+.participants-manage {
+    margin: 0;
+    padding: 0.1rem 0.35rem;
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.participants-manage:hover {
+    border-color: var(--gold);
+}
+
 .participant-item {
     display: flex;
     flex-direction: column;
@@ -2445,6 +2494,91 @@ body.chat-split-resizing .gothic-layout .chat-split-resizer {
 
 .session-inline {
     padding: 1rem 1.5rem;
+}
+
+.workshop-page {
+    font-family: var(--font-ui);
+}
+
+.workshop-tabs {
+    display: flex;
+    gap: 0.25rem;
+    border-bottom: 1px solid var(--border);
+    margin: 0.5rem 0 1rem;
+}
+
+.workshop-panel {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.workshop-edit-link {
+    margin-left: 0.5rem;
+    padding: 0.15rem 0.45rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    text-decoration: none;
+    font-size: 0.8rem;
+}
+
+.workshop-edit-link:hover {
+    color: var(--gold);
+    border-color: var(--gold);
+}
+
+.workshop-diary {
+    display: flex;
+    gap: 1rem;
+    align-items: stretch;
+    min-height: 24rem;
+}
+
+.workshop-diary-list {
+    width: 220px;
+    flex-shrink: 0;
+    border-right: 1px solid var(--border);
+    padding-right: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.workshop-diary-npc {
+    margin: 0;
+    padding: 0.4rem 0.5rem;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-radius: 4px;
+    color: var(--text);
+    cursor: pointer;
+    font: inherit;
+}
+
+.workshop-diary-npc:hover,
+.workshop-diary-npc.active {
+    background: var(--bg-light);
+    color: var(--gold);
+}
+
+.workshop-diary-entries {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.workshop-diary-title {
+    margin: 0;
+    font-family: var(--font-lore);
+    color: var(--gold);
+    font-size: 1.2rem;
+}
+
+.workshop-diary-entry .sheet-actions button {
+    margin-top: 0;
 }
 
 .mode-btn {

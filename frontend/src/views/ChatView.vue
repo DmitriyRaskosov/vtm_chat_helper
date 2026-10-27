@@ -44,6 +44,7 @@
                 :is-storyteller="isStoryteller"
                 @zoom="locationZoomOpen = true"
                 @open-settings="sceneSettingsOpen = true"
+                @open-manage="sceneManageOpen = true"
             />
 
             <div v-if="gameSession" ref="splitContainer" class="chat-container chat-split-container">
@@ -191,19 +192,9 @@
                         :game-session="gameSession"
                         :is-storyteller="isStoryteller"
                         v-model:selected-scene-id="selectedSceneId"
-                        :scenes="scenes"
                         :selected-scene="selectedScene"
-                        v-model:new-scene-title="newSceneTitle"
                         :scene-loading="sceneLoading"
                         :scene-error="sceneError"
-                        :can-edit-participants="canEditParticipants"
-                        :current-participants="currentParticipants"
-                        :available-to-add="availableToAdd"
-                        v-model:add-character-id="addCharacterId"
-                        :participant-busy="participantBusy"
-                        :participant-error="participantError"
-                        :participant-flash="participantFlash"
-                        v-model:participant-system-message="participantSystemMessage"
                         v-model:scene-situation="sceneSituation"
                         v-model:environment-details="environmentDetails"
                         :scene-situation-saving="sceneSituationSaving"
@@ -211,26 +202,55 @@
                         :chronicle-id="chronicleId"
                         :scene-context-revision="sceneSituationRevision"
                         v-model:new-game-session-title="newGameSessionTitle"
-                        :active-character-id="activeCharacterId"
-                        :turn-busy="participantBusy"
                         :location-image-url="locationImageUrl"
                         :location-image-loading="locationImageLoading"
                         :location-image-error="locationImageError"
-                        @switch="switchScene"
-                        @create-scene="onCreateScene"
-                        @activate="activateScene"
-                        @close="closeScene"
-                        @add="onAddToScene"
-                        @remove="onRemoveFromScene"
                         @create-session="onCreateGameSession"
                         @save-situation="saveSceneSituation"
                         @location-applied="onLocationApplied"
-                        @pass-turn="passTurn"
                         @upload-location-image="onUploadLocationImage"
                         @zoom-location="locationZoomOpen = true"
                     />
                 </div>
             </div>
+            </Teleport>
+
+            <Teleport to="body">
+                <div
+                    v-if="gameSession && sceneManageOpen"
+                    class="modal-overlay"
+                    @click.self="sceneManageOpen = false"
+                >
+                    <div class="modal-content">
+                        <header class="modal-header">
+                            <h2>Управление сценой</h2>
+                            <button type="button" class="btn-sm" @click="sceneManageOpen = false">Закрыть</button>
+                        </header>
+                        <SceneManagementModal
+                            :is-storyteller="isStoryteller"
+                            :selected-scene="selectedScene"
+                            v-model:new-scene-title="newSceneTitle"
+                            :scene-loading="sceneLoading"
+                            :scene-error="sceneError"
+                            :can-edit-participants="canEditParticipants"
+                            :current-participants="currentParticipants"
+                            :available-to-add="availableToAdd"
+                            v-model:add-character-id="addCharacterId"
+                            :participant-busy="participantBusy"
+                            :participant-error="participantError"
+                            :participant-flash="participantFlash"
+                            v-model:participant-system-message="participantSystemMessage"
+                            :active-character-id="activeCharacterId"
+                            :turn-busy="participantBusy"
+                            @create-scene="onCreateScene"
+                            @activate="activateScene"
+                            @close="closeScene"
+                            @add="onAddToScene"
+                            @remove="onRemoveFromScene"
+                            @pass-turn="passTurn"
+                        />
+                    </div>
+                </div>
             </Teleport>
 
             <Teleport to="body">
@@ -258,6 +278,7 @@
             :log-error="logError"
             @select-participant="onSelectParticipant"
             @npc-sent="onNpcSent"
+            @open-scene-manage="sceneManageOpen = true"
         />
     </div>
 </template>
@@ -279,6 +300,7 @@ import LocationBanner from '../components/chat/LocationBanner.vue';
 import RightSidebar from '../components/chat/RightSidebar.vue';
 import TurnBadge from '../components/chat/TurnBadge.vue';
 import { playPlayerTurnSound } from '../utils/chatMessageSound';
+import SceneManagementModal from '../components/chat/SceneManagementModal.vue';
 import SceneToolbar from '../components/chat/SceneToolbar.vue';
 import { useChatMessages } from '../composables/useChatMessages';
 import { useChatPanels } from '../composables/useChatPanels';
@@ -301,6 +323,7 @@ const splitContainer = ref(null);
 const rightSidebar = ref(null);
 const speakerCharacterId = ref(null);
 const sceneSettingsOpen = ref(false);
+const sceneManageOpen = ref(false);
 const locationZoomOpen = ref(false);
 const turnBadgeDismissed = ref(false);
 

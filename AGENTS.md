@@ -8,7 +8,7 @@
 Чат для настольной ролевой игры VtM V20 с Copilot-помощником рассказчика.
 Рассказчик пишет синопсис, Copilot (DeepSeek, два прохода) разворачивает его в 3 варианта реплики NPC.
 NPC ведут долговременный дневник (L0 — записи по ходу сцены, L1 — сводка сцены), он подмешивается в контекст Copilot.
-Полной боёвки и рулбука нет; есть упрощённые броски кубов, лог боя и описание уже посчитанного встречного действия (`EventGeneratorService`: один вызов DeepSeek, без сборки контекста Copilot). Кнопка «Описать событие» пока стоит у лога боя, место временное. Активные состояния персонажа (кровь, здоровье, временная воля на листе) есть. Запас крови и уровень здоровья подмешиваются в контекст Copilot (`CharacterStateProvider`). Чат — оболочка Gothic v3: сайдбар, сцена, правая панель; IC слева и OOC справа; темы `theme-gothic` и `theme-blood`. У рассказчика библиотека шаблонов локации и окружения (`chronicle_locations`, `ChronicleLocationService`) в модалке «Настроить локацию». Экран «Мастерская» — заглушка.
+Полной боёвки и рулбука нет; есть упрощённые броски кубов, лог боя и описание уже посчитанного встречного действия (`EventGeneratorService`: один вызов DeepSeek, без сборки контекста Copilot). Форма «Описать событие» — вкладка «События» правой панели. В промпт события уходят `situation` и `environment_details`; в контекст Copilot — только `situation`. Активные состояния персонажа (кровь, здоровье, временная воля на листе) есть. Запас крови и уровень здоровья подмешиваются в контекст Copilot (`CharacterStateProvider`). Чат — оболочка Gothic v3: сайдбар, сцена, правая панель; IC слева и OOC справа; темы `theme-gothic` и `theme-blood` (переключатель в сайдбаре, `localStorage` `app-theme`). У рассказчика библиотека шаблонов локации (`chronicle_locations`, `ChronicleLocationService`) в модалке «Настроить локацию» и во вкладке «Локации» Мастерской. «Управление сценой» — отдельная модалка. «Мастерская» (`/c/{id}/workshop`, только рассказчик): персонажи, локации, дневники.
 Сейчас одна хроника на инстанс; multi-chronicle — этап 3 (ADR-007).
 
 ## Стек
@@ -52,9 +52,9 @@ NPC ведут долговременный дневник (L0 — записи 
 
 ## Карта `frontend/src`
 
-- `views/` — Login, Register, Chat, CharacterList, CharacterSheet, Diary, Workshop (заглушка, только рассказчик).
-- `components/chat`, `components/sheet`, `components/layout` — компоненты экранов. Окна инструментов чата — `FloatingWindow` (`useDraggable`).
-- `composables/` — `useSceneSession`, `useChatMessages`, `useCharacterSheet`, `useChatPanels`, `useDraggable`. Новая логика — сюда.
+- `views/` — Login, Register, Chat, CharacterList, CharacterSheet, Diary, Workshop (только рассказчик: персонажи, локации, дневники).
+- `components/chat`, `components/sheet`, `components/layout`, `components/workshop` — компоненты экранов. Окна инструментов чата — `FloatingWindow` (`useDraggable`). Модалки сцены — `SceneToolbar` (локация) и `SceneManagementModal`.
+- `composables/` — `useSceneSession`, `useChatMessages`, `useCharacterSheet`, `useChatPanels`, `useDraggable`, `useTheme`. Новая логика — сюда.
 - `auth.js` — единственный экземпляр axios и состояние пользователя. `router.js` — маршруты.
 - `styles.css` — глобальные стили и темы (`body.theme-gothic`, `body.theme-blood`). Цвета новых экранов — через CSS-переменные. Файл по-прежнему один, его не дробят.
 

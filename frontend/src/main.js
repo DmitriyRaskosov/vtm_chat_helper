@@ -2,11 +2,10 @@ import { createApp } from 'vue';
 import App from './App.vue';
 import router from './router';
 import { registerUnauthorizedHandler } from './auth';
+import { applyTheme, currentTheme } from './composables/useTheme';
 import './styles.css';
 
-if (!document.body.classList.contains('theme-gothic') && !document.body.classList.contains('theme-blood')) {
-    document.body.classList.add('theme-gothic');
-}
+applyTheme(currentTheme.value);
 
 registerUnauthorizedHandler(() => {
     const current = router.currentRoute.value;
