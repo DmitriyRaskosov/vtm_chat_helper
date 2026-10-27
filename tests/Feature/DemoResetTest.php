@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ChronicleRole;
 use App\Models\CanonClan;
+use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\ChronicleInvitation;
 use App\Models\ChronicleMember;
@@ -12,6 +13,9 @@ use App\Models\Message;
 use App\Models\Scene;
 use App\Models\User;
 use App\Models\WorldEntity;
+use Database\Seeders\CanonClanSeeder;
+use Database\Seeders\CanonDisciplineSeeder;
+use Database\Seeders\CanonSectSeeder;
 use Database\Seeders\ChronicleSeeder;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Hash;
@@ -23,10 +27,22 @@ class DemoResetTest extends TestCase
     private const DEMO_NPC_NAMES = [
         'Абрахам Леру',
         'Август Сент-Клер',
+        'Воробей',
         'Гидеон Эш',
         'Ильзе Фогель',
         'Порижана',
+        'Ханна Векслер',
+        'Юзеф Новак',
     ];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->seed(CanonSectSeeder::class);
+        $this->seed(CanonClanSeeder::class);
+        $this->seed(CanonDisciplineSeeder::class);
+    }
 
     public function test_demo_reset_on_seeded_database_creates_demo_stand(): void
     {
@@ -59,12 +75,29 @@ class DemoResetTest extends TestCase
             ->pluck('canonical_name')
             ->all();
 
-        foreach (self::DEMO_NPC_NAMES as $name) {
-            $this->assertContains($name, $npcNames);
-        }
-
-        $this->assertSame(5, count(array_intersect(self::DEMO_NPC_NAMES, $npcNames)));
+        $this->assertEqualsCanonicalizing(self::DEMO_NPC_NAMES, $npcNames);
         $this->assertSame(0, Message::query()->count());
+    }
+
+    public function test_demo_reset_keeps_oneshot_npc_sheets_and_skips_player(): void
+    {
+        $this->assertSame(0, $this->exitCode('demo:reset'));
+
+        $abrahamSpeech = $this->demoCharacter('Абрахам Леру')->traits()->where('key', 'speech_style')->value('value');
+        $this->assertIsString($abrahamSpeech);
+        $this->assertStringContainsString('экземплярами', $abrahamSpeech);
+
+        $vorobei = $this->demoCharacter('Воробей');
+        $this->assertSame('sabbat', $vorobei->sect->slug);
+        $this->assertSame('gangrel', $vorobei->clan->slug);
+        $this->assertSame(2, (int) $vorobei->disciplines()->whereRelation('discipline', 'slug', 'protean')->value('level'));
+
+        $ilse = $this->demoCharacter('Ильзе Фогель');
+        $this->assertSame(11, $ilse->generation);
+        $this->assertSame('моль комнатная', $ilse->description);
+
+        $this->assertNull($this->demoCharacter('Порижана')->biography->summary);
+        $this->assertNull(WorldEntity::query()->where('canonical_name', 'Рин')->first());
     }
 
     public function test_demo_reset_is_idempotent(): void
@@ -87,7 +120,7 @@ class DemoResetTest extends TestCase
         $this->assertSame(0, $this->exitCode('demo:reset'));
 
         $this->assertSame(1, Chronicle::query()->where('title', 'Demo Chronicle')->count());
-        $this->assertSame(5, WorldEntity::query()->where('entity_type', 'character')->count());
+        $this->assertSame(count(self::DEMO_NPC_NAMES), WorldEntity::query()->where('entity_type', 'character')->count());
         $this->assertSame(1, ChronicleMember::query()->count());
         $this->assertSame(0, ChronicleInvitation::query()->count());
     }
@@ -133,6 +166,13 @@ class DemoResetTest extends TestCase
             'chronicle_members' => ChronicleMember::query()->count(),
             'chronicle_invitations' => ChronicleInvitation::query()->count(),
         ];
+    }
+
+    private function demoCharacter(string $name): Character
+    {
+        return Character::query()
+            ->whereHas('entity', fn ($query) => $query->where('canonical_name', $name))
+            ->firstOrFail();
     }
 
     private function assertDemoAdminMembership(User $admin, Chronicle $chronicle): void
