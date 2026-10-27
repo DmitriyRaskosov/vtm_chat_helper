@@ -1,42 +1,69 @@
 <template>
-    <div class="top">
-        <h1>
-            <ChronicleSwitcher />
-            <RouterLink :to="chatLink" :class="{ 'nav-current': current === 'chat' }">Чат</RouterLink>
-            <span class="nav-sep">·</span>
-            <RouterLink :to="charactersLink" :class="{ 'nav-current': current === 'characters' }">Персонажи</RouterLink>
-            <span class="nav-sep">·</span>
-            <RouterLink to="/chronicles" :class="{ 'nav-current': current === 'chronicles' }">Хроники</RouterLink>
-        </h1>
-        <span class="muted nav-user">
-            <label class="toggle nav-sounds-toggle" title="Звуковые оповещения в чате">
-                <input v-model="soundsMuted" type="checkbox" />
-                Без звуков
-            </label>
-            {{ auth.user.value?.name }}
-            <template v-if="currentChronicleRole === 'storyteller'"> · рассказчик</template>
-            <template v-else-if="currentChronicleRole === 'player'"> · игрок</template>
-            ·
-            <button class="link" type="button" @click="logout">Выйти</button>
-        </span>
-    </div>
+    <nav class="sidebar">
+        <RouterLink :to="chatLink" class="nav-icon" :class="{ active: current === 'chat' }" title="Чат">📖</RouterLink>
+        <RouterLink :to="charactersLink" class="nav-icon" :class="{ active: current === 'characters' }" title="Персонажи">👤</RouterLink>
+        <div class="sidebar-anchor">
+            <button
+                type="button"
+                class="nav-icon nav-icon-btn"
+                :class="{ active: current === 'chronicles' || chroniclesOpen }"
+                title="Хроники"
+                @click="chroniclesOpen = !chroniclesOpen"
+            >
+                🌍
+            </button>
+            <div v-if="chroniclesOpen" class="sidebar-popover">
+                <ChronicleSwitcher />
+                <RouterLink class="sidebar-popover-link" to="/chronicles" @click="chroniclesOpen = false">
+                    Все хроники
+                </RouterLink>
+            </div>
+        </div>
+        <div class="sidebar-spacer"></div>
+        <RouterLink
+            v-if="isStoryteller && activeChronicleId"
+            :to="workshopLink"
+            class="nav-icon"
+            :class="{ active: current === 'workshop' }"
+            title="Мастерская"
+        >
+            ⚙️
+        </RouterLink>
+        <button
+            type="button"
+            class="nav-icon nav-icon-btn"
+            :class="{ active: !soundsMuted }"
+            :title="soundsMuted ? 'Звуки выключены' : 'Звуки включены'"
+            @click="toggleSoundsMuted"
+        >
+            {{ soundsMuted ? '🔕' : '🔔' }}
+        </button>
+        <button
+            type="button"
+            class="nav-icon nav-icon-btn"
+            :title="logoutTitle"
+            @click="logout"
+        >
+            ↪
+        </button>
+    </nav>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import ChronicleSwitcher from './ChronicleSwitcher.vue';
-import { currentChronicleRole, useAuth } from '../../auth';
+import { currentChronicleRole, isStoryteller, useAuth } from '../../auth';
 import { resolveChronicleId, useCurrentChronicle } from '../../composables/useCurrentChronicle';
 import { useSoundSettings } from '../../composables/useSoundSettings';
 
-const { soundsMuted } = useSoundSettings();
+const { soundsMuted, toggleSoundsMuted } = useSoundSettings();
 
 defineProps({
     current: {
         type: String,
         default: null,
-        validator: (value) => value == null || ['chat', 'characters', 'chronicles'].includes(value),
+        validator: (value) => value == null || ['chat', 'characters', 'chronicles', 'workshop'].includes(value),
     },
 });
 
@@ -44,6 +71,7 @@ const auth = useAuth();
 const router = useRouter();
 const route = useRoute();
 const { currentId } = useCurrentChronicle();
+const chroniclesOpen = ref(false);
 
 const activeChronicleId = computed(() => {
     const fromRoute = resolveChronicleId(route.params.chronicleId);
@@ -66,6 +94,21 @@ const charactersLink = computed(() => (
         ? `/c/${activeChronicleId.value}/characters`
         : '/chronicles'
 ));
+
+const workshopLink = computed(() => (
+    activeChronicleId.value
+        ? `/c/${activeChronicleId.value}/workshop`
+        : '/chronicles'
+));
+
+const logoutTitle = computed(() => {
+    const name = auth.user.value?.name ?? '';
+    const role = currentChronicleRole.value === 'storyteller'
+        ? 'рассказчик'
+        : (currentChronicleRole.value === 'player' ? 'игрок' : '');
+
+    return ['Выйти', name, role].filter(Boolean).join(' · ');
+});
 
 async function logout() {
     await auth.logout();

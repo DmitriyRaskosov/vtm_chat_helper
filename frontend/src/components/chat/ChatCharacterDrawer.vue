@@ -19,7 +19,7 @@
         </div>
 
         <div v-if="selectedCharacterId" class="chat-character-drawer-body">
-            <SheetImageSection :character-id="selectedCharacterId" :can-upload="false" />
+            <SheetImageSection :character-id="selectedCharacterId" :can-upload="false" start-open />
             <SheetStateSection :character-id="selectedCharacterId" :can-edit="canEditState" />
         </div>
         <p v-else class="muted">Выберите персонажа.</p>

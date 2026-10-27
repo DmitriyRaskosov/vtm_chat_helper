@@ -151,12 +151,15 @@ function messageClasses(message) {
         return classes;
     }
 
-    const userId = Number(message.user_id);
-    const currentId = props.currentUserId == null ? null : Number(props.currentUserId);
+    if (message.author_character_id) {
+        classes['msg-player'] = true;
+
+        return classes;
+    }
 
     if (isStorytellerAuthor(message)) {
         classes['msg-storyteller'] = true;
-    } else if (currentId !== null && userId === currentId) {
+    } else if (message.mine) {
         classes['msg-player'] = true;
     }
 

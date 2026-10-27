@@ -1,6 +1,8 @@
 <template>
-    <div v-if="sheet">
+    <div class="with-sidebar">
         <AppNav current="characters" />
+        <div class="page-main">
+        <div v-if="sheet">
 
         <p v-if="error" class="error">{{ error }}</p>
 
@@ -57,9 +59,11 @@
             :flash="flash.place"
             @save="savePlace"
         />
+        </div>
+        <p v-else-if="error" class="error">{{ error }}</p>
+        <p v-else class="muted">Загрузка…</p>
+        </div>
     </div>
-    <p v-else-if="error" class="error">{{ error }}</p>
-    <p v-else class="muted">Загрузка…</p>
 </template>
 
 <script setup>

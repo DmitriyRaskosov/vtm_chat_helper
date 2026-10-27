@@ -1,6 +1,7 @@
 <template>
     <section class="card sheet-image-section">
-        <h2>Чарлист</h2>
+        <details ref="detailsEl">
+        <summary>Чарлист</summary>
 
         <p v-if="loading" class="muted">Загрузка изображения…</p>
         <p v-if="error" class="error">{{ error }}</p>
@@ -38,11 +39,12 @@
                 <img :src="imageUrl" alt="Чарлист персонажа" class="sheet-image-zoom-img" />
             </div>
         </div>
+        </details>
     </section>
 </template>
 
 <script setup>
-import { ref, toRef } from 'vue';
+import { onMounted, ref, toRef } from 'vue';
 import { useCharacterSheetImage } from '../../composables/useCharacterSheetImage';
 
 const props = defineProps({
@@ -54,6 +56,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    startOpen: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const characterId = toRef(props, 'characterId');
@@ -62,6 +68,13 @@ const { imageUrl, loading, error, upload } = useCharacterSheetImage(characterId)
 const uploading = ref(false);
 const zoomOpen = ref(false);
 const fileInput = ref(null);
+const detailsEl = ref(null);
+
+onMounted(() => {
+    if (props.startOpen && detailsEl.value) {
+        detailsEl.value.open = true;
+    }
+});
 
 async function onFileSelected(event) {
     const input = event.target;

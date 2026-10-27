@@ -19,6 +19,7 @@ export function useChatMessages({
     getIcLog,
     getOocLog,
     myCharacterId,
+    speakerCharacterId,
     chronicleId,
     auth,
     isStoryteller,
@@ -172,8 +173,13 @@ export function useChatMessages({
             is_ooc: isOoc.value,
         };
     
-        if (myCharacterId?.value) {
-            payload.character_id = myCharacterId.value;
+        const chosenSpeaker = speakerCharacterId?.value;
+        const characterId = chosenSpeaker != null && chosenSpeaker !== ''
+            ? chosenSpeaker
+            : myCharacterId?.value;
+
+        if (characterId) {
+            payload.character_id = characterId;
         }
     
         let path;

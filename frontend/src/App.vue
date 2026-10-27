@@ -1,5 +1,5 @@
 <template>
-    <div class="wrap" :class="{ wide: isWide }">
+    <div class="wrap" :class="wrapClass">
         <RouterView />
         <div v-if="showScrollButtons" class="scroll-float">
             <button type="button" class="secondary" @click="scrollTop">Наверх</button>
@@ -12,11 +12,18 @@
 import { computed } from 'vue';
 import { RouterView, useRoute } from 'vue-router';
 const route = useRoute();
-const isWide = computed(() => (
-    route.name === 'chronicle-chat'
-    || route.name === 'characters'
-    || route.name === 'character'
-));
+const shellRoutes = [
+    'chronicle-chat',
+    'characters',
+    'character',
+    'character-diary',
+    'chronicles',
+    'workshop',
+];
+const wrapClass = computed(() => ({
+    'app-frame': shellRoutes.includes(route.name),
+    'app-frame-chat': route.name === 'chronicle-chat',
+}));
 
 const showScrollButtons = computed(() => (
     route.name === 'characters'

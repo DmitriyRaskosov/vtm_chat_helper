@@ -1,64 +1,78 @@
 <template>
-    <form
-        class="composer"
-        :class="{
-            'composer-ic': !isOoc,
-            'composer-ooc': isOoc,
-            'composer-your-turn': isMyTurn,
-        }"
-        @submit.prevent="emit('send')"
-    >
-        <div v-if="isMyTurn" class="composer-turn-banner">
-            <span class="composer-turn-label">ВАШ ХОД</span>
-            <button
-                type="button"
-                class="composer-turn-done"
-                :disabled="turnReleasing"
-                @click="emit('end-turn')"
-            >
-                {{ turnReleasing ? '…' : 'Готово' }}
-            </button>
-        </div>
-        <div v-if="myCharacterName" class="composer-as">
-            Вы пишете за: <strong>{{ myCharacterName }}</strong>
-        </div>
-        <div class="composer-body">
-            <textarea
-                v-model="body"
-                maxlength="8000"
-                required
-                :disabled="!canPost"
-                :placeholder="isOoc ? 'Вопрос мастеру, мета-обсуждение…' : placeholder"
-                @keydown="onTextareaKeydown"
-            ></textarea>
-        </div>
+    <form class="composer-wrapper" @submit.prevent="emit('send')">
+        <div class="composer-top">
+            <div class="mode-toggle">
+                <button
+                    type="button"
+                    class="mode-btn"
+                    :class="{ active: !isOoc, ic: !isOoc }"
+                    :disabled="!canPost"
+                    @click="isOoc = false"
+                >
+                    Реплика
+                </button>
+                <button
+                    type="button"
+                    class="mode-btn"
+                    :class="{ active: isOoc, ooc: isOoc }"
+                    :disabled="!canPost"
+                    @click="isOoc = true"
+                >
+                    Обсуждение
+                </button>
+            </div>
 
-        <div class="composer-actions">
-            <button
-                type="button"
-                class="composer-label"
-                :class="{
-                    'composer-label-ic': !isOoc,
-                    'composer-label-ooc': isOoc,
-                }"
-                :disabled="!canPost"
-                @click="isOoc = !isOoc"
-            >
-                {{ isOoc ? 'Out Of Character' : 'In Character' }}
-            </button>
+            <label v-if="isStoryteller" class="npc-selector">
+                <span class="npc-selector-label">Писать от лица:</span>
+                <select
+                    :value="speakerCharacterId ?? ''"
+                    :disabled="!canPost || !npcParticipants.length"
+                    @change="onSpeakerChange"
+                >
+                    <option v-if="!npcParticipants.length" value="">Нет NPC</option>
+                    <option
+                        v-for="row in npcParticipants"
+                        :key="row.character_id"
+                        :value="row.character_id"
+                    >
+                        {{ row.character_name }} ({{ characterTypeLabel(row.character_type) }})
+                    </option>
+                </select>
+            </label>
+            <p v-else-if="myCharacterName" class="composer-as">
+                Пишете за: <strong>{{ myCharacterName }}</strong>
+            </p>
 
             <ChatToolsToolbar
                 :is-storyteller="isStoryteller"
                 :my-character-id="myCharacterId"
             />
 
-            <button type="submit" class="composer-send" :disabled="!canPost">Отправить</button>
+            <label class="toggle composer-deleted-toggle">
+                <input v-model="showDeleted" type="checkbox" />
+                Удалённые
+            </label>
+        </div>
+
+        <div class="composer-input-row">
+            <textarea
+                v-model="body"
+                class="input-box"
+                maxlength="8000"
+                required
+                :disabled="!canPost"
+                :placeholder="fieldPlaceholder"
+                @keydown="onTextareaKeydown"
+            ></textarea>
+            <button type="submit" class="btn-send" :disabled="!canPost">Отправить</button>
         </div>
     </form>
 </template>
 
 <script setup>
+import { computed } from 'vue';
 import ChatToolsToolbar from './ChatToolsToolbar.vue';
+import { characterTypeLabel } from '../../utils/labels';
 
 const props = defineProps({
     canPost: { type: Boolean, required: true },
@@ -66,14 +80,34 @@ const props = defineProps({
     myCharacterName: { type: String, default: null },
     isStoryteller: { type: Boolean, required: true },
     myCharacterId: { type: [Number, String], default: null },
-    isMyTurn: { type: Boolean, default: false },
-    turnReleasing: { type: Boolean, default: false },
+    participants: { type: Array, default: () => [] },
 });
 
 const body = defineModel('body', { type: String });
 const isOoc = defineModel('isOoc', { type: Boolean, default: false });
+const showDeleted = defineModel('showDeleted', { type: Boolean, default: false });
+const speakerCharacterId = defineModel('speakerCharacterId');
 
-const emit = defineEmits(['send', 'end-turn']);
+const emit = defineEmits(['send']);
+
+const npcParticipants = computed(() => props.participants.filter(
+    (row) => row.character_type === 'npc',
+));
+
+const fieldPlaceholder = computed(() => {
+    if (!props.canPost) {
+        return props.placeholder;
+    }
+
+    return isOoc.value
+        ? 'Вопрос мастеру, мета-обсуждение...'
+        : 'Ваши слова или действия...';
+});
+
+function onSpeakerChange(event) {
+    const value = Number(event.target.value);
+    speakerCharacterId.value = Number.isFinite(value) && value > 0 ? value : null;
+}
 
 function onTextareaKeydown(event) {
     if (event.key !== 'Enter' || event.shiftKey) {

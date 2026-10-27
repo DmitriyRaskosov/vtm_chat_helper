@@ -1,240 +1,332 @@
 <template>
-    <div>
+    <div class="gothic-layout">
         <AppNav current="chat" />
 
-        <SceneToolbar
-            :game-session="gameSession"
-            :is-storyteller="isStoryteller"
-            v-model:selected-scene-id="selectedSceneId"
-            :scenes="scenes"
-            :selected-scene="selectedScene"
-            v-model:new-scene-title="newSceneTitle"
-            :scene-loading="sceneLoading"
-            :scene-error="sceneError"
-            :can-edit-participants="canEditParticipants"
-            :current-participants="currentParticipants"
-            :available-to-add="availableToAdd"
-            v-model:add-character-id="addCharacterId"
-            :participant-busy="participantBusy"
-            :participant-error="participantError"
-            :participant-flash="participantFlash"
-            v-model:participant-system-message="participantSystemMessage"
-            v-model:scene-situation="sceneSituation"
-            v-model:environment-details="environmentDetails"
-            :scene-situation-saving="sceneSituationSaving"
-            :scene-situation-error="sceneSituationError"
-            :chronicle-id="chronicleId"
-            :scene-context-revision="sceneSituationRevision"
-            v-model:new-game-session-title="newGameSessionTitle"
-            :active-character-id="activeCharacterId"
-            :turn-busy="participantBusy"
-            @switch="switchScene"
-            @create-scene="onCreateScene"
-            @activate="activateScene"
-            @close="closeScene"
-            @add="onAddToScene"
-            @remove="onRemoveFromScene"
-            @create-session="onCreateGameSession"
-            @save-situation="saveSceneSituation"
-            @location-applied="onLocationApplied"
-            @pass-turn="passTurn"
-        />
-
-        <div class="stage">
-            <div class="chat-column">
-                <div ref="splitContainer" class="chat-split-container">
-                    <section class="chat-ic-pane">
-                        <h2 class="chat-pane-title">Сюжет</h2>
-                        <ChatLog
-                            ref="icChatLog"
-                            mode="ic"
-                            v-model:auto-scroll="isIcAutoScroll"
-                            :messages="icMessages"
-                            :is-storyteller="isStoryteller"
-                            :current-user-id="auth.user?.id ?? null"
-                            :storyteller-user-ids="storytellerUserIds"
-                            :is-typing="isTyping && !isOoc"
-                            :typing-label="myCharacterName ?? auth.user?.name ?? ''"
-                            @toggle-ooc="toggleOoc"
-                            @delete="deleteMessage"
-                            @restore="restoreMessage"
-                            @edit="onEditMessage"
-                        />
-                    </section>
-                    <section
-                        class="chat-ooc-pane"
-                        :style="oocPaneStyle"
-                        @mousedown="onOocPaneFocus"
-                    >
-                        <div
-                            class="chat-split-resizer"
-                            role="separator"
-                            aria-orientation="horizontal"
-                            aria-label="Изменить высоту панели обсуждения"
-                            @mousedown.prevent.stop="onSplitResizeStart"
-                        />
-                        <h2 class="chat-pane-title">Обсуждение</h2>
-                        <ChatLog
-                            ref="oocChatLog"
-                            mode="ooc"
-                            v-model:auto-scroll="isOocAutoScroll"
-                            :messages="oocMessages"
-                            :is-storyteller="isStoryteller"
-                            :current-user-id="auth.user?.id ?? null"
-                            :storyteller-user-ids="storytellerUserIds"
-                            :is-typing="isTyping && isOoc"
-                            :typing-label="myCharacterName ?? auth.user?.name ?? ''"
-                            @toggle-ooc="toggleOoc"
-                            @delete="deleteMessage"
-                            @restore="restoreMessage"
-                            @edit="onEditMessage"
-                        />
-                    </section>
-                </div>
-
-                <div class="chat-composer-stack">
-                    <div
-                        v-if="isDiceOpen || isNotesOpen"
-                        class="chat-panel-popovers"
-                    >
-                        <DiceRoller
-                            v-if="isDiceOpen"
-                            :is-storyteller="isStoryteller"
-                            :my-character-id="myCharacterId"
-                            :character-options="diceCharacterOptions"
-                            :rolling="rolling"
-                            :roll-error="rollError"
-                            :last-result="lastResult"
-                            :can-roll="canPost"
-                            @close="isDiceOpen = false"
-                            @roll="onDiceRoll"
-                            @clear-result="clearLastResult"
-                        />
-                        <ChatNotesPanel
-                            v-if="isNotesOpen"
-                            v-model:content="notesContent"
-                            :loading="notesLoading"
-                            :saving="notesSaving"
-                            :error="notesError"
-                            @close="isNotesOpen = false"
-                            @save="saveNotes"
-                        />
+        <main class="main-stage">
+            <header class="top-bar">
+                <div class="scene-info">
+                    <div>
+                        <div class="scene-title">{{ selectedScene?.title ?? 'Сцена' }}</div>
+                        <div v-if="gameSession" class="loc-name">{{ gameSession.title }}</div>
                     </div>
-                    <ChatToolsDock>
-                        <template #bar>
-                            <div class="chat-tools-dock-actions">
-                                <label class="toggle">
-                                    <input v-model="showDeleted" type="checkbox" />
-                                    Показать удалённые
-                                </label>
-                            </div>
-                            <ChatComposer
-                                v-model:body="body"
-                                v-model:is-ooc="isOoc"
-                                :can-post="canPost"
-                                :placeholder="composerPlaceholder"
-                                :my-character-name="myCharacterName"
-                                :is-storyteller="isStoryteller"
-                                :my-character-id="myCharacterId"
-                                :is-my-turn="isMyTurn"
-                                :turn-releasing="participantBusy"
-                                @send="send"
-                                @end-turn="releaseMyTurn"
-                            />
-                        </template>
-                    </ChatToolsDock>
+                    <select
+                        v-if="scenes.length"
+                        class="scene-switch"
+                        v-model.number="selectedSceneId"
+                        @change="switchScene"
+                    >
+                        <option v-for="scene in scenes" :key="scene.id" :value="scene.id">
+                            {{ scene.position }}. {{ scene.title }} · {{ sceneStatusLabel(scene.status) }}
+                        </option>
+                    </select>
                 </div>
+                <TurnBadge
+                    v-if="isMyTurn && !turnBadgeDismissed"
+                    :character-name="myCharacterName ?? ''"
+                    :busy="participantBusy"
+                    @close="turnBadgeDismissed = true"
+                    @end-turn="releaseMyTurn"
+                />
+                <button
+                    v-else-if="isMyTurn && turnBadgeDismissed"
+                    type="button"
+                    class="turn-badge"
+                    @click="turnBadgeDismissed = false"
+                >
+                    ВАШ ХОД
+                </button>
+            </header>
+
+            <LocationBanner
+                v-if="gameSession && selectedScene"
+                :image-url="locationImageUrl"
+                :situation="sceneSituation"
+                :is-storyteller="isStoryteller"
+                @zoom="locationZoomOpen = true"
+                @open-settings="sceneSettingsOpen = true"
+            />
+
+            <div v-if="gameSession" ref="splitContainer" class="chat-container chat-split-container">
+                <section class="chat-ic-pane">
+                    <h2 class="chat-pane-title">Сюжет</h2>
+                    <ChatLog
+                        ref="icChatLog"
+                        mode="ic"
+                        v-model:auto-scroll="isIcAutoScroll"
+                        :messages="icMessages"
+                        :is-storyteller="isStoryteller"
+                        :current-user-id="auth.user.value?.id ?? null"
+                        :storyteller-user-ids="storytellerUserIds"
+                        :is-typing="isTyping && !isOoc"
+                        :typing-label="myCharacterName ?? auth.user.value?.name ?? ''"
+                        @toggle-ooc="toggleOoc"
+                        @delete="deleteMessage"
+                        @restore="restoreMessage"
+                        @edit="onEditMessage"
+                    />
+                </section>
+                <div
+                    class="chat-split-resizer"
+                    role="separator"
+                    aria-orientation="vertical"
+                    aria-label="Изменить ширину панели обсуждения"
+                    @mousedown.prevent.stop="onSplitResizeStart"
+                />
+                <section
+                    class="chat-ooc-pane"
+                    :style="oocPaneStyle"
+                    @mousedown="onOocPaneFocus"
+                >
+                    <h2 class="chat-pane-title">Обсуждение</h2>
+                    <ChatLog
+                        ref="oocChatLog"
+                        mode="ooc"
+                        v-model:auto-scroll="isOocAutoScroll"
+                        :messages="oocMessages"
+                        :is-storyteller="isStoryteller"
+                        :current-user-id="auth.user.value?.id ?? null"
+                        :storyteller-user-ids="storytellerUserIds"
+                        :is-typing="isTyping && isOoc"
+                        :typing-label="myCharacterName ?? auth.user.value?.name ?? ''"
+                        @toggle-ooc="toggleOoc"
+                        @delete="deleteMessage"
+                        @restore="restoreMessage"
+                        @edit="onEditMessage"
+                    />
+                </section>
             </div>
 
-            <aside class="side-panel">
-                <BattleLog
-                    :logs="logs"
-                    :log-error="logError"
-                    :selected-scene-id="selectedSceneId"
-                    :chronicle-id="chronicleId"
-                    :is-storyteller="isStoryteller"
-                />
-
-                <StorytellerCopilotPanel
-                    v-if="isStoryteller"
-                    ref="copilotPanel"
-                    v-model:selected-npc-id="selectedNpcId"
-                    :scene-npcs="sceneNpcs"
-                    :selected-scene-id="selectedSceneId"
-                    :chronicle-id="chronicleId"
+            <footer v-if="gameSession" class="composer-anchor">
+                <ChatComposer
+                    v-model:body="body"
+                    v-model:is-ooc="isOoc"
+                    v-model:show-deleted="showDeleted"
+                    v-model:speaker-character-id="speakerCharacterId"
                     :can-post="canPost"
-                    @sent="onNpcSent"
+                    :placeholder="composerPlaceholder"
+                    :my-character-name="myCharacterName"
+                    :is-storyteller="isStoryteller"
+                    :my-character-id="myCharacterId"
+                    :participants="currentParticipants"
+                    @send="send"
                 />
-            </aside>
-        </div>
+            </footer>
 
-        <ChatCharacterDrawer
-            v-if="isCharacterOpen"
+            <FloatingWindow
+                v-if="isDiceOpen"
+                title="Кубы"
+                :initial-left="96"
+                :initial-top="120"
+                @close="isDiceOpen = false"
+            >
+                <DiceRoller
+                    :is-storyteller="isStoryteller"
+                    :my-character-id="myCharacterId"
+                    :character-options="diceCharacterOptions"
+                    :rolling="rolling"
+                    :roll-error="rollError"
+                    :last-result="lastResult"
+                    :can-roll="canPost"
+                    @close="isDiceOpen = false"
+                    @roll="onDiceRoll"
+                    @clear-result="clearLastResult"
+                />
+            </FloatingWindow>
+            <FloatingWindow
+                v-if="isNotesOpen"
+                title="Заметки"
+                :initial-left="440"
+                :initial-top="140"
+                @close="isNotesOpen = false"
+            >
+                <ChatNotesPanel
+                    v-model:content="notesContent"
+                    :loading="notesLoading"
+                    :saving="notesSaving"
+                    :error="notesError"
+                    @close="isNotesOpen = false"
+                    @save="saveNotes"
+                />
+            </FloatingWindow>
+            <FloatingWindow
+                v-if="isCharacterOpen"
+                title="Чарлист"
+                :initial-left="240"
+                :initial-top="100"
+                @close="isCharacterOpen = false"
+            >
+                <ChatCharacterDrawer
+                    :is-storyteller="isStoryteller"
+                    :participants="drawerParticipants"
+                    :selected-character-id="drawerCharacterId"
+                    :my-character-id="myCharacterId"
+                    @close="isCharacterOpen = false"
+                    @select-character="drawerCharacterId = $event"
+                />
+            </FloatingWindow>
+            <FloatingWindow
+                v-if="isDiaryOpen && isStoryteller"
+                title="Дневник"
+                :initial-left="180"
+                :initial-top="80"
+                @close="isDiaryOpen = false"
+            >
+                <DiaryPanel v-if="diaryCharacterId" :character-id="diaryCharacterId" />
+                <p v-else class="muted">Выберите NPC в списке справа или в поле «Писать от лица».</p>
+            </FloatingWindow>
+
+            <Teleport to="body" :disabled="!gameSession">
+            <div
+                v-if="!gameSession || sceneSettingsOpen"
+                class="modal-overlay"
+                :class="{ 'modal-overlay-static': !gameSession }"
+                @click.self="sceneSettingsOpen = false"
+            >
+                <div class="modal-content" :class="{ 'modal-content-static': !gameSession }">
+                    <header v-if="gameSession" class="modal-header">
+                        <h2>Настройки локации</h2>
+                        <button type="button" class="btn-sm" @click="sceneSettingsOpen = false">Закрыть</button>
+                    </header>
+                    <SceneToolbar
+                        :game-session="gameSession"
+                        :is-storyteller="isStoryteller"
+                        v-model:selected-scene-id="selectedSceneId"
+                        :scenes="scenes"
+                        :selected-scene="selectedScene"
+                        v-model:new-scene-title="newSceneTitle"
+                        :scene-loading="sceneLoading"
+                        :scene-error="sceneError"
+                        :can-edit-participants="canEditParticipants"
+                        :current-participants="currentParticipants"
+                        :available-to-add="availableToAdd"
+                        v-model:add-character-id="addCharacterId"
+                        :participant-busy="participantBusy"
+                        :participant-error="participantError"
+                        :participant-flash="participantFlash"
+                        v-model:participant-system-message="participantSystemMessage"
+                        v-model:scene-situation="sceneSituation"
+                        v-model:environment-details="environmentDetails"
+                        :scene-situation-saving="sceneSituationSaving"
+                        :scene-situation-error="sceneSituationError"
+                        :chronicle-id="chronicleId"
+                        :scene-context-revision="sceneSituationRevision"
+                        v-model:new-game-session-title="newGameSessionTitle"
+                        :active-character-id="activeCharacterId"
+                        :turn-busy="participantBusy"
+                        :location-image-url="locationImageUrl"
+                        :location-image-loading="locationImageLoading"
+                        :location-image-error="locationImageError"
+                        @switch="switchScene"
+                        @create-scene="onCreateScene"
+                        @activate="activateScene"
+                        @close="closeScene"
+                        @add="onAddToScene"
+                        @remove="onRemoveFromScene"
+                        @create-session="onCreateGameSession"
+                        @save-situation="saveSceneSituation"
+                        @location-applied="onLocationApplied"
+                        @pass-turn="passTurn"
+                        @upload-location-image="onUploadLocationImage"
+                        @zoom-location="locationZoomOpen = true"
+                    />
+                </div>
+            </div>
+            </Teleport>
+
+            <Teleport to="body">
+                <div
+                    v-if="locationZoomOpen && locationImageUrl"
+                    class="modal-overlay"
+                    @click.self="locationZoomOpen = false"
+                >
+                    <button type="button" class="modal-close" @click="locationZoomOpen = false">×</button>
+                    <img :src="locationImageUrl" alt="Фото локации" class="location-zoom-img" />
+                </div>
+            </Teleport>
+        </main>
+
+        <RightSidebar
+            ref="rightSidebar"
+            v-model:selected-npc-id="selectedNpcId"
+            :participants="currentParticipants"
             :is-storyteller="isStoryteller"
-            :participants="drawerParticipants"
-            :selected-character-id="drawerCharacterId"
-            :my-character-id="myCharacterId"
-            @close="isCharacterOpen = false"
-            @select-character="drawerCharacterId = $event"
+            :scene-npcs="sceneNpcs"
+            :selected-scene-id="selectedSceneId"
+            :chronicle-id="chronicleId"
+            :can-post="canPost"
+            :logs="logs"
+            :log-error="logError"
+            @select-participant="onSelectParticipant"
+            @npc-sent="onNpcSent"
         />
     </div>
 </template>
+
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import { isStoryteller, useAuth } from '../auth';
 import AppNav from '../components/layout/AppNav.vue';
-import BattleLog from '../components/chat/BattleLog.vue';
 import ChatCharacterDrawer from '../components/chat/ChatCharacterDrawer.vue';
 import ChatComposer from '../components/chat/ChatComposer.vue';
 import ChatLog from '../components/chat/ChatLog.vue';
 import ChatNotesPanel from '../components/chat/ChatNotesPanel.vue';
+import DiaryPanel from '../components/chat/DiaryPanel.vue';
 import DiceRoller from '../components/chat/DiceRoller.vue';
+import FloatingWindow from '../components/chat/FloatingWindow.vue';
+import LocationBanner from '../components/chat/LocationBanner.vue';
+import RightSidebar from '../components/chat/RightSidebar.vue';
+import TurnBadge from '../components/chat/TurnBadge.vue';
 import { playPlayerTurnSound } from '../utils/chatMessageSound';
 import SceneToolbar from '../components/chat/SceneToolbar.vue';
-import StorytellerCopilotPanel from '../components/chat/StorytellerCopilotPanel.vue';
 import { useChatMessages } from '../composables/useChatMessages';
 import { useChatPanels } from '../composables/useChatPanels';
 import { useDiceRoll, useSceneBattleLog } from '../composables/useSceneBattleLog';
-import { useSceneSession } from '../composables/useSceneSession';
+import { sceneStatusLabel, useSceneSession } from '../composables/useSceneSession';
+import { useSceneContextImage } from '../composables/useSceneContextImage';
 import { useUserNotes } from '../composables/useUserNotes';
-import ChatToolsDock from '../components/chat/ChatToolsDock.vue';
 
 const auth = useAuth();
 const route = useRoute();
 const chronicleId = computed(() => route.params.chronicleId);
-const OOC_PANE_HEIGHT_KEY = 'chat-ooc-pane-height';
-const DEFAULT_OOC_PANE_HEIGHT = 180;
-const MIN_OOC_PANE_HEIGHT = 72;
-const MIN_IC_PANE_PEEK = 2.5;
+const OOC_PANE_WIDTH_KEY = 'chat-ooc-pane-width';
+const DEFAULT_OOC_PANE_WIDTH = 400;
+const MIN_OOC_PANE_WIDTH = 220;
+const MIN_IC_PANE_WIDTH = 280;
 
 const icChatLog = ref(null);
 const oocChatLog = ref(null);
 const splitContainer = ref(null);
+const rightSidebar = ref(null);
+const speakerCharacterId = ref(null);
+const sceneSettingsOpen = ref(false);
+const locationZoomOpen = ref(false);
+const turnBadgeDismissed = ref(false);
 
-function readOocPaneHeight() {
-    const raw = localStorage.getItem(OOC_PANE_HEIGHT_KEY);
+function readOocPaneWidth() {
+    const raw = localStorage.getItem(OOC_PANE_WIDTH_KEY);
     const parsed = raw ? Number.parseInt(raw, 10) : Number.NaN;
 
-    if (Number.isFinite(parsed) && parsed >= MIN_OOC_PANE_HEIGHT) {
+    if (Number.isFinite(parsed) && parsed >= MIN_OOC_PANE_WIDTH) {
         return parsed;
     }
 
-    return DEFAULT_OOC_PANE_HEIGHT;
+    return DEFAULT_OOC_PANE_WIDTH;
 }
 
-const oocPaneHeight = ref(readOocPaneHeight());
+const oocPaneWidth = ref(readOocPaneWidth());
 
 const oocPaneStyle = computed(() => ({
-    height: `${oocPaneHeight.value}px`,
+    width: `${oocPaneWidth.value}px`,
+    flex: `0 0 ${oocPaneWidth.value}px`,
 }));
-const copilotPanel = ref(null);
 const drawerCharacterId = ref(null);
 const {
     isDiceOpen,
     isNotesOpen,
     isCharacterOpen,
+    isDiaryOpen,
     closeAll,
 } = useChatPanels();
 
@@ -307,6 +399,7 @@ const {
     getIcLog: () => icChatLog.value,
     getOocLog: () => oocChatLog.value,
     myCharacterId,
+    speakerCharacterId,
     chronicleId,
     auth,
     isStoryteller,
@@ -353,8 +446,8 @@ const composerPlaceholder = computed(() => {
         return 'Сцена доступна только для чтения';
     }
     return isOoc.value
-        ? 'Вопрос мастеру, уточнение, мета-обсуждение…'
-        : 'Реплика в сцене…';
+        ? 'Вопрос мастеру, мета-обсуждение...'
+        : 'Ваши слова или действия...';
 });
 
 const myCharacterName = computed(() => {
@@ -403,14 +496,40 @@ watch(isNotesOpen, (open, wasOpen) => {
 });
 
 watch(isCharacterOpen, (open) => {
-    if (open) {
+    if (open && drawerCharacterId.value == null) {
         initDrawerCharacter();
     }
 });
 
 let turnSoundReady = false;
 
+const {
+    imageUrl: locationImageUrl,
+    loading: locationImageLoading,
+    error: locationImageError,
+    upload: uploadLocationImage,
+    load: reloadSceneImage,
+} = useSceneContextImage(selectedSceneId);
+
+watch([isStoryteller, currentParticipants], () => {
+    if (!isStoryteller.value) {
+        speakerCharacterId.value = null;
+        return;
+    }
+
+    const rows = currentParticipants.value.filter((row) => row.character_type === 'npc');
+    const stillThere = rows.some(
+        (row) => Number(row.character_id) === Number(speakerCharacterId.value),
+    );
+
+    if (!stillThere) {
+        speakerCharacterId.value = rows[0]?.character_id ?? null;
+    }
+});
+
 watch(activeCharacterId, (characterId, previousId) => {
+    turnBadgeDismissed.value = false;
+
     if (!turnSoundReady) {
         return;
     }
@@ -432,7 +551,20 @@ let timer;
 let polling = false;
 
 function resetCopilotDrafts() {
-    copilotPanel.value?.resetDrafts();
+    rightSidebar.value?.resetDrafts();
+}
+
+function onSelectParticipant(characterId) {
+    drawerCharacterId.value = characterId;
+    isCharacterOpen.value = true;
+}
+
+async function onUploadLocationImage(file) {
+    if (selectedSceneId.value == null) {
+        return;
+    }
+
+    await uploadLocationImage(selectedSceneId.value, file);
 }
 
 async function switchScene() {
@@ -495,8 +627,12 @@ async function poll() {
     }
 }
 
-function onLocationApplied(context) {
+async function onLocationApplied(context) {
     sceneSituationRevision.value = Number(context?.revision ?? sceneSituationRevision.value);
+
+    if (selectedSceneId.value != null) {
+        await reloadSceneImage(selectedSceneId.value);
+    }
 }
 
 async function onAddToScene() {
@@ -513,13 +649,25 @@ async function onEditMessage({ message, body }) {
     await editMessage(message, body);
 }
 
-function clampOocPaneHeight(height, containerHeight) {
-    const maxHeight = Math.max(
-        MIN_OOC_PANE_HEIGHT,
-        containerHeight - MIN_IC_PANE_PEEK * 16,
+const diaryCharacterId = computed(() => {
+    const selected = currentParticipants.value.find(
+        (row) => Number(row.character_id) === Number(drawerCharacterId.value),
     );
 
-    return Math.min(maxHeight, Math.max(MIN_OOC_PANE_HEIGHT, height));
+    if (selected?.character_type === 'npc') {
+        return selected.character_id;
+    }
+
+    return speakerCharacterId.value;
+});
+
+function clampOocPaneWidth(width, containerWidth) {
+    const maxWidth = Math.max(
+        MIN_OOC_PANE_WIDTH,
+        containerWidth - MIN_IC_PANE_WIDTH,
+    );
+
+    return Math.min(maxWidth, Math.max(MIN_OOC_PANE_WIDTH, width));
 }
 
 function onSplitResizeStart(event) {
@@ -528,17 +676,17 @@ function onSplitResizeStart(event) {
         return;
     }
 
-    const containerHeight = container.getBoundingClientRect().height;
-    const startY = event.clientY;
-    const startHeight = oocPaneHeight.value;
+    const containerWidth = container.getBoundingClientRect().width;
+    const startX = event.clientX;
+    const startWidth = oocPaneWidth.value;
 
     function onMove(moveEvent) {
-        const delta = startY - moveEvent.clientY;
-        oocPaneHeight.value = clampOocPaneHeight(startHeight + delta, containerHeight);
+        const delta = startX - moveEvent.clientX;
+        oocPaneWidth.value = clampOocPaneWidth(startWidth + delta, containerWidth);
     }
 
     function onUp() {
-        localStorage.setItem(OOC_PANE_HEIGHT_KEY, String(oocPaneHeight.value));
+        localStorage.setItem(OOC_PANE_WIDTH_KEY, String(oocPaneWidth.value));
         document.removeEventListener('mousemove', onMove);
         document.removeEventListener('mouseup', onUp);
         document.body.classList.remove('chat-split-resizing');
@@ -587,8 +735,8 @@ onMounted(async () => {
     timer = setInterval(poll, 3000);
 
     if (splitContainer.value) {
-        const containerHeight = splitContainer.value.getBoundingClientRect().height;
-        oocPaneHeight.value = clampOocPaneHeight(oocPaneHeight.value, containerHeight);
+        const containerWidth = splitContainer.value.getBoundingClientRect().width;
+        oocPaneWidth.value = clampOocPaneWidth(oocPaneWidth.value, containerWidth);
     }
 });
 

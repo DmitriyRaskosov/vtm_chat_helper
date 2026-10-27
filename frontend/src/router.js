@@ -9,6 +9,7 @@ import CharacterSheetView from './views/CharacterSheetView.vue';
 import DiaryView from './views/DiaryView.vue';
 import ChronicleListView from './views/ChronicleListView.vue';
 import InvitationAcceptView from './views/InvitationAcceptView.vue';
+import WorkshopView from './views/WorkshopView.vue';
 
 function legacyChronicleRedirect(suffix) {
     return resolveChroniclePath(suffix);
@@ -45,6 +46,12 @@ const router = createRouter({
             meta: { auth: true, storyteller: true },
         },
         { path: '/chronicles', name: 'chronicles', component: ChronicleListView, meta: { auth: true } },
+        {
+            path: '/c/:chronicleId/workshop',
+            name: 'workshop',
+            component: WorkshopView,
+            meta: { auth: true, storyteller: true },
+        },
         {
             path: '/invitations/:token',
             name: 'invitation',

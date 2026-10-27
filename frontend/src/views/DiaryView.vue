@@ -1,6 +1,7 @@
 <template>
-    <div>
+    <div class="with-sidebar">
         <AppNav current="characters" />
+        <div class="page-main">
 
         <p v-if="error" class="error">{{ error }}</p>
 
@@ -83,6 +84,7 @@
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     </div>
 </template>

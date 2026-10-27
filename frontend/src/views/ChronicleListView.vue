@@ -1,6 +1,7 @@
 <template>
-    <div>
+    <div class="with-sidebar">
         <AppNav current="chronicles" />
+        <div class="page-main">
 
         <p v-if="loading" class="muted">Загрузка хроник…</p>
         <p v-if="error" class="error">{{ error }}</p>
@@ -58,6 +59,7 @@
             :chronicle="openInvitationChronicle"
             @close="openInvitationChronicleId = null"
         />
+        </div>
     </div>
 </template>
 

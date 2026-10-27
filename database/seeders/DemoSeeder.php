@@ -820,7 +820,7 @@ Malört — пьёт демонстративно. Часть её образа:
                     'key' => $trait[0],
                     'label' => $trait[1],
                     'value' => $trait[2],
-                    'sort_order' => $trait[3] ?? ($i * 10),
+                    'sort_order' => array_key_exists(3, $trait) ? $trait[3] : $i * 10,
                 ]);
             }
 

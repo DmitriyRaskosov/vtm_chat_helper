@@ -7,7 +7,7 @@
             title="Бросок кубиков"
             @click="toggleDice"
         >
-            🎲 Кубики
+            🎲 Кубы
         </button>
         <button
             type="button"
@@ -26,7 +26,17 @@
             :title="characterSheetTitle"
             @click="onCharacterClick"
         >
-            📋 {{ characterSheetTitle }}
+            📋 Чарлист
+        </button>
+        <button
+            v-if="isStoryteller"
+            type="button"
+            class="secondary chat-tools-toolbar-btn"
+            :class="{ active: isDiaryOpen }"
+            title="Дневник NPC"
+            @click="toggleDiary"
+        >
+            📖 Дневник
         </button>
     </div>
 </template>
@@ -44,9 +54,11 @@ const {
     isDiceOpen,
     isNotesOpen,
     isCharacterOpen,
+    isDiaryOpen,
     toggleDice,
     toggleNotes,
     toggleCharacter,
+    toggleDiary,
 } = useChatPanels();
 
 const characterSheetEnabled = computed(() => (

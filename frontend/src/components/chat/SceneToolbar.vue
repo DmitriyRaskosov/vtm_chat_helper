@@ -28,7 +28,7 @@
                 type="button"
                 class="scene-location-thumb-btn"
                 title="Открыть фото локации"
-                @click="locationZoomOpen = true"
+                @click="emit('zoom-location')"
             >
                 <img :src="locationImageUrl" alt="Фото локации" class="scene-location-thumb" />
             </button>
@@ -257,15 +257,6 @@
             @load-preview="loadLocationPreview"
         />
 
-        <div v-if="locationZoomOpen && locationImageUrl" class="diary-backdrop" @click.self="locationZoomOpen = false">
-            <div class="diary-modal card sheet-image-zoom">
-                <header class="diary-modal-header">
-                    <h2>Фото локации</h2>
-                    <button type="button" class="link" @click="locationZoomOpen = false">Закрыть</button>
-                </header>
-                <img :src="locationImageUrl" alt="Фото локации" class="sheet-image-zoom-img" />
-            </div>
-        </div>
     </section>
     <section v-else class="card session-empty">
         <template v-if="isStoryteller">
@@ -302,7 +293,6 @@ import { computed, ref, toRef, watch } from 'vue';
 import { sceneStatusLabel } from '../../composables/useSceneSession';
 import { useChronicleLocationImage } from '../../composables/useChronicleLocationImage';
 import { useChronicleLocations } from '../../composables/useChronicleLocations';
-import { useSceneContextImage } from '../../composables/useSceneContextImage';
 import { characterTypeLabel } from '../../utils/labels';
 import LocationManagerModal from './LocationManagerModal.vue';
 import SceneTemplateToolsPanel from './SceneTemplateToolsPanel.vue';
@@ -326,6 +316,9 @@ const props = defineProps({
     sceneContextRevision: { type: Number, default: 0 },
     activeCharacterId: { type: Number, default: null },
     turnBusy: { type: Boolean, default: false },
+    locationImageUrl: { default: null },
+    locationImageLoading: { type: Boolean, default: false },
+    locationImageError: { type: String, default: '' },
 });
 
 const turnCharacterId = ref(props.activeCharacterId);
@@ -349,7 +342,6 @@ const selectedSceneId = defineModel('selectedSceneId');
 const sceneSituation = defineModel('sceneSituation', { type: String });
 const environmentDetails = defineModel('environmentDetails', { type: String, default: '' });
 
-const locationZoomOpen = ref(false);
 const libraryOpen = ref(false);
 const situationApplyTemplateId = ref(null);
 const situationUpdateTemplateId = ref(null);
@@ -380,19 +372,7 @@ const {
     revokePreview,
 } = useChronicleLocationImage();
 
-const {
-    imageUrl: locationImageUrl,
-    loading: locationImageLoading,
-    error: locationImageError,
-    upload: uploadLocationImage,
-    load: reloadSceneImage,
-} = useSceneContextImage(selectedSceneId);
-
-watch(selectedSceneId, () => {
-    locationZoomOpen.value = false;
-});
-
-async function onLocationImagePick(event) {
+function onLocationImagePick(event) {
     const file = event.target.files?.[0];
     event.target.value = '';
 
@@ -400,7 +380,7 @@ async function onLocationImagePick(event) {
         return;
     }
 
-    await uploadLocationImage(selectedSceneId.value, file);
+    emit('upload-location-image', file);
 }
 const newSceneTitle = defineModel('newSceneTitle', { type: String });
 const addCharacterId = defineModel('addCharacterId');
@@ -422,7 +402,6 @@ async function onApplyLocation(locationId) {
         sceneSituation.value = context.situation ?? '';
         environmentDetails.value = context.environment_details ?? '';
         emit('location-applied', context);
-        await reloadSceneImage(sceneId);
     } finally {
         locationSaving.value = false;
     }
@@ -559,5 +538,7 @@ const emit = defineEmits([
     'save-situation',
     'pass-turn',
     'location-applied',
+    'upload-location-image',
+    'zoom-location',
 ]);
 </script>
