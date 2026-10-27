@@ -3,59 +3,115 @@ name: trpg_chat_helper
 services:
     laravel.test:
         build:
-            context: './vendor/laravel/sail/runtimes/8.4'
-            dockerfile: Dockerfile
-            args:
-                WWWGROUP: '${WWWGROUP}'
-        image: 'sail-8.4/app'
+            context: .
+            dockerfile: docker/php/Dockerfile
+        image: trpg-chat-helper-php
         extra_hosts:
             - 'host.docker.internal:host-gateway'
         ports:
             - '${APP_PORT:-80}:80'
         environment:
-            WWWUSER: '${WWWUSER}'
-            LARAVEL_SAIL: 1
-            XDEBUG_MODE: '${SAIL_XDEBUG_MODE:-off}'
-            XDEBUG_CONFIG: '${SAIL_XDEBUG_CONFIG:-client_host=host.docker.internal}'
-            IGNITION_LOCAL_SITES_PATH: '${PWD}'
+            CONTAINER_SETUP: 'true'
+            DEMO_DATA: '${DEMO_DATA:-true}'
+            DB_CONNECTION: pgsql
+            DB_HOST: pgsql
+            DB_PORT: '5432'
+            DB_DATABASE: '${DB_DATABASE:-laravel}'
+            DB_USERNAME: '${DB_USERNAME:-sail}'
+            DB_PASSWORD: '${DB_PASSWORD:-password}'
         volumes:
             - '.:/var/www/html'
+            - 'vendor:/var/www/html/vendor'
         networks:
             - sail
         depends_on:
             pgsql:
-                condition: service_started
+                condition: service_healthy
             ollama:
                 condition: service_healthy
+                required: false
+            ollama-gpu:
+                condition: service_healthy
+                required: false
+        command: php-fpm
     worker:
         build:
-            context: './vendor/laravel/sail/runtimes/8.4'
-            dockerfile: Dockerfile
-            args:
-                WWWGROUP: '${WWWGROUP}'
-        image: 'sail-8.4/app'
+            context: .
+            dockerfile: docker/php/Dockerfile
+        image: trpg-chat-helper-php
         extra_hosts:
             - 'host.docker.internal:host-gateway'
         command: php artisan queue:work --queue=default --sleep=3 --tries=1 --timeout=540 --max-time=3600
         environment:
-            WWWUSER: '${WWWUSER}'
-            LARAVEL_SAIL: 1
+            CONTAINER_SETUP: 'false'
+            DB_CONNECTION: pgsql
+            DB_HOST: pgsql
+            DB_PORT: '5432'
+            DB_DATABASE: '${DB_DATABASE:-laravel}'
+            DB_USERNAME: '${DB_USERNAME:-sail}'
+            DB_PASSWORD: '${DB_PASSWORD:-password}'
         volumes:
             - '.:/var/www/html'
+            - 'vendor:/var/www/html/vendor'
         networks:
             - sail
         depends_on:
             pgsql:
-                condition: service_started
+                condition: service_healthy
             ollama:
                 condition: service_healthy
+                required: false
+            ollama-gpu:
+                condition: service_healthy
+                required: false
         restart: unless-stopped
+    frontend:
+        build:
+            context: ./frontend
+            dockerfile: Dockerfile
+        ports:
+            - '5173:5173'
+        volumes:
+            - './frontend:/app'
+            - 'frontend-node-modules:/app/node_modules'
+        environment:
+            VITE_API_PROXY_TARGET: 'http://laravel.test:80'
+        command: sh -c "npm install --include=optional && npm run dev -- --host"
+        networks:
+            - sail
+        depends_on:
+            laravel.test:
+                condition: service_started
     ollama:
+        profiles:
+            - cpu
         image: 'ollama/ollama:0.40.9'
         volumes:
             - 'ollama:/root/.ollama'
         networks:
-            - sail
+            sail:
+                aliases:
+                    - ollama
+        healthcheck:
+            test:
+                - CMD
+                - ollama
+                - list
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
+        restart: unless-stopped
+    ollama-gpu:
+        profiles:
+            - gpu
+        image: 'ollama/ollama:0.40.9'
+        volumes:
+            - 'ollama:/root/.ollama'
+        networks:
+            sail:
+                aliases:
+                    - ollama
         deploy:
             resources:
                 reservations:
@@ -78,13 +134,13 @@ services:
         ports:
             - '${FORWARD_DB_PORT:-5432}:5432'
         environment:
-            PGPASSWORD: '${DB_PASSWORD:-secret}'
-            POSTGRES_DB: '${DB_DATABASE}'
-            POSTGRES_USER: '${DB_USERNAME}'
-            POSTGRES_PASSWORD: '${DB_PASSWORD:-secret}'
+            PGPASSWORD: '${DB_PASSWORD:-password}'
+            POSTGRES_DB: '${DB_DATABASE:-laravel}'
+            POSTGRES_USER: '${DB_USERNAME:-sail}'
+            POSTGRES_PASSWORD: '${DB_PASSWORD:-password}'
         volumes:
             - 'sail-pgsql:/var/lib/postgresql'
-            - './vendor/laravel/sail/database/pgsql/create-testing-database.sql:/docker-entrypoint-initdb.d/10-create-testing-database.sql'
+            - './docker/pgsql/create-testing-database.sql:/docker-entrypoint-initdb.d/10-create-testing-database.sql'
         networks:
             - sail
         healthcheck:
@@ -93,11 +149,13 @@ services:
                 - pg_isready
                 - '-q'
                 - '-d'
-                - '${DB_DATABASE}'
+                - '${DB_DATABASE:-laravel}'
                 - '-U'
-                - '${DB_USERNAME}'
-            retries: 3
+                - '${DB_USERNAME:-sail}'
+            interval: 5s
             timeout: 5s
+            retries: 10
+            start_period: 10s
 networks:
     sail:
         driver: bridge
@@ -105,4 +163,8 @@ volumes:
     sail-pgsql:
         driver: local
     ollama:
+        driver: local
+    frontend-node-modules:
+        driver: local
+    vendor:
         driver: local

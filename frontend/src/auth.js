@@ -51,6 +51,12 @@ export const currentChronicleRole = computed(() => {
 
 export const isStoryteller = computed(() => currentChronicleRole.value === 'storyteller');
 
+export const hasAnyStorytellerRole = computed(() => (user.value?.memberships ?? []).some(
+    (membership) =>
+        (membership.left_at === null || membership.left_at === undefined)
+        && membership.role === 'storyteller',
+));
+
 export function registerUnauthorizedHandler(handler) {
     onUnauthorized = handler;
 }

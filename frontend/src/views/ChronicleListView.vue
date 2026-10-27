@@ -36,7 +36,7 @@
             </ul>
         </section>
 
-        <section v-if="isStoryteller" class="card">
+        <section class="card">
             <h2>Новая хроника</h2>
             <form @submit.prevent="submitCreate">
                 <label for="chronicle-title">Название</label>
@@ -68,7 +68,6 @@ import { computed, onMounted, reactive, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import InvitationManager from '../components/chronicle/InvitationManager.vue';
 import AppNav from '../components/layout/AppNav.vue';
-import { isStoryteller } from '../auth.js';
 import { useCurrentChronicle } from '../composables/useCurrentChronicle';
 import { apiErrorMessage } from '../utils/apiError';
 

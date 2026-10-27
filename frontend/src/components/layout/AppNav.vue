@@ -21,7 +21,7 @@
         </div>
         <div class="sidebar-spacer"></div>
         <RouterLink
-            v-if="isStoryteller && activeChronicleId"
+            v-if="showWorkshopNav"
             :to="workshopLink"
             class="nav-icon"
             :class="{ active: current === 'workshop' }"
@@ -61,7 +61,7 @@
 import { computed, ref } from 'vue';
 import { RouterLink, useRoute, useRouter } from 'vue-router';
 import ChronicleSwitcher from './ChronicleSwitcher.vue';
-import { currentChronicleRole, isStoryteller, useAuth } from '../../auth';
+import { currentChronicleRole, hasAnyStorytellerRole, isStoryteller, useAuth } from '../../auth';
 import { resolveChronicleId, useCurrentChronicle } from '../../composables/useCurrentChronicle';
 import { useSoundSettings } from '../../composables/useSoundSettings';
 import { useTheme } from '../../composables/useTheme';
@@ -82,6 +82,12 @@ const router = useRouter();
 const route = useRoute();
 const { currentId } = useCurrentChronicle();
 const chroniclesOpen = ref(false);
+
+const showWorkshopNav = computed(() =>
+    hasAnyStorytellerRole.value
+    || isStoryteller.value
+    || route.name === 'chronicles',
+);
 
 const activeChronicleId = computed(() => {
     const fromRoute = resolveChronicleId(route.params.chronicleId);
