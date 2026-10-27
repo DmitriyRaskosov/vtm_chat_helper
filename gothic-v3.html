@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="ru">
+    <!-- HTML-МАКЕТ Gothic V3 -->
+<head>
+    <meta charset="UTF-8">
+    <title>VtM: Master Layout v3</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400&family=Lora:ital,wght@0,400;1,400&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-main: #121212; --bg-panel: #1a1a1a; --bg-light: #222;
+            --border: #333; --text: #e0e0e0; --text-muted: #888;
+            --gold: #c5a059; --blood: #8b0000;
+            --font-ui: 'Inter', sans-serif; --font-lore: 'Lora', serif; --font-mono: 'JetBrains Mono', monospace;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg-main); color: var(--text); font-family: var(--font-ui); height: 100vh; display: flex; overflow: hidden; }
+
+        /* --- ЛЕВОЕ МЕНЮ (Навигация) --- */
+        .sidebar { width: 60px; background: var(--bg-panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; align-items: center; padding-top: 1rem; gap: 1.5rem; z-index: 50; }
+        .nav-icon { font-size: 1.5rem; cursor: pointer; opacity: 0.6; text-decoration: none; color: white; }
+        .nav-icon:hover, .nav-icon.active { opacity: 1; color: var(--gold); }
+
+        /* --- ЦЕНТР: СЦЕНА --- */
+        .main-stage { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+        
+        /* Шапка */
+        .top-bar { background: var(--bg-panel); padding: 0.6rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; z-index: 20; }
+        .scene-info { display: flex; align-items: center; gap: 1rem; }
+        .loc-thumb { width: 40px; height: 40px; background: #333; border-radius: 4px; cursor: pointer; border: 1px solid var(--border); object-fit: cover; }
+        .loc-thumb:hover { border-color: var(--gold); }
+        .scene-title { font-family: var(--font-lore); font-size: 1.2rem; color: var(--gold); }
+        .loc-name { font-size: 0.8rem; color: var(--text-muted); }
+        
+        /* Индикатор хода */
+        .turn-badge { background: rgba(197, 160, 89, 0.15); border: 1px solid var(--gold); color: var(--gold); padding: 0.4rem 0.8rem; border-radius: 20px; font-size: 0.8rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
+        .turn-badge .close { cursor: pointer; font-size: 1rem; opacity: 0.7; }
+        .turn-badge .close:hover { opacity: 1; color: white; }
+
+        /* Чат Split */
+        .chat-container { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .chat-ic { flex: 2; padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1rem; border-bottom: 2px solid var(--border); }
+        .chat-ooc { flex: 1; padding: 1rem; overflow-y: auto; font-family: var(--font-mono); font-size: 0.85rem; background: #151515; display: flex; flex-direction: column; gap: 0.5rem; }
+        
+        .resizer { height: 6px; background: var(--bg-panel); cursor: row-resize; display: flex; justify-content: center; align-items: center; }
+        .resizer::after { content: '...'; color: var(--text-muted); font-size: 10px; letter-spacing: 2px; }
+        .resizer:hover { background: var(--gold); }
+
+        /* Сообщения */
+        .msg { max-width: 85%; }
+        .msg-header { font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.2rem; font-weight: 600; text-transform: uppercase; }
+        .msg-body { font-family: var(--font-lore); font-size: 1.05rem; line-height: 1.5; background: var(--bg-light); padding: 0.8rem; border-radius: 6px; border-left: 3px solid var(--border); }
+        .msg-npc .msg-header { color: var(--gold); }
+        .msg-npc .msg-body { border-left-color: var(--gold); }
+        .msg-player { align-self: flex-end; }
+        .msg-player .msg-header { text-align: right; color: #6b8e23; }
+        .msg-player .msg-body { border-left-color: #6b8e23; background: #1e2419; }
+        .msg-system { align-self: center; color: var(--gold); font-size: 0.8rem; opacity: 0.7; font-style: italic; }
+
+        /* Композер */
+        .composer-wrapper { background: var(--bg-panel); border-top: 1px solid var(--border); padding: 0.8rem 1.5rem; z-index: 30; position: relative; }
+        .composer-top { display: flex; gap: 1rem; margin-bottom: 0.5rem; align-items: center; }
+        
+        .mode-toggle { display: flex; background: var(--bg-main); border: 1px solid var(--border); border-radius: 4px; overflow: hidden; }
+        .mode-btn { padding: 0.4rem 0.8rem; font-size: 0.8rem; cursor: pointer; color: var(--text-muted); }
+        .mode-btn.active.ic { background: var(--bg-light); color: var(--gold); }
+        .mode-btn.active.ooc { background: var(--bg-light); color: white; }
+        
+        .npc-selector { background: var(--bg-main); border: 1px solid var(--gold); color: var(--gold); padding: 0.4rem; border-radius: 4px; font-size: 0.8rem; display: flex; align-items: center; gap: 0.5rem; }
+        
+        .toolbar { display: flex; gap: 0.5rem; }
+        .tool-btn { background: var(--bg-light); border: 1px solid var(--border); color: var(--text); padding: 0.4rem 0.8rem; border-radius: 4px; cursor: pointer; font-size: 0.8rem; display: flex; align-items: center; gap: 0.4rem; }
+        .tool-btn:hover { border-color: var(--gold); color: var(--gold); }
+
+        .composer-input-row { display: flex; gap: 1rem; align-items: flex-end; }
+        .input-box { flex: 1; background: var(--bg-main); border: 1px solid var(--border); color: white; padding: 0.8rem; border-radius: 6px; resize: none; height: 60px; font-family: var(--font-lore); font-size: 1rem; }
+        .input-box:focus { outline: none; border-color: var(--gold); }
+        .btn-send { background: var(--blood); color: white; border: none; padding: 0 1.5rem; border-radius: 6px; cursor: pointer; height: 60px; font-weight: 600; }
+
+        /* --- ПРАВАЯ ПАНЕЛЬ --- */
+        .right-panel { width: 380px; background: var(--bg-panel); border-left: 1px solid var(--border); display: flex; flex-direction: column; z-index: 40; }
+        
+        /* Участники */
+        .participants { padding: 1rem; border-bottom: 1px solid var(--border); background: #181818; }
+        .participant-item { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.5rem; cursor: pointer; padding: 0.3rem; border-radius: 4px; }
+        .participant-item:hover { background: var(--bg-light); }
+        .p-name { font-weight: 600; font-size: 0.9rem; color: var(--gold); }
+        .p-desc { font-size: 0.75rem; color: var(--text-muted); font-style: italic; }
+
+        /* Табы */
+        .tabs { display: flex; border-bottom: 1px solid var(--border); }
+        .tab { padding: 0.8rem 1rem; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; }
+        .tab.active { color: var(--gold); border-bottom-color: var(--gold); }
+        .tab-content { flex: 1; padding: 1rem; overflow-y: auto; }
+
+        /* --- ПЛАВАЮЩИЕ ПАНЕЛИ ИНСТРУМЕНТОВ (Параллельные) --- */
+        .floating-panel {
+            position: absolute; bottom: 130px; left: 80px; /* Над композером */
+            background: var(--bg-panel); border: 1px solid var(--gold); border-radius: 8px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8); padding: 1rem; z-index: 100;
+            display: none; flex-direction: column; width: 300px;
+        }
+        .fp-header { display: flex; justify-content: space-between; color: var(--gold); font-weight: bold; margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+        .fp-close { cursor: pointer; color: #888; }
+        .fp-close:hover { color: white; }
+        
+        /* Позиции для параллельности */
+        #panel-dice { left: 80px; }
+        #panel-sheet { left: 400px; }
+        #panel-notes { left: 720px; }
+
+        /* Баннер локации */
+        .location-banner {
+            background: var(--bg-panel);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            gap: 1rem;
+            padding: 1rem 1.5rem;
+            align-items: center;
+            z-index: 15;
+        }
+        .loc-img-large {
+            width: 180px;
+            height: 120px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid var(--border);
+            cursor: zoom-in;
+            transition: border-color 0.2s;
+        }
+        .loc-img-large:hover { border-color: var(--gold); }
+        
+        .loc-desc {
+            flex: 1;
+            font-family: var(--font-lore);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            color: #ccc;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 100%;
+        }
+        .loc-desc-text {
+            max-height: 85px;
+            overflow-y: auto;
+            padding-right: 10px;
+        }
+        .loc-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 0.5rem;
+        }
+        .btn-sm {
+            background: var(--bg-light);
+            border: 1px solid var(--border);
+            color: var(--text-muted);
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75rem;
+        }
+        .btn-sm:hover { color: var(--gold); border-color: var(--gold); }
+
+        /* Скрытая модалка локации */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.8); display: none; justify-content: center; align-items: center; z-index: 200; }
+        .modal-content { background: var(--bg-panel); border: 1px solid var(--gold); width: 600px; padding: 2rem; border-radius: 8px; }
+    </style>
+</head>
+<body>
+
+    <nav class="sidebar">
+        <a href="#" class="nav-icon active" title="Чат">📖</a>
+        <a href="#" class="nav-icon" title="Персонажи">👤</a>
+        <a href="#" class="nav-icon" title="Хроники">🌍</a>
+        <div style="flex:1"></div>
+        <a href="#" class="nav-icon" title="Мастерская">⚙️</a>
+    </nav>
+
+    <main class="main-stage">
+                <!-- Шапка -->
+        <header class="top-bar">
+            <div class="scene-info">
+                <div class="scene-title">Вампит-сцена</div>
+            </div>
+            
+            <!-- Индикатор хода -->
+            <div class="turn-badge" id="turnBadge">
+                🎲 Ваш ход (Порижана)
+                <span class="close" onclick="document.getElementById('turnBadge').style.display='none'">×</span>
+            </div>
+        </header>
+
+        <!-- БАННЕР ЛОКАЦИИ (Всегда виден) -->
+        <div class="location-banner">
+            <img src="https://via.placeholder.com/180x120/222/555?text=Cathedral" class="loc-img-large" alt="Локация" onclick="alert('Здесь откроется полноэкранная картинка')">
+            
+            <div class="loc-desc">
+                <div class="loc-desc-text">
+                    <strong style="color: var(--gold);">Собор Святого Павла.</strong><br>
+                    Ночь опустилась на город. Тяжелые двери собора закрыты. В воздухе пахнет ладаном, сыростью и старой кровью. По периметру висят канделябры, отбрасывая длинные, дрожащие тени на каменный пол. Где-то наверху, под самым потолком, в темноте угадываются очертания деревянных балок.
+                </div>
+                <div class="loc-actions">
+                    <!-- Видно только рассказчику -->
+                    <button class="btn-sm" onclick="document.getElementById('sceneModal').style.display='flex'">⚙️ Детали и шаблоны</button>
+                    <button class="btn-sm">Свернуть</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-container">
+            <div class="chat-ic">
+                <div class="msg msg-system">Абрахам Леру появляется на сцене.</div>
+                <div class="msg msg-npc">
+                    <div class="msg-header">Абрахам Леру (НПС)</div>
+                    <div class="msg-body">— Пять томов, госпожа. Разных изданий, разных лет, и все — в одном переплете этой ночи. Я, признаться, редко вижу такое оглавление.</div>
+                </div>
+                <div class="msg msg-player">
+                    <div class="msg-header">Порижана (Игрок)</div>
+                    <div class="msg-body">— Ох, блядь, насмешил. «Кто может — тот берёт». Ты-то, дрищ, что взять можешь?</div>
+                </div>
+            </div>
+            
+            <div class="resizer"></div>
+            
+            <div class="chat-ooc">
+                <div><span style="color:#888;">admin (16:59):</span> Порижана бросила скамью и та попала в голову воробья.</div>
+                <div><span style="color:#888;">admin (17:01):</span> Ходит Гидеон.</div>
+            </div>
+        </div>
+
+        <!-- Композер -->
+        <footer class="composer-wrapper">
+            <div class="composer-top">
+                <div class="mode-toggle">
+                    <div class="mode-btn active ic">IC</div>
+                    <div class="mode-btn">OOC</div>
+                </div>
+                
+                <!-- Селектор НПС для рассказчика -->
+                <div class="npc-selector">
+                    <span style="font-size: 0.7rem; color: var(--text-muted);">Писать от:</span>
+                    <select style="background: transparent; border: none; color: var(--gold); font-weight: bold; outline: none;">
+                        <option>Порижана (Игрок)</option>
+                        <option>Абрахам (НПС)</option>
+                        <option>Гидеон (НПС)</option>
+                    </select>
+                </div>
+
+                <div class="toolbar">
+                    <button class="tool-btn" onclick="togglePanel('panel-dice')">🎲 Кубы</button>
+                    <button class="tool-btn" onclick="togglePanel('panel-sheet')">📋 Чарлист</button>
+                    <button class="tool-btn" onclick="togglePanel('panel-notes')">📝 Заметки</button>
+                </div>
+            </div>
+            
+            <div class="composer-input-row">
+                <textarea class="input-box" placeholder="Ваша реплика..."></textarea>
+                <button class="btn-send">Отправить</button>
+            </div>
+        </footer>
+
+        <!-- Плавающие панели -->
+        <div class="floating-panel" id="panel-dice">
+            <div class="fp-header"><span>🎲 Бросок кубиков</span> <span class="fp-close" onclick="togglePanel('panel-dice')">×</span></div>
+            <div style="display:flex; gap:10px; margin-bottom:10px;">
+                <input type="number" value="5" style="width: 60px; background:var(--bg-main); color:white; border:1px solid #333; padding:5px;">
+                <span style="line-height:30px;">d10, сложность 6</span>
+            </div>
+            <button style="width:100%; padding:8px; background:var(--gold); color:black; border:none; border-radius:4px; font-weight:bold;">Бросить</button>
+        </div>
+
+        <div class="floating-panel" id="panel-sheet">
+            <div class="fp-header"><span>📋 Чарлист</span> <span class="fp-close" onclick="togglePanel('panel-sheet')">×</span></div>
+            <div style="background:#222; height:150px; display:flex; align-items:center; justify-content:center; color:#555;">
+                [Изображение чарлиста]
+            </div>
+        </div>
+
+        <div class="floating-panel" id="panel-notes">
+            <div class="fp-header"><span>📝 Личные заметки</span> <span class="fp-close" onclick="togglePanel('panel-notes')">×</span></div>
+            <textarea style="width:100%; height:100px; background:var(--bg-main); color:white; border:1px solid #333; resize:none; padding:5px;"></textarea>
+        </div>
+
+    </main>
+
+    <aside class="right-panel">
+        <div class="participants">
+            <div class="participant-item">
+                <div>
+                    <div class="p-name">Порижана</div>
+                    <div class="p-desc">Бруха, Князь</div>
+                </div>
+            </div>
+            <div class="participant-item">
+                <div>
+                    <div class="p-name">Абрахам</div>
+                    <div class="p-desc">Моль комнатная</div>
+                </div>
+            </div>
+        </div>
+        <div class="tabs">
+            <div class="tab active">Copilot</div>
+            <div class="tab">Лог боя</div>
+        </div>
+        <div class="tab-content">
+            <div style="color:var(--text-muted); font-size:0.9rem; text-align:center; margin-top:2rem;">Здесь будет панель Copilot</div>
+        </div>
+    </aside>
+
+    <div class="modal-overlay" id="sceneModal">
+        <div class="modal-content">
+            <h2 style="color: var(--gold); margin-bottom: 1rem; font-family: var(--font-lore);">Настройки локации</h2>
+            <div style="margin-bottom: 1rem;">
+                <label style="font-size: 0.8rem; color: #888; display: block; margin-bottom: 5px;">Общее описание (Для игроков)</label>
+                <textarea style="width: 100%; height: 80px; background:#121212; color:white; border:1px solid #333; padding:10px;"></textarea>
+            </div>
+            <div style="margin-bottom: 1rem;">
+                <label style="font-size: 0.8rem; color: var(--gold); display: block; margin-bottom: 5px;">Детали окружения (Для генератора событий)</label>
+                <textarea style="width: 100%; height: 80px; background:#121212; color:white; border:1px solid #333; padding:10px;"></textarea>
+            </div>
+            <button style="padding:10px 20px; background:var(--blood); color:white; border:none; cursor:pointer;" onclick="document.getElementById('sceneModal').style.display='none'">Закрыть</button>
+        </div>
+    </div>
+
+    <script>
+        // Скрипт для перетягивания разделителя чата
+        const container = document.querySelector('.chat-container');
+        const ic = document.querySelector('.chat-ic');
+        const ooc = document.querySelector('.chat-ooc');
+        const resizer = document.querySelector('.resizer');
+        let isResizing = false;
+
+        resizer.addEventListener('mousedown', (e) => { isResizing = true; document.body.style.cursor = 'row-resize'; });
+        window.addEventListener('mousemove', (e) => {
+            if (!isResizing) return;
+            const containerRect = container.getBoundingClientRect();
+            const mouseY = e.clientY - containerRect.top;
+            const percent = (mouseY / containerRect.height) * 100;
+            if (percent > 20 && percent < 80) {
+                ic.style.flex = `0 0 ${percent}%`;
+                ooc.style.flex = `0 0 ${100 - percent}%`;
+            }
+        });
+        window.addEventListener('mouseup', () => { isResizing = false; document.body.style.cursor = 'default'; });
+
+        // Логика открытия панелей инструментов
+        function togglePanel(id) {
+            const panel = document.getElementById(id);
+            if (panel.style.display === 'flex') {
+                panel.style.display = 'none';
+            } else {
+                panel.style.display = 'flex';
+            }
+        }
+    </script>
+</body>
+</html>

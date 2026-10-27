@@ -1,0 +1,60 @@
+---
+description: Правила для тестов
+globs: tests/**
+alwaysApply: false
+---
+
+# Testing
+
+## Матрица доступа «роль × маршрут»
+
+- Эталон: `tests/Feature/AccessMatrixTest.php` + фикстуры `tests/Support/AccessMatrixFixtures.php`.
+- Роли: `guest`, `player_owner` (владелец PC), `player_foreign` (другой игрок той же хроники), `player_other_chronicle` (игрок только в другой хронике, не в фикстурной), `storyteller`.
+- Ожидания: `401` (гость на `auth:sanctum`), `403` (Policy / `->can()`), `deny` для `player_other_chronicle` (403 или 404), `allowed` (любой код, кроме 401/403; валидация 422 не проверяется).
+- Новый маршрут в `routes/api.php` без строки в матрице роняет `test_every_api_route_is_listed_in_access_matrix`.
+- Найденная дыра в авторизации: `markTestSkipped('bug: …')` в матрице + запись в отчёте задачи; исправление — отдельная задача, не в матрице.
+
+## Фреймворк
+- PHPUnit 12, классы `extends Tests\TestCase`, методы `public function test_...(): void`. Стиль — как в существующих тестах.
+- Pest-синтаксис (`it()`, `test()`, `expect()`) не использовать.
+- `Tests\TestCase` уже подключает `RefreshDatabase`.
+
+## Запуск
+- Только в контейнере: `sail artisan test` / `sail artisan test --filter=...`.
+- БД — PostgreSQL testing в контейнере, не SQLite.
+
+## Feature и Unit
+- `tests/Feature` — HTTP-маршруты, задачи, команды, всё, что ходит в БД через приложение.
+- `tests/Unit` — чистые классы без БД и контейнера (парсеры, DTO, `LineTrimmer`, `TokenEstimator`).
+
+## Внешние сервисы
+- LLM и эмбеддинги — фейки `Tests\Support\FakeChatProvider` и `Tests\Support\FakeEmbeddingProvider` через хелперы `Tests\TestCase::fakeChat()` / `fakeEmbeddings()` (регистрируют `$this->app->instance(...)`).
+- `FakeChatProvider`: `push(string|array $response): self` — очередь ответов; `requests(): list<array>` — записанные вызовы `chatTurn` / `complete`; пустая очередь → `RuntimeException`.
+- `FakeEmbeddingProvider`: детерминированный вектор 1024 из SHA-256 текста; `calls(): list<array>` — записи `embed` / `embedBatch`; `dimensions()` → 1024, `model()` → `fake-embedding`.
+- `Http::fake` по URL DeepSeek/Ollama в Feature-тестах не использовать.
+- Реальный Ollama и DeepSeek в тестах не требуются.
+
+### Хелперы дневника и сцены
+- Trait `Tests\Support\CreatesDiaryEntries` — метод `createDiaryEntry(string $text, int $level = 0, ?int $sceneId = null, int $fromMessageId = 1, int $toMessageId = 1, bool $isStale = false)`; нужны свойства `$npc`, `$chronicle`, `$scene` на тест-классе.
+- Trait `Tests\Support\CreatesSceneMessages` — создание сообщений сцены для сценариев дневника; используется вместе с `CreatesDiaryEntries` (см. `DiaryLlmServicesTest`).
+
+```php
+use Tests\Support\CreatesDiaryEntries;
+use Tests\Support\CreatesSceneMessages;
+
+class DiaryLlmServicesTest extends TestCase
+{
+    use CreatesDiaryEntries;
+    use CreatesSceneMessages;
+    // fakeChat()->push(...); вызов DiaryWriterService / job
+}
+```
+
+## Образец LLM-части дневника
+- `tests/Feature/DiaryLlmServicesTest.php` — порог `write_threshold`, `writeForScene` / `writeFinalForNpc`, `DiarySummarizerService`, job-ы; `fakeChat()` и `CreatesSceneMessages` для сообщений, `CreatesDiaryEntries` для готовых записей; без реального DeepSeek.
+
+## Что покрывать
+- Каждому новому или изменённому маршруту — тест доступа (гость 401, игрок, рассказчик).
+- Перед удалением или рефакторингом непокрытой зоны — характеризационный тест текущего поведения.
+- Исправление бага — тест, который падает без исправления.
+- Хелперы, нужные в нескольких тестах, — в `tests/Support`, не копировать между классами.

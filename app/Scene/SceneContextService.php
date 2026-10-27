@@ -1,0 +1,230 @@
+<?php
+
+namespace App\Scene;
+
+use App\Enums\SceneStatus;
+use App\Models\Location;
+use App\Models\Scene;
+use App\Models\SceneContext;
+use App\Models\User;
+use App\Models\WorldEntity;
+use App\Scene\Exceptions\InvalidSceneContextInputException;
+use App\Scene\Exceptions\SceneNotMutableException;
+use App\World\MixedChronicleException;
+use Illuminate\Support\Facades\DB;
+
+class SceneContextService
+{
+    /**
+     * @param  array<string, mixed>  $fields
+     */
+    public function apply(
+        Scene $scene,
+        array $fields,
+        int $expectedRevision,
+        ?User $updatedBy = null,
+    ): SceneContext {
+        $allowed = [
+            'location_entity_id',
+            'atmosphere',
+            'situation',
+            'storyteller_notes',
+            'environment_details',
+            'location_image_path',
+        ];
+
+        foreach (array_keys($fields) as $field) {
+            if (! in_array($field, $allowed, true)) {
+                throw new InvalidSceneContextInputException("Unknown scene context field [{$field}].");
+            }
+        }
+
+        $scene->loadMissing('gameSession');
+        $chronicleId = (int) $scene->gameSession->chronicle_id;
+
+        return DB::transaction(function () use ($scene, $fields, $expectedRevision, $updatedBy, $chronicleId): SceneContext {
+            $lockedScene = Scene::query()->lockForUpdate()->findOrFail($scene->id);
+            $this->assertMutable($lockedScene);
+
+            $context = SceneContext::query()
+                ->where('scene_id', $lockedScene->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($context === null) {
+                if ($expectedRevision !== 0) {
+                    $this->conflict();
+                }
+
+                $context = SceneContext::query()->create([
+                    'scene_id' => $lockedScene->id,
+                    'chronicle_id' => $chronicleId,
+                    'revision' => 0,
+                ])->refresh();
+            } elseif ((int) $context->revision !== $expectedRevision) {
+                $this->conflict();
+            }
+
+            if ($context->frozen_revision !== null) {
+                $this->conflict();
+            }
+
+            $nextRevision = (int) $context->revision + 1;
+            $dirty = false;
+
+            foreach ($fields as $field => $raw) {
+                $newValue = $this->normalize($chronicleId, $field, $raw);
+                $oldValue = $context->{$field};
+
+                if ($oldValue === $newValue) {
+                    continue;
+                }
+
+                $context->{$field} = $newValue;
+                $dirty = true;
+            }
+
+            if (! $dirty) {
+                return $context;
+            }
+
+            $context->revision = $nextRevision;
+            $context->updated_by = $updatedBy?->id;
+            $context->save();
+
+            return $context->refresh();
+        });
+    }
+
+    public function current(Scene $scene): ?SceneContext
+    {
+        return SceneContext::query()->where('scene_id', $scene->id)->first();
+    }
+
+    public function locationCanonicalName(?SceneContext $context): ?string
+    {
+        $locationId = $context?->location_entity_id;
+        if ($locationId === null) {
+            return null;
+        }
+
+        $locationName = WorldEntity::query()->find($locationId)?->canonical_name;
+
+        return is_string($locationName) && $locationName !== '' ? $locationName : null;
+    }
+
+    public function freeze(Scene $scene): void
+    {
+        DB::transaction(function () use ($scene): void {
+            $context = SceneContext::query()
+                ->where('scene_id', $scene->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($context === null || $context->frozen_revision !== null) {
+                return;
+            }
+
+            $context->frozen_revision = $context->revision;
+            $context->save();
+        });
+    }
+
+    public function unfreeze(Scene $scene): void
+    {
+        DB::transaction(function () use ($scene): void {
+            $context = SceneContext::query()
+                ->where('scene_id', $scene->id)
+                ->lockForUpdate()
+                ->first();
+
+            if ($context === null || $context->frozen_revision === null) {
+                return;
+            }
+
+            $context->frozen_revision = null;
+            $context->save();
+        });
+    }
+
+    /**
+     * @param  list<int>  $sceneIds
+     */
+    public function freezeMany(array $sceneIds): void
+    {
+        $sceneIds = array_values(array_unique(array_map('intval', $sceneIds)));
+        if ($sceneIds === []) {
+            return;
+        }
+
+        SceneContext::query()
+            ->whereIn('scene_id', $sceneIds)
+            ->whereNull('frozen_revision')
+            ->update([
+                'frozen_revision' => DB::raw('revision'),
+                'updated_at' => now(),
+            ]);
+    }
+
+    public function assertMutable(Scene $scene): void
+    {
+        if ($scene->status === SceneStatus::Closed) {
+            $this->conflict();
+        }
+
+        $frozen = SceneContext::query()
+            ->where('scene_id', $scene->id)
+            ->whereNotNull('frozen_revision')
+            ->exists();
+
+        if ($frozen) {
+            $this->conflict();
+        }
+    }
+
+    private function conflict(): never
+    {
+        throw new SceneNotMutableException;
+    }
+
+    private function normalize(int $chronicleId, string $field, mixed $raw): mixed
+    {
+        if ($field === 'location_image_path') {
+            if ($raw === null || $raw === '') {
+                return null;
+            }
+
+            $path = trim((string) $raw);
+            if ($path === '' || str_contains($path, '..')) {
+                throw new InvalidSceneContextInputException('Invalid scene location image path.');
+            }
+
+            return $path;
+        }
+
+        if ($field === 'location_entity_id') {
+            if ($raw === null || $raw === '') {
+                return null;
+            }
+
+            $locationId = (int) $raw;
+            $location = Location::query()->find($locationId);
+            if ($location === null) {
+                throw new InvalidSceneContextInputException('Scene location must be a location entity.');
+            }
+            if ((int) $location->chronicle_id !== $chronicleId) {
+                throw new MixedChronicleException;
+            }
+
+            return $locationId;
+        }
+
+        if ($raw === null) {
+            return null;
+        }
+
+        $text = trim((string) $raw);
+
+        return $text === '' ? null : $text;
+    }
+}
