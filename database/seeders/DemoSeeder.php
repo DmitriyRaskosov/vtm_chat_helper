@@ -30,6 +30,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
+use RuntimeException;
 
 class DemoSeeder extends Seeder
 {
@@ -789,6 +790,8 @@ Malört — пьёт демонстративно. Часть её образа:
         $sects = CanonSect::query()->pluck('id', 'slug');
         $disciplines = CanonDiscipline::query()->pluck('id', 'slug');
 
+        $this->assertDemoCanonSlugsPresent($definitions, $clans, $sects, $disciplines);
+
         return collect($definitions)->map(function (array $def) use ($chronicle, $clans, $sects, $disciplines, $storyteller): Character {
             $entity = WorldEntity::query()->create([
                 'chronicle_id' => $chronicle->id,
@@ -825,9 +828,14 @@ Malört — пьёт демонстративно. Часть её образа:
             }
 
             foreach ($def['disciplines'] ?? [] as [$slug, $level]) {
+                $disciplineId = $disciplines[$slug] ?? null;
+                if ($disciplineId === null) {
+                    throw new RuntimeException("Canon discipline [{$slug}] is missing. Seed canon reference data (db:seed or demo:reset).");
+                }
+
                 CharacterDiscipline::query()->create([
                     'character_id' => $character->id,
-                    'discipline_id' => $disciplines[$slug],
+                    'discipline_id' => $disciplineId,
                     'level' => $level,
                 ]);
             }
@@ -865,6 +873,34 @@ Malört — пьёт демонстративно. Часть её образа:
 
             return $character;
         });
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $definitions
+     */
+    private function assertDemoCanonSlugsPresent(
+        array $definitions,
+        Collection $clans,
+        Collection $sects,
+        Collection $disciplines,
+    ): void {
+        foreach ($definitions as $def) {
+            $clanSlug = $def['clan_slug'] ?? null;
+            if (is_string($clanSlug) && ! $clans->has($clanSlug)) {
+                throw new RuntimeException("Canon clan [{$clanSlug}] is missing. Seed canon reference data (db:seed or demo:reset).");
+            }
+
+            $sectSlug = $def['sect_slug'] ?? null;
+            if (is_string($sectSlug) && ! $sects->has($sectSlug)) {
+                throw new RuntimeException("Canon sect [{$sectSlug}] is missing. Seed canon reference data (db:seed or demo:reset).");
+            }
+
+            foreach ($def['disciplines'] ?? [] as [$slug, $level]) {
+                if (! is_string($slug) || ! $disciplines->has($slug)) {
+                    throw new RuntimeException("Canon discipline [{$slug}] is missing. Seed canon reference data (db:seed or demo:reset).");
+                }
+            }
+        }
     }
 
     /**

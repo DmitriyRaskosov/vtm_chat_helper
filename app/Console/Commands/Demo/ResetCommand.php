@@ -2,6 +2,13 @@
 
 namespace App\Console\Commands\Demo;
 
+use App\Models\CanonDiscipline;
+use Database\Seeders\CanonClanDisciplineSeeder;
+use Database\Seeders\CanonClanRelationSeeder;
+use Database\Seeders\CanonClanSectSeeder;
+use Database\Seeders\CanonClanSeeder;
+use Database\Seeders\CanonDisciplineSeeder;
+use Database\Seeders\CanonSectSeeder;
 use Database\Seeders\DemoSeeder;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
@@ -37,9 +44,27 @@ class ResetCommand extends Command
 
             $this->info('Game data cleared.');
 
+            $this->ensureCanonReferenceData();
+
             $this->call('db:seed', ['--class' => DemoSeeder::class]);
         });
 
         return self::SUCCESS;
+    }
+
+    private function ensureCanonReferenceData(): void
+    {
+        if (CanonDiscipline::query()->exists()) {
+            return;
+        }
+
+        $this->info('Canon reference data missing; seeding canon tables...');
+
+        $this->call(CanonSectSeeder::class);
+        $this->call(CanonClanSeeder::class);
+        $this->call(CanonClanSectSeeder::class);
+        $this->call(CanonClanRelationSeeder::class);
+        $this->call(CanonDisciplineSeeder::class);
+        $this->call(CanonClanDisciplineSeeder::class);
     }
 }

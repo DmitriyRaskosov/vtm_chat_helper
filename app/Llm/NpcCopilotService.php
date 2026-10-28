@@ -37,6 +37,7 @@ class NpcCopilotService
             $topicTurn = $this->chat->chatTurn($topicsContext->messages, [
                 'num_predict' => (int) config('copilot.topic_max_output_tokens', 384),
                 'temperature' => (float) config('copilot.topic_temperature', 0.1),
+                'json_object' => true,
             ]);
         } catch (\Throwable $e) {
             throw new LlmUnavailableException($e);
@@ -58,6 +59,7 @@ class NpcCopilotService
         try {
             $replyOptions = [
                 'max_tokens' => (int) config('llm.max_output_tokens'),
+                'json_object' => true,
             ];
             $turn = $this->chat->chatTurn($messages, $replyOptions);
             $raw = $turn->content;
@@ -146,35 +148,7 @@ class NpcCopilotService
             $decoded = json_decode($json, true);
 
             if (is_array($decoded) && isset($decoded['drafts']) && is_array($decoded['drafts'])) {
-                $drafts = [];
-
-                foreach ($decoded['drafts'] as $item) {
-                    if (! is_string($item)) {
-                        continue;
-                    }
-                    $item = trim($item);
-
-                    // Вложенный JSON: модель иногда оборачивает черновик в JSON-строку
-                    if (str_starts_with($item, '{')) {
-                        $inner = json_decode($item, true);
-                        if (is_array($inner) && isset($inner['drafts']) && is_array($inner['drafts'])) {
-                            foreach ($inner['drafts'] as $sub) {
-                                if (is_string($sub) && trim($sub) !== '') {
-                                    $drafts[] = trim($sub);
-                                }
-                            }
-
-                            continue;
-                        }
-                    }
-
-                    if ($item !== '') {
-                        $drafts[] = $item;
-                    }
-                }
-
-                // Дедупликация — модель иногда повторяет один и тот же черновик
-                $drafts = array_values(array_unique($drafts));
+                $drafts = $this->normalizeDraftItems($decoded['drafts']);
 
                 if (count($drafts) >= $expected) {
                     return array_slice($drafts, 0, $expected);
@@ -183,6 +157,15 @@ class NpcCopilotService
                 if ($drafts !== []) {
                     return $drafts;
                 }
+            }
+
+            $recovered = $this->extractDraftStringsFromMalformedJson($json);
+            if ($recovered !== []) {
+                if (count($recovered) >= $expected) {
+                    return array_slice($recovered, 0, $expected);
+                }
+
+                return $recovered;
             }
         }
 
@@ -206,6 +189,78 @@ class NpcCopilotService
         }
 
         throw new LlmResponseInvalidException;
+    }
+
+    /**
+     * @param  list<mixed>  $items
+     * @return list<string>
+     */
+    private function normalizeDraftItems(array $items): array
+    {
+        $drafts = [];
+
+        foreach ($items as $item) {
+            if (! is_string($item)) {
+                continue;
+            }
+            $item = trim($item);
+
+            // Вложенный JSON: модель иногда оборачивает черновик в JSON-строку
+            if (str_starts_with($item, '{')) {
+                $inner = json_decode($item, true);
+                if (is_array($inner) && isset($inner['drafts']) && is_array($inner['drafts'])) {
+                    foreach ($inner['drafts'] as $sub) {
+                        if (is_string($sub) && trim($sub) !== '') {
+                            $drafts[] = trim($sub);
+                        }
+                    }
+
+                    continue;
+                }
+            }
+
+            if ($item !== '') {
+                $drafts[] = $item;
+            }
+        }
+
+        return array_values(array_unique($drafts));
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function extractDraftStringsFromMalformedJson(string $json): array
+    {
+        if (! preg_match('/"drafts"\s*:\s*\[(.*)/s', $json, $matches)) {
+            return [];
+        }
+
+        $tail = $matches[1];
+        if (! preg_match_all('/"((?:[^"\\\\]|\\\\.)*)"/s', $tail, $stringMatches)) {
+            return [];
+        }
+
+        $drafts = [];
+
+        foreach ($stringMatches[1] as $fragment) {
+            $decoded = json_decode(json_encode($fragment, JSON_UNESCAPED_UNICODE));
+            if (is_string($decoded)) {
+                $decoded = trim($decoded);
+                if ($decoded !== '') {
+                    $drafts[] = $decoded;
+                }
+
+                continue;
+            }
+
+            $fallback = trim(stripcslashes($fragment));
+            if ($fallback !== '') {
+                $drafts[] = $fallback;
+            }
+        }
+
+        return array_values(array_unique($drafts));
     }
 
     private function extractJson(string $raw): ?string

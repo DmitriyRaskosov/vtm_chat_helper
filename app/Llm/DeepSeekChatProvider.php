@@ -45,7 +45,11 @@ class DeepSeekChatProvider implements ChatProvider
             'temperature' => (float) ($options['temperature'] ?? config('llm.temperature', 0.7)),
         ];
 
-        if (config('llm.json_mode')) {
+        $jsonObject = $options['json_object'] ?? null;
+        if ($jsonObject === null) {
+            $jsonObject = config('llm.json_mode');
+        }
+        if ($jsonObject) {
             $payload['response_format'] = ['type' => 'json_object'];
         }
 

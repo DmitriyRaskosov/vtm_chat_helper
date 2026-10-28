@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\ChronicleRole;
 use App\Models\CanonClan;
+use App\Models\CanonDiscipline;
 use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\ChronicleInvitation;
@@ -109,6 +110,27 @@ class DemoResetTest extends TestCase
         $this->assertSame(0, $this->exitCode('demo:reset'));
 
         $this->assertSame($countsAfterFirst, $this->gameEntityCounts());
+    }
+
+    public function test_demo_reset_on_migrate_fresh_without_seed(): void
+    {
+        Artisan::call('migrate:fresh');
+
+        $this->assertSame(0, CanonDiscipline::query()->count());
+        $this->assertSame(0, CanonClan::query()->count());
+
+        $this->assertSame(0, $this->exitCode('demo:reset'));
+
+        $this->assertGreaterThan(0, CanonDiscipline::query()->count());
+        $this->assertGreaterThan(0, CanonClan::query()->count());
+        $chronicle = Chronicle::query()->where('title', 'Demo Chronicle')->firstOrFail();
+        $this->assertSame(1, Chronicle::query()->where('title', 'Demo Chronicle')->count());
+        $this->assertSame(0, Chronicle::query()->where('title', 'Моя первая хроника')->count());
+        $this->assertEqualsCanonicalizing(self::DEMO_NPC_NAMES, WorldEntity::query()
+            ->where('chronicle_id', $chronicle->id)
+            ->orderBy('canonical_name')
+            ->pluck('canonical_name')
+            ->all());
     }
 
     public function test_demo_reset_on_empty_game_data_after_fresh_seed(): void

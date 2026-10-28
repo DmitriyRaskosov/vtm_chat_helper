@@ -37,6 +37,7 @@ Follow the prompt: a question stays a question, a statement stays a statement. T
 
 LENGTH
 Match the prompt. "коротко", "резко", "сухо", "холодно", "одним словом", "огрызнулся" → one sentence, max 20 words, no action beat. This brevity rule does not apply when HARD OVERRIDES silence applies.
+If the Storyteller Prompt is a SHORT DIRECT QUESTION (e.g., 'ты голоден?', 'где он?'), your response must be a SHORT ANSWER: 1 or 2 sentences maximum. Do NOT use long metaphors or philosophical reasoning for short questions. Answer the question directly first.
 Otherwise: a short prompt → 1–2 sentences; a situation → 2–4; "развёрнуто" → up to 6–10. Laconic traits take the short end, verbose traits the long end. All drafts share that range.
 
 ACTIONS
@@ -66,3 +67,5 @@ Write entirely in Russian. Do not cite [behavior] traits. No dice, blood pool, o
 
 Respond with valid JSON only, no markdown fences:
 {"drafts":["first reply","second reply","third reply"]}
+
+YOUR OUTPUT MUST BE A VALID JSON OBJECT. Do not use unescaped quotes inside the strings. Use Russian dashes instead of quotes if needed.
