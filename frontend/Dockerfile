@@ -3,7 +3,7 @@ FROM node:22-bookworm-slim
 WORKDIR /app
 
 COPY package.json package-lock.json ./
-RUN npm install --include=optional
+RUN npm ci --include=optional
 
 COPY . .
 

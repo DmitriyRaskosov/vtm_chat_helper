@@ -16,10 +16,6 @@ mkdir -p storage/framework/sessions \
 chown -R www-data:www-data storage bootstrap/cache || chown -R sail:sail storage bootstrap/cache
 chmod -R 775 storage bootstrap/cache
 
-if ! grep -qE '^APP_KEY=base64:' .env; then
-    php artisan key:generate --force
-fi
-
 db_host="${DB_HOST:-pgsql}"
 db_port="${DB_PORT:-5432}"
 db_user="${DB_USERNAME:-sail}"
@@ -31,11 +27,20 @@ until pg_isready -h "$db_host" -p "$db_port" -U "$db_user" -d "$db_name" -q; do
 done
 
 if [ "${CONTAINER_SETUP:-false}" = "true" ]; then
-    php artisan migrate --force
-    php artisan db:seed --force
+    if ! grep -qE '^APP_KEY=base64:' .env; then
+        flock .env php artisan key:generate --force
+    fi
 
-    if [ "${DEMO_DATA:-false}" = "true" ]; then
-        php artisan demo:reset
+    php artisan migrate --force
+
+    if [ ! -f storage/.db-initialized ]; then
+        php artisan db:seed --force
+
+        if [ "${DEMO_DATA:-false}" = "true" ]; then
+            php artisan demo:reset
+        fi
+
+        touch storage/.db-initialized
     fi
 else
     until php artisan migrate:status --no-ansi 2>/dev/null | grep -q 'Ran'; do

@@ -1,17 +1,15 @@
-FROM php:8.4-fpm-alpine
+FROM php:8.4-fpm
 
-RUN apk add --no-cache \
-        bash \
-        curl \
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
         git \
-        icu-dev \
+        libicu-dev \
+        libonig-dev \
+        libpq-dev \
         libzip-dev \
         nginx \
-        oniguruma-dev \
-        postgresql-dev \
         postgresql-client \
         unzip \
-        zip \
     && docker-php-ext-configure intl \
     && docker-php-ext-install -j"$(nproc)" \
         bcmath \
@@ -22,7 +20,8 @@ RUN apk add --no-cache \
         pdo_pgsql \
         pgsql \
         zip \
-    && apk del postgresql-dev
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
 
@@ -34,7 +33,8 @@ RUN composer install --no-interaction --prefer-dist --no-scripts --no-autoloader
 COPY . .
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
-COPY docker/php/nginx.conf /etc/nginx/http.d/default.conf
+COPY docker/php/nginx.conf /etc/nginx/conf.d/default.conf
+RUN rm -f /etc/nginx/sites-enabled/default
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 RUN chmod +x /usr/local/bin/docker-entrypoint.sh
