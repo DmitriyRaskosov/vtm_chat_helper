@@ -1,0 +1,42 @@
+---
+description: Правила для Vue-фронтенда (черновик, дорабатывается по ходу этапа 2)
+globs: frontend/**
+alwaysApply: false
+---
+
+# Frontend (черновик)
+
+## Утилиты и composables (этап 2)
+
+- Метки типа персонажа: `frontend/src/utils/labels.js` — `PLAYER_LABEL`, `NPC_LABEL`, `characterTypeLabel(type)`. Импортировать только из `labels.js`, не из composables.
+- Текст ошибки API: `frontend/src/utils/apiError.js` — `apiErrorMessage(error, fallback)`.
+- Таймер «сохранено» (~2 с): `frontend/src/composables/useFlash.js` — `flash(store, key)` для флагов, `flashRef(ref, value)` для строки.
+
+## Авторизация (router и auth.js)
+
+- Защищённые маршруты: `meta.auth: true` (логин/регистрация — `meta.guest: true`). Без токена → `login`.
+- Только рассказчик: `meta.storyteller: true` (сейчас дневник `/characters/:id/diary`). Игрок → редирект на `chat`.
+- Признак рассказчика: `export const isStoryteller` в `auth.js` (не дублировать в view/composables).
+- Ответ API `401` (кроме `/login` и `/register`): сброс сессии в `auth.js`, переход на логин через `registerUnauthorizedHandler` в `main.js` (без импорта router в `auth.js`).
+
+## Базовое
+- Vue 3 Composition API, только `<script setup>`.
+- Логика экранов и вызовы API — в `frontend/src/composables/`. View и компоненты (`views/`, `components/`) не импортируют `api` и не вызывают HTTP напрямую — только composables.
+- Экранные composables (034): `useDiary`, `useCharacterList`, `useCopilotPanel`; лист — `useCharacterSheet(characterId)` + `load()` из view при смене id.
+- HTTP — только через экземпляр axios из `frontend/src/auth.js`. Новые экземпляры axios не создавать.
+- Двусторонние привязки — `defineModel`, не ручные пары prop/emit.
+- Composable не регистрирует `onMounted`/`watch(route)` внутри себя, если это не требуется задачей (`useDiary` следит за переданным `characterId`; привязка к роутеру — в view).
+
+## Запреты
+- Новые npm-зависимости — только с явного разрешения.
+- Pinia не вводить (`docs/ARCHITECTURE.md` §8).
+- PHP-функций в JS нет: `compact`, `in_array`, `implode`, `array_filter`, `isset`, `empty` не использовать.
+- Глобальный `styles.css` не реорганизовывать; удалять только стили удалённых компонентов.
+- Компоненты импортировать явно в `<script setup>`; глобальной регистрации нет.
+
+## Проверка
+- `cd frontend; npm run build` — без ошибок и без предупреждений о неразрешённых компонентах.
+- Ручной прогон затронутых экранов (список — в DoD задачи).
+
+## Язык интерфейса
+- Строки UI — на русском.

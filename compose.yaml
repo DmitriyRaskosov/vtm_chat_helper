@@ -1,0 +1,170 @@
+name: trpg_chat_helper
+
+services:
+    laravel.test:
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+        image: trpg-chat-helper-php
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        ports:
+            - '${APP_PORT:-8080}:80'
+        environment:
+            CONTAINER_SETUP: 'true'
+            DEMO_DATA: '${DEMO_DATA:-true}'
+            DB_CONNECTION: pgsql
+            DB_HOST: pgsql
+            DB_PORT: '5432'
+            DB_DATABASE: '${DB_DATABASE:-laravel}'
+            DB_USERNAME: '${DB_USERNAME:-sail}'
+            DB_PASSWORD: '${DB_PASSWORD:-password}'
+        volumes:
+            - '.:/var/www/html'
+            - 'vendor:/var/www/html/vendor'
+        networks:
+            - sail
+        depends_on:
+            pgsql:
+                condition: service_healthy
+            ollama:
+                condition: service_healthy
+                required: false
+            ollama-gpu:
+                condition: service_healthy
+                required: false
+        command: php-fpm
+    worker:
+        build:
+            context: .
+            dockerfile: docker/php/Dockerfile
+        image: trpg-chat-helper-php
+        extra_hosts:
+            - 'host.docker.internal:host-gateway'
+        command: php artisan queue:work --queue=default --sleep=3 --tries=1 --timeout=540
+        environment:
+            CONTAINER_SETUP: 'false'
+            DB_CONNECTION: pgsql
+            DB_HOST: pgsql
+            DB_PORT: '5432'
+            DB_DATABASE: '${DB_DATABASE:-laravel}'
+            DB_USERNAME: '${DB_USERNAME:-sail}'
+            DB_PASSWORD: '${DB_PASSWORD:-password}'
+        volumes:
+            - '.:/var/www/html'
+            - 'vendor:/var/www/html/vendor'
+        networks:
+            - sail
+        depends_on:
+            pgsql:
+                condition: service_healthy
+            ollama:
+                condition: service_healthy
+                required: false
+            ollama-gpu:
+                condition: service_healthy
+                required: false
+        restart: unless-stopped
+    frontend:
+        build:
+            context: ./frontend
+            dockerfile: Dockerfile
+        ports:
+            - '${FRONTEND_PORT:-5173}:5173'
+        volumes:
+            - './frontend:/app'
+            - 'frontend-node-modules:/app/node_modules'
+        environment:
+            VITE_API_PROXY_TARGET: 'http://laravel.test:80'
+        command: npm run dev -- --host
+        networks:
+            - sail
+        depends_on:
+            laravel.test:
+                condition: service_started
+    ollama:
+        profiles:
+            - cpu
+        image: 'ollama/ollama:0.40.9'
+        volumes:
+            - 'ollama:/root/.ollama'
+        networks:
+            sail:
+                aliases:
+                    - ollama
+        healthcheck:
+            test:
+                - CMD
+                - ollama
+                - list
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
+        restart: unless-stopped
+    ollama-gpu:
+        profiles:
+            - gpu
+        image: 'ollama/ollama:0.40.9'
+        volumes:
+            - 'ollama:/root/.ollama'
+        networks:
+            sail:
+                aliases:
+                    - ollama
+        deploy:
+            resources:
+                reservations:
+                    devices:
+                        - driver: nvidia
+                          count: all
+                          capabilities: [gpu]
+        healthcheck:
+            test:
+                - CMD
+                - ollama
+                - list
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 10s
+        restart: unless-stopped
+    pgsql:
+        image: 'pgvector/pgvector:pg18'
+        ports:
+            - '${FORWARD_DB_PORT:-5432}:5432'
+        environment:
+            PGPASSWORD: '${DB_PASSWORD:-password}'
+            POSTGRES_DB: '${DB_DATABASE:-laravel}'
+            POSTGRES_USER: '${DB_USERNAME:-sail}'
+            POSTGRES_PASSWORD: '${DB_PASSWORD:-password}'
+        volumes:
+            - 'sail-pgsql:/var/lib/postgresql'
+            - './docker/pgsql/create-testing-database.sql:/docker-entrypoint-initdb.d/10-create-testing-database.sql'
+        networks:
+            - sail
+        healthcheck:
+            test:
+                - CMD
+                - pg_isready
+                - '-q'
+                - '-d'
+                - '${DB_DATABASE:-laravel}'
+                - '-U'
+                - '${DB_USERNAME:-sail}'
+            interval: 5s
+            timeout: 5s
+            retries: 10
+            start_period: 10s
+networks:
+    sail:
+        driver: bridge
+volumes:
+    sail-pgsql:
+        driver: local
+    ollama:
+        driver: local
+    frontend-node-modules:
+        driver: local
+    vendor:
+        driver: local

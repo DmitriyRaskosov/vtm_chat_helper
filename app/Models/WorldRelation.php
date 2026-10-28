@@ -1,0 +1,111 @@
+<?php
+
+namespace App\Models;
+
+use App\Enums\WorldEntityType;
+use App\Enums\WorldRelationKind;
+use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use InvalidArgumentException;
+
+/**
+ * @property WorldRelationKind $relation
+ * @property WorldEntityType $source_type
+ * @property WorldEntityType $target_type
+ */
+#[Fillable([
+    'chronicle_id',
+    'source_type',
+    'source_id',
+    'target_type',
+    'target_id',
+    'relation',
+    'source_of_truth',
+    'intensity',
+    'metadata',
+    'weight',
+    'note',
+    'valid_from',
+    'valid_to',
+    'provenance',
+])]
+class WorldRelation extends Model
+{
+    /**
+     * @param  Builder<WorldRelation>  $query
+     * @return Builder<WorldRelation>
+     */
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->whereNull('valid_to');
+    }
+
+    /**
+     * @return BelongsTo<Chronicle, $this>
+     */
+    public function chronicle(): BelongsTo
+    {
+        return $this->belongsTo(Chronicle::class);
+    }
+
+    /**
+     * @return BelongsTo<WorldEntity, $this>
+     */
+    public function source(): BelongsTo
+    {
+        return $this->belongsTo(WorldEntity::class, 'source_id');
+    }
+
+    /**
+     * @return BelongsTo<WorldEntity, $this>
+     */
+    public function target(): BelongsTo
+    {
+        return $this->belongsTo(WorldEntity::class, 'target_id');
+    }
+
+    public function other(WorldEntity $entity): WorldEntity
+    {
+        if ((int) $this->source_id === (int) $entity->id
+            && $this->endpointType($entity) === $this->source_type) {
+            return $this->target;
+        }
+
+        if ((int) $this->target_id === (int) $entity->id
+            && $this->endpointType($entity) === $this->target_type) {
+            return $this->source;
+        }
+
+        throw new InvalidArgumentException('Entity is not an endpoint of this relation.');
+    }
+
+    public function isActive(): bool
+    {
+        return $this->valid_to === null;
+    }
+
+    public function endpointType(WorldEntity $entity): WorldEntityType
+    {
+        return $entity->entity_type;
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'chronicle_id' => 'integer',
+            'source_type' => WorldEntityType::class,
+            'target_type' => WorldEntityType::class,
+            'source_id' => 'integer',
+            'target_id' => 'integer',
+            'relation' => WorldRelationKind::class,
+            'intensity' => 'integer',
+            'weight' => 'float',
+            'metadata' => 'array',
+            'valid_from' => 'datetime',
+            'valid_to' => 'datetime',
+            'provenance' => 'array',
+        ];
+    }
+}
