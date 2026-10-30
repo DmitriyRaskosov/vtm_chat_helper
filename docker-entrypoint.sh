@@ -33,14 +33,14 @@ if [ "${CONTAINER_SETUP:-false}" = "true" ]; then
 
     php artisan migrate --force
 
-    if [ ! -f storage/.db-initialized ]; then
+    user_count="$(php artisan tinker --execute='echo \App\Models\User::query()->count();' 2>/dev/null | tr -d '\r\n')"
+
+    if [ "$user_count" = "0" ]; then
         php artisan db:seed --force
 
         if [ "${DEMO_DATA:-false}" = "true" ]; then
             php artisan demo:reset
         fi
-
-        touch storage/.db-initialized
     fi
 else
     until php artisan migrate:status --no-ansi 2>/dev/null | grep -q 'Ran'; do

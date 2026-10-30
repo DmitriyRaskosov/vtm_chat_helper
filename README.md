@@ -44,7 +44,7 @@ docker compose exec laravel.test ./vendor/bin/phpstan analyse
    docker compose up -d --build
    ```
 
-   Поднимаются backend, PostgreSQL, worker, фронтенд (Vite) и Ollama (профиль из `COMPOSE_PROFILES`). При старте `laravel.test` автоматически: ключ приложения, миграции, сиды; при `DEMO_DATA=true` — демо-данные (сид/demo — только при первой инициализации БД).
+   Поднимаются backend, PostgreSQL, worker, фронтенд (Vite) и Ollama (профиль из `COMPOSE_PROFILES`). При старте `laravel.test` автоматически: ключ приложения, миграции; если в таблице `users` нет записей — `db:seed`, а при `DEMO_DATA=true` ещё и `demo:reset`.
 
 2. Один раз скачайте модель эмбеддера (~1.2 ГБ), если используете Ollama из compose:
 
@@ -87,8 +87,7 @@ docker compose --profile gpu up -d ollama-gpu
 
 **Ollama уже на хосте.** В `.env`: `OLLAMA_URL=http://host.docker.internal:11434`, не поднимайте сервис `ollama` в compose (уберите профиль `cpu`/`gpu` из `COMPOSE_PROFILES`, если он только для Ollama). Модель на хосте: `ollama pull bge-m3`.
 
-**Пустая БД при `docker compose down -v`.** Если вы удаляете вольюмы (`down -v`), маркер инициализации `storage/.db-initialized` остаётся на bind-mount. Из-за этого сиды и демо-данные не запускаются при следующем `up`.  
-**Решение:** перед `docker compose up` удалите файл `storage/.db-initialized` (и при необходимости очистите `APP_KEY=` в `.env`).
+**Пустая БД после `docker compose down -v`.** Вольюм PostgreSQL удаляется, таблица `users` снова пустая — при следующем `up` контейнер `laravel.test` сам выполнит сиды и (если `DEMO_DATA=true`) `demo:reset`. Файлы на хосте в `storage/` на это не влияют. После смены `docker-entrypoint.sh` пересоберите образ: `docker compose up -d --build`.
 
 **Битый `APP_KEY` (склеенный base64).** В редких случаях при старте контейнера может возникнуть гонка (до применения `flock`), из-за чего в `.env` может записаться два ключа подряд.  
 **Решение:** очистите значение `APP_KEY=` в `.env` и перезапустите контейнер `laravel.test` (ключ сгенерируется заново).
