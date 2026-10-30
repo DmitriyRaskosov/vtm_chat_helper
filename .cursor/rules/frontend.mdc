@@ -1,12 +1,15 @@
 ---
-description: Правила для Vue-фронтенда (черновик, дорабатывается по ходу этапа 2)
+description: Правила для Vue-фронтенда
 globs: frontend/**
 alwaysApply: false
 ---
 
-# Frontend (черновик)
+# Frontend
 
-## Утилиты и composables (этап 2)
+## Спецификация
+- При реализации фичи опирайся на технический план (`plan.md`). Не добавляй функционал, которого нет в спецификации (Out of Scope).
+
+## Утилиты и composables
 
 - Метки типа персонажа: `frontend/src/utils/labels.js` — `PLAYER_LABEL`, `NPC_LABEL`, `characterTypeLabel(type)`. Импортировать только из `labels.js`, не из composables.
 - Текст ошибки API: `frontend/src/utils/apiError.js` — `apiErrorMessage(error, fallback)`.
@@ -22,8 +25,9 @@ alwaysApply: false
 ## Базовое
 - Vue 3 Composition API, только `<script setup>`.
 - Логика экранов и вызовы API — в `frontend/src/composables/`. View и компоненты (`views/`, `components/`) не импортируют `api` и не вызывают HTTP напрямую — только composables.
-- Экранные composables (034): `useDiary`, `useCharacterList`, `useCopilotPanel`; лист — `useCharacterSheet(characterId)` + `load()` из view при смене id.
+- Экранные composables: `useDiary`, `useCharacterList`, `useCopilotPanel`; лист — `useCharacterSheet(characterId)` + `load()` из view при смене id.
 - HTTP — только через экземпляр axios из `frontend/src/auth.js`. Новые экземпляры axios не создавать.
+- Плавающие окна инструментов — `position: fixed` и composable `useDraggable`.
 - Двусторонние привязки — `defineModel`, не ручные пары prop/emit.
 - Composable не регистрирует `onMounted`/`watch(route)` внутри себя, если это не требуется задачей (`useDiary` следит за переданным `characterId`; привязка к роутеру — в view).
 
@@ -36,7 +40,7 @@ alwaysApply: false
 
 ## Проверка
 - `cd frontend; npm run build` — без ошибок и без предупреждений о неразрешённых компонентах.
-- Ручной прогон затронутых экранов (список — в DoD задачи).
+- Ручной прогон затронутых экранов (список — в Acceptance Criteria `spec.md`).
 
 ## Язык интерфейса
 - Строки UI — на русском.

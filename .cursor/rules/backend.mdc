@@ -6,11 +6,14 @@ alwaysApply: false
 
 # Backend
 
+## Спецификация
+- При реализации фичи опирайся на технический план (`plan.md`). Не добавляй функционал, которого нет в спецификации (Out of Scope).
+
 Структура и направление зависимостей — `docs/ARCHITECTURE.md` §1–3, ADR-001.
 
 ## Зависимости между модулями
 - Ни один модуль не импортирует `App\Context\*`. `Context` читает остальные модули, но не пишет.
-- `dispatch()` — только из `App\Diary\DiaryScheduler` (после задачи 025). Новые Job-классы — только по задаче.
+- `dispatch()` — только через `App\Diary\DiaryScheduler` или аналогичный сервис-планировщик. Обязательно `afterCommit()`. Новые Job-классы — только если они есть в утверждённом `plan.md`.
 - `Messages`, `Scene`, `Character` не пишут в `character_diary_entries` — вызывают методы `Diary`.
 - `World` не зависит от `Character`, `Scene`, `Diary`.
 

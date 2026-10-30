@@ -6,6 +6,11 @@ alwaysApply: false
 
 # Testing
 
+## Acceptance Criteria
+- Все тесты (Feature и Unit) должны проверять Acceptance Criteria из файла `spec.md`.
+- Если критериев нет — задай вопрос, а не придумывай тесты сам.
+- Новая фича — Feature-тест: минимум один успешный сценарий и один на ошибку, оба по Acceptance Criteria спеки.
+
 ## Матрица доступа «роль × маршрут»
 
 - Эталон: `tests/Feature/AccessMatrixTest.php` + фикстуры `tests/Support/AccessMatrixFixtures.php`.
@@ -20,7 +25,8 @@ alwaysApply: false
 - `Tests\TestCase` уже подключает `RefreshDatabase`.
 
 ## Запуск
-- Только в контейнере: `sail artisan test` / `sail artisan test --filter=...`.
+- Только в контейнере: `docker compose exec laravel.test php artisan test` и `docker compose exec laravel.test php artisan test --filter=...`.
+- Перед завершением работы тесты и `docker compose exec laravel.test ./vendor/bin/pint` должны быть зелёными.
 - БД — PostgreSQL testing в контейнере, не SQLite.
 
 ## Feature и Unit
