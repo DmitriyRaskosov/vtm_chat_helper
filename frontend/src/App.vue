@@ -19,6 +19,7 @@ const shellRoutes = [
     'character-diary',
     'chronicles',
     'workshop',
+    'profile',
 ];
 const wrapClass = computed(() => ({
     'app-frame': shellRoutes.includes(route.name),
@@ -28,6 +29,7 @@ const wrapClass = computed(() => ({
 const showScrollButtons = computed(() => (
     route.name === 'characters'
     || route.name === 'character'
+    || route.name === 'profile'
 ));
 
 function scrollTop() {

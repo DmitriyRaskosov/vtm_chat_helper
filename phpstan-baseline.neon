@@ -55,10 +55,3 @@ parameters:
 			identifier: arrayValues.list
 			count: 1
 			path: app/Rag/OllamaEmbeddingProvider.php
-
-		# exception: SPA fallback view() без view-string literal
-		-
-			message: '#^Parameter \#1 \$view of function view expects view\-string\|null, string given\.$#'
-			identifier: argument.type
-			count: 1
-			path: routes/web.php

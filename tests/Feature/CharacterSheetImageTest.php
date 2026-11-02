@@ -50,6 +50,27 @@ class CharacterSheetImageTest extends TestCase
         Storage::disk('public')->assertExists("characters/{$npcId}/sheet.png");
     }
 
+    public function test_player_can_upload_pdf_for_own_pc(): void
+    {
+        $player = User::factory()->create();
+        $pcId = $this->createPlayerCharacter($player);
+        $pdf = "%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n";
+
+        $this->actingAs($player, 'sanctum')
+            ->post("/api/characters/{$pcId}/sheet-image", [
+                'image' => UploadedFile::fake()->createWithContent('sheet.pdf', $pdf),
+            ])
+            ->assertOk()
+            ->assertJsonPath('sheet_image_path', "characters/{$pcId}/sheet.pdf");
+
+        Storage::disk('public')->assertExists("characters/{$pcId}/sheet.pdf");
+
+        $this->actingAs($player, 'sanctum')
+            ->get("/api/characters/{$pcId}/sheet-image")
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
+    }
+
     public function test_player_can_upload_image_for_own_pc(): void
     {
         $player = User::factory()->create();

@@ -1,5 +1,7 @@
 # Tasks: Личный кабинет игрока (Player Cabinet)
 
+Status: Completed
+
 ## Этап 1: Backend (База и Сервисы)
 - [x] Создать миграцию `add_avatar_path_to_characters_table` (добавить `avatar_path` string nullable).
 - [x] Обновить модель `Character` (добавить `avatar_path` в `#[Fillable]` и `casts`).
@@ -15,24 +17,24 @@
 - [x] Обновить маршрут `POST /api/characters/{character}/sheet` (применить Policy `manageProfile`).
 
 ## Этап 3: Frontend (Зависимости и Логика)
-- [ ] Установить npm-пакеты: `vue-pdf-embed` и `pdf-lib` в папке `frontend`.
-- [ ] Создать `frontend/src/composables/useProfile.js` (загрузка списка персонажей, функции загрузки аватара и чарлиста).
-- [ ] Создать `frontend/src/composables/usePdfForm.js` (логика для `pdf-lib`: чтение формы, заполнение, генерация файла).
+- [x] Установить npm-пакеты: `vue-pdf-embed` и `pdf-lib` в папке `frontend`.
+- [x] Создать `frontend/src/composables/useProfile.js` (загрузка списка персонажей, функции загрузки аватара и чарлиста).
+- [x] Создать `frontend/src/composables/usePdfForm.js` (логика для `pdf-lib`: чтение формы, заполнение, генерация файла).
 
 ## Этап 4: Frontend (Интерфейс)
-- [ ] Добавить маршрут `/profile` (`ProfileView.vue`) в `router.js`.
-- [ ] В `AppNav.vue` добавить иконку `🎭` (Личный кабинет).
-- [ ] Создать `ProfileView.vue`: сетка карточек персонажей (аватар, имя, кнопки загрузки).
-- [ ] Создать `AvatarModal.vue`: полноэкранный просмотр аватара.
-- [ ] Создать `SheetViewer.vue`: 
+- [x] Добавить маршрут `/profile` (`ProfileView.vue`) в `router.js`.
+- [x] В `AppNav.vue` добавить иконку `🎭` (Личный кабинет).
+- [x] Создать `ProfileView.vue`: сетка карточек персонажей (аватар, имя, кнопки загрузки).
+- [x] Создать `AvatarModal.vue`: полноэкранный просмотр аватара.
+- [x] Создать `SheetViewer.vue`: 
     *   Если файл — картинка: показывать `<img>`.
     *   Если файл — PDF: показывать `vue-pdf-embed`. Если есть поля ввода — активировать `usePdfForm` и кнопку «Сохранить».
 
 ## Этап 5: Тестирование и Проверка (DoD)
-- [ ] Написать `ProfileApiTest` (игрок видит своих, чужой получает 403).
-- [ ] Написать `AvatarUploadTest` (успешная загрузка, ресайз, лимит 40MB).
-- [ ] Обновить `SheetUploadTest` (игрок может загрузить PDF/PNG своему персонажу).
-- [ ] Прогнать `docker compose exec laravel.test php artisan test` — все тесты зелёные.
-- [ ] Прогнать `docker compose exec laravel.test ./vendor/bin/pint`.
-- [ ] Прогнать `cd frontend && npm run build` — сборка успешна.
-- [ ] Сверить результат с Acceptance Criteria из `spec.md`.
+- [x] Написать `ProfileApiTest` (игрок видит своих, чужой получает 403).
+- [x] Написать `AvatarUploadTest` (успешная загрузка, ресайз, лимит 40MB).
+- [x] Обновить `SheetUploadTest` (игрок может загрузить PDF/PNG своему персонажу).
+- [x] Прогнать `docker compose exec laravel.test php artisan test` — все тесты зелёные.
+- [x] Прогнать `docker compose exec laravel.test ./vendor/bin/pint`.
+- [x] Прогнать `cd frontend && npm run build` — сборка успешна.
+- [x] Сверить результат с Acceptance Criteria из `spec.md`.

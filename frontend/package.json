@@ -8,8 +8,11 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@pdf-lib/fontkit": "^1.1.1",
     "axios": "^1.11.0",
+    "pdf-lib": "^1.17.1",
     "vue": "^3.5.18",
+    "vue-pdf-embed": "^2.1.7",
     "vue-router": "^4.5.1"
   },
   "devDependencies": {

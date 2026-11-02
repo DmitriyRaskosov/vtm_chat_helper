@@ -4,6 +4,8 @@ import { apiErrorMessage } from '../utils/apiError';
 
 export function useCharacterSheetImage(characterId) {
     const imageUrl = ref(null);
+    const contentType = ref('');
+    const fileBlob = ref(null);
     const loading = ref(false);
     const error = ref('');
 
@@ -16,6 +18,8 @@ export function useCharacterSheetImage(characterId) {
         }
 
         imageUrl.value = null;
+        contentType.value = '';
+        fileBlob.value = null;
     }
 
     async function load(id) {
@@ -36,7 +40,10 @@ export function useCharacterSheetImage(characterId) {
                 responseType: 'blob',
             });
 
-            objectUrl = URL.createObjectURL(response.data);
+            const blob = response.data;
+            contentType.value = String(response.headers['content-type'] ?? blob.type ?? '');
+            fileBlob.value = blob;
+            objectUrl = URL.createObjectURL(blob);
             imageUrl.value = objectUrl;
 
             return objectUrl;
@@ -90,6 +97,8 @@ export function useCharacterSheetImage(characterId) {
 
     return {
         imageUrl,
+        contentType,
+        fileBlob,
         loading,
         error,
         load,

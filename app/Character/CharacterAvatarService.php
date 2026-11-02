@@ -48,10 +48,6 @@ final class CharacterAvatarService
         $width = imagesx($source);
         $height = imagesy($source);
         $side = min($width, $height);
-        if ($side < 1) {
-            imagedestroy($source);
-            throw new InvalidCharacterInputException('Файл не является изображением.');
-        }
 
         $canvas = imagecreatetruecolor(self::SIZE, self::SIZE);
         if ($canvas === false) {

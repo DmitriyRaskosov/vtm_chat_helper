@@ -10,6 +10,7 @@ import DiaryView from './views/DiaryView.vue';
 import ChronicleListView from './views/ChronicleListView.vue';
 import InvitationAcceptView from './views/InvitationAcceptView.vue';
 import WorkshopView from './views/WorkshopView.vue';
+import ProfileView from './views/ProfileView.vue';
 
 function legacyChronicleRedirect(suffix) {
     return resolveChroniclePath(suffix);
@@ -45,6 +46,7 @@ const router = createRouter({
             component: DiaryView,
             meta: { auth: true, storyteller: true },
         },
+        { path: '/profile', name: 'profile', component: ProfileView, meta: { auth: true } },
         { path: '/chronicles', name: 'chronicles', component: ChronicleListView, meta: { auth: true } },
         {
             path: '/c/:chronicleId/workshop',
