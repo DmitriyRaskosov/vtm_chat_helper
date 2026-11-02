@@ -31,6 +31,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
     'concept',
     'is_active',
     'sheet_image_path',
+    'avatar_path',
     'description',
     'inventory',
 ])]
@@ -209,6 +210,7 @@ class Character extends Model
             'apparent_age' => 'integer',
             'actual_age' => 'integer',
             'is_active' => 'boolean',
+            'avatar_path' => 'string',
         ];
     }
 }

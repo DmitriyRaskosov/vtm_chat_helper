@@ -50,7 +50,7 @@ class CharacterSheetImageTest extends TestCase
         Storage::disk('public')->assertExists("characters/{$npcId}/sheet.png");
     }
 
-    public function test_player_cannot_upload_image_for_own_pc(): void
+    public function test_player_can_upload_image_for_own_pc(): void
     {
         $player = User::factory()->create();
         $pcId = $this->createPlayerCharacter($player);
@@ -59,8 +59,8 @@ class CharacterSheetImageTest extends TestCase
             ->post("/api/characters/{$pcId}/sheet-image", [
                 'image' => UploadedFile::fake()->image('charsheet.png'),
             ])
-            ->assertStatus(403)
-            ->assertJsonPath('message', 'Только рассказчик.');
+            ->assertOk()
+            ->assertJsonPath('sheet_image_path', "characters/{$pcId}/sheet.png");
     }
 
     public function test_player_cannot_upload_image_for_foreign_character(): void
@@ -111,15 +111,35 @@ class CharacterSheetImageTest extends TestCase
             ->assertJsonPath('message', 'You cannot access this character sheet.');
     }
 
-    public function test_upload_rejects_non_image_file(): void
+    public function test_upload_rejects_disallowed_file(): void
     {
         $npcId = $this->createNpc();
 
         $this->actingAs($this->storyteller, 'sanctum')
             ->post("/api/characters/{$npcId}/sheet-image", [
-                'image' => UploadedFile::fake()->create('notes.pdf', 100, 'application/pdf'),
+                'image' => UploadedFile::fake()->create('notes.txt', 100, 'text/plain'),
             ])
             ->assertStatus(422);
+    }
+
+    public function test_storyteller_can_upload_pdf_and_show_returns_pdf_content_type(): void
+    {
+        $npcId = $this->createNpc();
+        $pdf = "%PDF-1.4\n1 0 obj<</Type/Catalog>>endobj\ntrailer<</Root 1 0 R>>\n%%EOF\n";
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->post("/api/characters/{$npcId}/sheet-image", [
+                'image' => UploadedFile::fake()->createWithContent('sheet.pdf', $pdf),
+            ])
+            ->assertOk()
+            ->assertJsonPath('sheet_image_path', "characters/{$npcId}/sheet.pdf");
+
+        Storage::disk('public')->assertExists("characters/{$npcId}/sheet.pdf");
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->get("/api/characters/{$npcId}/sheet-image")
+            ->assertOk()
+            ->assertHeader('content-type', 'application/pdf');
     }
 
     public function test_upload_replaces_old_image(): void

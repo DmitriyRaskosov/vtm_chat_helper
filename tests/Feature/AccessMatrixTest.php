@@ -325,7 +325,26 @@ class AccessMatrixTest extends TestCase
             ]),
             self::forRoles('characters.sheet-image.store.own', 'POST', 'characters/{playerCharacter}/sheet-image', [
                 'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_ALLOWED,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('profile.characters', 'GET', 'profile/characters', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_ALLOWED,
+                'player_foreign' => self::EXPECT_ALLOWED,
+                'player_other_chronicle' => self::EXPECT_ALLOWED,
+                'storyteller' => self::EXPECT_403,
+            ]),
+            self::forRoles('characters.avatar.store.npc', 'POST', 'characters/{npc}/avatar', [
+                'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('characters.avatar.store.own', 'POST', 'characters/{playerCharacter}/avatar', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_ALLOWED,
                 'player_foreign' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),

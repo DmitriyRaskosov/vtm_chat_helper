@@ -3,6 +3,7 @@
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\MeController;
 use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\CharacterAvatarController;
 use App\Http\Controllers\CharacterSheetController;
 use App\Http\Controllers\CharacterSheetImageController;
 use App\Http\Controllers\CharacterStateController;
@@ -16,6 +17,7 @@ use App\Http\Controllers\DiaryEntryController;
 use App\Http\Controllers\DiceRollController;
 use App\Http\Controllers\EventGeneratorController;
 use App\Http\Controllers\GameSessionController;
+use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SceneContextController;
 use App\Http\Controllers\SceneContextImageController;
 use App\Http\Controllers\SceneController;
@@ -78,9 +80,14 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::get('/character-sheet/catalog', [CharacterSheetController::class, 'catalog']);
 
+    Route::get('/profile/characters', [ProfileController::class, 'index']);
+
     Route::get('/characters/{character}', [CharacterSheetController::class, 'show']);
     Route::get('/characters/{character}/sheet-image', [CharacterSheetImageController::class, 'show']);
-    Route::post('/characters/{character}/sheet-image', [CharacterSheetImageController::class, 'store']);
+    Route::post('/characters/{character}/sheet-image', [CharacterSheetImageController::class, 'store'])
+        ->can('manageProfile', 'character');
+    Route::post('/characters/{character}/avatar', [CharacterAvatarController::class, 'store'])
+        ->can('manageProfile', 'character');
 
     Route::patch('/characters/{character}', [CharacterSheetController::class, 'update']);
     Route::put('/characters/{character}/disciplines', [CharacterSheetController::class, 'updateDisciplines']);

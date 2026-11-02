@@ -12,10 +12,10 @@ class CharacterSheetImageController extends Controller
 {
     public function store(Request $request, Character $character): JsonResponse
     {
-        $this->authorize('updatePlace', $character);
+        $this->authorize('manageProfile', $character);
 
         $validated = $request->validate([
-            'image' => ['required', 'file', 'mimes:jpeg,png,webp', 'max:5120'],
+            'image' => ['required', 'file', 'mimes:jpeg,png,webp,pdf', 'max:40960'],
         ]);
 
         $file = $validated['image'];
@@ -46,10 +46,30 @@ class CharacterSheetImageController extends Controller
 
         $path = $character->sheet_image_path;
 
-        if ($path === null || ! Storage::disk('public')->exists($path)) {
+        $disk = Storage::disk('public');
+
+        if ($path === null || ! $disk->exists($path)) {
             return response()->json(['message' => 'Sheet image not found.'], 404);
         }
 
-        return response()->file(Storage::disk('public')->path($path));
+        return response()->file($disk->path($path), [
+            'Content-Type' => $this->contentType($path),
+        ]);
+    }
+
+    private function contentType(string $path): string
+    {
+        $detected = Storage::disk('public')->mimeType($path);
+        if (is_string($detected) && $detected !== '' && $detected !== 'application/octet-stream') {
+            return $detected;
+        }
+
+        return match (strtolower(pathinfo($path, PATHINFO_EXTENSION))) {
+            'jpg', 'jpeg' => 'image/jpeg',
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            'pdf' => 'application/pdf',
+            default => 'application/octet-stream',
+        };
     }
 }

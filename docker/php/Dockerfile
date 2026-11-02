@@ -3,16 +3,22 @@ FROM php:8.4-fpm
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
         git \
+        libfreetype6-dev \
         libicu-dev \
+        libjpeg62-turbo-dev \
         libonig-dev \
+        libpng-dev \
         libpq-dev \
+        libwebp-dev \
         libzip-dev \
         nginx \
         postgresql-client \
         unzip \
+    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
     && docker-php-ext-configure intl \
     && docker-php-ext-install -j"$(nproc)" \
         bcmath \
+        gd \
         intl \
         mbstring \
         opcache \
@@ -34,6 +40,7 @@ COPY . .
 RUN composer install --no-interaction --prefer-dist --optimize-autoloader
 
 COPY docker/php/nginx.conf /etc/nginx/conf.d/default.conf
+COPY docker/php/uploads.ini /usr/local/etc/php/conf.d/uploads.ini
 RUN rm -f /etc/nginx/sites-enabled/default
 
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh

@@ -50,6 +50,28 @@ class CharacterPolicy
         return $this->denyUnlessStorytellerInCharacterChronicle($user, $character);
     }
 
+    public function manageProfile(User $user, Character $character): Response|bool
+    {
+        if ((int) $character->user_id === (int) $user->id) {
+            return true;
+        }
+
+        return $this->denyUnlessStorytellerInCharacterChronicle($user, $character);
+    }
+
+    public function viewProfile(User $user): Response|bool
+    {
+        $isStoryteller = ChronicleMember::query()
+            ->where('user_id', $user->id)
+            ->whereNull('left_at')
+            ->where('role', ChronicleRole::Storyteller)
+            ->exists();
+
+        return $isStoryteller
+            ? Response::deny('Рассказчик не имеет личного кабинета.')
+            : true;
+    }
+
     public function updateState(User $user, Character $character): bool
     {
         if ($this->userIsStorytellerInChronicleId($user, (int) $character->chronicle_id)) {
