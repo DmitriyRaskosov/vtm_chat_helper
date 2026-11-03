@@ -10,7 +10,7 @@
             <div class="character-create-grid">
                 <label>
                     Имя
-                    <input v-model="form.canonical_name" type="text" maxlength="120" />
+                    <input v-model="form.canonical_name" type="text" maxlength="100" />
                 </label>
                 <label>
                     Тип

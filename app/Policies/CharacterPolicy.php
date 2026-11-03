@@ -7,6 +7,7 @@ use App\Chronicle\CurrentChronicle;
 use App\Enums\CharacterType;
 use App\Enums\ChronicleRole;
 use App\Models\Character;
+use App\Models\Chronicle;
 use App\Models\ChronicleMember;
 use App\Models\Scene;
 use App\Models\User;
@@ -28,11 +29,19 @@ class CharacterPolicy
         return $this->denyUnlessManagesSheet($user, $character);
     }
 
-    public function create(User $user): Response|bool
+    public function create(User $user, ?CharacterType $characterType = null): Response|bool
     {
-        return $user->isStorytellerIn($this->currentChronicle->get())
-            ? true
-            : Response::deny('Только рассказчик.');
+        $chronicle = $this->currentChronicle->get();
+
+        if ($user->isStorytellerIn($chronicle)) {
+            return true;
+        }
+
+        if ($characterType === CharacterType::Player && $this->userIsPlayerIn($user, $chronicle)) {
+            return true;
+        }
+
+        return Response::deny('Только рассказчик.');
     }
 
     public function archive(User $user, Character $character): Response|bool
@@ -132,6 +141,16 @@ class CharacterPolicy
         return $this->userIsStorytellerInChronicleId($user, (int) $character->chronicle_id)
             ? true
             : Response::deny('Только рассказчик.');
+    }
+
+    private function userIsPlayerIn(User $user, Chronicle $chronicle): bool
+    {
+        return ChronicleMember::query()
+            ->where('chronicle_id', $chronicle->id)
+            ->where('user_id', $user->id)
+            ->whereNull('left_at')
+            ->where('role', ChronicleRole::Player)
+            ->exists();
     }
 
     private function userIsStorytellerInChronicleId(User $user, int $chronicleId): bool

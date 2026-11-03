@@ -90,6 +90,48 @@ export function useProfile() {
         }
     }
 
+    async function loadClans() {
+        try {
+            const response = await api.get('/character-sheet/catalog');
+            const clans = response.data?.clans;
+
+            return Array.isArray(clans) ? clans : [];
+        } catch (err) {
+            error.value = apiErrorMessage(err, 'Не удалось загрузить кланы.');
+            throw err;
+        }
+    }
+
+    async function createCharacter(chronicleId, payload) {
+        const id = Number(chronicleId);
+
+        if (!Number.isFinite(id) || id <= 0) {
+            error.value = 'Хроника не выбрана.';
+            throw new Error(error.value);
+        }
+
+        error.value = '';
+
+        const body = {
+            canonical_name: String(payload?.canonical_name ?? '').trim(),
+            clan_id: Number(payload?.clan_id),
+        };
+        const concept = String(payload?.concept ?? '').trim();
+
+        if (concept !== '') {
+            body.concept = concept;
+        }
+
+        try {
+            const response = await api.post(`/chronicles/${id}/characters`, body);
+
+            return response.data?.character ?? null;
+        } catch (err) {
+            error.value = apiErrorMessage(err, 'Не удалось создать персонажа.');
+            throw err;
+        }
+    }
+
     return {
         characters,
         loading,
@@ -98,5 +140,7 @@ export function useProfile() {
         loadCharacters,
         uploadAvatar,
         uploadSheet,
+        loadClans,
+        createCharacter,
     };
 }

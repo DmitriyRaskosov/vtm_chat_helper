@@ -2,6 +2,7 @@
 
 namespace Tests\Support;
 
+use App\Models\CanonClan;
 use App\Models\CanonDiscipline;
 use App\Models\Character;
 use App\Models\CharacterDiaryEntry;
@@ -274,6 +275,7 @@ final class AccessMatrixFixtures
             return [
                 'canonical_name' => 'Новый персонаж',
                 'character_type' => 'npc',
+                'clan_id' => CanonClan::query()->where('slug', 'tremere')->value('id'),
             ];
         }
 

@@ -12,9 +12,10 @@
                 <RouterLink class="profile-workshop-link" :to="workshopPath">Мастерская</RouterLink>
             </section>
             <p v-else-if="error" class="error">{{ error }}</p>
-            <p v-else-if="characters.length === 0" class="muted">
-                У вас пока нет персонажей. Попросите вашего рассказчика создать персонажа и привязать его к вашему аккаунту.
-            </p>
+            <section v-else-if="characters.length === 0" class="profile-empty">
+                <p class="muted">У вас пока нет персонажей.</p>
+                <button type="button" @click="createOpen = true">Создать персонажа</button>
+            </section>
 
             <div v-else class="profile-grid">
                 <article
@@ -65,6 +66,12 @@
         </div>
 
         <AvatarModal v-model="avatarOpen" :src="avatarSrc" />
+        <CreateCharacterModal
+            v-if="createOpen"
+            v-model="createOpen"
+            :chronicle-id="currentChronicleId"
+            @created="onCharacterCreated"
+        />
 
         <div v-if="sheetCharacter" class="diary-backdrop" @click.self="sheetCharacter = null">
             <div class="diary-modal card profile-sheet-modal">
@@ -83,6 +90,7 @@ import { computed, defineAsyncComponent, onMounted, reactive, ref } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import AppNav from '../components/layout/AppNav.vue';
 import AvatarModal from '../components/profile/AvatarModal.vue';
+import CreateCharacterModal from '../components/profile/CreateCharacterModal.vue';
 import { currentChronicleId, useAuth } from '../auth';
 import { useProfile } from '../composables/useProfile';
 
@@ -103,6 +111,7 @@ const {
 const avatarOpen = ref(false);
 const avatarSrc = ref('');
 const sheetCharacter = ref(null);
+const createOpen = ref(false);
 const avatarInputs = reactive({});
 const sheetInputs = reactive({});
 
@@ -127,6 +136,20 @@ function characterPath(row) {
 
 function openCharacter(row) {
     router.push(characterPath(row));
+}
+
+async function onCharacterCreated(character) {
+    createOpen.value = false;
+    await loadCharacters().catch(() => {});
+
+    const chronicleId = character?.chronicle_id ?? currentChronicleId.value;
+    const characterId = character?.id;
+
+    if (!chronicleId || !characterId) {
+        return;
+    }
+
+    await router.push(`/c/${chronicleId}/characters/${characterId}`);
 }
 
 function avatarUrl(row) {
@@ -249,6 +272,10 @@ async function onSheetSelected(row, event) {
 
 .profile-empty p {
     margin-top: 0;
+}
+
+.profile-empty button {
+    margin-top: 1rem;
 }
 
 .profile-workshop-link {

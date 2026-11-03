@@ -96,10 +96,21 @@ class CharacterSheetController extends Controller
 
     public function store(StoreCharacterRequest $request): JsonResponse
     {
-        $this->authorize('view', $this->currentChronicle->get());
-        $this->authorize('create', Character::class);
+        $chronicle = $this->currentChronicle->get();
+        $this->authorize('view', $chronicle);
 
-        $character = $this->creation->create($request->validated());
+        $validated = $request->validated();
+        $user = $request->user();
+
+        if ($user !== null && ! $user->isStorytellerIn($chronicle)) {
+            $this->authorize('create', [Character::class, CharacterType::Player]);
+            $validated['user_id'] = $user->id;
+            $validated['character_type'] = CharacterType::Player->value;
+        } else {
+            $this->authorize('create', Character::class);
+        }
+
+        $character = $this->creation->create($validated);
 
         return response()->json([
             'character' => (new CharacterSheetResource($character, $this->reader))->toArray($request),

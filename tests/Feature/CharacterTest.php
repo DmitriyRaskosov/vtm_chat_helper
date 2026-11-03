@@ -56,12 +56,14 @@ class CharacterTest extends TestCase
 
     public function test_player_cannot_create_character(): void
     {
-        $player = User::factory()->create(); // role=Player по умолчанию
+        $player = User::factory()->create();
+        $clan = CanonClan::query()->where('slug', 'tremere')->firstOrFail();
 
         $response = $this->actingAs($player, 'sanctum')
             ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Запрещённый',
                 'character_type' => 'npc',
+                'clan_id' => $clan->id,
             ]);
 
         $response->assertStatus(403);

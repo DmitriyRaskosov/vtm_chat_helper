@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\ChronicleRole;
+use App\Models\CanonClan;
 use App\Models\Chronicle;
 use App\Models\ChronicleMember;
 use App\Models\GameSession;
@@ -46,18 +47,21 @@ class CharacterAuthorizationTest extends TestCase
             ->assertJsonPath('message', 'You cannot access this character sheet.');
     }
 
-    public function test_player_cannot_create_character(): void
+    public function test_joined_player_create_keeps_own_player_character(): void
     {
         $player = User::factory()->create();
         $this->joinChronicle($player, $this->chronicle, ChronicleRole::Player);
+        $clan = CanonClan::query()->where('slug', 'tremere')->firstOrFail();
 
         $this->actingAs($player, 'sanctum')
             ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
                 'canonical_name' => 'Запрещённый',
                 'character_type' => 'npc',
+                'clan_id' => $clan->id,
             ])
-            ->assertStatus(403)
-            ->assertJsonPath('message', 'Только рассказчик.');
+            ->assertStatus(201)
+            ->assertJsonPath('character.character_type', 'player')
+            ->assertJsonPath('character.user_id', $player->id);
     }
 
     public function test_player_cannot_speak_as_npc(): void

@@ -289,8 +289,8 @@ class AccessMatrixTest extends TestCase
             ]),
             self::forRoles('characters.store', 'POST', 'chronicles/{chronicle}/characters', [
                 'guest' => self::EXPECT_401,
-                'player_owner' => self::EXPECT_403,
-                'player_foreign' => self::EXPECT_403,
+                'player_owner' => self::EXPECT_ALLOWED,
+                'player_foreign' => self::EXPECT_ALLOWED,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
             self::forRoles('characters.show.npc', 'GET', 'characters/{npc}', [
