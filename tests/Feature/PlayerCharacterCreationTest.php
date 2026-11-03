@@ -42,7 +42,7 @@ class PlayerCharacterCreationTest extends TestCase
         $this->clan = CanonClan::query()->where('slug', 'tremere')->firstOrFail();
     }
 
-    public function test_player_creates_one_character_and_second_returns_422(): void
+    public function test_player_can_create_two_characters(): void
     {
         $first = $this->actingAs($this->player, 'sanctum')
             ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
@@ -65,9 +65,8 @@ class PlayerCharacterCreationTest extends TestCase
                 'clan_id' => $this->clan->id,
             ]);
 
-        $second->assertStatus(422);
-        $second->assertJsonPath('message', 'У игрока уже есть активный персонаж в этой хронике.');
-        $this->assertSame(1, Character::query()
+        $second->assertStatus(201);
+        $this->assertSame(2, Character::query()
             ->where('chronicle_id', $this->chronicle->id)
             ->where('user_id', $this->player->id)
             ->count());

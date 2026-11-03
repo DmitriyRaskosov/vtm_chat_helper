@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property CharacterType $character_type
@@ -39,6 +40,8 @@ class Character extends Model
 {
     /** @use HasFactory<CharacterFactory> */
     use HasFactory;
+
+    use SoftDeletes;
 
     public $incrementing = false;
 

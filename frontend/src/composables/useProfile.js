@@ -132,6 +132,65 @@ export function useProfile() {
         }
     }
 
+    function requireCharacterId(characterId) {
+        const numericId = Number(characterId);
+
+        if (!Number.isFinite(numericId) || numericId <= 0) {
+            throw new Error('Персонаж не выбран.');
+        }
+
+        return numericId;
+    }
+
+    async function archiveCharacter(characterId) {
+        const numericId = requireCharacterId(characterId);
+        error.value = '';
+
+        try {
+            await api.post(`/characters/${numericId}/archive`);
+            characters.value = characters.value.map((character) => (
+                Number(character.id) === numericId
+                    ? { ...character, is_active: false }
+                    : character
+            ));
+        } catch (err) {
+            error.value = apiErrorMessage(err, 'Не удалось архивировать персонажа.');
+            throw err;
+        }
+    }
+
+    async function restoreCharacter(characterId) {
+        const numericId = requireCharacterId(characterId);
+        error.value = '';
+
+        try {
+            await api.post(`/characters/${numericId}/restore`);
+            characters.value = characters.value.map((character) => (
+                Number(character.id) === numericId
+                    ? { ...character, is_active: true }
+                    : character
+            ));
+        } catch (err) {
+            error.value = apiErrorMessage(err, 'Не удалось восстановить персонажа.');
+            throw err;
+        }
+    }
+
+    async function deleteCharacter(characterId) {
+        const numericId = requireCharacterId(characterId);
+        error.value = '';
+
+        try {
+            await api.delete(`/characters/${numericId}`);
+            characters.value = characters.value.filter(
+                (character) => Number(character.id) !== numericId,
+            );
+        } catch (err) {
+            error.value = apiErrorMessage(err, 'Не удалось удалить персонажа.');
+            throw err;
+        }
+    }
+
     return {
         characters,
         loading,
@@ -142,5 +201,8 @@ export function useProfile() {
         uploadSheet,
         loadClans,
         createCharacter,
+        archiveCharacter,
+        restoreCharacter,
+        deleteCharacter,
     };
 }

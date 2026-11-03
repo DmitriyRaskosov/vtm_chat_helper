@@ -27,6 +27,7 @@ use App\Http\Resources\CharacterSheetResource;
 use App\Models\Character;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Http\Response;
 
 class CharacterSheetController extends Controller
 {
@@ -222,5 +223,13 @@ class CharacterSheetController extends Controller
         return response()->json([
             'character' => (new CharacterSheetResource($character->refresh(), $this->reader))->toArray($request),
         ]);
+    }
+
+    public function destroy(Character $character): Response
+    {
+        $this->authorize('delete', $character);
+        $this->archiveService->delete($character);
+
+        return response()->noContent();
     }
 }

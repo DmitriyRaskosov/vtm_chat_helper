@@ -109,6 +109,8 @@
                     :is-storyteller="isStoryteller"
                     :my-character-id="myCharacterId"
                     :participants="currentParticipants"
+                    :active-player-characters="activePlayerCharacters"
+                    v-model:selected-pc-id="selectedPcId"
                     @send="send"
                 />
             </footer>
@@ -416,6 +418,8 @@ const {
     deleteMessage,
     restoreMessage,
     editMessage,
+    activePlayerCharacters,
+    selectedPcId,
 } = useChatMessages({
     selectedSceneId,
     canPost,

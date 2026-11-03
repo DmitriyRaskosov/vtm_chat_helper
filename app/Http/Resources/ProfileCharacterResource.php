@@ -27,6 +27,7 @@ class ProfileCharacterResource extends JsonResource
                 : (string) $character->entity->canonical_name,
             'avatar_path' => $character->avatar_path,
             'chronicle_id' => (int) $character->chronicle_id,
+            'is_active' => (bool) $character->is_active,
         ];
     }
 }

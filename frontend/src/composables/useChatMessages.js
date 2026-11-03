@@ -1,9 +1,10 @@
-import { computed, nextTick, onUnmounted, ref, watch } from 'vue';
+import { computed, nextTick, onUnmounted, ref, toValue, watch } from 'vue';
 import { api } from '../auth';
 import { playSoundForMessage } from '../utils/chatMessageSound';
 import { CHRONICLE_NOT_SELECTED, chronicleCollectionPath } from './useCurrentChronicle';
 
 const COMPOSER_MODE_KEY = 'chat-composer-mode';
+const SELECTED_PC_KEY = 'chat-selected-pc-id';
 
 function readComposerOocFromStorage() {
     return localStorage.getItem(COMPOSER_MODE_KEY) === 'ooc';
@@ -32,6 +33,8 @@ export function useChatMessages({
     const storytellerUserIds = ref([]);
     const isIcAutoScroll = ref(true);
     const isOocAutoScroll = ref(true);
+    const activePlayerCharacters = ref([]);
+    const selectedPcId = ref(null);
 
     const icMessages = computed(() => messages.value.filter((message) => !message.is_ooc));
     const oocMessages = computed(() => messages.value.filter(
@@ -69,6 +72,72 @@ export function useChatMessages({
 
     watch(isOoc, (value) => {
         writeComposerOocToStorage(value);
+    });
+
+    function readStoredPcId() {
+        const id = Number(localStorage.getItem(SELECTED_PC_KEY));
+
+        return Number.isFinite(id) && id > 0 ? id : null;
+    }
+
+    function rememberPc(id) {
+        if (id == null) {
+            localStorage.removeItem(SELECTED_PC_KEY);
+
+            return;
+        }
+
+        localStorage.setItem(SELECTED_PC_KEY, String(id));
+    }
+
+    function applyStoredPc(rows) {
+        const stored = readStoredPcId();
+        const match = rows.find((row) => Number(row.id) === stored);
+        const nextId = match ? Number(match.id) : (rows[0] ? Number(rows[0].id) : null);
+        selectedPcId.value = nextId;
+        rememberPc(nextId);
+    }
+
+    async function loadActivePlayerCharacters() {
+        if (isStoryteller.value) {
+            activePlayerCharacters.value = [];
+            selectedPcId.value = null;
+
+            return;
+        }
+
+        const chronicle = Number(toValue(chronicleId));
+        if (!Number.isFinite(chronicle) || chronicle <= 0) {
+            activePlayerCharacters.value = [];
+            selectedPcId.value = null;
+
+            return;
+        }
+
+        const { data } = await api.get('/profile/characters');
+        const rows = (Array.isArray(data?.data) ? data.data : []).filter((row) => (
+            row.is_active === true && Number(row.chronicle_id) === chronicle
+        ));
+        activePlayerCharacters.value = rows;
+        applyStoredPc(rows);
+    }
+
+    watch(
+        () => [isStoryteller.value, Number(toValue(chronicleId))],
+        () => {
+            loadActivePlayerCharacters().catch(() => {
+                activePlayerCharacters.value = [];
+            });
+        },
+        { immediate: true },
+    );
+
+    watch(selectedPcId, (id) => {
+        if (isStoryteller.value) {
+            return;
+        }
+
+        rememberPc(id);
     });
 
     watch(showDeleted, async () => {
@@ -174,9 +243,17 @@ export function useChatMessages({
         };
     
         const chosenSpeaker = speakerCharacterId?.value;
-        const characterId = chosenSpeaker != null && chosenSpeaker !== ''
-            ? chosenSpeaker
-            : myCharacterId?.value;
+        let characterId = null;
+
+        if (isStoryteller.value) {
+            characterId = chosenSpeaker != null && chosenSpeaker !== ''
+                ? chosenSpeaker
+                : myCharacterId?.value;
+        } else if (activePlayerCharacters.value.length > 1 && selectedPcId.value) {
+            characterId = selectedPcId.value;
+        } else {
+            characterId = myCharacterId?.value;
+        }
 
         if (characterId) {
             payload.character_id = characterId;
@@ -243,5 +320,7 @@ export function useChatMessages({
         deleteMessage,
         restoreMessage,
         editMessage,
+        activePlayerCharacters,
+        selectedPcId,
     };
 }

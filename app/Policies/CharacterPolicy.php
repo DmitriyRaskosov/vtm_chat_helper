@@ -46,12 +46,17 @@ class CharacterPolicy
 
     public function archive(User $user, Character $character): Response|bool
     {
-        return $this->denyUnlessStorytellerInCharacterChronicle($user, $character);
+        return $this->allowOwnerOrStoryteller($user, $character);
     }
 
     public function restore(User $user, Character $character): Response|bool
     {
-        return $this->denyUnlessStorytellerInCharacterChronicle($user, $character);
+        return $this->allowOwnerOrStoryteller($user, $character);
+    }
+
+    public function delete(User $user, Character $character): Response|bool
+    {
+        return $this->allowOwnerOrStoryteller($user, $character);
     }
 
     public function updatePlace(User $user, Character $character): Response|bool
@@ -141,6 +146,15 @@ class CharacterPolicy
         return $this->userIsStorytellerInChronicleId($user, (int) $character->chronicle_id)
             ? true
             : Response::deny('Только рассказчик.');
+    }
+
+    private function allowOwnerOrStoryteller(User $user, Character $character): Response|bool
+    {
+        if ($character->isPlayableBy($user)) {
+            return true;
+        }
+
+        return $this->denyUnlessStorytellerInCharacterChronicle($user, $character);
     }
 
     private function userIsPlayerIn(User $user, Chronicle $chronicle): bool

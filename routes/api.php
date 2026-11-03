@@ -99,6 +99,8 @@ Route::middleware('auth:sanctum')->group(function () {
         ->can('archive', 'character');
     Route::post('/characters/{character}/restore', [CharacterSheetController::class, 'restore'])
         ->can('restore', 'character');
+    Route::delete('/characters/{character}', [CharacterSheetController::class, 'destroy'])
+        ->can('delete', 'character');
     Route::put('/characters/{character}/place', [CharacterSheetController::class, 'updatePlace'])
         ->can('updatePlace', 'character');
     Route::put('/characters/{character}/state', [CharacterStateController::class, 'update']);

@@ -11,7 +11,6 @@ use App\World\Exceptions\PlayerNotChronicleMemberException;
 use App\World\WorldEntityService;
 use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Gate;
 use Tests\TestCase;
 
@@ -25,16 +24,18 @@ class MembershipSchemaTest extends TestCase
         $this->seed(CanonClanSeeder::class);
     }
 
-    public function test_second_active_player_in_same_chronicle_fails_unique_index(): void
+    public function test_second_active_player_in_same_chronicle_is_allowed(): void
     {
         $chronicle = Chronicle::factory()->create();
         $user = User::factory()->create();
 
-        Character::factory()->player($user)->forChronicle($chronicle)->create();
+        $first = Character::factory()->player($user)->forChronicle($chronicle)->create();
+        $second = Character::factory()->player($user)->forChronicle($chronicle)->create();
 
-        $this->expectException(QueryException::class);
-
-        Character::factory()->player($user)->forChronicle($chronicle)->create();
+        $this->assertTrue($first->is_active);
+        $this->assertTrue($second->is_active);
+        $this->assertSame($chronicle->id, $second->chronicle_id);
+        $this->assertSame($user->id, $second->user_id);
     }
 
     public function test_same_user_can_have_active_players_in_different_chronicles(): void

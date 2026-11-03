@@ -12,57 +12,79 @@
                 <RouterLink class="profile-workshop-link" :to="workshopPath">Мастерская</RouterLink>
             </section>
             <p v-else-if="error" class="error">{{ error }}</p>
-            <section v-else-if="characters.length === 0" class="profile-empty">
-                <p class="muted">У вас пока нет персонажей.</p>
-                <button type="button" @click="createOpen = true">Создать персонажа</button>
-            </section>
-
-            <div v-else class="profile-grid">
-                <article
-                    v-for="row in characters"
-                    :key="row.id"
-                    class="card profile-card"
-                    @click="openCharacter(row)"
-                >
-                    <button
-                        type="button"
-                        class="profile-avatar"
-                        :disabled="!row.avatar_path"
-                        @click.stop="openAvatar(row)"
+            <template v-else>
+                <div class="profile-toolbar">
+                    <label class="toggle">
+                        <input v-model="showArchived" type="checkbox" />
+                        Показывать архивных
+                    </label>
+                    <button type="button" @click="createOpen = true">Создать персонажа</button>
+                </div>
+                <p v-if="visibleCharacters.length === 0" class="muted">{{ emptyLabel }}</p>
+                <div v-else class="profile-grid">
+                    <article
+                        v-for="row in visibleCharacters"
+                        :key="row.id"
+                        class="card profile-card"
+                        @click="openCharacter(row)"
                     >
-                        <img v-if="row.avatar_path" :src="avatarUrl(row)" :alt="row.canonical_name" />
-                        <span v-else class="muted">Нет аватара</span>
-                    </button>
-                    <RouterLink class="profile-name" :to="characterPath(row)" @click.stop>
-                        {{ row.canonical_name }}
-                    </RouterLink>
-                    <div class="profile-actions" @click.stop>
-                        <input
-                            :ref="(el) => setAvatarInput(row.id, el)"
-                            type="file"
-                            accept="image/jpeg,image/png"
-                            class="profile-file"
-                            @change="onAvatarSelected(row, $event)"
-                        />
-                        <input
-                            :ref="(el) => setSheetInput(row.id, el)"
-                            type="file"
-                            accept="image/jpeg,image/png,image/webp,application/pdf"
-                            class="profile-file"
-                            @change="onSheetSelected(row, $event)"
-                        />
-                        <button type="button" class="secondary" @click="avatarInputs[row.id]?.click()">
-                            Загрузить аватар
+                        <button
+                            type="button"
+                            class="profile-avatar"
+                            :disabled="!row.avatar_path"
+                            @click.stop="openAvatar(row)"
+                        >
+                            <img v-if="row.avatar_path" :src="avatarUrl(row)" :alt="row.canonical_name" />
+                            <span v-else class="muted">Нет аватара</span>
                         </button>
-                        <button type="button" class="secondary" @click="sheetInputs[row.id]?.click()">
-                            Загрузить чарлист
-                        </button>
-                        <button type="button" class="secondary" @click="openSheet(row)">
-                            Чарлист
-                        </button>
-                    </div>
-                </article>
-            </div>
+                        <RouterLink class="profile-name" :to="characterPath(row)" @click.stop>
+                            {{ row.canonical_name }}
+                        </RouterLink>
+                        <p v-if="isArchived(row)" class="muted">В архиве</p>
+                        <div class="profile-actions" @click.stop>
+                            <input
+                                :ref="(el) => setAvatarInput(row.id, el)"
+                                type="file"
+                                accept="image/jpeg,image/png"
+                                class="profile-file"
+                                @change="onAvatarSelected(row, $event)"
+                            />
+                            <input
+                                :ref="(el) => setSheetInput(row.id, el)"
+                                type="file"
+                                accept="image/jpeg,image/png,image/webp,application/pdf"
+                                class="profile-file"
+                                @change="onSheetSelected(row, $event)"
+                            />
+                            <button type="button" class="secondary" @click="avatarInputs[row.id]?.click()">
+                                Загрузить аватар
+                            </button>
+                            <button type="button" class="secondary" @click="sheetInputs[row.id]?.click()">
+                                Загрузить чарлист
+                            </button>
+                            <button type="button" class="secondary" @click="openSheet(row)">
+                                Чарлист
+                            </button>
+                            <button
+                                v-if="!isArchived(row)"
+                                type="button"
+                                class="secondary"
+                                @click="onArchive(row)"
+                            >
+                                В архив
+                            </button>
+                            <template v-else>
+                                <button type="button" class="secondary" @click="onRestore(row)">
+                                    Восстановить
+                                </button>
+                                <button type="button" class="secondary" @click="askDelete(row)">
+                                    Удалить навсегда
+                                </button>
+                            </template>
+                        </div>
+                    </article>
+                </div>
+            </template>
         </div>
 
         <AvatarModal v-model="avatarOpen" :src="avatarSrc" />
@@ -72,6 +94,17 @@
             :chronicle-id="currentChronicleId"
             @created="onCharacterCreated"
         />
+
+        <div v-if="pendingDelete" class="diary-backdrop" @click.self="pendingDelete = null">
+            <div class="diary-modal card">
+                <h2>Удалить навсегда?</h2>
+                <p>{{ pendingDelete.canonical_name }} исчезнет из кабинета. Вернуть его будет нельзя.</p>
+                <div class="profile-confirm-actions">
+                    <button type="button" @click="confirmDelete">Удалить навсегда</button>
+                    <button type="button" class="secondary" @click="pendingDelete = null">Отмена</button>
+                </div>
+            </div>
+        </div>
 
         <div v-if="sheetCharacter" class="diary-backdrop" @click.self="sheetCharacter = null">
             <div class="diary-modal card profile-sheet-modal">
@@ -106,12 +139,17 @@ const {
     loadCharacters,
     uploadAvatar,
     uploadSheet,
+    archiveCharacter,
+    restoreCharacter,
+    deleteCharacter,
 } = useProfile();
 
 const avatarOpen = ref(false);
 const avatarSrc = ref('');
 const sheetCharacter = ref(null);
 const createOpen = ref(false);
+const showArchived = ref(false);
+const pendingDelete = ref(null);
 const avatarInputs = reactive({});
 const sheetInputs = reactive({});
 
@@ -130,12 +168,63 @@ const workshopPath = computed(() => {
     return chronicleId ? `/c/${chronicleId}/workshop` : '/chronicles';
 });
 
+const visibleCharacters = computed(() => {
+    if (showArchived.value) {
+        return characters.value;
+    }
+
+    return characters.value.filter((row) => row.is_active !== false);
+});
+
+const emptyLabel = computed(() => (
+    characters.value.length === 0
+        ? 'У вас пока нет персонажей.'
+        : 'Нет активных персонажей.'
+));
+
+function isArchived(row) {
+    return row.is_active === false;
+}
+
 function characterPath(row) {
     return `/c/${row.chronicle_id}/characters/${row.id}`;
 }
 
 function openCharacter(row) {
     router.push(characterPath(row));
+}
+
+async function onArchive(row) {
+    try {
+        await archiveCharacter(row.id);
+    } catch {
+        // error уже в useProfile
+    }
+}
+
+async function onRestore(row) {
+    try {
+        await restoreCharacter(row.id);
+    } catch {
+        // error уже в useProfile
+    }
+}
+
+function askDelete(row) {
+    pendingDelete.value = row;
+}
+
+async function confirmDelete() {
+    if (!pendingDelete.value) {
+        return;
+    }
+
+    try {
+        await deleteCharacter(pendingDelete.value.id);
+        pendingDelete.value = null;
+    } catch {
+        // error уже в useProfile
+    }
 }
 
 async function onCharacterCreated(character) {
@@ -285,5 +374,26 @@ async function onSheetSelected(row, event) {
     background: var(--accent);
     color: var(--on-accent);
     text-decoration: none;
+}
+
+.profile-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.profile-toolbar button {
+    margin-top: 0;
+}
+
+.profile-confirm-actions {
+    display: flex;
+    gap: 0.75rem;
+}
+
+.profile-confirm-actions button {
+    margin-top: 0;
 }
 </style>
