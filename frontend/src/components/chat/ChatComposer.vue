@@ -62,6 +62,7 @@
             <ChatToolsToolbar
                 :is-storyteller="isStoryteller"
                 :my-character-id="myCharacterId"
+                :inventory-character-id="inventoryCharacterId"
             />
 
             <label class="toggle composer-deleted-toggle">
@@ -96,6 +97,7 @@ const props = defineProps({
     myCharacterName: { type: String, default: null },
     isStoryteller: { type: Boolean, required: true },
     myCharacterId: { type: [Number, String], default: null },
+    inventoryCharacterId: { type: [Number, String], default: null },
     participants: { type: Array, default: () => [] },
     activePlayerCharacters: { type: Array, default: () => [] },
 });

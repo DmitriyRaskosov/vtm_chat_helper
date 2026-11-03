@@ -108,6 +108,7 @@
                     :my-character-name="myCharacterName"
                     :is-storyteller="isStoryteller"
                     :my-character-id="myCharacterId"
+                    :inventory-character-id="inventoryCharacterId"
                     :participants="currentParticipants"
                     :active-player-characters="playerCharactersOnScene"
                     v-model:selected-pc-id="selectedPcId"
@@ -149,6 +150,26 @@
                     :error="notesError"
                     @close="isNotesOpen = false"
                     @save="saveNotes"
+                />
+            </FloatingWindow>
+            <FloatingWindow
+                v-if="isInventoryOpen"
+                title="Инвентарь"
+                :initial-left="360"
+                :initial-top="160"
+                @close="isInventoryOpen = false"
+            >
+                <InventoryPanel
+                    ref="inventoryPanel"
+                    :character-id="inventoryCharacterId"
+                    :character-name="inventoryCharacterName"
+                    :items="inventoryItems"
+                    :loading="inventoryLoading"
+                    :saving="inventorySaving"
+                    :error="inventoryError"
+                    @add="onAddInventoryItem"
+                    @move="moveInventoryItem"
+                    @remove="removeInventoryItem"
                 />
             </FloatingWindow>
             <FloatingWindow
@@ -295,6 +316,7 @@ import ChatCharacterDrawer from '../components/chat/ChatCharacterDrawer.vue';
 import ChatComposer from '../components/chat/ChatComposer.vue';
 import ChatLog from '../components/chat/ChatLog.vue';
 import ChatNotesPanel from '../components/chat/ChatNotesPanel.vue';
+import InventoryPanel from '../components/chat/InventoryPanel.vue';
 import DiaryPanel from '../components/chat/DiaryPanel.vue';
 import DiceRoller from '../components/chat/DiceRoller.vue';
 import FloatingWindow from '../components/chat/FloatingWindow.vue';
@@ -304,6 +326,7 @@ import TurnBadge from '../components/chat/TurnBadge.vue';
 import { playPlayerTurnSound } from '../utils/chatMessageSound';
 import SceneManagementModal from '../components/chat/SceneManagementModal.vue';
 import SceneToolbar from '../components/chat/SceneToolbar.vue';
+import { useCharacterInventory } from '../composables/useCharacterInventory';
 import { useChatMessages } from '../composables/useChatMessages';
 import { useChatPanels } from '../composables/useChatPanels';
 import { useDiceRoll, useSceneBattleLog } from '../composables/useSceneBattleLog';
@@ -350,6 +373,7 @@ const drawerCharacterId = ref(null);
 const {
     isDiceOpen,
     isNotesOpen,
+    isInventoryOpen,
     isCharacterOpen,
     isDiaryOpen,
     closeAll,
@@ -527,6 +551,47 @@ const myCharacterName = computed(() => {
     return onScene?.character_name ?? null;
 });
 
+const inventoryCharacterId = computed(() => {
+    if (isStoryteller.value) {
+        return speakerCharacterId.value;
+    }
+
+    return selectedPcId.value ?? myCharacterId.value;
+});
+
+const inventoryCharacterName = computed(() => {
+    if (isStoryteller.value) {
+        const row = currentParticipants.value.find(
+            (participant) => Number(participant.character_id) === Number(inventoryCharacterId.value),
+        );
+
+        return row?.character_name ?? '';
+    }
+
+    return myCharacterName.value ?? '';
+});
+
+const {
+    items: inventoryItems,
+    loading: inventoryLoading,
+    saving: inventorySaving,
+    error: inventoryError,
+    addItem: addInventoryItem,
+    moveItem: moveInventoryItem,
+    removeItem: removeInventoryItem,
+    open: openInventory,
+    close: closeInventory,
+} = useCharacterInventory(inventoryCharacterId);
+
+const inventoryPanel = ref(null);
+
+async function onAddInventoryItem(payload) {
+    const saved = await addInventoryItem(payload);
+    if (saved) {
+        inventoryPanel.value?.resetForm();
+    }
+}
+
 const diceCharacterOptions = computed(() => {
     if (isStoryteller.value) {
         return currentParticipants.value;
@@ -572,6 +637,15 @@ watch(isNotesOpen, (open, wasOpen) => {
     }
     if (!open && wasOpen) {
         closeNotes();
+    }
+});
+
+watch(isInventoryOpen, (open, wasOpen) => {
+    if (open && !wasOpen) {
+        openInventory();
+    }
+    if (!open && wasOpen) {
+        closeInventory();
     }
 });
 

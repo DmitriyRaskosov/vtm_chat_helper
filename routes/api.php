@@ -4,6 +4,7 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\MeController;
 use App\Http\Controllers\Auth\RegisterController;
 use App\Http\Controllers\CharacterAvatarController;
+use App\Http\Controllers\CharacterItemController;
 use App\Http\Controllers\CharacterSheetController;
 use App\Http\Controllers\CharacterSheetImageController;
 use App\Http\Controllers\CharacterStateController;
@@ -104,6 +105,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::put('/characters/{character}/place', [CharacterSheetController::class, 'updatePlace'])
         ->can('updatePlace', 'character');
     Route::put('/characters/{character}/state', [CharacterStateController::class, 'update']);
+    Route::get('/characters/{character}/items', [CharacterItemController::class, 'index']);
+    Route::post('/characters/{character}/items', [CharacterItemController::class, 'store']);
+    Route::patch('/characters/{character}/items/{item}', [CharacterItemController::class, 'update'])
+        ->scopeBindings();
+    Route::delete('/characters/{character}/items/{item}', [CharacterItemController::class, 'destroy'])
+        ->scopeBindings();
 
     Route::get('/scenes/{scene}/context', [SceneContextController::class, 'show'])
         ->can('view', 'scene');

@@ -21,6 +21,16 @@
         <button
             type="button"
             class="secondary chat-tools-toolbar-btn"
+            :class="{ active: isInventoryOpen }"
+            :disabled="!inventoryEnabled"
+            :title="inventoryTitle"
+            @click="onInventoryClick"
+        >
+            🎒 Инвентарь
+        </button>
+        <button
+            type="button"
+            class="secondary chat-tools-toolbar-btn"
             :class="{ active: isCharacterOpen }"
             :disabled="!characterSheetEnabled"
             :title="characterSheetTitle"
@@ -48,15 +58,18 @@ import { useChatPanels } from '../../composables/useChatPanels';
 const props = defineProps({
     isStoryteller: { type: Boolean, required: true },
     myCharacterId: { type: [Number, String], default: null },
+    inventoryCharacterId: { type: [Number, String], default: null },
 });
 
 const {
     isDiceOpen,
     isNotesOpen,
+    isInventoryOpen,
     isCharacterOpen,
     isDiaryOpen,
     toggleDice,
     toggleNotes,
+    toggleInventory,
     toggleCharacter,
     toggleDiary,
 } = useChatPanels();
@@ -74,5 +87,22 @@ function onCharacterClick() {
         return;
     }
     toggleCharacter();
+}
+
+const inventoryEnabled = computed(() => {
+    const id = Number(props.inventoryCharacterId);
+
+    return Number.isFinite(id) && id > 0;
+});
+
+const inventoryTitle = computed(() => (
+    inventoryEnabled.value ? 'Инвентарь' : 'Сначала выберите персонажа'
+));
+
+function onInventoryClick() {
+    if (!inventoryEnabled.value) {
+        return;
+    }
+    toggleInventory();
 }
 </script>

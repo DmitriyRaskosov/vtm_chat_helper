@@ -153,6 +153,14 @@ class Character extends Model
     }
 
     /**
+     * @return HasMany<CharacterItem, $this>
+     */
+    public function items(): HasMany
+    {
+        return $this->hasMany(CharacterItem::class);
+    }
+
+    /**
      * @return HasMany<CharacterBiographyVersion, $this>
      */
     public function biographyVersions(): HasMany

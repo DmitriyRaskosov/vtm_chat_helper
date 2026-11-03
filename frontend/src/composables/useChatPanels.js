@@ -2,6 +2,7 @@ import { ref } from 'vue';
 
 const isDiceOpen = ref(false);
 const isNotesOpen = ref(false);
+const isInventoryOpen = ref(false);
 const isCharacterOpen = ref(false);
 const isDiaryOpen = ref(false);
 
@@ -12,6 +13,10 @@ export function useChatPanels() {
 
     function toggleNotes() {
         isNotesOpen.value = !isNotesOpen.value;
+    }
+
+    function toggleInventory() {
+        isInventoryOpen.value = !isInventoryOpen.value;
     }
 
     function toggleCharacter() {
@@ -25,6 +30,7 @@ export function useChatPanels() {
     function closeAll() {
         isDiceOpen.value = false;
         isNotesOpen.value = false;
+        isInventoryOpen.value = false;
         isCharacterOpen.value = false;
         isDiaryOpen.value = false;
     }
@@ -32,10 +38,12 @@ export function useChatPanels() {
     return {
         isDiceOpen,
         isNotesOpen,
+        isInventoryOpen,
         isCharacterOpen,
         isDiaryOpen,
         toggleDice,
         toggleNotes,
+        toggleInventory,
         toggleCharacter,
         toggleDiary,
         closeAll,

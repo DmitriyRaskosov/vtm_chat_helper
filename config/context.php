@@ -30,6 +30,9 @@ return [
             'character_state' => [
                 'max' => 150,
             ],
+            'inventory' => [
+                'max' => 200,
+            ],
             'recent_messages' => [
                 'max' => 4000,
             ],

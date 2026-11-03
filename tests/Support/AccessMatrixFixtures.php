@@ -6,6 +6,7 @@ use App\Models\CanonClan;
 use App\Models\CanonDiscipline;
 use App\Models\Character;
 use App\Models\CharacterDiaryEntry;
+use App\Models\CharacterItem;
 use App\Models\Chronicle;
 use App\Models\ChronicleInvitation;
 use App\Models\ChronicleLocation;
@@ -64,6 +65,8 @@ final class AccessMatrixFixtures
     public SceneParticipant $sceneParticipant;
 
     public ChronicleLocation $chronicleLocation;
+
+    public CharacterItem $playerItem;
 
     private function __construct() {}
 
@@ -185,6 +188,13 @@ final class AccessMatrixFixtures
             'character_id' => $fixtures->npc->id,
         ]);
 
+        $fixtures->playerItem = CharacterItem::query()->create([
+            'character_id' => $fixtures->playerCharacter->id,
+            'name' => 'Трость',
+            'quantity' => 1,
+            'is_equipped' => false,
+        ]);
+
         return $fixtures;
     }
 
@@ -218,6 +228,7 @@ final class AccessMatrixFixtures
             '{character}' => (string) $this->npc->id,
             '{message}' => (string) $this->storytellerMessage->id,
             '{chronicleLocation}' => (string) $this->chronicleLocation->id,
+            '{item}' => (string) $this->playerItem->id,
         ];
 
         $path = $uriTemplate;
@@ -340,6 +351,10 @@ final class AccessMatrixFixtures
                 'expected_revision' => $this->sceneContextRevision,
                 'atmosphere' => 'Тест',
             ];
+        }
+
+        if (str_contains($uriTemplate, '/items')) {
+            return ['name' => 'Предмет матрицы'];
         }
 
         if ($method === 'PATCH' && str_contains($uriTemplate, '/characters/{playerCharacter}')) {

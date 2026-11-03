@@ -86,6 +86,16 @@ class CharacterPolicy
             : true;
     }
 
+    public function manageItems(User $user, Character $character): bool
+    {
+        if ($this->userIsStorytellerInChronicleId($user, (int) $character->chronicle_id)) {
+            return true;
+        }
+
+        return $character->character_type === CharacterType::Player
+            && (int) $character->user_id === (int) $user->id;
+    }
+
     public function updateState(User $user, Character $character): bool
     {
         if ($this->userIsStorytellerInChronicleId($user, (int) $character->chronicle_id)) {

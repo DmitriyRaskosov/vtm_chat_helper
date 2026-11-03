@@ -8,6 +8,7 @@ use App\Context\Providers\ClosingInstructionProvider;
 use App\Context\Providers\ContextProvider;
 use App\Context\Providers\DiaryProvider;
 use App\Context\Providers\DirectRelationsProvider;
+use App\Context\Providers\InventoryProvider;
 use App\Context\Providers\NpcIdentityProvider;
 use App\Context\Providers\PersonalityProvider;
 use App\Context\Providers\RecentMessagesProvider;
@@ -25,7 +26,7 @@ class ContextAssembler
 {
     public const VERSION = 'context-assembler-v2';
 
-    public const PROMPT_VERSION = 'npc-drafts-v9';
+    public const PROMPT_VERSION = 'npc-drafts-v11';
 
     public const TOPICS_PROMPT_VERSION = 'npc-topics-v1';
 
@@ -36,6 +37,7 @@ class ContextAssembler
         'npc_identity',
         'scene',
         'character_state',
+        'inventory',
         'world_lore',
         'storyteller_prompt',
         'recent_messages',
@@ -68,6 +70,7 @@ class ContextAssembler
         NpcIdentityProvider $identity,
         SceneProvider $scene,
         CharacterStateProvider $characterState,
+        InventoryProvider $inventory,
         StorytellerPromptProvider $prompt,
         private RecentMessagesProvider $recentMessages,
         DirectRelationsProvider $relations,
@@ -82,6 +85,7 @@ class ContextAssembler
             $identity->key() => $identity,
             $scene->key() => $scene,
             $characterState->key() => $characterState,
+            $inventory->key() => $inventory,
             $prompt->key() => $prompt,
             $this->recentMessages->key() => $this->recentMessages,
             $relations->key() => $relations,
@@ -216,7 +220,7 @@ class ContextAssembler
      */
     private function requiredWithoutHistory(ContextAssembly $assembly, array &$timings): array
     {
-        $keys = ['system', 'npc_identity', 'scene', 'character_state', 'storyteller_prompt', 'closing'];
+        $keys = ['system', 'npc_identity', 'scene', 'character_state', 'inventory', 'storyteller_prompt', 'closing'];
         $sections = [];
         foreach ($keys as $key) {
             $sections[$key] = $this->assembleTimed($key, $assembly, $this->sectionMax($key), $timings);

@@ -396,6 +396,42 @@ class AccessMatrixTest extends TestCase
                 'player_foreign' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
+            self::forRoles('characters.items.index.own', 'GET', 'characters/{playerCharacter}/items', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_ALLOWED,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('characters.items.index.npc', 'GET', 'characters/{npc}/items', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('characters.items.store.own', 'POST', 'characters/{playerCharacter}/items', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_ALLOWED,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('characters.items.store.npc', 'POST', 'characters/{npc}/items', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('characters.items.update.own', 'PATCH', 'characters/{playerCharacter}/items/{item}', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_ALLOWED,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('characters.items.destroy.own', 'DELETE', 'characters/{playerCharacter}/items/{item}', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_ALLOWED,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
             self::forRoles('characters.archive', 'POST', 'characters/{npc}/archive', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_403,
