@@ -199,7 +199,7 @@ class AccessMatrixTest extends TestCase
             ]),
             self::forRoles('scenes.participants.store', 'POST', 'scenes/{scene}/participants', [
                 'guest' => self::EXPECT_401,
-                'player_owner' => self::EXPECT_403,
+                'player_owner' => self::EXPECT_ALLOWED,
                 'player_foreign' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),

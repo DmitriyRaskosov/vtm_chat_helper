@@ -65,17 +65,20 @@ class CharacterSheetController extends Controller
         $isStorytellerInChronicle = $user !== null && $user->isStorytellerIn($this->currentChronicle->get());
 
         if (! $isStorytellerInChronicle) {
-            $pcId = Character::query()
+            $pcIds = Character::query()
                 ->where('user_id', $user?->id)
                 ->where('character_type', CharacterType::Player)
                 ->where('chronicle_id', $chronicleId)
-                ->value('id');
+                ->orderBy('id')
+                ->pluck('id')
+                ->map(fn ($id) => (int) $id)
+                ->all();
 
-            if ($pcId === null) {
+            if ($pcIds === []) {
                 return response()->json(['characters' => [], 'archived' => []]);
             }
 
-            $query->whereIn('id', $this->visibility->visibleIdsForPlayer($chronicleId, (int) $pcId));
+            $query->whereIn('id', $this->visibility->visibleIdsForPlayerCharacters($chronicleId, $pcIds));
         }
 
         $characters = $query->with('entity')->orderBy('id')->get();

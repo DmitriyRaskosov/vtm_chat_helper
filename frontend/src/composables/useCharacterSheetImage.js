@@ -38,6 +38,7 @@ export function useCharacterSheetImage(characterId) {
         try {
             const response = await api.get(`/characters/${numericId}/sheet-image`, {
                 responseType: 'blob',
+                params: { v: Date.now() },
             });
 
             const blob = response.data;

@@ -34,7 +34,12 @@
                             :disabled="!row.avatar_path"
                             @click.stop="openAvatar(row)"
                         >
-                            <img v-if="row.avatar_path" :src="avatarUrl(row)" :alt="row.canonical_name" />
+                            <img
+                                v-if="row.avatar_path"
+                                :key="avatarImageKey(row)"
+                                :src="avatarUrl(row)"
+                                :alt="row.canonical_name"
+                            />
                             <span v-else class="muted">Нет аватара</span>
                         </button>
                         <RouterLink class="profile-name" :to="characterPath(row)" @click.stop>
@@ -72,6 +77,15 @@
                                 @click="onArchive(row)"
                             >
                                 В архив
+                            </button>
+                            <button
+                                v-if="!isArchived(row) && activeSceneId != null"
+                                type="button"
+                                class="secondary"
+                                :disabled="scenePresenceLoading || sceneBusyId === row.id"
+                                @click="toggleScenePresence(row)"
+                            >
+                                {{ isCharacterOnScene(row.id) ? 'Покинуть сцену' : 'Выйти на сцену' }}
                             </button>
                             <template v-else>
                                 <button type="button" class="secondary" @click="onRestore(row)">
@@ -112,14 +126,18 @@
                     <h2>{{ sheetCharacter.canonical_name }}</h2>
                     <button type="button" class="link" @click="sheetCharacter = null">Закрыть</button>
                 </header>
-                <SheetViewer :character-id="sheetCharacter.id" can-upload />
+                <SheetViewer
+                    :key="sheetViewerKey(sheetCharacter.id)"
+                    :character-id="sheetCharacter.id"
+                    can-upload
+                />
             </div>
         </div>
     </div>
 </template>
 
 <script setup>
-import { computed, defineAsyncComponent, onMounted, reactive, ref } from 'vue';
+import { computed, defineAsyncComponent, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import AppNav from '../components/layout/AppNav.vue';
 import AvatarModal from '../components/profile/AvatarModal.vue';
@@ -142,6 +160,15 @@ const {
     archiveCharacter,
     restoreCharacter,
     deleteCharacter,
+    avatarUrl,
+    avatarImageKey,
+    sheetViewerKey,
+    isCharacterOnScene,
+    loadScenePresence,
+    enterCharacterOnScene,
+    leaveCharacterFromScene,
+    activeSceneId,
+    scenePresenceLoading,
 } = useProfile();
 
 const avatarOpen = ref(false);
@@ -152,10 +179,18 @@ const showArchived = ref(false);
 const pendingDelete = ref(null);
 const avatarInputs = reactive({});
 const sheetInputs = reactive({});
+const sceneBusyId = ref(null);
 
 onMounted(() => {
-    loadCharacters().catch(() => {});
+    if (currentChronicleId.value == null) {
+        loadCharacters().catch(() => {});
+    }
 });
+
+watch(currentChronicleId, (id) => {
+    loadScenePresence(id).catch(() => {});
+    loadCharacters().catch(() => {});
+}, { immediate: true });
 
 const workshopPath = computed(() => {
     const memberships = auth.user.value?.memberships ?? [];
@@ -169,11 +204,18 @@ const workshopPath = computed(() => {
 });
 
 const visibleCharacters = computed(() => {
-    if (showArchived.value) {
-        return characters.value;
+    const chronicleId = currentChronicleId.value;
+    let rows = characters.value;
+
+    if (chronicleId != null) {
+        rows = rows.filter((row) => Number(row.chronicle_id) === Number(chronicleId));
     }
 
-    return characters.value.filter((row) => row.is_active !== false);
+    if (showArchived.value) {
+        return rows;
+    }
+
+    return rows.filter((row) => row.is_active !== false);
 });
 
 const emptyLabel = computed(() => (
@@ -230,6 +272,7 @@ async function confirmDelete() {
 async function onCharacterCreated(character) {
     createOpen.value = false;
     await loadCharacters().catch(() => {});
+    await loadScenePresence(currentChronicleId.value).catch(() => {});
 
     const chronicleId = character?.chronicle_id ?? currentChronicleId.value;
     const characterId = character?.id;
@@ -241,10 +284,6 @@ async function onCharacterCreated(character) {
     await router.push(`/c/${chronicleId}/characters/${characterId}`);
 }
 
-function avatarUrl(row) {
-    return `/storage/${row.avatar_path}`;
-}
-
 function openAvatar(row) {
     if (!row.avatar_path) {
         return;
@@ -252,6 +291,22 @@ function openAvatar(row) {
 
     avatarSrc.value = avatarUrl(row);
     avatarOpen.value = true;
+}
+
+async function toggleScenePresence(row) {
+    sceneBusyId.value = row.id;
+
+    try {
+        if (isCharacterOnScene(row.id)) {
+            await leaveCharacterFromScene(row.id);
+        } else {
+            await enterCharacterOnScene(row.id);
+        }
+    } catch {
+        // error уже в useProfile
+    } finally {
+        sceneBusyId.value = null;
+    }
 }
 
 function openSheet(row) {
@@ -277,6 +332,12 @@ async function onAvatarSelected(row, event) {
 
     try {
         await uploadAvatar(row.id, file);
+        if (avatarOpen.value) {
+            const fresh = characters.value.find((character) => Number(character.id) === Number(row.id));
+            if (fresh) {
+                avatarSrc.value = avatarUrl(fresh);
+            }
+        }
     } catch {
         // error уже в useProfile
     }

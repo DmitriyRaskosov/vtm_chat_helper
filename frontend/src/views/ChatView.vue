@@ -103,13 +103,13 @@
                     v-model:is-ooc="isOoc"
                     v-model:show-deleted="showDeleted"
                     v-model:speaker-character-id="speakerCharacterId"
-                    :can-post="canPost"
+                    :can-post="canCompose"
                     :placeholder="composerPlaceholder"
                     :my-character-name="myCharacterName"
                     :is-storyteller="isStoryteller"
                     :my-character-id="myCharacterId"
                     :participants="currentParticipants"
-                    :active-player-characters="activePlayerCharacters"
+                    :active-player-characters="playerCharactersOnScene"
                     v-model:selected-pc-id="selectedPcId"
                     @send="send"
                 />
@@ -360,6 +360,7 @@ const {
     newGameSessionTitle,
     selectedSceneId,
     myCharacterId,
+    myPlayerCharactersOnScene,
     newSceneTitle,
     sceneLoading,
     sceneError,
@@ -472,15 +473,58 @@ const composerPlaceholder = computed(() => {
     if (!canPost.value) {
         return 'Сцена доступна только для чтения';
     }
+    if (!isStoryteller.value && playerCharactersOnScene.value.length === 0) {
+        return 'Выйдите на сцену в личном кабинете, чтобы писать в сюжет';
+    }
     return isOoc.value
         ? 'Вопрос мастеру, мета-обсуждение...'
         : 'Ваши слова или действия...';
 });
 
+const playerCharactersOnScene = computed(() => {
+    const onSceneIds = new Set(
+        currentParticipants.value
+            .filter((participant) => participant.is_current && participant.character_type === 'player')
+            .map((participant) => Number(participant.character_id)),
+    );
+
+    return activePlayerCharacters.value.filter((row) => onSceneIds.has(Number(row.id)));
+});
+
+const canCompose = computed(() => {
+    if (!canPost.value) {
+        return false;
+    }
+
+    if (isStoryteller.value) {
+        return true;
+    }
+
+    return playerCharactersOnScene.value.length > 0;
+});
+
 const myCharacterName = computed(() => {
-    if (!myCharacterId.value) return null;
-    const pc = currentParticipants.value.find((p) => p.character_id === myCharacterId.value);
-    return pc?.character_name ?? null;
+    if (isStoryteller.value) {
+        return null;
+    }
+
+    const selectedId = selectedPcId.value ?? myCharacterId.value;
+    if (selectedId == null) {
+        return null;
+    }
+
+    const fromProfile = activePlayerCharacters.value.find(
+        (row) => Number(row.id) === Number(selectedId),
+    );
+    if (fromProfile?.canonical_name) {
+        return fromProfile.canonical_name;
+    }
+
+    const onScene = currentParticipants.value.find(
+        (participant) => Number(participant.character_id) === Number(selectedId),
+    );
+
+    return onScene?.character_name ?? null;
 });
 
 const diceCharacterOptions = computed(() => {
@@ -488,12 +532,7 @@ const diceCharacterOptions = computed(() => {
         return currentParticipants.value;
     }
 
-    if (!myCharacterId.value) {
-        return [];
-    }
-
-    const pc = currentParticipants.value.find((p) => p.character_id === myCharacterId.value);
-    return pc ? [pc] : [];
+    return myPlayerCharactersOnScene.value;
 });
 
 const drawerParticipants = computed(() => {
@@ -501,7 +540,7 @@ const drawerParticipants = computed(() => {
         return currentParticipants.value;
     }
 
-    return diceCharacterOptions.value;
+    return myPlayerCharactersOnScene.value;
 });
 
 function initDrawerCharacter() {
@@ -509,9 +548,23 @@ function initDrawerCharacter() {
         const first = currentParticipants.value[0];
         drawerCharacterId.value = first?.character_id ?? null;
     } else {
-        drawerCharacterId.value = myCharacterId.value;
+        const first = myPlayerCharactersOnScene.value[0];
+        drawerCharacterId.value = first?.character_id ?? myCharacterId.value;
     }
 }
+
+watch(playerCharactersOnScene, (rows) => {
+    if (isStoryteller.value) {
+        return;
+    }
+
+    const ids = rows.map((row) => Number(row.id));
+    if (selectedPcId.value != null && ids.includes(Number(selectedPcId.value))) {
+        return;
+    }
+
+    selectedPcId.value = rows[0] ? Number(rows[0].id) : null;
+}, { immediate: true });
 
 watch(isNotesOpen, (open, wasOpen) => {
     if (open && !wasOpen) {

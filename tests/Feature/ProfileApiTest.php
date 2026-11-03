@@ -41,6 +41,28 @@ class ProfileApiTest extends TestCase
             ->assertJsonPath('data.0.avatar_path', null);
     }
 
+    public function test_player_sees_all_own_characters_in_profile(): void
+    {
+        $owner = User::factory()->create();
+        $chronicle = Chronicle::factory()->create();
+        $this->joinChronicle($owner, $chronicle, ChronicleRole::Player);
+
+        $first = Character::factory()->player($owner)->forChronicle($chronicle)->create([
+            'canonical_name' => 'Первый',
+        ]);
+        $second = Character::factory()->player($owner)->forChronicle($chronicle)->create([
+            'canonical_name' => 'Второй',
+        ]);
+
+        $response = $this->actingAs($owner, 'sanctum')
+            ->getJson('/api/profile/characters');
+
+        $response->assertOk();
+        $response->assertJsonCount(2, 'data');
+        $ids = collect($response->json('data'))->pluck('id')->sort()->values()->all();
+        $this->assertSame([$first->id, $second->id], $ids);
+    }
+
     public function test_foreign_player_with_no_characters_gets_empty_list(): void
     {
         $owner = User::factory()->create();

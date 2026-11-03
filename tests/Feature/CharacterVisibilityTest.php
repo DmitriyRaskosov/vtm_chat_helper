@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\ChronicleRole;
+use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\ChronicleMember;
 use App\Models\GameSession;
@@ -120,6 +121,32 @@ class CharacterVisibilityTest extends TestCase
         $this->assertNotContains($draftSceneNpcId, $ids);
         $this->assertNotContains($unrelatedNpcId, $ids);
         $this->assertNotContains($archivedNpcId, $ids);
+    }
+
+    public function test_player_sees_all_own_characters_in_chronicle_index(): void
+    {
+        $player = User::factory()->create();
+        $this->joinChronicle($player, $this->chronicle, ChronicleRole::Player);
+
+        $first = Character::factory()->player($player)->forChronicle($this->chronicle)->create([
+            'canonical_name' => 'Альфа',
+        ]);
+        $second = Character::factory()->player($player)->forChronicle($this->chronicle)->create([
+            'canonical_name' => 'Бета',
+        ]);
+
+        $response = $this->actingAs($player, 'sanctum')
+            ->getJson($this->chronicleApi($this->chronicle, 'characters'));
+
+        $response->assertStatus(200);
+        $playerIds = collect($response->json('characters'))
+            ->filter(fn (array $row): bool => $row['character_type'] === 'player')
+            ->pluck('id')
+            ->sort()
+            ->values()
+            ->all();
+
+        $this->assertSame([$first->id, $second->id], $playerIds);
     }
 
     public function test_player_without_scene_sees_only_own_character(): void

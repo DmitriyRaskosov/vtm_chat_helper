@@ -23,6 +23,7 @@ class CharacterAvatarController extends Controller
 
         return response()->json([
             'avatar_path' => $updated->avatar_path,
+            'updated_at' => $updated->updated_at?->getTimestamp(),
         ]);
     }
 }

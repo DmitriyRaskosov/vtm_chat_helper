@@ -31,4 +31,19 @@ final class CharacterVisibility
 
         return array_values(array_unique([...$visibleIds, ...$participantIds]));
     }
+
+    /**
+     * @param  list<int>  $pcIds
+     * @return list<int>
+     */
+    public function visibleIdsForPlayerCharacters(int $chronicleId, array $pcIds): array
+    {
+        $visibleIds = [];
+
+        foreach ($pcIds as $pcId) {
+            $visibleIds = [...$visibleIds, ...$this->visibleIdsForPlayer($chronicleId, (int) $pcId)];
+        }
+
+        return array_values(array_unique($visibleIds));
+    }
 }

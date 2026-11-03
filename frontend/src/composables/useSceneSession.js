@@ -58,19 +58,18 @@ export function useSceneSession({ auth, chronicleId }) {
         () => scenes.value.find((scene) => scene.id === selectedSceneId.value) ?? null,
     );
     const canPost = computed(() => selectedScene.value?.status === 'active');
-    const myCharacterId = computed(() => {
+    const myPlayerCharactersOnScene = computed(() => {
         const user = auth.user.value;
         if (!user) {
-            return null;
+            return [];
         }
-    
-        const pc = currentParticipants.value.find(
-            (p) => p.character_type === 'player'
-                && Number(p.user_id) === Number(user.id),
+
+        return currentParticipants.value.filter(
+            (participant) => participant.character_type === 'player'
+                && Number(participant.user_id) === Number(user.id),
         );
-    
-        return pc?.character_id ?? null;
     });
+    const myCharacterId = computed(() => myPlayerCharactersOnScene.value[0]?.character_id ?? null);
     const canEditParticipants = computed(() => (
         isStoryteller.value
         && selectedScene.value != null
@@ -489,6 +488,7 @@ export function useSceneSession({ auth, chronicleId }) {
         selectedScene,
         canPost,
         myCharacterId,
+        myPlayerCharactersOnScene,
         canEditParticipants,
         currentParticipants,
         availableToAdd,

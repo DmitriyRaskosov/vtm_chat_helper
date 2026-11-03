@@ -3,6 +3,7 @@
 namespace App\Scene;
 
 use App\Diary\DiaryScheduler;
+use App\Enums\CharacterType;
 use App\Enums\ChronicleRole;
 use App\Enums\SceneParticipantRole;
 use App\Exceptions\ConflictException;
@@ -15,6 +16,7 @@ use App\Models\Scene;
 use App\Models\SceneParticipant;
 use App\Models\User;
 use App\Scene\Exceptions\InvalidSceneParticipantInputException;
+use App\Scene\Exceptions\SceneParticipantForbiddenException;
 use App\World\MixedChronicleException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -94,6 +96,8 @@ class SceneParticipantService
             throw new InvalidSceneParticipantInputException('An archived character cannot enter a scene.');
         }
 
+        $this->assertActorCanManageParticipant($scene, $character, $role, $actor);
+
         return DB::transaction(function () use ($scene, $character, $role, $actor, $visible, $systemMessage): SceneParticipant {
             $lockedScene = Scene::query()->lockForUpdate()->findOrFail($scene->id);
             $this->contexts->assertMutable($lockedScene);
@@ -139,6 +143,8 @@ class SceneParticipantService
 
     public function leave(Scene $scene, Character $character, User $actor, ?string $systemMessage = null): SceneParticipant
     {
+        $this->assertActorCanManageParticipant($scene, $character, SceneParticipantRole::Player, $actor);
+
         $participant = DB::transaction(function () use ($scene, $character, $actor, $systemMessage): SceneParticipant {
             $lockedScene = Scene::query()->lockForUpdate()->findOrFail($scene->id);
             $this->contexts->assertMutable($lockedScene);
@@ -217,6 +223,32 @@ class SceneParticipantService
             ->where('scene_id', $scene->id)
             ->orderBy('id')
             ->get();
+    }
+
+    private function assertActorCanManageParticipant(
+        Scene $scene,
+        Character $character,
+        SceneParticipantRole $role,
+        User $actor,
+    ): void {
+        $scene->loadMissing('gameSession.chronicle');
+        $chronicle = $scene->gameSession->chronicle;
+
+        if ($actor->isStorytellerIn($chronicle)) {
+            return;
+        }
+
+        if (! $character->isPlayableBy($actor)) {
+            throw new SceneParticipantForbiddenException;
+        }
+
+        if ($character->character_type !== CharacterType::Player) {
+            throw new SceneParticipantForbiddenException;
+        }
+
+        if ($role !== SceneParticipantRole::Player) {
+            throw new SceneParticipantForbiddenException('Игрок может вывести на сцену только своего персонажа.');
+        }
     }
 
     private function resolveSystemMessage(?string $custom, Character $character, bool $entering): string

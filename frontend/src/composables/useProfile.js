@@ -1,12 +1,18 @@
 import { ref } from 'vue';
 import { api } from '../auth';
 import { apiErrorMessage } from '../utils/apiError';
+import { chronicleCollectionPath } from './useCurrentChronicle';
 
 export function useProfile() {
     const characters = ref([]);
     const loading = ref(true);
     const error = ref('');
     const storytellerDenied = ref(false);
+    const avatarCacheKeys = ref({});
+    const sheetReloadKeys = ref({});
+    const activeSceneId = ref(null);
+    const onSceneCharacterIds = ref(new Set());
+    const scenePresenceLoading = ref(false);
 
     async function loadCharacters() {
         loading.value = true;
@@ -52,12 +58,21 @@ export function useProfile() {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
             const avatarPath = response.data?.avatar_path ?? null;
+            const updatedAt = response.data?.updated_at ?? Date.now();
 
             characters.value = characters.value.map((character) => (
                 Number(character.id) === numericId
-                    ? { ...character, avatar_path: avatarPath }
+                    ? {
+                        ...character,
+                        avatar_path: avatarPath,
+                        updated_at: updatedAt,
+                    }
                     : character
             ));
+            avatarCacheKeys.value = {
+                ...avatarCacheKeys.value,
+                [numericId]: updatedAt,
+            };
 
             return avatarPath;
         } catch (err) {
@@ -82,6 +97,10 @@ export function useProfile() {
             const response = await api.post(`/characters/${numericId}/sheet-image`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
+            sheetReloadKeys.value = {
+                ...sheetReloadKeys.value,
+                [numericId]: Date.now(),
+            };
 
             return response.data?.sheet_image_path ?? null;
         } catch (err) {
@@ -191,11 +210,126 @@ export function useProfile() {
         }
     }
 
+    function avatarUrl(row) {
+        if (!row?.avatar_path) {
+            return '';
+        }
+
+        const id = Number(row.id);
+        const bust = avatarCacheKeys.value[id] ?? row.updated_at ?? 0;
+
+        return `/storage/${row.avatar_path}?v=${bust}`;
+    }
+
+    function avatarImageKey(row) {
+        const id = Number(row?.id);
+
+        return `${id}-${avatarCacheKeys.value[id] ?? row?.updated_at ?? 0}`;
+    }
+
+    function sheetViewerKey(characterId) {
+        const id = Number(characterId);
+        const version = sheetReloadKeys.value[id] ?? 0;
+
+        return `${id}-${version}`;
+    }
+
+    function isCharacterOnScene(characterId) {
+        return onSceneCharacterIds.value.has(Number(characterId));
+    }
+
+    async function loadScenePresence(chronicleId) {
+        const id = Number(chronicleId);
+
+        if (!Number.isFinite(id) || id <= 0) {
+            activeSceneId.value = null;
+            onSceneCharacterIds.value = new Set();
+
+            return;
+        }
+
+        scenePresenceLoading.value = true;
+
+        try {
+            const { data } = await api.get(chronicleCollectionPath(id, 'game-sessions/active'));
+            const sceneId = data.game_session?.active_scene_id ?? null;
+            activeSceneId.value = sceneId == null ? null : Number(sceneId);
+
+            if (activeSceneId.value == null) {
+                onSceneCharacterIds.value = new Set();
+
+                return;
+            }
+
+            const participantsResponse = await api.get(`/scenes/${activeSceneId.value}/participants`);
+            const rows = participantsResponse.data?.participants ?? [];
+            const onScene = new Set();
+
+            for (const row of rows) {
+                if (row.is_current && row.character_type === 'player') {
+                    onScene.add(Number(row.character_id));
+                }
+            }
+
+            onSceneCharacterIds.value = onScene;
+        } catch {
+            activeSceneId.value = null;
+            onSceneCharacterIds.value = new Set();
+        } finally {
+            scenePresenceLoading.value = false;
+        }
+    }
+
+    async function enterCharacterOnScene(characterId) {
+        const numericId = requireCharacterId(characterId);
+        const sceneId = activeSceneId.value;
+
+        if (sceneId == null) {
+            throw new Error('Нет активной сцены.');
+        }
+
+        error.value = '';
+
+        try {
+            await api.post(`/scenes/${sceneId}/participants`, {
+                character_id: numericId,
+                role: 'player',
+            });
+            onSceneCharacterIds.value = new Set([...onSceneCharacterIds.value, numericId]);
+        } catch (err) {
+            error.value = apiErrorMessage(err, 'Не удалось выйти на сцену.');
+            throw err;
+        }
+    }
+
+    async function leaveCharacterFromScene(characterId) {
+        const numericId = requireCharacterId(characterId);
+        const sceneId = activeSceneId.value;
+
+        if (sceneId == null) {
+            throw new Error('Нет активной сцены.');
+        }
+
+        error.value = '';
+
+        try {
+            await api.patch(`/scenes/${sceneId}/participants/${numericId}`);
+            const next = new Set(onSceneCharacterIds.value);
+            next.delete(numericId);
+            onSceneCharacterIds.value = next;
+        } catch (err) {
+            error.value = apiErrorMessage(err, 'Не удалось покинуть сцену.');
+            throw err;
+        }
+    }
+
     return {
         characters,
         loading,
         error,
         storytellerDenied,
+        scenePresenceLoading,
+        activeSceneId,
         loadCharacters,
         uploadAvatar,
         uploadSheet,
@@ -204,5 +338,12 @@ export function useProfile() {
         archiveCharacter,
         restoreCharacter,
         deleteCharacter,
+        avatarUrl,
+        avatarImageKey,
+        sheetViewerKey,
+        isCharacterOnScene,
+        loadScenePresence,
+        enterCharacterOnScene,
+        leaveCharacterFromScene,
     };
 }

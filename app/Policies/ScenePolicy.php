@@ -38,12 +38,22 @@ class ScenePolicy
 
     public function addParticipant(User $user, Scene $scene): Response|bool
     {
-        return $this->denyUnlessStoryteller($user, $this->chronicleForScene($scene));
+        $chronicle = $this->chronicleForScene($scene);
+        if ($user->isStorytellerIn($chronicle)) {
+            return true;
+        }
+
+        return $this->denyUnlessActiveMember($user, $chronicle);
     }
 
     public function removeParticipant(User $user, Scene $scene): Response|bool
     {
-        return $this->denyUnlessStoryteller($user, $this->chronicleForScene($scene));
+        $chronicle = $this->chronicleForScene($scene);
+        if ($user->isStorytellerIn($chronicle)) {
+            return true;
+        }
+
+        return $this->denyUnlessActiveMember($user, $chronicle);
     }
 
     public function createCopilotDraft(User $user, Scene $scene): Response|bool
