@@ -41,7 +41,9 @@ class InventoryProviderTest extends TestCase
 
         $this->assertTrue($section->included);
         $this->assertSame('inventory', $section->key);
-        $this->assertSame("Your Equipped: трость x1\nYour Carried: ключ x2", $section->content);
+        $this->assertSame('Your Equipped: трость x1', $section->content);
+        $this->assertStringNotContainsString('ключ', $section->content);
+        $this->assertStringNotContainsString('Carried', $section->content);
         $this->assertLessThanOrEqual(200, $section->tokenEstimate);
     }
 
@@ -54,6 +56,23 @@ class InventoryProviderTest extends TestCase
         $this->assertFalse($section->included);
         $this->assertSame('', $section->content);
         $this->assertSame('empty', $section->provenance['reason'] ?? null);
+    }
+
+    public function test_omits_section_when_character_has_only_carried_items(): void
+    {
+        [$assembly, $character] = $this->assembly();
+
+        CharacterItem::query()->create([
+            'character_id' => $character->id,
+            'name' => 'ключ',
+            'quantity' => 2,
+            'is_equipped' => false,
+        ]);
+
+        $section = app(InventoryProvider::class)->assemble($assembly, 200);
+
+        $this->assertFalse($section->included);
+        $this->assertStringNotContainsString('ключ', $section->content);
     }
 
     public function test_includes_equipped_items_of_other_current_participants(): void
@@ -111,7 +130,7 @@ class InventoryProviderTest extends TestCase
         $this->assertLessThanOrEqual(2, $itemQueries);
         $this->assertTrue($section->included);
         $this->assertSame(
-            "Your Equipped:\nYour Carried:\nOthers' Equipped:\n- Дарья: шляпа x1",
+            "Your Equipped:\nOthers' Equipped:\n- Дарья: шляпа x1",
             $section->content,
         );
         $this->assertStringNotContainsString('письмо', $section->content);
@@ -137,7 +156,7 @@ class InventoryProviderTest extends TestCase
         $this->assertLessThanOrEqual(30, $section->tokenEstimate);
         if ($section->included) {
             $this->assertStringContainsString('Equipped:', $section->content);
-            $this->assertStringContainsString('Carried:', $section->content);
+            $this->assertStringNotContainsString('Carried', $section->content);
         }
     }
 
@@ -169,7 +188,7 @@ class InventoryProviderTest extends TestCase
         $this->assertStringContainsString('Equipped: очки x1', $build->messages[1]['content']);
         $this->assertStringContainsString('INVENTORY RULES:', $build->messages[0]['content']);
         $this->assertStringContainsString(
-            'Не выдумывай предметы, которых нет в этих секциях.',
+            'Содержимое рюкзака никому не известно',
             $build->messages[0]['content'],
         );
         $this->assertSame($assembly->character?->id, $character->id);

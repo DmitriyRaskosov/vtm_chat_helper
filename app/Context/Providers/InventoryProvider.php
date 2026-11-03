@@ -27,20 +27,14 @@ class InventoryProvider implements ContextProvider
             return ContextSection::omitted($this->key(), ['reason' => 'no_character']);
         }
 
-        $items = $character->items()->orderBy('id')->get();
+        $items = $character->items()->where('is_equipped', true)->orderBy('id')->get();
         $equipped = [];
-        $carried = [];
         foreach ($items as $item) {
-            $label = $this->label($item);
-            if ($item->is_equipped) {
-                $equipped[] = $label;
-            } else {
-                $carried[] = $label;
-            }
+            $equipped[] = $this->label($item);
         }
 
         $others = $this->otherEquippedLines($assembly, $character);
-        if ($equipped === [] && $carried === [] && $others === []) {
+        if ($equipped === [] && $others === []) {
             return ContextSection::omitted($this->key(), [
                 'character_id' => (int) $character->id,
                 'reason' => 'empty',
@@ -49,7 +43,7 @@ class InventoryProvider implements ContextProvider
 
         $truncated = false;
         while (true) {
-            $content = $this->format($equipped, $carried, $others);
+            $content = $this->format($equipped, $others);
             if ($tokenBudget >= 1 && $this->estimator->estimate($content) <= $tokenBudget) {
                 return ContextSection::fromContent($this->key(), $content, $this->estimator, [
                     'character_id' => (int) $character->id,
@@ -60,11 +54,6 @@ class InventoryProvider implements ContextProvider
             $truncated = true;
             if ($others !== []) {
                 array_pop($others);
-
-                continue;
-            }
-            if ($carried !== []) {
-                array_pop($carried);
 
                 continue;
             }
@@ -93,7 +82,7 @@ class InventoryProvider implements ContextProvider
             ->where('character_id', '!=', $character->id)
             ->with([
                 'character.entity',
-                'character.items',
+                'character.items' => fn ($query) => $query->where('is_equipped', true)->orderBy('id'),
             ])
             ->orderBy('id')
             ->get();
@@ -116,10 +105,7 @@ class InventoryProvider implements ContextProvider
             return null;
         }
 
-        $equipped = $other->items
-            ->filter(fn (CharacterItem $item): bool => $item->is_equipped)
-            ->sortBy('id')
-            ->values();
+        $equipped = $other->items->sortBy('id')->values();
         if ($equipped->isEmpty()) {
             return null;
         }
@@ -143,14 +129,12 @@ class InventoryProvider implements ContextProvider
 
     /**
      * @param  list<string>  $equipped
-     * @param  list<string>  $carried
      * @param  list<string>  $others
      */
-    private function format(array $equipped, array $carried, array $others): string
+    private function format(array $equipped, array $others): string
     {
         $lines = [
             $equipped === [] ? 'Your Equipped:' : 'Your Equipped: '.implode(', ', $equipped),
-            $carried === [] ? 'Your Carried:' : 'Your Carried: '.implode(', ', $carried),
         ];
 
         if ($others !== []) {

@@ -2,28 +2,37 @@
     <aside class="right-panel">
         <div class="participants">
             <div class="participants-heading">
-                <span class="muted">На сцене</span>
                 <button
-                    v-if="isStoryteller"
                     type="button"
-                    class="participants-manage"
-                    title="Управление сценой"
-                    @click="emit('open-scene-manage')"
+                    class="participants-toggle"
+                    :aria-expanded="sceneCastOpen"
+                    @click="toggleSceneCast"
                 >
-                    👥
+                    <span aria-hidden="true">{{ sceneCastOpen ? '▲' : '▼' }}</span>
+                    На сцене
                 </button>
             </div>
-            <p v-if="!participants.length" class="muted">На сцене никого.</p>
             <button
-                v-for="row in participants"
-                :key="row.character_id"
+                v-if="isStoryteller"
                 type="button"
-                class="participant-item"
-                @click="emit('select-participant', row.character_id)"
+                class="participants-manage"
+                @click="emit('open-scene-manage')"
             >
-                <span class="p-name">{{ row.character_name }}</span>
-                <span class="p-desc">{{ row.character_description || characterTypeLabel(row.character_type) }}</span>
+                Управление сценой
             </button>
+            <template v-if="sceneCastOpen">
+                <p v-if="!participants.length" class="muted">На сцене никого.</p>
+                <button
+                    v-for="row in participants"
+                    :key="row.character_id"
+                    type="button"
+                    class="participant-item"
+                    @click="emit('select-participant', row.character_id)"
+                >
+                    <span class="p-name">{{ row.character_name }}</span>
+                    <span class="p-desc">{{ row.character_description || characterTypeLabel(row.character_type) }}</span>
+                </button>
+            </template>
         </div>
         <div class="tabs">
             <button
@@ -112,6 +121,15 @@ const props = defineProps({
 const selectedNpcId = defineModel('selectedNpcId');
 
 const emit = defineEmits(['select-participant', 'npc-sent', 'open-scene-manage']);
+
+const SCENE_CAST_OPEN_KEY = 'chat-scene-cast-open';
+
+const sceneCastOpen = ref(localStorage.getItem(SCENE_CAST_OPEN_KEY) === '1');
+
+function toggleSceneCast() {
+    sceneCastOpen.value = !sceneCastOpen.value;
+    localStorage.setItem(SCENE_CAST_OPEN_KEY, sceneCastOpen.value ? '1' : '0');
+}
 
 const tab = ref('copilot');
 const copilotPanel = ref(null);

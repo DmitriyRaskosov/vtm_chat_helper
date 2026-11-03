@@ -44,23 +44,24 @@
 
         <p v-if="copilotError" class="error">{{ copilotError }}</p>
 
-        <div v-if="drafts.length" class="draft-list">
+        <div v-if="drafts.length" class="draft-tabs" role="tablist">
             <button
                 v-for="(draft, index) in drafts"
                 :key="`${copilotRequestId}-${index}`"
                 type="button"
-                class="draft-card"
-                :class="{ selected: selectedDraftIndex === index }"
+                role="tab"
+                class="draft-tab"
+                :class="{ active: selectedDraftIndex === index }"
+                :aria-selected="selectedDraftIndex === index"
                 @click="selectDraft(index)"
             >
-                <span class="draft-label">Вариант {{ index + 1 }}</span>
-                <span class="draft-text">{{ draft }}</span>
+                Вариант {{ index + 1 }}
             </button>
         </div>
 
         <template v-if="selectedDraft !== null">
             <label for="draft-edit">Редактирование</label>
-            <textarea id="draft-edit" v-model="editedDraft" maxlength="6000" rows="10" />
+            <textarea id="draft-edit" v-model="editedDraft" class="draft-edit" maxlength="6000" rows="10" />
             <button type="button" :disabled="!canSendNpc" @click="sendAsNpc">Отправить в чат от НПС</button>
         </template>
 

@@ -262,7 +262,7 @@ class ContextAssemblerTest extends TestCase
         $build = app(ContextAssembler::class)->assemble($request);
         $system = $build->messages[0]['content'];
 
-        $this->assertSame('npc-drafts-v11', $build->metadata['prompt_version']);
+        $this->assertSame('npc-drafts-v12', $build->metadata['prompt_version']);
         $this->assertLessThanOrEqual(5000, $build->metadata['input_token_estimate']);
         $this->assertStringContainsString('## HARD OVERRIDES (ABSOLUTE PRIORITY)', $system);
         $this->assertStringContainsString('NO DIRECT SPEECH', $system);
