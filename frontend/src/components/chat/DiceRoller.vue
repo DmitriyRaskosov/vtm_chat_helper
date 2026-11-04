@@ -5,8 +5,25 @@
                 <button type="button" class="chat-panel-close" aria-label="Закрыть" @click="close">×</button>
             </header>
 
+            <label for="dice-macro">Выбрать макрос</label>
+            <select id="dice-macro" v-model="selectedMacroId" @change="onMacroChange">
+                <option value="">Без макроса</option>
+                <option v-for="macro in macros" :key="macro.id" :value="String(macro.id)">
+                    {{ macro.name }}
+                </option>
+            </select>
+            <p v-if="appliedMacroName" class="dice-macro-applied">Применен макрос: {{ appliedMacroName }}</p>
+            <p v-if="macrosError" class="error">{{ macrosError }}</p>
+
             <label for="dice-pool">Пул</label>
-            <input id="dice-pool" v-model.number="pool" type="number" min="1" max="100" />
+            <input
+                id="dice-pool"
+                v-model.number="pool"
+                type="number"
+                min="1"
+                max="100"
+                :class="{ 'dice-field-from-macro': appliedMacroName }"
+            />
 
             <label for="dice-mode">Режим</label>
             <select id="dice-mode" v-model="rollMode">
@@ -22,10 +39,15 @@
                 type="number"
                 min="1"
                 max="20"
+                :class="{ 'dice-field-from-macro': appliedMacroName }"
             />
 
             <label for="dice-type">Тип кубика</label>
-            <select id="dice-type" v-model.number="diceType">
+            <select
+                id="dice-type"
+                v-model.number="diceType"
+                :class="{ 'dice-field-from-macro': appliedMacroName }"
+            >
                 <option :value="4">d4</option>
                 <option :value="6">d6</option>
                 <option :value="8">d8</option>
@@ -55,7 +77,11 @@
                 placeholder="Уклонение, урон, проверка…"
             />
 
-            <label v-if="rollMode === 'successes'" class="toggle dice-willpower-toggle">
+            <label
+                v-if="rollMode === 'successes'"
+                class="toggle dice-willpower-toggle"
+                :class="{ 'dice-field-from-macro': appliedMacroName }"
+            >
                 <input v-model="useWillpower" type="checkbox" />
                 Использовать Силу Воли (1 успех)
             </label>
@@ -100,6 +126,7 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
+import { useDiceMacros } from '../../composables/useDiceMacros';
 
 const props = defineProps({
     isStoryteller: { type: Boolean, required: true },
@@ -113,6 +140,14 @@ const props = defineProps({
 
 const emit = defineEmits(['close', 'roll', 'clear-result']);
 
+const {
+    macros,
+    error: macrosError,
+    load: loadMacros,
+} = useDiceMacros();
+
+const selectedMacroId = ref('');
+const appliedMacroName = ref('');
 const pool = ref(5);
 const difficulty = ref(6);
 const diceType = ref(10);
@@ -127,7 +162,41 @@ const isSumMode = computed(() => rollMode.value === 'sum');
 
 const displayResult = computed(() => localResult.value ?? props.lastResult?.result ?? null);
 
+function applyMacroById(raw) {
+    if (raw === null || raw === undefined || raw === '') {
+        appliedMacroName.value = '';
+
+        return;
+    }
+
+    const id = Number(raw);
+    if (!Number.isInteger(id) || id <= 0) {
+        return;
+    }
+
+    const macro = macros.value.find((row) => Number(row.id) === id);
+    if (!macro) {
+        return;
+    }
+
+    pool.value = Number(macro.pool);
+    difficulty.value = Number(macro.difficulty);
+    diceType.value = Number(macro.dice_type);
+    useWillpower.value = Boolean(macro.use_willpower);
+    appliedMacroName.value = String(macro.name ?? '');
+}
+
+function onMacroChange(event) {
+    applyMacroById(event.target.value);
+}
+
+watch(selectedMacroId, (id) => {
+    applyMacroById(id);
+});
+
 function resetForm() {
+    selectedMacroId.value = '';
+    appliedMacroName.value = '';
     pool.value = 5;
     difficulty.value = 6;
     diceType.value = 10;
@@ -143,6 +212,7 @@ function resetForm() {
 
 onMounted(() => {
     resetForm();
+    loadMacros();
 });
 
 onUnmounted(() => {

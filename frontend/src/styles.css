@@ -1279,6 +1279,22 @@ summary {
     margin-top: 0.25rem;
 }
 
+.dice-macro-applied {
+    margin: 0.5rem 0 0;
+    padding: 0.4rem 0.6rem;
+    border: 1px solid var(--gold);
+    color: var(--gold);
+    font-size: 0.85rem;
+}
+
+.dice-roller .dice-field-from-macro {
+    border-color: var(--gold);
+}
+
+.dice-roller label.dice-field-from-macro {
+    color: var(--gold);
+}
+
 .dice-roller label.dice-hidden-toggle {
     display: flex;
     align-items: center;

@@ -15,6 +15,7 @@ use App\Http\Controllers\ChronicleLocationController;
 use App\Http\Controllers\ChronicleLocationImageController;
 use App\Http\Controllers\CopilotController;
 use App\Http\Controllers\DiaryEntryController;
+use App\Http\Controllers\DiceMacroController;
 use App\Http\Controllers\DiceRollController;
 use App\Http\Controllers\EventGeneratorController;
 use App\Http\Controllers\GameSessionController;
@@ -75,6 +76,12 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/messages/{message}/ooc', [ChatController::class, 'toggleOoc']);
     Route::get('/user-notes', [UserNoteController::class, 'index']);
     Route::put('/user-notes', [UserNoteController::class, 'update']);
+    Route::get('/dice-macros', [DiceMacroController::class, 'index']);
+    Route::post('/dice-macros', [DiceMacroController::class, 'store']);
+    Route::patch('/dice-macros/{macro}', [DiceMacroController::class, 'update'])
+        ->can('update', 'macro');
+    Route::delete('/dice-macros/{macro}', [DiceMacroController::class, 'destroy'])
+        ->can('delete', 'macro');
     Route::delete('/messages/{message}', [ChatController::class, 'destroy']);
     Route::post('/messages/{message}/restore', [ChatController::class, 'restore'])
         ->withTrashed();

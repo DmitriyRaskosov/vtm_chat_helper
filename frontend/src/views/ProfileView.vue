@@ -99,6 +99,35 @@
                     </article>
                 </div>
             </template>
+
+            <section v-if="!loading" class="profile-macros">
+                <div class="profile-toolbar">
+                    <h2 class="profile-section-title">Макросы кубиков</h2>
+                    <button type="button" @click="openCreateMacro">Создать макрос</button>
+                </div>
+                <p v-if="macrosLoading" class="muted">Загрузка макросов…</p>
+                <p v-else-if="macros.length === 0" class="muted">Макросов пока нет.</p>
+                <div v-else class="profile-grid">
+                    <article v-for="macro in macros" :key="macro.id" class="card profile-macro-card">
+                        <h3 class="profile-name">{{ macro.name }}</h3>
+                        <p class="muted">Пул {{ macro.pool }} · сложность {{ macro.difficulty }}</p>
+                        <div class="profile-actions">
+                            <button type="button" class="secondary" @click="openEditMacro(macro)">
+                                Редактировать
+                            </button>
+                            <button
+                                type="button"
+                                class="secondary"
+                                :disabled="macrosSaving"
+                                @click="onDeleteMacro(macro)"
+                            >
+                                Удалить
+                            </button>
+                        </div>
+                    </article>
+                </div>
+                <p v-if="macrosError && !macroOpen" class="error">{{ macrosError }}</p>
+            </section>
         </div>
 
         <AvatarModal v-model="avatarOpen" :src="avatarSrc" />
@@ -107,6 +136,13 @@
             v-model="createOpen"
             :chronicle-id="currentChronicleId"
             @created="onCharacterCreated"
+        />
+        <MacroModal
+            v-model="macroOpen"
+            :macro="editingMacro"
+            :saving="macrosSaving"
+            :error="macrosError"
+            @save="onSaveMacro"
         />
 
         <div v-if="pendingDelete" class="diary-backdrop" @click.self="pendingDelete = null">
@@ -142,7 +178,9 @@ import { RouterLink, useRouter } from 'vue-router';
 import AppNav from '../components/layout/AppNav.vue';
 import AvatarModal from '../components/profile/AvatarModal.vue';
 import CreateCharacterModal from '../components/profile/CreateCharacterModal.vue';
+import MacroModal from '../components/profile/MacroModal.vue';
 import { currentChronicleId, useAuth } from '../auth';
+import { useDiceMacros } from '../composables/useDiceMacros';
 import { useProfile } from '../composables/useProfile';
 
 const SheetViewer = defineAsyncComponent(() => import('../components/profile/SheetViewer.vue'));
@@ -171,10 +209,23 @@ const {
     scenePresenceLoading,
 } = useProfile();
 
+const {
+    macros,
+    loading: macrosLoading,
+    saving: macrosSaving,
+    error: macrosError,
+    load: loadMacros,
+    createMacro,
+    updateMacro,
+    deleteMacro,
+} = useDiceMacros();
+
 const avatarOpen = ref(false);
 const avatarSrc = ref('');
 const sheetCharacter = ref(null);
 const createOpen = ref(false);
+const macroOpen = ref(false);
+const editingMacro = ref(null);
 const showArchived = ref(false);
 const pendingDelete = ref(null);
 const avatarInputs = reactive({});
@@ -190,6 +241,7 @@ onMounted(() => {
 watch(currentChronicleId, (id) => {
     loadScenePresence(id).catch(() => {});
     loadCharacters().catch(() => {});
+    loadMacros().catch(() => {});
 }, { immediate: true });
 
 const workshopPath = computed(() => {
@@ -230,6 +282,33 @@ function isArchived(row) {
 
 function characterPath(row) {
     return `/c/${row.chronicle_id}/characters/${row.id}`;
+}
+
+function openCreateMacro() {
+    editingMacro.value = null;
+    macrosError.value = '';
+    macroOpen.value = true;
+}
+
+function openEditMacro(macro) {
+    editingMacro.value = macro;
+    macrosError.value = '';
+    macroOpen.value = true;
+}
+
+async function onSaveMacro(payload) {
+    const saved = editingMacro.value
+        ? await updateMacro(editingMacro.value.id, payload)
+        : await createMacro(payload);
+
+    if (saved) {
+        macroOpen.value = false;
+        editingMacro.value = null;
+    }
+}
+
+async function onDeleteMacro(macro) {
+    await deleteMacro(macro.id);
 }
 
 function openCharacter(row) {
@@ -447,6 +526,29 @@ async function onSheetSelected(row, event) {
 
 .profile-toolbar button {
     margin-top: 0;
+}
+
+.profile-macros {
+    margin-top: 2rem;
+}
+
+.profile-section-title {
+    margin: 0;
+    font-family: var(--font-lore), serif;
+    font-size: 1.35rem;
+    font-weight: 600;
+    color: var(--gold);
+}
+
+.profile-macro-card {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    border-color: var(--gold);
+}
+
+.profile-macro-card .profile-name {
+    margin: 0;
 }
 
 .profile-confirm-actions {

@@ -12,6 +12,7 @@ use App\Models\ChronicleInvitation;
 use App\Models\ChronicleLocation;
 use App\Models\ChronicleMember;
 use App\Models\CopilotRequest;
+use App\Models\DiceMacro;
 use App\Models\GameSession;
 use App\Models\Message;
 use App\Models\Scene;
@@ -67,6 +68,8 @@ final class AccessMatrixFixtures
     public ChronicleLocation $chronicleLocation;
 
     public CharacterItem $playerItem;
+
+    public DiceMacro $diceMacro;
 
     private function __construct() {}
 
@@ -195,6 +198,16 @@ final class AccessMatrixFixtures
             'is_equipped' => false,
         ]);
 
+        $fixtures->diceMacro = DiceMacro::query()->create([
+            'user_id' => $fixtures->playerOwner->id,
+            'name' => 'Макрос матрицы',
+            'pool' => 1,
+            'difficulty' => 6,
+            'dice_type' => 10,
+            'use_willpower' => false,
+            'stats' => [],
+        ]);
+
         return $fixtures;
     }
 
@@ -229,6 +242,7 @@ final class AccessMatrixFixtures
             '{message}' => (string) $this->storytellerMessage->id,
             '{chronicleLocation}' => (string) $this->chronicleLocation->id,
             '{item}' => (string) $this->playerItem->id,
+            '{macro}' => (string) $this->diceMacro->id,
         ];
 
         $path = $uriTemplate;
@@ -409,6 +423,20 @@ final class AccessMatrixFixtures
                 'character_id' => $this->npc->id,
                 'prompt' => 'Синопсис для Copilot',
                 'scene_id' => $this->scene->id,
+            ];
+        }
+
+        if ($uriTemplate === 'dice-macros' && $method === 'POST') {
+            return [
+                'name' => 'Макрос матрицы',
+                'pool' => 1,
+                'difficulty' => 6,
+            ];
+        }
+
+        if ($uriTemplate === 'dice-macros/{macro}' && $method === 'PATCH') {
+            return [
+                'name' => 'Макрос матрицы PATCH',
             ];
         }
 
