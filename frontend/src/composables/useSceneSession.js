@@ -1,6 +1,7 @@
 import { computed, ref, watch } from 'vue';
 import { api, isStoryteller } from '../auth';
 import { CHRONICLE_NOT_SELECTED, chronicleCollectionPath } from './useCurrentChronicle';
+import { applyChronicleInGameTime } from './useInGameTime';
 import { useFlash } from './useFlash';
 import { apiErrorMessage } from '../utils/apiError';
 export function sceneStatusLabel(status) {
@@ -167,6 +168,7 @@ export function useSceneSession({ auth, chronicleId }) {
 
         const { data } = await api.get(path);
         gameSession.value = data.game_session;
+        applyChronicleInGameTime(chronicleId, data.game_session?.current_in_game_date);
 
         if (!gameSession.value) {
             selectedSceneId.value = null;
@@ -395,6 +397,7 @@ export function useSceneSession({ auth, chronicleId }) {
             const { data } = await api.post(chronicleCollectionPath(chronicleId, 'game-sessions'), { title });
             newGameSessionTitle.value = '';
             gameSession.value = data.game_session;
+            applyChronicleInGameTime(chronicleId, data.game_session?.current_in_game_date);
             selectedSceneId.value = gameSession.value.active_scene_id;
             return true;
         } catch (error) {

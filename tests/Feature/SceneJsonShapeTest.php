@@ -24,6 +24,8 @@ class SceneJsonShapeTest extends TestCase
         'status',
         'started_at',
         'ended_at',
+        'started_at_in_game',
+        'current_in_game_date',
     ];
 
     private const GAME_SESSION_SCENE_KEYS = [
@@ -34,6 +36,7 @@ class SceneJsonShapeTest extends TestCase
         'status',
         'started_at',
         'ended_at',
+        'started_at_in_game',
     ];
 
     private const GAME_SESSION_KEYS = [
@@ -43,6 +46,7 @@ class SceneJsonShapeTest extends TestCase
         'status',
         'active_character_id',
         'active_scene_id',
+        'current_in_game_date',
         'scenes',
     ];
 

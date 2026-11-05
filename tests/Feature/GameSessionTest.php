@@ -13,6 +13,7 @@ use App\Models\SceneContext;
 use App\Models\User;
 use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
+use Illuminate\Support\Carbon;
 use Tests\Support\JoinsChronicle;
 use Tests\TestCase;
 
@@ -50,6 +51,9 @@ class GameSessionTest extends TestCase
 
     public function test_store_archives_previous_active_session_and_closes_scenes(): void
     {
+        $inGame = Carbon::parse('1999-10-31 23:00:00');
+        $this->chronicle->update(['current_in_game_date' => $inGame]);
+
         $previous = GameSession::factory()->active()->create([
             'chronicle_id' => $this->chronicle->id,
             'title' => 'Старая сессия',
@@ -100,6 +104,14 @@ class GameSessionTest extends TestCase
             'status' => GameSessionStatus::Active->value,
             'title' => 'Новая сессия',
         ]);
+
+        $openingScene = Scene::query()
+            ->where('game_session_id', $newSessionId)
+            ->where('title', 'Начальная сцена')
+            ->first();
+
+        $this->assertNotNull($openingScene);
+        $this->assertTrue($openingScene->started_at_in_game?->equalTo($inGame));
     }
 
     public function test_storyteller_can_set_and_clear_active_turn_character(): void

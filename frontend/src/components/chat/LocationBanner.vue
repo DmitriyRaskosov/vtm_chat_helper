@@ -36,16 +36,19 @@
                 </button>
             </div>
         </div>
+        <InGameClock :chronicle-id="chronicleId" :is-storyteller="isStoryteller" />
     </div>
 </template>
 
 <script setup>
 import { ref } from 'vue';
+import InGameClock from './InGameClock.vue';
 
 defineProps({
     imageUrl: { default: null },
     situation: { type: String, default: '' },
     isStoryteller: { type: Boolean, required: true },
+    chronicleId: { type: [Number, String], required: true },
 });
 
 const emit = defineEmits(['zoom', 'open-settings', 'open-manage']);

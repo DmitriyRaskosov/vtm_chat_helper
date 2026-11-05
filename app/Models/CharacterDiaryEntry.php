@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'is_stale',
     'importance',
     'emotion',
+    'in_game_date',
 ])]
 class CharacterDiaryEntry extends Model
 {
@@ -30,6 +31,7 @@ class CharacterDiaryEntry extends Model
             'is_stale' => 'boolean',
             'importance' => 'float',
             'emotion' => DiaryEmotion::class,
+            'in_game_date' => 'datetime',
         ];
     }
 

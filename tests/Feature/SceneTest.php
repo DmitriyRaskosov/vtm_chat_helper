@@ -7,9 +7,11 @@ use App\Enums\GameSessionStatus;
 use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\GameSession;
+use App\Models\Scene;
 use App\Models\User;
 use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
+use Illuminate\Support\Carbon;
 use Tests\Support\JoinsChronicle;
 use Tests\TestCase;
 
@@ -45,6 +47,9 @@ class SceneTest extends TestCase
 
     public function test_storyteller_can_create_scene(): void
     {
+        $inGame = Carbon::parse('1999-10-31 23:00:00');
+        $this->chronicle->update(['current_in_game_date' => $inGame]);
+
         $response = $this->actingAs($this->storyteller, 'sanctum')
             ->postJson('/api/game-sessions/'.$this->gameSession->id.'/scenes', [
                 'title' => 'Первая сцена',
@@ -55,6 +60,15 @@ class SceneTest extends TestCase
             'id' => $response->json('scene.id'),
             'game_session_id' => $this->gameSession->id,
         ]);
+
+        $scene = Scene::query()->findOrFail($response->json('scene.id'));
+        $this->assertTrue($scene->started_at_in_game?->equalTo($inGame));
+        $this->chronicle->refresh();
+        $this->assertTrue($this->chronicle->current_in_game_date?->equalTo($inGame));
+        $this->assertSame(
+            $this->chronicle->current_in_game_date->toIso8601String(),
+            $response->json('scene.current_in_game_date'),
+        );
     }
 
     public function test_scene_can_be_activated_and_closed(): void

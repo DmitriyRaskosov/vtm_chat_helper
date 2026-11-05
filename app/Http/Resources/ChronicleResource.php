@@ -29,6 +29,7 @@ class ChronicleResource extends JsonResource
             'status' => $chronicle->status->value,
             'role' => $membership->role->value,
             'joined_at' => $membership->joined_at?->toIso8601String(),
+            'current_in_game_date' => $chronicle->current_in_game_date?->toIso8601String(),
         ];
     }
 }

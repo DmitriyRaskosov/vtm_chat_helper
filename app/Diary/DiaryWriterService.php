@@ -174,6 +174,7 @@ class DiaryWriterService
             $parsed['importance'],
             $parsed['emotion']?->value,
             VectorLiteral::fromArray($vector),
+            $this->chronicleInGameDate($scene),
         );
 
         return new WriteEntryResult(true, $messages->count());
@@ -332,6 +333,13 @@ class DiaryWriterService
         );
 
         return trim($turn->content);
+    }
+
+    private function chronicleInGameDate(Scene $scene): ?\DateTimeInterface
+    {
+        $scene->loadMissing('gameSession.chronicle');
+
+        return $scene->gameSession?->chronicle?->current_in_game_date;
     }
 
     private function resolveSceneNpcs(Scene $scene): Collection

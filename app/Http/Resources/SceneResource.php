@@ -27,6 +27,15 @@ class SceneResource extends JsonResource
             'status' => $scene->status->value,
             'started_at' => $scene->started_at?->toISOString(),
             'ended_at' => $scene->ended_at?->toISOString(),
+            'started_at_in_game' => $scene->started_at_in_game?->toISOString(),
+            'current_in_game_date' => $this->chronicleInGameDate($scene),
         ];
+    }
+
+    private function chronicleInGameDate(Scene $scene): ?string
+    {
+        $scene->loadMissing('gameSession.chronicle');
+
+        return $scene->gameSession?->chronicle?->current_in_game_date?->toIso8601String();
     }
 }

@@ -7,6 +7,7 @@ use App\Enums\DiaryEmotion;
 use App\Models\Character;
 use App\Models\CharacterDiaryEntry;
 use App\Models\Message;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 
 final class DiaryPreviewService
@@ -35,7 +36,9 @@ final class DiaryPreviewService
         );
 
         $budget = (int) config('context.assembler.sections.diary.max', 1200);
-        $built = DiaryRenderer::buildLines($bundle['selected']);
+        $npc->loadMissing('chronicle');
+        $currentInGameDate = $npc->chronicle?->current_in_game_date;
+        $built = DiaryRenderer::buildLines($bundle['selected'], $currentInGameDate);
         [$content, $truncated] = $this->trimmer->prefix('## Diary', $built['lines'], $budget);
         $tokens = $content === '' ? 0 : $this->estimator->estimate($content);
 
@@ -48,7 +51,7 @@ final class DiaryPreviewService
             'tokens_estimate' => $tokens,
             'truncated' => $truncated,
             'stats' => $bundle['stats'],
-            'selected' => $this->serializeEntries($bundle['selected']),
+            'selected' => $this->serializeEntries($bundle['selected'], $currentInGameDate),
             'rendered' => $content,
         ];
     }
@@ -71,7 +74,7 @@ final class DiaryPreviewService
      * @param  Collection<int, CharacterDiaryEntry>  $entries
      * @return list<array<string, mixed>>
      */
-    private function serializeEntries(Collection $entries): array
+    private function serializeEntries(Collection $entries, ?Carbon $currentInGameDate): array
     {
         $out = [];
         $isFirst = true;
@@ -86,7 +89,7 @@ final class DiaryPreviewService
                 'from_message_id' => $e->from_message_id === null ? null : (int) $e->from_message_id,
                 'to_message_id' => $e->to_message_id === null ? null : (int) $e->to_message_id,
                 'created_at' => $e->created_at?->toIso8601String(),
-                'label' => DiaryRenderer::labelFor($e, $isFirst),
+                'label' => DiaryRenderer::labelFor($e, $isFirst, $currentInGameDate),
                 'excerpt' => mb_substr(trim((string) $e->entry), 0, 200),
                 'importance' => $e->importance === null ? null : (float) $e->importance,
                 'emotion' => $emotion instanceof DiaryEmotion ? $emotion->value : null,

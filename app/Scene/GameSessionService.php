@@ -7,6 +7,7 @@ use App\Enums\CharacterType;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneStatus;
 use App\Models\Character;
+use App\Models\Chronicle;
 use App\Models\GameSession;
 use App\Models\Scene;
 use App\Models\User;
@@ -71,11 +72,14 @@ final class GameSessionService
                 'activated_at' => $now,
             ]);
 
+            $inGameDate = Chronicle::query()->whereKey($chronicleId)->value('current_in_game_date');
+
             $session->scenes()->create([
                 'position' => 1,
                 'title' => 'Начальная сцена',
                 'status' => SceneStatus::Active,
                 'started_at' => $now,
+                'started_at_in_game' => $inGameDate,
             ]);
 
             return $session->load('scenes');

@@ -19,6 +19,7 @@ class GameSessionResource extends JsonResource
     public function toArray(Request $request): array
     {
         $gameSession = $this->resource;
+        $gameSession->loadMissing('chronicle');
 
         return [
             'id' => $gameSession->id,
@@ -30,6 +31,7 @@ class GameSessionResource extends JsonResource
                 : (int) $gameSession->active_character_id,
             'active_scene_id' => $gameSession->scenes
                 ->firstWhere('status', SceneStatus::Active)?->id,
+            'current_in_game_date' => $gameSession->chronicle?->current_in_game_date?->toIso8601String(),
             'scenes' => $gameSession->scenes
                 ->map(fn (Scene $scene): array => [
                     'id' => $scene->id,
@@ -39,6 +41,7 @@ class GameSessionResource extends JsonResource
                     'status' => $scene->status->value,
                     'started_at' => $scene->started_at?->toISOString(),
                     'ended_at' => $scene->ended_at?->toISOString(),
+                    'started_at_in_game' => $scene->started_at_in_game?->toISOString(),
                 ])
                 ->values(),
         ];

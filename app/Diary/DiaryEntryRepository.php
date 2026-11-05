@@ -6,6 +6,7 @@ use App\Diary\Exceptions\DiaryChronicleMismatchException;
 use App\Models\Character;
 use App\Models\Scene;
 use App\Models\SceneParticipant;
+use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
 
 final class DiaryEntryRepository
@@ -20,6 +21,7 @@ final class DiaryEntryRepository
         ?float $importance,
         ?string $emotion,
         string $vectorLiteral,
+        ?DateTimeInterface $inGameDate = null,
     ): void {
         $this->assertNpcMatchesSceneChronicle($npc, $scene);
 
@@ -33,11 +35,12 @@ final class DiaryEntryRepository
             $importance,
             $emotion,
             $vectorLiteral,
+            $inGameDate,
         ): void {
             DB::statement(
                 'INSERT INTO character_diary_entries
-                    (character_id, chronicle_id, scene_id, level, from_message_id, to_message_id, entry, importance, emotion, embedding, created_at, updated_at)
-                VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?::vector, NOW(), NOW())',
+                    (character_id, chronicle_id, scene_id, level, from_message_id, to_message_id, entry, importance, emotion, in_game_date, embedding, created_at, updated_at)
+                VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?, ?, ?::vector, NOW(), NOW())',
                 [
                     $npc->id,
                     $npc->chronicle_id,
@@ -47,6 +50,7 @@ final class DiaryEntryRepository
                     $entry,
                     $importance,
                     $emotion,
+                    $inGameDate?->format('Y-m-d H:i:s'),
                     $vectorLiteral,
                 ],
             );
@@ -64,6 +68,7 @@ final class DiaryEntryRepository
         ?float $importance,
         ?string $emotion,
         string $vectorLiteral,
+        ?DateTimeInterface $inGameDate = null,
     ): void {
         $this->assertNpcMatchesSceneChronicle($npc, $scene);
 
@@ -76,11 +81,12 @@ final class DiaryEntryRepository
             $importance,
             $emotion,
             $vectorLiteral,
+            $inGameDate,
         ): void {
             DB::statement(
                 'INSERT INTO character_diary_entries
-                    (character_id, chronicle_id, scene_id, level, from_message_id, to_message_id, entry, importance, emotion, embedding, created_at, updated_at)
-                 VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?::vector, NOW(), NOW())',
+                    (character_id, chronicle_id, scene_id, level, from_message_id, to_message_id, entry, importance, emotion, in_game_date, embedding, created_at, updated_at)
+                 VALUES (?, ?, ?, 1, ?, ?, ?, ?, ?, ?, ?::vector, NOW(), NOW())',
                 [
                     $npc->id,
                     $npc->chronicle_id,
@@ -90,6 +96,7 @@ final class DiaryEntryRepository
                     $entry,
                     $importance,
                     $emotion,
+                    $inGameDate?->format('Y-m-d H:i:s'),
                     $vectorLiteral,
                 ],
             );

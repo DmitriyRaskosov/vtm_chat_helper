@@ -42,6 +42,7 @@
                 :image-url="locationImageUrl"
                 :situation="sceneSituation"
                 :is-storyteller="isStoryteller"
+                :chronicle-id="chronicleId"
                 @zoom="locationZoomOpen = true"
                 @open-settings="sceneSettingsOpen = true"
                 @open-manage="sceneManageOpen = true"

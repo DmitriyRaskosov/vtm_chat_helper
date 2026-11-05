@@ -56,7 +56,7 @@ class DiaryProvider implements ContextProvider
             ]);
         }
 
-        $built = DiaryRenderer::buildLines($entries);
+        $built = DiaryRenderer::buildLines($entries, $assembly->chronicle->current_in_game_date);
         [$content, $truncated] = $this->trimmer->prefix('## Diary', $built['lines'], $tokenBudget);
 
         return ContextSection::fromContent($this->key(), $content, $this->estimator, [

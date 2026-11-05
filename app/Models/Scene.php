@@ -16,6 +16,7 @@ use Illuminate\Support\Carbon;
 /**
  * @property SceneStatus $status
  * @property Carbon|null $started_at
+ * @property Carbon|null $started_at_in_game
  * @property Carbon|null $ended_at
  */
 #[Fillable([
@@ -25,6 +26,7 @@ use Illuminate\Support\Carbon;
     'description',
     'status',
     'started_at',
+    'started_at_in_game',
     'ended_at',
 ])]
 class Scene extends Model
@@ -94,6 +96,7 @@ class Scene extends Model
         return [
             'status' => SceneStatus::class,
             'started_at' => 'datetime',
+            'started_at_in_game' => 'datetime',
             'ended_at' => 'datetime',
         ];
     }

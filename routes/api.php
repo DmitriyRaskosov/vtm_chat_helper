@@ -48,6 +48,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/characters', [CharacterSheetController::class, 'index']);
         Route::post('/characters', [CharacterSheetController::class, 'store']);
         Route::post('/game-sessions', [GameSessionController::class, 'store']);
+        Route::patch('/time', [ChronicleController::class, 'updateTime'])
+            ->can('update', 'chronicle');
         Route::post('/copilot/drafts', [CopilotController::class, 'drafts']);
         Route::post('/scenes/{scene}/dice-rolls', [DiceRollController::class, 'store'])
             ->can('view', 'scene');

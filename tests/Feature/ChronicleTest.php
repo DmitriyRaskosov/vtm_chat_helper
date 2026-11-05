@@ -18,6 +18,7 @@ class ChronicleTest extends TestCase
         'status',
         'role',
         'joined_at',
+        'current_in_game_date',
     ];
 
     public function test_guest_cannot_access_chronicle_routes(): void

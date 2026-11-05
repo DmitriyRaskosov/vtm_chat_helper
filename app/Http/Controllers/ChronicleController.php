@@ -4,10 +4,13 @@ namespace App\Http\Controllers;
 
 use App\Chronicle\ChronicleService;
 use App\Http\Requests\StoreChronicleRequest;
+use App\Http\Requests\UpdateChronicleTimeRequest;
 use App\Http\Resources\ChronicleResource;
+use App\Http\Resources\ChronicleTimeResource;
 use App\Models\Chronicle;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Carbon;
 
 class ChronicleController extends Controller
 {
@@ -47,5 +50,17 @@ class ChronicleController extends Controller
         return response()->json([
             'chronicle' => (new ChronicleResource($membership))->toArray($request),
         ]);
+    }
+
+    public function updateTime(UpdateChronicleTimeRequest $request, Chronicle $chronicle): JsonResponse
+    {
+        $this->authorize('update', $chronicle);
+
+        $time = $this->chronicles->updateInGameTime(
+            $chronicle,
+            Carbon::parse($request->validated('datetime')),
+        );
+
+        return response()->json((new ChronicleTimeResource($time))->toArray($request));
     }
 }

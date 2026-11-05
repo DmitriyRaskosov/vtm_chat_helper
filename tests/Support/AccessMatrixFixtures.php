@@ -320,6 +320,10 @@ final class AccessMatrixFixtures
             return ['title' => 'Новая сессия'];
         }
 
+        if ($method === 'PATCH' && $uriTemplate === 'chronicles/{chronicle}/time') {
+            return ['datetime' => '1999-10-31T23:00:00Z'];
+        }
+
         if ($method === 'POST' && $uriTemplate === 'chronicles/{chronicle}/locations') {
             return ['name' => 'Локация матрицы POST'];
         }

@@ -20,6 +20,7 @@ use App\Models\SceneParticipant;
 use App\Models\User;
 use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Queue;
 use Tests\Support\CreatesDiaryEntries;
 use Tests\Support\CreatesSceneMessages;
@@ -467,6 +468,39 @@ class DiaryLlmServicesTest extends TestCase
             0,
             CharacterDiaryEntry::query()->where('character_id', $this->npc->id)->where('level', 1)->count(),
         );
+    }
+
+    public function test_l0_and_l1_store_chronicle_in_game_date(): void
+    {
+        $inGame = Carbon::parse('1998-05-01 22:15:00');
+        $this->chronicle->update(['current_in_game_date' => $inGame]);
+
+        $chat = $this->fakeChat();
+        $chat->push('Запись L0 с игровой датой.');
+        $chat->push('L1-сводка с игровой датой.');
+        $this->fakeEmbeddings();
+
+        $this->createSceneMessage('Реплика, из которой пишется L0.');
+
+        $written = app(DiaryWriterService::class)->writeForScene($this->scene->fresh());
+        $this->assertSame(1, $written->created);
+
+        $l0 = CharacterDiaryEntry::query()
+            ->where('character_id', $this->npc->id)
+            ->where('level', 0)
+            ->sole();
+        $this->assertTrue($l0->in_game_date?->equalTo($inGame));
+
+        $this->createDiaryEntry('Вторая L0', level: 0, fromMessageId: 2, toMessageId: 4);
+
+        $summarized = app(DiarySummarizerService::class)->summarizeScene($this->scene->fresh());
+        $this->assertSame(1, $summarized->created);
+
+        $l1 = CharacterDiaryEntry::query()
+            ->where('character_id', $this->npc->id)
+            ->where('level', 1)
+            ->sole();
+        $this->assertTrue($l1->in_game_date?->equalTo($inGame));
     }
 
     public function test_summarize_creates_l1_when_at_least_two_l0_entries_exist(): void

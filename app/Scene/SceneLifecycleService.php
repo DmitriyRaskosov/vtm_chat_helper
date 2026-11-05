@@ -51,6 +51,7 @@ final class SceneLifecycleService
                 'description' => $description,
                 'status' => $activate ? SceneStatus::Active : SceneStatus::Draft,
                 'started_at' => $activate ? $now : null,
+                'started_at_in_game' => $session->chronicle?->current_in_game_date,
             ]);
         });
     }

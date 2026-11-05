@@ -11,7 +11,14 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
+use Illuminate\Support\Carbon;
 
+/**
+ * @property ChronicleStatus $status
+ * @property Carbon|null $started_at
+ * @property Carbon|null $archived_at
+ * @property Carbon|null $current_in_game_date
+ */
 #[Fillable([
     'title',
     'description',
@@ -20,6 +27,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
     'created_by',
     'started_at',
     'archived_at',
+    'current_in_game_date',
 ])]
 class Chronicle extends Model
 {
@@ -97,6 +105,7 @@ class Chronicle extends Model
             'status' => ChronicleStatus::class,
             'started_at' => 'datetime',
             'archived_at' => 'datetime',
+            'current_in_game_date' => 'datetime',
         ];
     }
 }
