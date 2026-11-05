@@ -3,6 +3,7 @@
 namespace App\Scene;
 
 use App\Enums\SceneStatus;
+use App\Models\ChronicleLocation;
 use App\Models\Location;
 use App\Models\Scene;
 use App\Models\SceneContext;
@@ -26,6 +27,7 @@ class SceneContextService
     ): SceneContext {
         $allowed = [
             'location_entity_id',
+            'chronicle_location_id',
             'atmosphere',
             'situation',
             'storyteller_notes',
@@ -217,6 +219,23 @@ class SceneContextService
             }
 
             return $locationId;
+        }
+
+        if ($field === 'chronicle_location_id') {
+            if ($raw === null || $raw === '') {
+                return null;
+            }
+
+            $templateId = (int) $raw;
+            $template = ChronicleLocation::query()->find($templateId);
+            if ($template === null) {
+                throw new InvalidSceneContextInputException('Scene location template not found.');
+            }
+            if ((int) $template->chronicle_id !== $chronicleId) {
+                throw new MixedChronicleException;
+            }
+
+            return $templateId;
         }
 
         if ($raw === null) {

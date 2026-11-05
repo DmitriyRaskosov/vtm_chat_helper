@@ -9,6 +9,8 @@ The values below are final. Read them as given. An inconsistent pair (a botch fl
 - Action: {{action_description}}
 - Situation: {{situation}}
 - Environment: {{environment_details}}
+- Location objects:
+{{location_objects}}
 - Attack successes: {{attack_successes}}
 - Attack botch: {{attack_botch}}
 - Attack willpower spent: {{attack_willpower}}

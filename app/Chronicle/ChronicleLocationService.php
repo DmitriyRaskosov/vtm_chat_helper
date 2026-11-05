@@ -110,6 +110,7 @@ final class ChronicleLocationService
             'situation' => $location->description,
             'environment_details' => $location->environment_details,
             'location_image_path' => $location->image_path,
+            'chronicle_location_id' => $location->id,
         ], $expectedRevision, $updatedBy);
     }
 

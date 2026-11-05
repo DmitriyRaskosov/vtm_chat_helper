@@ -14,6 +14,7 @@ use App\Models\ChronicleMember;
 use App\Models\CopilotRequest;
 use App\Models\DiceMacro;
 use App\Models\GameSession;
+use App\Models\LocationNode;
 use App\Models\Message;
 use App\Models\Scene;
 use App\Models\SceneContext;
@@ -70,6 +71,8 @@ final class AccessMatrixFixtures
     public CharacterItem $playerItem;
 
     public DiceMacro $diceMacro;
+
+    private ?LocationNode $locationNodeCache = null;
 
     private function __construct() {}
 
@@ -211,6 +214,26 @@ final class AccessMatrixFixtures
         return $fixtures;
     }
 
+    public function ensureLocationNode(): LocationNode
+    {
+        if ($this->locationNodeCache instanceof LocationNode) {
+            return $this->locationNodeCache;
+        }
+
+        $vector = '['.implode(',', array_fill(0, 1024, '0.2')).']';
+        $locationNodeId = DB::table('location_nodes')->insertGetId([
+            'chronicle_location_id' => $this->chronicleLocation->id,
+            'parent_id' => null,
+            'name' => 'Объект матрицы',
+            'description' => 'Для CRUD',
+            'embedding' => DB::raw("'{$vector}'::vector"),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return $this->locationNodeCache = LocationNode::query()->findOrFail($locationNodeId);
+    }
+
     public function userForRole(string $role): ?User
     {
         return match ($role) {
@@ -244,6 +267,10 @@ final class AccessMatrixFixtures
             '{item}' => (string) $this->playerItem->id,
             '{macro}' => (string) $this->diceMacro->id,
         ];
+
+        if (str_contains($uriTemplate, '{locationNode}')) {
+            $map['{locationNode}'] = (string) $this->ensureLocationNode()->id;
+        }
 
         $path = $uriTemplate;
         foreach ($map as $placeholder => $value) {
@@ -457,6 +484,16 @@ final class AccessMatrixFixtures
                 'attack_successes' => 2,
                 'defense_successes' => 1,
             ];
+        }
+
+        if ($method === 'POST' && $uriTemplate === 'locations/{chronicleLocation}/location-nodes/parse') {
+            return [
+                'environment_details' => 'Текст окружения для парсинга.',
+            ];
+        }
+
+        if ($method === 'PATCH' && $uriTemplate === 'locations/{chronicleLocation}/location-nodes/{locationNode}') {
+            return ['name' => 'Объект матрицы PATCH'];
         }
 
         if ($method === 'POST' && str_contains($uriTemplate, '/participants')) {

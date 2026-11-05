@@ -15,6 +15,7 @@ class EventGeneratorApiTest extends TestCase
         parent::setUp();
 
         $this->fixtures = AccessMatrixFixtures::create($this);
+        $this->fakeEmbeddings();
     }
 
     public function test_storyteller_receives_generated_description(): void
@@ -56,6 +57,8 @@ class EventGeneratorApiTest extends TestCase
         $this->assertStringContainsString('Порижана швыряет скамью', $system);
         $this->assertStringContainsString('Situation: Ночь на пустыре', $system);
         $this->assertStringContainsString('Environment: Пол бетонный', $system);
+        $this->assertStringContainsString('Location objects:', $system);
+        $this->assertStringContainsString('Пол бетонный', $system);
         $this->assertStringContainsString('Attack successes: 3', $system);
         $this->assertStringContainsString('Attack botch: false', $system);
         $this->assertStringContainsString('Attack willpower spent: true', $system);

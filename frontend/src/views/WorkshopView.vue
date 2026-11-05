@@ -126,6 +126,39 @@
                         Детали окружения
                         <textarea v-model="locationForm.environmentDetails" rows="3" maxlength="4000" />
                     </label>
+
+                    <details v-if="editingId" class="location-nodes-panel card">
+                        <summary class="location-nodes-summary">
+                            Объекты окружения
+                            <span v-if="locationNodesCount" class="muted location-nodes-count">
+                                ({{ locationNodesCount }})
+                            </span>
+                        </summary>
+                        <p v-if="nodesError" class="error">{{ nodesError }}</p>
+                        <p v-if="nodesLoading" class="muted">Загрузка объектов…</p>
+                        <div class="sheet-actions location-nodes-toolbar">
+                            <button
+                                type="button"
+                                class="secondary"
+                                :disabled="nodesParsing || !locationForm.environmentDetails.trim()"
+                                @click="onParseObjects"
+                            >
+                                {{ nodesParsing ? 'Разбор…' : 'Разобрать на объекты' }}
+                            </button>
+                        </div>
+                        <LocationTree
+                            v-if="nodeTree.length"
+                            :nodes="nodeTree"
+                            :disabled="nodesSaving || nodesParsing"
+                            @update="onUpdateNode"
+                            @delete="onDeleteNode"
+                        />
+                        <p v-else-if="!nodesLoading" class="muted">
+                            Объектов пока нет. Нажмите «Разобрать на объекты» для текста окружения.
+                        </p>
+                    </details>
+                    <p v-else class="muted">Сохраните локацию, чтобы редактировать дерево объектов.</p>
+
                     <label class="scene-location-upload">
                         <span class="secondary-btn">Фото локации</span>
                         <input
@@ -156,10 +189,12 @@
 import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import DiaryManagement from '../components/workshop/DiaryManagement.vue';
+import LocationTree from '../components/workshop/LocationTree.vue';
 import AppNav from '../components/layout/AppNav.vue';
 import { useCharacterList } from '../composables/useCharacterList';
 import { useChronicleLocationImage } from '../composables/useChronicleLocationImage';
 import { useChronicleLocations } from '../composables/useChronicleLocations';
+import { useLocationNodes } from '../composables/useLocationNodes';
 import { apiErrorMessage } from '../utils/apiError';
 import { characterTypeLabel } from '../utils/labels';
 
@@ -214,6 +249,22 @@ const locationForm = reactive({
     environmentDetails: '',
 });
 
+const editingLocationId = computed(() => editingId.value);
+
+const {
+    nodes: locationNodes,
+    tree: nodeTree,
+    loading: nodesLoading,
+    parsing: nodesParsing,
+    saving: nodesSaving,
+    error: nodesError,
+    parse: parseLocationNodes,
+    update: updateLocationNode,
+    remove: removeLocationNode,
+} = useLocationNodes(editingLocationId);
+
+const locationNodesCount = computed(() => locationNodes.value.length);
+
 function resetLocationForm() {
     editingId.value = null;
     locationForm.name = '';
@@ -223,7 +274,7 @@ function resetLocationForm() {
     pendingImageName.value = '';
 }
 
-function startEdit(location) {
+async function startEdit(location) {
     editingId.value = location.id;
     locationForm.name = location.name ?? '';
     locationForm.description = location.description ?? '';
@@ -231,6 +282,33 @@ function startEdit(location) {
     pendingImageFile.value = null;
     pendingImageName.value = '';
     loadPreview(location.id);
+}
+
+async function onParseObjects() {
+    try {
+        await parseLocationNodes(locationForm.environmentDetails);
+    } catch {
+        // error in composable
+    }
+}
+
+async function onUpdateNode(payload) {
+    try {
+        await updateLocationNode(payload.id, { name: payload.name });
+    } catch {
+        // error in composable
+    }
+}
+
+async function onDeleteNode(nodeId) {
+    if (!window.confirm('Удалить объект и все вложенные?')) {
+        return;
+    }
+    try {
+        await removeLocationNode(nodeId);
+    } catch {
+        // error in composable
+    }
 }
 
 function onImagePick(event) {

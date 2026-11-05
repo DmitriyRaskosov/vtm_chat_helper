@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable([
     'chronicle_id',
@@ -21,6 +22,14 @@ class ChronicleLocation extends Model
     public function chronicle(): BelongsTo
     {
         return $this->belongsTo(Chronicle::class);
+    }
+
+    /**
+     * @return HasMany<LocationNode, $this>
+     */
+    public function locationNodes(): HasMany
+    {
+        return $this->hasMany(LocationNode::class);
     }
 
     protected function casts(): array

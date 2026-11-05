@@ -1618,6 +1618,62 @@ summary {
     margin-bottom: 0.65rem;
 }
 
+.location-nodes-panel {
+    margin: 1rem 0;
+    padding: 1rem;
+}
+
+.location-nodes-summary {
+    list-style: none;
+    margin: 0;
+    font-size: 1rem;
+}
+
+.location-nodes-summary::-webkit-details-marker {
+    display: none;
+}
+
+.location-nodes-panel[open] .location-nodes-summary {
+    margin-bottom: 0.75rem;
+}
+
+.location-nodes-count {
+    font-weight: 400;
+    font-size: 0.9rem;
+}
+
+.location-nodes-toolbar {
+    margin-bottom: 0.75rem;
+}
+
+.location-node-tree {
+    margin-top: 0.5rem;
+}
+
+.location-node-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.35rem 0.5rem;
+    margin: 0.35rem 0;
+}
+
+.location-node-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.35rem;
+}
+
+.location-node-input {
+    max-width: 10rem;
+}
+
+.location-node-input-wide {
+    max-width: 16rem;
+    flex: 1;
+    min-width: 8rem;
+}
+
 /* === Storyteller Copilot panel === */
 
 .storyteller-panel .draft-tabs {

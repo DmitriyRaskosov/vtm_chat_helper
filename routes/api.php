@@ -19,6 +19,7 @@ use App\Http\Controllers\DiceMacroController;
 use App\Http\Controllers\DiceRollController;
 use App\Http\Controllers\EventGeneratorController;
 use App\Http\Controllers\GameSessionController;
+use App\Http\Controllers\LocationNodeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SceneContextController;
 use App\Http\Controllers\SceneContextImageController;
@@ -66,6 +67,16 @@ Route::middleware('auth:sanctum')->group(function () {
     });
 
     Route::patch('/locations/{chronicleLocation}', [ChronicleLocationController::class, 'update'])
+        ->can('update', 'chronicleLocation');
+    Route::get('/locations/{chronicleLocation}/location-nodes', [LocationNodeController::class, 'index'])
+        ->can('update', 'chronicleLocation');
+    Route::post('/locations/{chronicleLocation}/location-nodes/parse', [LocationNodeController::class, 'parse'])
+        ->can('update', 'chronicleLocation');
+    Route::patch('/locations/{chronicleLocation}/location-nodes/{locationNode}', [LocationNodeController::class, 'update'])
+        ->scopeBindings()
+        ->can('update', 'chronicleLocation');
+    Route::delete('/locations/{chronicleLocation}/location-nodes/{locationNode}', [LocationNodeController::class, 'destroy'])
+        ->scopeBindings()
         ->can('update', 'chronicleLocation');
     Route::delete('/locations/{chronicleLocation}', [ChronicleLocationController::class, 'destroy'])
         ->can('delete', 'chronicleLocation');

@@ -14,6 +14,7 @@ use Illuminate\Support\Carbon;
     'scene_id',
     'chronicle_id',
     'location_entity_id',
+    'chronicle_location_id',
     'atmosphere',
     'situation',
     'storyteller_notes',
@@ -42,6 +43,14 @@ class SceneContext extends Model
     }
 
     /**
+     * @return BelongsTo<ChronicleLocation, $this>
+     */
+    public function chronicleLocation(): BelongsTo
+    {
+        return $this->belongsTo(ChronicleLocation::class);
+    }
+
+    /**
      * Строка локации. Обратный belongsTo WorldEntity на общем PK не объявляем.
      *
      * @return BelongsTo<Location, $this>
@@ -65,6 +74,7 @@ class SceneContext extends Model
             'scene_id' => 'integer',
             'chronicle_id' => 'integer',
             'location_entity_id' => 'integer',
+            'chronicle_location_id' => 'integer',
             'revision' => 'integer',
             'frozen_revision' => 'integer',
             'updated_by' => 'integer',

@@ -544,6 +544,30 @@ class AccessMatrixTest extends TestCase
                 'player_foreign' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
+            self::forRoles('scenes.location_nodes.index', 'GET', 'locations/{chronicleLocation}/location-nodes', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('scenes.location_nodes.parse', 'POST', 'locations/{chronicleLocation}/location-nodes/parse', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('scenes.location_nodes.update', 'PATCH', 'locations/{chronicleLocation}/location-nodes/{locationNode}', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('scenes.location_nodes.destroy', 'DELETE', 'locations/{chronicleLocation}/location-nodes/{locationNode}', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
             self::forRoles('chronicle_locations.index', 'GET', 'chronicles/{chronicle}/locations', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_403,
