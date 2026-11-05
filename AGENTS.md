@@ -51,6 +51,14 @@
 * Тесты: `docker compose exec laravel.test php artisan test` и `docker compose exec laravel.test ./vendor/bin/pint` должны быть зелёными перед завершением работы.
 * Каждая новая фича должна сопровождаться Feature-тестом (минимум один на успешный сценарий и один на ошибку), проверяющим Acceptance Criteria.
 
+### 6. Дополнительные правила заполнения файлов.
+* Формат spec.md:
+  - Шапка: `# Spec: Название`, `**Status:**`, `**Date:**`.
+  - Разделы: 1. Контекст и Цель, 2. User Stories, 3. Acceptance Criteria, 4. Out of Scope.
+  - Раздел Post-Implementation Notes — только для статуса Completed, в самом конце файла. Не обязательно №5, но обязательно в конце.
+  - Technical Context в spec.md не пишем, все технические детали только в plan.md.
+* `tasks.md` содержит только чек-лист и статус. Заметок и итогов там нет.
+
 ## 🛠 Полезные команды
 * Тесты: `docker compose exec laravel.test php artisan test`
 * Форматирование: `docker compose exec laravel.test ./vendor/bin/pint`

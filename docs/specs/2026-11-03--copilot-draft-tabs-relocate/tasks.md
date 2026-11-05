@@ -1,5 +1,7 @@
 # Tasks: Вкладки черновиков Copilot
 
+Status: Completed
+
 ## Этап 1: Frontend (UI)
 - [x] В `StorytellerCopilotPanel.vue` заменить список `.draft-list` на ряд кнопок-вкладок.
 - [x] Настроить привязку клика по вкладке к `selectDraft(index)`.

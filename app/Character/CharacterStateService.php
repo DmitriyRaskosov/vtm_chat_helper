@@ -5,10 +5,13 @@ namespace App\Character;
 use App\Enums\CharacterHealthDamage;
 use App\Models\Character;
 use App\Models\CharacterState;
-use Illuminate\Support\Facades\DB;
 
 final class CharacterStateService
 {
+    public function __construct(
+        private CharacterStatsService $stats,
+    ) {}
+
     public function ensure(Character $character): CharacterState
     {
         $loaded = $character->relationLoaded('state') ? $character->state : null;
@@ -36,39 +39,22 @@ final class CharacterStateService
      *     health_level: int,
      *     health_damage: CharacterHealthDamage|string
      * }  $fields
+     * @return array{
+     *     blood_pool: int,
+     *     temporary_willpower: int,
+     *     health_level: int,
+     *     health_damage: string,
+     *     health_penalty: int
+     * }
      */
-    public function apply(Character $character, array $fields): CharacterState
+    public function apply(Character $character, array $fields): array
     {
-        $damage = $fields['health_damage'] instanceof CharacterHealthDamage
-            ? $fields['health_damage']
-            : CharacterHealthDamage::from((string) $fields['health_damage']);
-
-        $healthLevel = (int) $fields['health_level'];
-
-        return DB::transaction(function () use ($character, $fields, $damage, $healthLevel): CharacterState {
-            $state = $this->ensure($character);
-
-            $state->blood_pool = (int) $fields['blood_pool'];
-            $state->temporary_willpower = (int) $fields['temporary_willpower'];
-            $state->health_level = $healthLevel;
-            $state->health_damage = $damage;
-            $state->health_penalty = self::healthPenaltyForLevel($healthLevel);
-            $state->save();
-
-            return $state->refresh();
-        });
+        return $this->stats->applyLegacy($character, $fields);
     }
 
     public static function healthPenaltyForLevel(int $healthLevel): int
     {
-        return match ($healthLevel) {
-            0, 1 => 0,
-            2, 3 => -1,
-            4, 5 => -2,
-            6 => -5,
-            7 => -100,
-            default => 0,
-        };
+        return CharacterStatsService::healthPenalty($healthLevel);
     }
 
     /**

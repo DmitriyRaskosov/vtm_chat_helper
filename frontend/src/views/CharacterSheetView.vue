@@ -10,6 +10,13 @@
             <RouterLink :to="diaryLink" class="link">Дневник</RouterLink>
         </div>
 
+        <StatsGrid
+            :character-id="characterId"
+            :stats="sheet.stats"
+            :schema="sheet.sheet_schema"
+            @saved="onStatsSaved"
+        />
+
         <SheetImageSection :character-id="characterId" :can-upload="isStoryteller" />
 
         <SheetHeaderSection
@@ -74,6 +81,7 @@ import SheetHeaderSection from '../components/sheet/SheetHeaderSection.vue';
 import SheetImageSection from '../components/sheet/SheetImageSection.vue';
 import SheetPlaceSection from '../components/sheet/SheetPlaceSection.vue';
 import SheetTraitsSection from '../components/sheet/SheetTraitsSection.vue';
+import StatsGrid from '../components/sheet/StatsGrid.vue';
 import { computed, onMounted, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { useCharacterSheet } from '../composables/useCharacterSheet';
@@ -113,6 +121,12 @@ const {
     addDiscipline,
     removeDiscipline,
 } = useCharacterSheet(characterId);
+
+function onStatsSaved(stats) {
+    if (sheet.value) {
+        sheet.value.stats = stats;
+    }
+}
 
 watch(characterId, load);
 onMounted(load);

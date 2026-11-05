@@ -1,0 +1,292 @@
+<?php
+
+namespace App\Character;
+
+use App\Enums\CharacterHealthDamage;
+use App\Models\Character;
+
+final class CharacterStatsService
+{
+    /**
+     * @return array<string, mixed>
+     */
+    public static function defaults(): array
+    {
+        return [
+            'blood_pool' => self::dotTrack(10, 10),
+            'willpower' => self::dotTrack(5, 10),
+            'health' => [
+                'level' => 0,
+                'damage' => 'bashing',
+                'penalty' => 0,
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $stats
+     * @return array<string, mixed>
+     */
+    public static function normalize(array $stats): array
+    {
+        $normalized = [];
+
+        foreach ($stats as $key => $value) {
+            if (in_array($key, ['health', 'health_level', 'health_damage', 'health_penalty', 'temporary_willpower'], true)) {
+                continue;
+            }
+
+            $normalized[$key] = self::dotTrack($value, self::maxDots($key));
+        }
+
+        if (isset($stats['temporary_willpower']) && ! array_key_exists('willpower', $stats)) {
+            $normalized['willpower'] = self::dotTrack($stats['temporary_willpower'], 10);
+        }
+
+        $normalized['health'] = self::normalizeHealth($stats);
+
+        return $normalized;
+    }
+
+    /**
+     * 0 — пустая, 1 — постоянная, 2 — временная.
+     *
+     * @return list<int>
+     */
+    public static function dotTrack(mixed $value, int $max): array
+    {
+        $max = max(0, $max);
+
+        if (is_array($value) && array_is_list($value)) {
+            $dots = [];
+            foreach ($value as $dot) {
+                $state = (int) $dot;
+                $dots[] = $state === 1 || $state === 2 ? $state : 0;
+            }
+
+            return self::fitDots($dots, $max);
+        }
+
+        $current = 0;
+        $temporary = false;
+        if (is_array($value) && array_key_exists('current', $value)) {
+            $current = (int) $value['current'];
+            $temporary = (bool) ($value['is_temporary'] ?? false);
+        } elseif (is_int($value) || is_float($value) || (is_string($value) && is_numeric($value))) {
+            $current = (int) $value;
+        }
+
+        $current = max(0, min($max, $current));
+        $dots = array_fill(0, $max, 0);
+        for ($i = 0; $i < $current; $i++) {
+            $dots[$i] = $temporary && $i === $current - 1 ? 2 : 1;
+        }
+
+        return $dots;
+    }
+
+    public static function filledDots(mixed $value, int $default): int
+    {
+        if (is_array($value) && array_is_list($value)) {
+            return count(array_filter(
+                $value,
+                fn (mixed $dot): bool => (int) $dot > 0,
+            ));
+        }
+
+        if (is_array($value) && array_key_exists('current', $value)) {
+            return max(0, (int) $value['current']);
+        }
+
+        if (is_int($value) || is_float($value) || (is_string($value) && is_numeric($value))) {
+            return max(0, (int) $value);
+        }
+
+        return $default;
+    }
+
+    public static function maxDots(string $key): int
+    {
+        return in_array($key, ['blood_pool', 'willpower', 'temporary_willpower'], true) ? 10 : 5;
+    }
+
+    /**
+     * @param  array<string, mixed>  $stats
+     */
+    public function replace(Character $character, array $stats): Character
+    {
+        $character->stats = self::normalize($stats);
+        $character->save();
+
+        return $character;
+    }
+
+    /**
+     * @param  array{
+     *     blood_pool: int,
+     *     temporary_willpower: int,
+     *     health_level: int,
+     *     health_damage: mixed
+     * }  $fields
+     * @return array{
+     *     blood_pool: int,
+     *     temporary_willpower: int,
+     *     health_level: int,
+     *     health_damage: string,
+     *     health_penalty: int
+     * }
+     */
+    public function applyLegacy(Character $character, array $fields): array
+    {
+        $stats = is_array($character->stats) ? $character->stats : self::defaults();
+        $level = (int) $fields['health_level'];
+        $damage = $fields['health_damage'];
+        $damageValue = $damage instanceof CharacterHealthDamage ? $damage->value : (string) $damage;
+
+        $stats['blood_pool'] = self::dotTrack((int) $fields['blood_pool'], 10);
+        $stats['willpower'] = self::dotTrack((int) $fields['temporary_willpower'], 10);
+        $stats['health'] = [
+            'level' => $level,
+            'damage' => $damageValue,
+            'penalty' => self::healthPenalty($level),
+        ];
+        unset($stats['temporary_willpower'], $stats['health_level'], $stats['health_damage'], $stats['health_penalty']);
+
+        $character->stats = $stats;
+        $character->save();
+
+        return self::legacyState($character->stats);
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $stats
+     * @return array{
+     *     blood_pool: int,
+     *     temporary_willpower: int,
+     *     health_level: int,
+     *     health_damage: string,
+     *     health_penalty: int
+     * }
+     */
+    public static function legacyState(?array $stats): array
+    {
+        $stats ??= [];
+        $level = self::healthLevel($stats);
+        $penalty = self::healthPenaltyValue($stats, $level);
+
+        return [
+            'blood_pool' => self::filledDots($stats['blood_pool'] ?? null, 10),
+            'temporary_willpower' => self::filledDots(
+                $stats['willpower'] ?? ($stats['temporary_willpower'] ?? null),
+                5,
+            ),
+            'health_level' => $level,
+            'health_damage' => self::healthDamage($stats),
+            'health_penalty' => $penalty,
+        ];
+    }
+
+    public static function healthPenalty(int $healthLevel): int
+    {
+        return match ($healthLevel) {
+            0, 1 => 0,
+            2, 3 => -1,
+            4, 5 => -2,
+            6 => -5,
+            7 => -100,
+            default => 0,
+        };
+    }
+
+    /**
+     * @param  array<string, mixed>  $stats
+     */
+    private static function healthLevel(array $stats): int
+    {
+        $health = $stats['health'] ?? null;
+        if (is_array($health) && array_key_exists('level', $health)) {
+            return (int) $health['level'];
+        }
+
+        return self::filledDots($stats['health_level'] ?? null, 0);
+    }
+
+    /**
+     * @param  array<string, mixed>  $stats
+     * @return array{level: int, damage: string, penalty: int}
+     */
+    private static function normalizeHealth(array $stats): array
+    {
+        $health = $stats['health'] ?? null;
+        if (is_array($health) && array_key_exists('level', $health)) {
+            $level = (int) $health['level'];
+
+            return [
+                'level' => $level,
+                'damage' => is_string($health['damage'] ?? null) && $health['damage'] !== ''
+                    ? $health['damage']
+                    : 'bashing',
+                'penalty' => array_key_exists('penalty', $health)
+                    ? (int) $health['penalty']
+                    : self::healthPenalty($level),
+            ];
+        }
+
+        $level = self::filledDots($stats['health_level'] ?? null, 0);
+        $damage = $stats['health_damage'] ?? 'bashing';
+
+        return [
+            'level' => $level,
+            'damage' => is_string($damage) && $damage !== '' ? $damage : 'bashing',
+            'penalty' => array_key_exists('health_penalty', $stats)
+                ? (int) $stats['health_penalty']
+                : self::healthPenalty($level),
+        ];
+    }
+
+    /**
+     * @param  list<int>  $dots
+     * @return list<int>
+     */
+    private static function fitDots(array $dots, int $max): array
+    {
+        $dots = array_slice($dots, 0, $max);
+        while (count($dots) < $max) {
+            $dots[] = 0;
+        }
+
+        return $dots;
+    }
+
+    /**
+     * @param  array<string, mixed>  $stats
+     */
+    private static function healthDamage(array $stats): string
+    {
+        $health = $stats['health'] ?? null;
+        if (is_array($health) && isset($health['damage']) && is_string($health['damage']) && $health['damage'] !== '') {
+            return $health['damage'];
+        }
+
+        $damage = $stats['health_damage'] ?? 'bashing';
+
+        return is_string($damage) && $damage !== '' ? $damage : 'bashing';
+    }
+
+    /**
+     * @param  array<string, mixed>  $stats
+     */
+    private static function healthPenaltyValue(array $stats, int $level): int
+    {
+        $health = $stats['health'] ?? null;
+        if (is_array($health) && array_key_exists('penalty', $health)) {
+            return (int) $health['penalty'];
+        }
+
+        if (array_key_exists('health_penalty', $stats)) {
+            return (int) $stats['health_penalty'];
+        }
+
+        return self::healthPenalty($level);
+    }
+}

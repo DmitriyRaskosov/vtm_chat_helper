@@ -1,6 +1,7 @@
 # Spec: Инвентарь персонажа
 
-Status: Completed
+**Status:** Completed
+**Date:** 2026-11-03
 
 ## 1. Контекст и Цель
 Игрокам и рассказчикам нужен инструмент для учета вещей персонажа. Простое текстовое поле неудобно, а также возникает риск дублирования предметов между описанием внешности (traits) и инвентарем. 
@@ -22,12 +23,7 @@ Status: Completed
 *   **Вес и слоты:** Не считаем вес предметов и не ограничиваем количество слотов (руки/голова).
 *   **Механика:** Предметы не дают бонусов к кубам и не меняют статы автоматически (это работа рассказчика).
 
-## 5. Technical Context
-*   **БД:** `character_items` (character_id FK, name string, quantity int default 1, description text nullable, is_equipped boolean default false).
-*   **Frontend:** Новый composable `useCharacterInventory.js`. Модалка `InventoryPanel.vue`.
-*   **Context:** Создать `app/Context/Providers/InventoryProvider.php`. Добавить в `ContextAssembler`.
-
-## 6. Post-Implementation Notes
+## 5. Post-Implementation Notes
 
 Сделано: таблица `character_items`, CRUD `/api/characters/{id}/items`, право `manageItems` (владелец PC и рассказчик), плавающее окно «Инвентарь» в чате и секция `inventory` в контексте Copilot (лимит 200 токенов).
 

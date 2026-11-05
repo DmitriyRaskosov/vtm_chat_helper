@@ -1,6 +1,7 @@
 # Spec: Вкладки черновиков Copilot
 
-Status: Completed
+**Status:** Completed
+**Date:** 2026-11-03
 
 ## 1. Контекст и Цель
 Рассказчик сравнивает три варианта реплики НПС в правой панели. Сейчас все черновики выводятся вертикальным списком (`v-for` по `.draft-list` в `StorytellerCopilotPanel.vue`). Длинный текст выбранной карточки растягивает панель, появляется вертикальный скролл всей панели, и кнопку отправки приходится искать.
@@ -25,9 +26,3 @@ Status: Completed
 *   Изменение числа черновиков, промпта генерации и API `copilot/drafts`.
 *   Превью памяти НПС, выбор НПС и поле ситуации.
 *   Переименование кнопки отправки и смена контракта composable `useCopilotPanel` (кроме того, что UI вызывает уже существующий `selectDraft`).
-
-## 5. Technical Context
-*   Компонент: `frontend/src/components/chat/StorytellerCopilotPanel.vue`. Список `.draft-list` / `.draft-card` убрать из разметки черновиков.
-*   Состояние уже есть в `frontend/src/composables/useCopilotPanel.js`: `drafts`, `selectedDraftIndex`, `editedDraft`, `selectDraft`, `sendAsNpc`.
-*   Стили списка: `.draft-list`, `.draft-card` в `frontend/src/styles.css` (в том числе блок «Storyteller Copilot panel», где выбранная карточка снимает `max-height`). Стили, которые больше нигде не используются, убрать. Глобальный `styles.css` не реорганизовывать.
-*   Проверка: `docker compose exec frontend npm run build`. Ручной прогон: переключить вкладки, поправить текст, отправить в чат.

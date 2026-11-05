@@ -1,5 +1,7 @@
 # Tasks: Граф локаций (Location Nodes)
 
+Status: Completed
+
 ## Этап 1: Backend (БД и Модели)
 - [x] Миграция `location_nodes` (`chronicle_location_id`, parent_id, name, description, embedding).
 - [x] `chronicle_location_id` на `scene_contexts` (nullable FK).

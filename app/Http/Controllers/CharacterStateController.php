@@ -20,7 +20,7 @@ class CharacterStateController extends Controller
         $state = $this->stateService->apply($character, $request->validated());
 
         return response()->json([
-            'state' => $this->stateService->toArray($state),
+            'state' => $state,
         ]);
     }
 }

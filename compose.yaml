@@ -76,6 +76,8 @@ services:
             - 'frontend-node-modules:/app/node_modules'
         environment:
             VITE_API_PROXY_TARGET: 'http://laravel.test:80'
+            CHOKIDAR_USEPOLLING: 'true'
+            CHOKIDAR_INTERVAL: '1000'
         command: npm run dev -- --host
         networks:
             - sail

@@ -10,6 +10,7 @@ use App\Prompt\PromptRepository;
 use App\Rag\EmbeddingProvider;
 use App\Rag\VectorLiteral;
 use App\Scene\Exceptions\EventGenerationFailedException;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -171,6 +172,13 @@ final class EventGeneratorService
         $roots = LocationNode::query()
             ->where('chronicle_location_id', $chronicleLocationId)
             ->whereNull('parent_id')
+            ->with([
+                'children' => function (HasMany $query) use ($chronicleLocationId): void {
+                    $query
+                        ->where('chronicle_location_id', $chronicleLocationId)
+                        ->orderBy('id');
+                },
+            ])
             ->orderBy('id')
             ->get();
 
@@ -179,13 +187,7 @@ final class EventGeneratorService
         foreach ($roots as $root) {
             $nodes->push($root);
 
-            $children = LocationNode::query()
-                ->where('chronicle_location_id', $chronicleLocationId)
-                ->where('parent_id', $root->id)
-                ->orderBy('id')
-                ->get();
-
-            foreach ($children as $child) {
+            foreach ($root->children as $child) {
                 $nodes->push($child);
             }
         }

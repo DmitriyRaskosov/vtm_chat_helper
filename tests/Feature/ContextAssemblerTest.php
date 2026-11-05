@@ -240,6 +240,7 @@ class ContextAssemblerTest extends TestCase
         $build = $this->assembleReply();
         $userContent = $build->messages[1]['content'];
 
+        $this->assertStringContainsString('Blood pool: 7', $userContent);
         $this->assertStringNotContainsString('willpower', strtolower($userContent));
         $this->assertStringNotContainsString('Willpower', $userContent);
     }

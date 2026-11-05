@@ -13,7 +13,6 @@ final class CharacterCreationService
     public function __construct(
         private CurrentChronicle $currentChronicle,
         private WorldEntityService $entities,
-        private CharacterStateService $stateService,
     ) {}
 
     /**
@@ -51,7 +50,8 @@ final class CharacterCreationService
         );
 
         $character = Character::query()->findOrFail($entity->id);
-        $this->stateService->ensure($character);
+        $character->stats = CharacterStatsService::defaults();
+        $character->save();
 
         return $character;
     }

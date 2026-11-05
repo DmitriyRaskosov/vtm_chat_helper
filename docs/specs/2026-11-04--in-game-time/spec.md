@@ -1,6 +1,7 @@
 # Spec: Игровое время (In-Game Time)
 
-Status: Completed
+**Status:** Completed
+**Date:** 2026-11-04
 
 ## 1. Контекст и Цель
 Сейчас в проекте нет единой шкалы игрового времени. Это мешает отслеживать хронологию событий, а дневники NPC не могут оперировать понятиями «вчера», «год назад». 
@@ -22,11 +23,7 @@ Status: Completed
 *   **Time Decay (Временной распад):** Изменение формулы ранжирования дневников пока не делаем (вынесено в следующий SDD-цикл).
 *   **Права игроков:** Игроки не могут менять время.
 
-## 5. Technical Context
-*   **Backend:** Использовать Carbon для вычисления `$date->diffForHumans($currentTime)`.
-*   **Frontend:** Добавить компонент `InGameClock.vue` в `LocationBanner.vue` или `SceneToolbar.vue`. Доступен только для `isStoryteller`.
-
-## 6. Post-Implementation Notes
+## 5. Post-Implementation Notes
 
 У хроники есть `current_in_game_date`. Новая сцена (и первая сцена сессии) копирует его в `started_at_in_game`. Рассказчик двигает время из шапки сцены: `PATCH /api/chronicles/{chronicle}/time` обновляет хронику и активную сцену. Игрок видит те же часы без календаря и кнопок.
 

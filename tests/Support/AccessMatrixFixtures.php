@@ -432,6 +432,14 @@ final class AccessMatrixFixtures
             return ['location_entity_id' => null];
         }
 
+        if ($method === 'PATCH' && str_contains($uriTemplate, '/stats')) {
+            return [
+                'stats' => [
+                    'strength' => ['current' => 1, 'is_temporary' => false],
+                ],
+            ];
+        }
+
         if ($method === 'PUT' && str_contains($uriTemplate, '/state')) {
             return [
                 'blood_pool' => 1,

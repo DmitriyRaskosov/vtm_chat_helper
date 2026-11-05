@@ -6,10 +6,6 @@ use App\Models\Character;
 
 class CharacterSheetReader
 {
-    public function __construct(
-        private CharacterStateService $stateService,
-    ) {}
-
     /**
      * @return array<string, mixed>
      */
@@ -23,7 +19,6 @@ class CharacterSheetReader
             'user',
             'clan',
             'sire.entity',
-            'state',
         ]);
 
         $biography = $character->biography;
@@ -82,7 +77,9 @@ class CharacterSheetReader
                 'value' => $trait->value,
                 'sort_order' => (int) $trait->sort_order,
             ])->values()->all(),
-            'state' => $this->stateService->toArray($this->stateService->ensure($character)),
+            'state' => CharacterStatsService::legacyState(is_array($character->stats) ? $character->stats : null),
+            'stats' => $character->stats,
+            'sheet_schema' => config('sheet_schema'),
         ];
     }
 }

@@ -1,5 +1,8 @@
 # Spec: Фикс Retrieval для Графа Локаций
 
+**Status:** Completed
+**Date:** 2026-11-05
+
 ## 1. Контекст и Цель
 Эмбеддинги на коротких текстах плохо справляются с поиском конкретных объектов. Нужно внедрить Hybrid Retrieval (Vector + Keyword) и увеличить лимит выборки.
 
@@ -12,7 +15,6 @@
 *   **AC-6 (Fallback):** Если узлов нет (ни General, ни Specific), THE system SHALL использовать сырой текст `environment_details`.
 
 ## 3. Post-Implementation Notes
-- **Status:** Completed (2026-11-05).
 - **Причина фикса:** чистый vector-поиск плохо находил короткие узлы (cosine ~0.47 на релевантных, разница с шумом всего 0.15).
 - **Решение:** Hybrid Retrieval — vector (top-5, порог 0.45) + keyword (name ILIKE по префиксам слов >3 символов с обрезкой 2 последних букв для падежей). Результаты склеиваются, дубли по id удаляются.
 - **Лимит:** `copilot.event_location_retrieval_limit` увеличен с 3 до 5.

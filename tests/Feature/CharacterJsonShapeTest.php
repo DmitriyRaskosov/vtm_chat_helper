@@ -116,6 +116,8 @@ class CharacterJsonShapeTest extends TestCase
                 'biography',
                 'traits',
                 'state',
+                'stats',
+                'sheet_schema',
             ],
         ]);
 
@@ -144,6 +146,8 @@ class CharacterJsonShapeTest extends TestCase
                 'biography',
                 'traits',
                 'state',
+                'stats',
+                'sheet_schema',
             ],
             array_keys($character),
         );
