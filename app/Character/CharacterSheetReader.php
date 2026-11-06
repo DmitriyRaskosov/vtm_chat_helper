@@ -2,7 +2,9 @@
 
 namespace App\Character;
 
+use App\Models\CanonDiscipline;
 use App\Models\Character;
+use Illuminate\Support\Facades\DB;
 
 class CharacterSheetReader
 {
@@ -80,6 +82,38 @@ class CharacterSheetReader
             'state' => CharacterStatsService::legacyState(is_array($character->stats) ? $character->stats : null),
             'stats' => $character->stats,
             'sheet_schema' => config('sheet_schema'),
+            'sheet_data' => is_array($character->sheet_data)
+                ? CharacterStatsService::normalizeSheetData($character->sheet_data)
+                : CharacterStatsService::emptySheetData(),
+            'available_disciplines' => $this->availableDisciplines($character),
         ];
+    }
+
+    /**
+     * @return list<array{id: int, slug: string, name: string, is_clan_discipline: bool}>
+     */
+    private function availableDisciplines(Character $character): array
+    {
+        $clanDisciplineIds = [];
+        if ($character->clan_id !== null) {
+            $clanDisciplineIds = DB::table('canon_clan_disciplines')
+                ->where('clan_id', $character->clan_id)
+                ->where('is_in_clan', true)
+                ->pluck('discipline_id')
+                ->map(fn (mixed $id): int => (int) $id)
+                ->all();
+        }
+
+        return CanonDiscipline::query()
+            ->orderBy('name')
+            ->get()
+            ->map(fn (CanonDiscipline $discipline): array => [
+                'id' => (int) $discipline->id,
+                'slug' => $discipline->slug,
+                'name' => $discipline->name,
+                'is_clan_discipline' => in_array((int) $discipline->id, $clanDisciplineIds, true),
+            ])
+            ->values()
+            ->all();
     }
 }

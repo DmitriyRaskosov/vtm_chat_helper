@@ -54,6 +54,17 @@ export function normalizeStats(stats) {
             continue;
         }
 
+        if (key === 'disciplines' && value && typeof value === 'object' && !Array.isArray(value)) {
+            const disciplines = {};
+
+            for (const [slug, dots] of Object.entries(value)) {
+                disciplines[slug] = dotTrack(dots, 5);
+            }
+
+            next.disciplines = disciplines;
+            continue;
+        }
+
         if (Array.isArray(value)) {
             next[key] = value.map((dot) => {
                 const state = Number(dot);
@@ -83,32 +94,42 @@ export function useCharacterStats(characterId) {
         const numericId = resolveId(id);
 
         if (!Number.isFinite(numericId) || numericId <= 0) {
-            return normalizeStats(null);
+            return {
+                stats: normalizeStats(null),
+                sheet_data: null,
+            };
         }
 
         const { data } = await api.get(`/characters/${numericId}`);
         const stats = normalizeStats(data.character?.stats);
 
-        console.log('[StatsGrid] stats loaded', stats);
-
-        return stats;
+        return {
+            stats,
+            sheet_data: data.character?.sheet_data ?? null,
+        };
     }
 
-    async function save(stats) {
+    async function save(stats, sheetData = null) {
         const numericId = resolveId(characterId);
 
         if (!Number.isFinite(numericId) || numericId <= 0) {
             throw new Error('Персонаж не выбран.');
         }
 
-        const payload = normalizeStats(stats);
+        const payload = { stats: normalizeStats(stats) };
+        if (sheetData !== null) {
+            payload.sheet_data = sheetData;
+        }
         saving.value = true;
         error.value = '';
 
         try {
-            const { data } = await api.patch(`/characters/${numericId}/stats`, { stats: payload });
+            const { data } = await api.patch(`/characters/${numericId}/stats`, payload);
 
-            return normalizeStats(data.stats ?? payload);
+            return {
+                stats: normalizeStats(data.stats ?? payload.stats),
+                sheet_data: data.sheet_data ?? sheetData,
+            };
         } catch (err) {
             error.value = apiErrorMessage(err, 'Не удалось сохранить статы.');
             throw err;

@@ -18,7 +18,7 @@ class CharacterStatsController extends Controller
     {
         $this->authorize('update', $character);
 
-        $saved = $this->stats->replace($character, $request->stats());
+        $saved = $this->stats->replace($character, $request->stats(), $request->sheetData());
 
         return response()->json(
             (new CharacterStatsResource($saved))->toArray($request),

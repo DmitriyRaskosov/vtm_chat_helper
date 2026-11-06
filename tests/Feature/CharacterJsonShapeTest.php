@@ -118,6 +118,8 @@ class CharacterJsonShapeTest extends TestCase
                 'state',
                 'stats',
                 'sheet_schema',
+                'sheet_data',
+                'available_disciplines',
             ],
         ]);
 
@@ -148,9 +150,20 @@ class CharacterJsonShapeTest extends TestCase
                 'state',
                 'stats',
                 'sheet_schema',
+                'sheet_data',
+                'available_disciplines',
             ],
             array_keys($character),
         );
+        $this->assertSame(
+            [
+                'backgrounds' => [],
+                'merits_flaws' => [],
+                'weakness' => '',
+            ],
+            $character['sheet_data'],
+        );
+        $this->assertIsArray($character['available_disciplines']);
         $this->assertIsInt($character['id']);
         $this->assertIsInt($character['chronicle_id']);
         $this->assertIsString($character['character_type']);

@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 /**
  * @property CharacterType $character_type
  * @property array<string, mixed>|null $stats
+ * @property array<string, mixed>|null $sheet_data
  */
 #[Fillable([
     'id',
@@ -37,6 +38,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'description',
     'inventory',
     'stats',
+    'sheet_data',
 ])]
 class Character extends Model
 {
@@ -225,6 +227,7 @@ class Character extends Model
             'is_active' => 'boolean',
             'avatar_path' => 'string',
             'stats' => 'array',
+            'sheet_data' => 'array',
         ];
     }
 }

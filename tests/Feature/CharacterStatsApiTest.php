@@ -3,8 +3,12 @@
 namespace Tests\Feature;
 
 use App\Enums\ChronicleRole;
+use App\Models\CanonClan;
 use App\Models\Chronicle;
 use App\Models\User;
+use Database\Seeders\CanonClanDisciplineSeeder;
+use Database\Seeders\CanonClanSeeder;
+use Database\Seeders\CanonDisciplineSeeder;
 use Tests\Support\JoinsChronicle;
 use Tests\TestCase;
 
@@ -20,11 +24,117 @@ class CharacterStatsApiTest extends TestCase
     {
         parent::setUp();
 
+        $this->seed(CanonClanSeeder::class);
+        $this->seed(CanonDisciplineSeeder::class);
+        $this->seed(CanonClanDisciplineSeeder::class);
+
         $this->storyteller = User::factory()->create();
         $this->chronicle = Chronicle::factory()->create([
             'created_by' => $this->storyteller->id,
         ]);
         $this->joinChronicle($this->storyteller, $this->chronicle, ChronicleRole::Storyteller);
+    }
+
+    public function test_sheet_marks_clan_disciplines_and_groups_schema(): void
+    {
+        $brujah = CanonClan::query()->where('slug', 'brujah')->firstOrFail();
+        $characterId = $this->createNpc($brujah->id);
+
+        $response = $this->actingAs($this->storyteller, 'sanctum')
+            ->getJson("/api/characters/{$characterId}")
+            ->assertOk();
+
+        $disciplines = collect($response->json('character.available_disciplines'));
+        $celerity = $disciplines->firstWhere('slug', 'celerity');
+        $animalism = $disciplines->firstWhere('slug', 'animalism');
+
+        $this->assertNotNull($celerity);
+        $this->assertNotNull($animalism);
+        $this->assertTrue($celerity['is_clan_discipline']);
+        $this->assertFalse($animalism['is_clan_discipline']);
+        $this->assertSame('Сила', $response->json('character.sheet_schema.physical.strength'));
+        $this->assertSame('Бдительность', $response->json('character.sheet_schema.talents.alertness'));
+        $this->assertSame('Совесть', $response->json('character.sheet_schema.virtues.conscience'));
+        $this->assertSame('Человечность', $response->json('character.sheet_schema.state.humanity'));
+    }
+
+    public function test_player_can_save_sheet_data_and_grouped_stats(): void
+    {
+        $player = User::factory()->create();
+        $pcId = $this->createPlayerCharacter($player);
+
+        $this->actingAs($player, 'sanctum')
+            ->patchJson("/api/characters/{$pcId}/stats", [
+                'stats' => [
+                    'humanity' => [1, 1, 1, 1, 1, 1, 1, 0, 0, 0],
+                    'conscience' => [1, 1, 1, 0, 0],
+                    'willpower' => [1, 1, 1, 1, 1, 0, 0, 0, 0, 0],
+                    'temporary_willpower' => [1, 1, 1, 0, 0, 0, 0, 0, 0, 0],
+                    'disciplines' => [
+                        'celerity' => [1, 1, 1, 0, 0],
+                    ],
+                    'health' => [
+                        'level' => 1,
+                        'damage' => 'bashing',
+                        'penalty' => 0,
+                    ],
+                ],
+                'sheet_data' => [
+                    'backgrounds' => [
+                        ['name' => 'Союзники', 'value' => 2],
+                    ],
+                    'merits_flaws' => [
+                        ['name' => 'Здравый смысл', 'points' => 1, 'type' => 'merit'],
+                    ],
+                    'weakness' => 'Вспыльчивость',
+                ],
+            ])
+            ->assertOk()
+            ->assertJsonPath('stats.humanity.6', 1)
+            ->assertJsonPath('stats.humanity.7', 0)
+            ->assertJsonPath('stats.conscience.2', 1)
+            ->assertJsonPath('stats.temporary_willpower.2', 1)
+            ->assertJsonPath('stats.disciplines.celerity.2', 1)
+            ->assertJsonPath('sheet_data.backgrounds.0.name', 'Союзники')
+            ->assertJsonPath('sheet_data.backgrounds.0.value', 2)
+            ->assertJsonPath('sheet_data.merits_flaws.0.type', 'merit')
+            ->assertJsonPath('sheet_data.weakness', 'Вспыльчивость');
+
+        $this->actingAs($player, 'sanctum')
+            ->getJson("/api/characters/{$pcId}")
+            ->assertOk()
+            ->assertJsonPath('character.stats.humanity.6', 1)
+            ->assertJsonPath('character.stats.disciplines.celerity.2', 1)
+            ->assertJsonPath('character.sheet_data.weakness', 'Вспыльчивость');
+
+        $this->actingAs($player, 'sanctum')
+            ->patchJson("/api/characters/{$pcId}/stats", [
+                'stats' => [
+                    'blood_pool' => [1, 1, 1, 1, 0, 0, 0, 0, 0, 0],
+                ],
+            ])
+            ->assertOk()
+            ->assertJsonPath('stats.blood_pool.3', 1)
+            ->assertJsonPath('sheet_data.weakness', 'Вспыльчивость');
+    }
+
+    public function test_invalid_sheet_data_is_rejected(): void
+    {
+        $npcId = $this->createNpc();
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->patchJson("/api/characters/{$npcId}/stats", [
+                'stats' => [
+                    'blood_pool' => [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                ],
+                'sheet_data' => [
+                    'merits_flaws' => [
+                        ['name' => 'Странность', 'points' => 1, 'type' => 'unknown'],
+                    ],
+                ],
+            ])
+            ->assertUnprocessable()
+            ->assertJsonValidationErrors(['sheet_data.merits_flaws.0.type']);
     }
 
     public function test_player_can_update_own_character_stats(): void
@@ -92,13 +202,18 @@ class CharacterStatsApiTest extends TestCase
         ];
     }
 
-    private function createNpc(): int
+    private function createNpc(?int $clanId = null): int
     {
+        $payload = [
+            'canonical_name' => 'NPC статы',
+            'character_type' => 'npc',
+        ];
+        if ($clanId !== null) {
+            $payload['clan_id'] = $clanId;
+        }
+
         $response = $this->actingAs($this->storyteller, 'sanctum')
-            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
-                'canonical_name' => 'NPC статы',
-                'character_type' => 'npc',
-            ]);
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), $payload);
         $response->assertStatus(201);
 
         return (int) $response->json('character.id');

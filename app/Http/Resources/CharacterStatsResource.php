@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources;
 
+use App\Character\CharacterStatsService;
 use App\Models\Character;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -19,9 +20,13 @@ class CharacterStatsResource extends JsonResource
     public function toArray(Request $request): array
     {
         $stats = $this->resource->stats;
+        $sheetData = $this->resource->sheet_data;
 
         return [
             'stats' => is_array($stats) ? $stats : [],
+            'sheet_data' => is_array($sheetData)
+                ? CharacterStatsService::normalizeSheetData($sheetData)
+                : CharacterStatsService::emptySheetData(),
         ];
     }
 }

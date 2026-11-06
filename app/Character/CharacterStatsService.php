@@ -36,11 +36,21 @@ final class CharacterStatsService
                 continue;
             }
 
-            $normalized[$key] = self::dotTrack($value, self::maxDots($key));
+            if ($key === 'disciplines') {
+                $normalized['disciplines'] = self::normalizeDisciplines($value);
+
+                continue;
+            }
+
+            $normalized[$key] = self::dotTrack($value, self::maxDots((string) $key));
         }
 
-        if (isset($stats['temporary_willpower']) && ! array_key_exists('willpower', $stats)) {
-            $normalized['willpower'] = self::dotTrack($stats['temporary_willpower'], 10);
+        if (array_key_exists('temporary_willpower', $stats)) {
+            if (! array_key_exists('willpower', $stats)) {
+                $normalized['willpower'] = self::dotTrack($stats['temporary_willpower'], 10);
+            } else {
+                $normalized['temporary_willpower'] = self::dotTrack($stats['temporary_willpower'], 10);
+            }
         }
 
         $normalized['health'] = self::normalizeHealth($stats);
@@ -107,15 +117,69 @@ final class CharacterStatsService
 
     public static function maxDots(string $key): int
     {
-        return in_array($key, ['blood_pool', 'willpower', 'temporary_willpower'], true) ? 10 : 5;
+        return in_array($key, ['blood_pool', 'willpower', 'temporary_willpower', 'humanity'], true) ? 10 : 5;
+    }
+
+    /**
+     * @return array{backgrounds: list<array{name: string, value: int|string}>, merits_flaws: list<array{name: string, points: int, type: string}>, weakness: string}
+     */
+    public static function emptySheetData(): array
+    {
+        return [
+            'backgrounds' => [],
+            'merits_flaws' => [],
+            'weakness' => '',
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{backgrounds: list<array{name: string, value: int|string}>, merits_flaws: list<array{name: string, points: int, type: string}>, weakness: string}
+     */
+    public static function normalizeSheetData(array $data): array
+    {
+        $backgrounds = [];
+        foreach ($data['backgrounds'] ?? [] as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $value = $row['value'] ?? '';
+            $backgrounds[] = [
+                'name' => (string) ($row['name'] ?? ''),
+                'value' => is_int($value) || (is_string($value) && is_numeric($value)) ? (int) $value : (string) $value,
+            ];
+        }
+
+        $merits = [];
+        foreach ($data['merits_flaws'] ?? [] as $row) {
+            if (! is_array($row)) {
+                continue;
+            }
+
+            $merits[] = [
+                'name' => (string) ($row['name'] ?? ''),
+                'points' => (int) ($row['points'] ?? 0),
+                'type' => (string) ($row['type'] ?? ''),
+            ];
+        }
+
+        return [
+            'backgrounds' => $backgrounds,
+            'merits_flaws' => $merits,
+            'weakness' => (string) ($data['weakness'] ?? ''),
+        ];
     }
 
     /**
      * @param  array<string, mixed>  $stats
      */
-    public function replace(Character $character, array $stats): Character
+    public function replace(Character $character, array $stats, ?array $sheetData = null): Character
     {
         $character->stats = self::normalize($stats);
+        if ($sheetData !== null) {
+            $character->sheet_data = self::normalizeSheetData($sheetData);
+        }
         $character->save();
 
         return $character;
@@ -242,6 +306,27 @@ final class CharacterStatsService
                 ? (int) $stats['health_penalty']
                 : self::healthPenalty($level),
         ];
+    }
+
+    /**
+     * @return array<string, list<int>>
+     */
+    private static function normalizeDisciplines(mixed $value): array
+    {
+        if (! is_array($value)) {
+            return [];
+        }
+
+        $disciplines = [];
+        foreach ($value as $slug => $dots) {
+            if (! is_string($slug) || $slug === '') {
+                continue;
+            }
+
+            $disciplines[$slug] = self::dotTrack($dots, 5);
+        }
+
+        return $disciplines;
     }
 
     /**

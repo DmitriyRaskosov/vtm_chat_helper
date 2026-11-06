@@ -1,18 +1,22 @@
 <?php
 
 return [
-    'attributes' => [
+    'physical' => [
         'strength' => 'Сила',
         'dexterity' => 'Ловкость',
         'stamina' => 'Выносливость',
+    ],
+    'social' => [
         'charisma' => 'Обаяние',
         'manipulation' => 'Манипулирование',
         'appearance' => 'Привлекательность',
+    ],
+    'mental' => [
         'perception' => 'Восприятие',
         'intelligence' => 'Интеллект',
         'wits' => 'Смекалка',
     ],
-    'abilities' => [
+    'talents' => [
         'alertness' => 'Бдительность',
         'athletics' => 'Атлетика',
         'brawl' => 'Драка',
@@ -23,6 +27,8 @@ return [
         'leadership' => 'Лидерство',
         'streetwise' => 'Знание улиц',
         'subterfuge' => 'Хитрость',
+    ],
+    'skills' => [
         'animal_ken' => 'Знание животных',
         'crafts' => 'Ремёсла',
         'drive' => 'Вождение',
@@ -33,6 +39,8 @@ return [
         'security' => 'Безопасность',
         'stealth' => 'Скрытность',
         'survival' => 'Выживание',
+    ],
+    'knowledges' => [
         'academics' => 'Академические знания',
         'computer' => 'Компьютер',
         'finance' => 'Финансы',
@@ -44,8 +52,15 @@ return [
         'politics' => 'Политика',
         'science' => 'Наука',
     ],
+    'virtues' => [
+        'conscience' => 'Совесть',
+        'self_control' => 'Самоконтроль',
+        'courage' => 'Смелость',
+    ],
     'state' => [
-        'blood_pool' => 'Запас крови',
+        'humanity' => 'Человечность',
         'willpower' => 'Сила воли',
+        'temporary_willpower' => 'Временная воля',
+        'blood_pool' => 'Запас крови',
     ],
 ];

@@ -10,10 +10,13 @@
             <RouterLink :to="diaryLink" class="link">Дневник</RouterLink>
         </div>
 
-        <StatsGrid
+        <CharacterSheetGrid
             :character-id="characterId"
             :stats="sheet.stats"
             :schema="sheet.sheet_schema"
+            :sheet="sheet"
+            :sheet-data="sheet.sheet_data"
+            :available-disciplines="sheet.available_disciplines"
             @saved="onStatsSaved"
         />
 
@@ -81,7 +84,7 @@ import SheetHeaderSection from '../components/sheet/SheetHeaderSection.vue';
 import SheetImageSection from '../components/sheet/SheetImageSection.vue';
 import SheetPlaceSection from '../components/sheet/SheetPlaceSection.vue';
 import SheetTraitsSection from '../components/sheet/SheetTraitsSection.vue';
-import StatsGrid from '../components/sheet/StatsGrid.vue';
+import CharacterSheetGrid from '../components/sheet/CharacterSheetGrid.vue';
 import { computed, onMounted, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import { useCharacterSheet } from '../composables/useCharacterSheet';
@@ -122,9 +125,14 @@ const {
     removeDiscipline,
 } = useCharacterSheet(characterId);
 
-function onStatsSaved(stats) {
-    if (sheet.value) {
-        sheet.value.stats = stats;
+function onStatsSaved(payload) {
+    if (!sheet.value || !payload) {
+        return;
+    }
+
+    sheet.value.stats = payload.stats;
+    if (payload.sheet_data) {
+        sheet.value.sheet_data = payload.sheet_data;
     }
 }
 
