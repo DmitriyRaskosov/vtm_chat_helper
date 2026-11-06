@@ -7,10 +7,6 @@
             </header>
 
             <p v-if="loading" class="muted">Загрузка персонажей…</p>
-            <section v-else-if="storytellerDenied" class="card profile-empty">
-                <p>Вы вошли как рассказчик. У рассказчика нет Личного кабинета. Для управления персонажами перейдите в Мастерскую</p>
-                <RouterLink class="profile-workshop-link" :to="workshopPath">Мастерская</RouterLink>
-            </section>
             <p v-else-if="error" class="error">{{ error }}</p>
             <template v-else>
                 <div class="profile-toolbar">
@@ -21,9 +17,15 @@
                     <button type="button" @click="createOpen = true">Создать персонажа</button>
                 </div>
                 <p v-if="visibleCharacters.length === 0" class="muted">{{ emptyLabel }}</p>
-                <div v-else class="profile-grid">
+                <section
+                    v-for="group in characterGroups"
+                    :key="group.id"
+                    class="profile-chronicle"
+                >
+                    <h3 class="profile-chronicle-title">{{ group.title }}</h3>
+                    <div class="profile-grid">
                     <article
-                        v-for="row in visibleCharacters"
+                        v-for="row in group.characters"
                         :key="row.id"
                         class="card profile-card"
                         @click="openCharacter(row)"
@@ -97,7 +99,8 @@
                             </template>
                         </div>
                     </article>
-                </div>
+                    </div>
+                </section>
             </template>
 
             <section v-if="!loading" class="profile-macros">
@@ -179,19 +182,17 @@ import AppNav from '../components/layout/AppNav.vue';
 import AvatarModal from '../components/profile/AvatarModal.vue';
 import CreateCharacterModal from '../components/profile/CreateCharacterModal.vue';
 import MacroModal from '../components/profile/MacroModal.vue';
-import { currentChronicleId, useAuth } from '../auth';
+import { currentChronicleId } from '../auth';
 import { useDiceMacros } from '../composables/useDiceMacros';
 import { useProfile } from '../composables/useProfile';
 
 const SheetViewer = defineAsyncComponent(() => import('../components/profile/SheetViewer.vue'));
 
 const router = useRouter();
-const auth = useAuth();
 const {
     characters,
     loading,
     error,
-    storytellerDenied,
     loadCharacters,
     uploadAvatar,
     uploadSheet,
@@ -244,30 +245,32 @@ watch(currentChronicleId, (id) => {
     loadMacros().catch(() => {});
 }, { immediate: true });
 
-const workshopPath = computed(() => {
-    const memberships = auth.user.value?.memberships ?? [];
-    const storytellerMembership = memberships.find((membership) => (
-        membership.role === 'storyteller'
-        && (membership.left_at === null || membership.left_at === undefined)
-    ));
-    const chronicleId = currentChronicleId.value ?? storytellerMembership?.chronicle_id;
+const visibleCharacters = computed(() => {
+    if (showArchived.value) {
+        return characters.value;
+    }
 
-    return chronicleId ? `/c/${chronicleId}/workshop` : '/chronicles';
+    return characters.value.filter((row) => row.is_active !== false);
 });
 
-const visibleCharacters = computed(() => {
-    const chronicleId = currentChronicleId.value;
-    let rows = characters.value;
+const characterGroups = computed(() => {
+    const groups = [];
+    const indexByChronicle = new Map();
 
-    if (chronicleId != null) {
-        rows = rows.filter((row) => Number(row.chronicle_id) === Number(chronicleId));
+    for (const row of visibleCharacters.value) {
+        const id = Number(row.chronicle_id);
+        if (!indexByChronicle.has(id)) {
+            indexByChronicle.set(id, groups.length);
+            groups.push({
+                id,
+                title: row.chronicle_title || 'Хроника',
+                characters: [],
+            });
+        }
+        groups[indexByChronicle.get(id)].characters.push(row);
     }
 
-    if (showArchived.value) {
-        return rows;
-    }
-
-    return rows.filter((row) => row.is_active !== false);
+    return groups;
 });
 
 const emptyLabel = computed(() => (
@@ -440,6 +443,14 @@ async function onSheetSelected(row, event) {
 </script>
 
 <style scoped>
+.profile-chronicle {
+    margin-top: 1.25rem;
+}
+
+.profile-chronicle-title {
+    margin: 0 0 0.75rem;
+}
+
 .profile-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));

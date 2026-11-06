@@ -13,6 +13,12 @@
                 </template>
                 <template v-else>
                     <div class="meta">
+                        <img
+                            v-if="avatarSrc(message)"
+                            class="msg-avatar"
+                            :src="avatarSrc(message)"
+                            alt=""
+                        />
                         <span v-if="message.is_ooc" class="ooc-badge">OOC</span>
                         <span v-if="message.is_deleted" class="deleted-badge">УДАЛЕНО</span>
                         {{ authorLabel(message) }} · {{ message.created_at }}
@@ -70,6 +76,7 @@
 
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue';
+import { storagePublicUrl } from '../../utils/storagePublicUrl';
 
 const props = defineProps({
     messages: { type: Array, required: true },
@@ -188,6 +195,14 @@ function canEdit(message) {
     }
 
     return message.id > maxMessageId.value - 10;
+}
+
+function avatarSrc(message) {
+    if (message.is_system) {
+        return '';
+    }
+
+    return storagePublicUrl(message.avatar_path);
 }
 
 function authorLabel(message) {

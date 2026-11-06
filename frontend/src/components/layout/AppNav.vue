@@ -1,6 +1,6 @@
 <template>
     <nav class="sidebar">
-        <RouterLink :to="chatLink" class="nav-icon" :class="{ active: current === 'chat' }" title="Чат">📖</RouterLink>
+        <RouterLink :to="chatLink" class="nav-icon" :class="{ active: current === 'chat' }" title="Чат">💬</RouterLink>
         <RouterLink :to="charactersLink" class="nav-icon" :class="{ active: current === 'characters' }" title="Персонажи">👤</RouterLink>
         <RouterLink to="/profile" class="nav-icon" :class="{ active: current === 'profile' }" title="Личный кабинет">🎭</RouterLink>
         <div class="sidebar-anchor">

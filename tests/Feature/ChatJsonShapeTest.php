@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\ChronicleRole;
+use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\GameSession;
 use App\Models\User;
@@ -29,6 +30,7 @@ class ChatJsonShapeTest extends TestCase
         'is_system',
         'is_deleted',
         'created_at',
+        'avatar_path',
     ];
 
     private User $storyteller;
@@ -93,6 +95,46 @@ class ChatJsonShapeTest extends TestCase
         $this->assertFalse($item['is_deleted']);
         $this->assertIsBool($item['is_ooc']);
         $this->assertIsBool($item['mine']);
+        $this->assertNull($item['avatar_path']);
+    }
+
+    public function test_character_message_includes_avatar_path(): void
+    {
+        $npc = $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson($this->chronicleApi($this->chronicle, 'characters'), [
+                'canonical_name' => 'С аватаром',
+                'character_type' => 'npc',
+            ]);
+        $npc->assertStatus(201);
+        $npcId = (int) $npc->json('character.id');
+
+        Character::query()->whereKey($npcId)->update([
+            'avatar_path' => 'avatars/leru.jpg',
+        ]);
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson('/api/scenes/'.$this->sceneId.'/participants', [
+                'character_id' => $npcId,
+                'role' => 'npc',
+            ])
+            ->assertStatus(201);
+
+        $posted = $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
+                'body' => 'Реплика',
+                'scene_id' => $this->sceneId,
+                'character_id' => $npcId,
+            ]);
+
+        $posted->assertStatus(201);
+        $posted->assertJsonPath('message.avatar_path', 'avatars/leru.jpg');
+
+        $listed = $this->actingAs($this->storyteller, 'sanctum')
+            ->getJson($this->chronicleApi($this->chronicle, 'messages').'?scene_id='.$this->sceneId);
+        $listed->assertOk();
+        $speech = collect($listed->json('messages'))->firstWhere('body', 'Реплика');
+        $this->assertNotNull($speech);
+        $this->assertSame('avatars/leru.jpg', $speech['avatar_path']);
     }
 
     public function test_message_mine_true_for_author_and_false_for_other_player(): void

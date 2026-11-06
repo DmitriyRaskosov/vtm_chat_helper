@@ -1311,8 +1311,7 @@ summary {
     font-size: 0.75rem;
 }
 
-.msg:hover .msg-actions,
-.msg-deleted .msg-actions {
+.msg:hover .msg-actions {
     opacity: 1;
 }
 
@@ -2036,6 +2035,9 @@ body.chat-split-resizing .gothic-layout .chat-split-resizer {
 }
 
 .chat-log .msg .meta {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
     font-size: 0.75rem;
     font-weight: 600;
     text-transform: uppercase;
@@ -2043,10 +2045,19 @@ body.chat-split-resizing .gothic-layout .chat-split-resizer {
     margin-bottom: 0.2rem;
 }
 
+.chat-log .msg-avatar {
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
 .chat-log .msg-body {
     font-family: var(--font-lore);
     font-size: 1.05rem;
     line-height: 1.5;
+    white-space: pre-wrap;
     background: var(--bg-light);
     padding: 0.8rem;
     border-radius: 6px;

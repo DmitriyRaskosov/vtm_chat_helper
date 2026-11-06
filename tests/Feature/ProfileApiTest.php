@@ -81,16 +81,38 @@ class ProfileApiTest extends TestCase
             ->assertJsonCount(0, 'data');
     }
 
-    public function test_storyteller_is_forbidden(): void
+    public function test_storyteller_sees_active_npcs_of_own_chronicles(): void
     {
         $storyteller = User::factory()->create();
         $chronicle = Chronicle::factory()->create(['created_by' => $storyteller->id]);
+        $other = Chronicle::factory()->create();
         $this->joinChronicle($storyteller, $chronicle, ChronicleRole::Storyteller);
 
-        $this->actingAs($storyteller, 'sanctum')
-            ->getJson('/api/profile/characters')
-            ->assertStatus(403)
-            ->assertJsonPath('message', 'Рассказчик не имеет личного кабинета.');
+        $pc = Character::factory()->player($storyteller)->forChronicle($chronicle)->create([
+            'canonical_name' => 'Свой PC',
+        ]);
+        $npc = Character::factory()->npc()->forChronicle($chronicle)->create([
+            'canonical_name' => 'Свой NPC',
+        ]);
+        Character::factory()->npc()->forChronicle($chronicle)->create([
+            'canonical_name' => 'Архивный NPC',
+            'is_active' => false,
+        ]);
+        Character::factory()->npc()->forChronicle($other)->create([
+            'canonical_name' => 'Чужой NPC',
+        ]);
+
+        $response = $this->actingAs($storyteller, 'sanctum')
+            ->getJson('/api/profile/characters');
+
+        $response->assertOk();
+        $response->assertJsonCount(2, 'data');
+
+        $rows = collect($response->json('data'))->keyBy('id');
+        $this->assertSame('Свой PC', $rows[$pc->id]['canonical_name']);
+        $this->assertSame('Свой NPC', $rows[$npc->id]['canonical_name']);
+        $this->assertSame($chronicle->title, $rows[$pc->id]['chronicle_title']);
+        $this->assertSame($chronicle->title, $rows[$npc->id]['chronicle_title']);
     }
 
     public function test_guest_is_unauthorized(): void

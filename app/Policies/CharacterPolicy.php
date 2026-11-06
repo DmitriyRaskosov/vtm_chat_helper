@@ -73,17 +73,9 @@ class CharacterPolicy
         return $this->denyUnlessStorytellerInCharacterChronicle($user, $character);
     }
 
-    public function viewProfile(User $user): Response|bool
+    public function viewProfile(User $user): bool
     {
-        $isStoryteller = ChronicleMember::query()
-            ->where('user_id', $user->id)
-            ->whereNull('left_at')
-            ->where('role', ChronicleRole::Storyteller)
-            ->exists();
-
-        return $isStoryteller
-            ? Response::deny('Рассказчик не имеет личного кабинета.')
-            : true;
+        return true;
     }
 
     public function manageItems(User $user, Character $character): bool

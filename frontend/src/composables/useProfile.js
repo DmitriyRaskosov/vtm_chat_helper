@@ -2,12 +2,12 @@ import { ref } from 'vue';
 import { api } from '../auth';
 import { apiErrorMessage } from '../utils/apiError';
 import { chronicleCollectionPath } from './useCurrentChronicle';
+import { storagePublicUrl } from '../utils/storagePublicUrl';
 
 export function useProfile() {
     const characters = ref([]);
     const loading = ref(true);
     const error = ref('');
-    const storytellerDenied = ref(false);
     const avatarCacheKeys = ref({});
     const sheetReloadKeys = ref({});
     const activeSceneId = ref(null);
@@ -17,7 +17,6 @@ export function useProfile() {
     async function loadCharacters() {
         loading.value = true;
         error.value = '';
-        storytellerDenied.value = false;
 
         try {
             const response = await api.get('/profile/characters');
@@ -27,12 +26,6 @@ export function useProfile() {
             return characters.value;
         } catch (err) {
             characters.value = [];
-
-            if (err.response?.status === 403) {
-                storytellerDenied.value = true;
-
-                return [];
-            }
 
             error.value = apiErrorMessage(err, 'Не удалось загрузить персонажей.');
             throw err;
@@ -218,7 +211,7 @@ export function useProfile() {
         const id = Number(row.id);
         const bust = avatarCacheKeys.value[id] ?? row.updated_at ?? 0;
 
-        return `/storage/${row.avatar_path}?v=${bust}`;
+        return `${storagePublicUrl(row.avatar_path)}?v=${bust}`;
     }
 
     function avatarImageKey(row) {
@@ -327,7 +320,6 @@ export function useProfile() {
         characters,
         loading,
         error,
-        storytellerDenied,
         scenePresenceLoading,
         activeSceneId,
         loadCharacters,

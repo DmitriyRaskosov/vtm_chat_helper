@@ -59,6 +59,14 @@ class MessageResource extends JsonResource
             'is_system' => (bool) $message->is_system,
             'is_deleted' => $message->trashed(),
             'created_at' => $message->created_at?->timezone(config('app.timezone'))->format('H:i'),
+            'avatar_path' => $this->avatarPath($message),
         ];
+    }
+
+    private function avatarPath(Message $message): ?string
+    {
+        $path = $message->authorCharacter?->avatar_path;
+
+        return is_string($path) && $path !== '' ? $path : null;
     }
 }
