@@ -3,7 +3,7 @@
         <div
             ref="root"
             class="floating-window"
-            :class="{ 'is-pinned': isPinned, 'is-dragging': dragging }"
+            :class="[panelClass, { 'is-pinned': isPinned, 'is-dragging': dragging }]"
             :style="windowStyle"
             @pointerdown="bringToFront"
         >
@@ -40,6 +40,7 @@ const props = defineProps({
     title: { type: String, required: true },
     initialLeft: { type: Number, required: true },
     initialTop: { type: Number, required: true },
+    panelClass: { type: String, default: '' },
 });
 
 const emit = defineEmits(['close']);

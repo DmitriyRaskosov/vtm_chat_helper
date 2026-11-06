@@ -10,15 +10,21 @@
             <RouterLink :to="diaryLink" class="link">Дневник</RouterLink>
         </div>
 
-        <CharacterSheetGrid
-            :character-id="characterId"
-            :stats="sheet.stats"
-            :schema="sheet.sheet_schema"
-            :sheet="sheet"
-            :sheet-data="sheet.sheet_data"
-            :available-disciplines="sheet.available_disciplines"
-            @saved="onStatsSaved"
-        />
+        <section class="card sheet-grid-spoiler">
+            <details>
+                <summary>Чарлист (сетка)</summary>
+                <CharacterSheetGrid
+                    :character-id="characterId"
+                    :stats="sheet.stats"
+                    :schema="sheet.sheet_schema"
+                    :sheet="sheet"
+                    :sheet-data="sheet.sheet_data"
+                    :available-disciplines="sheet.available_disciplines"
+                    :clans="clans"
+                    @saved="onStatsSaved"
+                />
+            </details>
+        </section>
 
         <SheetImageSection :character-id="characterId" :can-upload="isStoryteller" />
 
@@ -130,7 +136,18 @@ function onStatsSaved(payload) {
         return;
     }
 
-    sheet.value.stats = payload.stats;
+    if (payload.character && typeof payload.character === 'object') {
+        const c = payload.character;
+        sheet.value.canonical_name = c.canonical_name;
+        sheet.value.nature = c.nature;
+        sheet.value.demeanor = c.demeanor;
+        sheet.value.generation = c.generation;
+        sheet.value.clan_id = c.clan_id;
+        sheet.value.clan = c.clan ?? null;
+    }
+    if (payload.stats) {
+        sheet.value.stats = payload.stats;
+    }
     if (payload.sheet_data) {
         sheet.value.sheet_data = payload.sheet_data;
     }

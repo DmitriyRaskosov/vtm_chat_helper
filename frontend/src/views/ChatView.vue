@@ -120,6 +120,7 @@
             <FloatingWindow
                 v-if="isDiceOpen"
                 title="Кубы"
+                panel-class="floating-window--dice"
                 :initial-left="96"
                 :initial-top="120"
                 @close="isDiceOpen = false"

@@ -5,68 +5,86 @@
                 <button type="button" class="chat-panel-close" aria-label="Закрыть" @click="close">×</button>
             </header>
 
-            <label for="dice-macro">Выбрать макрос</label>
-            <select id="dice-macro" v-model="selectedMacroId" @change="onMacroChange">
-                <option value="">Без макроса</option>
-                <option v-for="macro in macros" :key="macro.id" :value="String(macro.id)">
-                    {{ macro.name }}
-                </option>
-            </select>
-            <p v-if="appliedMacroName" class="dice-macro-applied">Применен макрос: {{ appliedMacroName }}</p>
+            <div class="dice-top-row" :class="{ 'dice-top-row--macro': hasActiveMacro }">
+                <div class="dice-top-cell">
+                    <h3 class="dice-top-heading">Выбор макроса</h3>
+                    <label class="sr-only" for="dice-macro">Макрос</label>
+                    <select id="dice-macro" v-model="selectedMacroId" @change="onMacroChange">
+                        <option value="">Без макроса</option>
+                        <option v-for="macro in macros" :key="macro.id" :value="String(macro.id)">
+                            {{ macro.name }}
+                        </option>
+                    </select>
+                </div>
+                <div class="dice-top-cell">
+                    <h3 class="dice-top-heading">Выбор персонажа</h3>
+                    <label class="sr-only" for="dice-character">Персонаж</label>
+                    <select id="dice-character" v-model="characterId">
+                        <option :value="null">Без привязки</option>
+                        <option
+                            v-for="participant in characterOptions"
+                            :key="participant.character_id"
+                            :value="participant.character_id"
+                        >
+                            {{ participant.character_name }}
+                        </option>
+                    </select>
+                </div>
+                <div v-if="!hasActiveMacro" class="dice-top-cell">
+                    <h3 class="dice-top-heading">Режим броска</h3>
+                    <label class="sr-only" for="dice-mode">Режим броска</label>
+                    <select id="dice-mode" v-model="rollMode">
+                        <option value="successes">Успехи (V20)</option>
+                        <option value="sum">Сумма кубов</option>
+                    </select>
+                </div>
+            </div>
+
             <p v-if="macrosError" class="error">{{ macrosError }}</p>
 
-            <label for="dice-pool">Пул</label>
-            <input
-                id="dice-pool"
-                v-model.number="pool"
-                type="number"
-                min="1"
-                max="100"
-                :class="{ 'dice-field-from-macro': appliedMacroName }"
-            />
-
-            <label for="dice-mode">Режим</label>
-            <select id="dice-mode" v-model="rollMode">
-                <option value="successes">Успехи (V20)</option>
-                <option value="sum">Сумма кубов</option>
-            </select>
-
-            <label v-if="rollMode === 'successes'" for="dice-difficulty">Сложность</label>
-            <input
-                v-if="rollMode === 'successes'"
-                id="dice-difficulty"
-                v-model.number="difficulty"
-                type="number"
-                min="1"
-                max="20"
-                :class="{ 'dice-field-from-macro': appliedMacroName }"
-            />
-
-            <label for="dice-type">Тип кубика</label>
-            <select
-                id="dice-type"
-                v-model.number="diceType"
-                :class="{ 'dice-field-from-macro': appliedMacroName }"
+            <div
+                v-if="showPoolOrExtraInputs"
+                class="dice-inputs-grid"
+                :class="diceInputsGridClass"
             >
-                <option :value="4">d4</option>
-                <option :value="6">d6</option>
-                <option :value="8">d8</option>
-                <option :value="10">d10</option>
-                <option :value="12">d12</option>
-                <option :value="20">d20</option>
-            </select>
-
-            <label for="dice-character">Персонаж</label>
-            <select id="dice-character" v-model="characterId">
-                <option :value="null">Без привязки</option>
-                <option
-                    v-for="participant in characterOptions"
-                    :key="participant.character_id"
-                    :value="participant.character_id"
-                >
-                    {{ participant.character_name }}
-                </option>
-            </select>
+                <div v-if="!hasActiveMacro" class="dice-input-cell">
+                    <label for="dice-pool">Пул</label>
+                    <input
+                        id="dice-pool"
+                        v-model.number="pool"
+                        type="number"
+                        min="1"
+                        max="100"
+                        :class="{ 'dice-field-from-macro': appliedMacroName }"
+                    />
+                </div>
+                <div v-if="rollMode === 'successes'" class="dice-input-cell">
+                    <label for="dice-difficulty">Сложность</label>
+                    <input
+                        id="dice-difficulty"
+                        v-model.number="difficulty"
+                        type="number"
+                        min="1"
+                        max="20"
+                        :class="{ 'dice-field-from-macro': appliedMacroName }"
+                    />
+                </div>
+                <div class="dice-input-cell">
+                    <label for="dice-type">Тип кубика</label>
+                    <select
+                        id="dice-type"
+                        v-model.number="diceType"
+                        :class="{ 'dice-field-from-macro': appliedMacroName }"
+                    >
+                        <option :value="4">d4</option>
+                        <option :value="6">d6</option>
+                        <option :value="8">d8</option>
+                        <option :value="10">d10</option>
+                        <option :value="12">d12</option>
+                        <option :value="20">d20</option>
+                    </select>
+                </div>
+            </div>
 
             <label for="dice-comment">Комментарий</label>
             <input
@@ -162,6 +180,34 @@ const useWillpower = ref(false);
 const localResult = ref(null);
 
 const isSumMode = computed(() => rollMode.value === 'sum');
+
+const hasActiveMacro = computed(() => {
+    if (selectedMacroId.value === '' || selectedMacroId.value === null || selectedMacroId.value === undefined) {
+        return false;
+    }
+
+    return selectedMacro() !== null;
+});
+
+/** С макросом блок настроек показывает сложность/тип (без пула); в режиме суммы — только тип. */
+const showPoolOrExtraInputs = computed(() => {
+    if (!hasActiveMacro.value) {
+        return true;
+    }
+
+    return rollMode.value === 'successes' || rollMode.value === 'sum';
+});
+
+const diceInputsGridClass = computed(() => {
+    if (!hasActiveMacro.value) {
+        return rollMode.value === 'sum' ? 'dice-inputs-grid--sum' : '';
+    }
+    if (rollMode.value === 'sum') {
+        return 'dice-inputs-grid--macro-sum';
+    }
+
+    return 'dice-inputs-grid--macro';
+});
 
 const displayResult = computed(() => localResult.value ?? props.lastResult?.result ?? null);
 

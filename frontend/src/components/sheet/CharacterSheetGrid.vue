@@ -1,262 +1,318 @@
 <template>
-    <section class="card sheet-grid">
+    <div class="sheet-grid">
         <header class="sheet-grid-header">
             <h2>Чарлист</h2>
-            <button type="button" class="secondary" @click="toggleEditing">
+            <button
+                type="button"
+                class="secondary"
+                :disabled="identitySaving"
+                @click.stop="toggleEditing"
+            >
                 {{ isEditing ? 'Закончить редактирование' : 'Редактировать' }}
             </button>
         </header>
 
         <p v-if="error" class="error">{{ error }}</p>
 
-        <nav class="sheet-tabs" aria-label="Разделы чарлиста">
-            <button
-                v-for="tab in tabs"
-                :key="tab.id"
-                type="button"
-                class="secondary"
-                :class="{ 'is-active': activeTab === tab.id }"
-                :aria-selected="activeTab === tab.id"
-                @click="activeTab = tab.id"
-            >
-                {{ tab.label }}
-            </button>
-        </nav>
-
-        <div v-if="activeTab === 'header'" class="sheet-header-fields">
-            <p><span>Имя</span> {{ display(sheet.canonical_name) }}</p>
-            <p><span>Клан</span> {{ display(sheet.clan?.name) }}</p>
-            <p><span>Поколение</span> {{ display(sheet.generation) }}</p>
-            <p><span>Натура</span> {{ display(sheet.nature) }}</p>
-            <p><span>Маска</span> {{ display(sheet.demeanor) }}</p>
-        </div>
-
-        <div v-else-if="activeTab === 'attributes'" class="sheet-columns">
-            <section v-for="column in attributeColumns" :key="column.key">
-                <h3>{{ column.title }}</h3>
-                <StatDots
-                    v-for="stat in column.stats"
-                    :key="stat.key"
-                    :label="stat.label"
-                    :max="5"
-                    :dots="track(stat.key, 5)"
-                    :locked="!isEditing || saving"
-                    @pick="onDotClick(stat.key, $event, 5)"
-                />
-            </section>
-        </div>
-
-        <div v-else-if="activeTab === 'abilities'" class="sheet-columns">
-            <section v-for="column in abilityColumns" :key="column.key">
-                <h3>{{ column.title }}</h3>
-                <StatDots
-                    v-for="stat in column.stats"
-                    :key="stat.key"
-                    :label="stat.label"
-                    :max="5"
-                    :dots="track(stat.key, 5)"
-                    :locked="!isEditing || saving"
-                    @pick="onDotClick(stat.key, $event, 5)"
-                />
-            </section>
-        </div>
-
-        <div v-else-if="activeTab === 'advantages'" class="sheet-columns">
-            <section>
-                <h3>Дополнения</h3>
-                <div v-for="(row, index) in localSheet.backgrounds" :key="index" class="sheet-text-row">
-                    <input
-                        v-model="row.name"
-                        type="text"
-                        placeholder="Название"
-                        :disabled="!isEditing || saving"
-                        @change="commitText"
-                    />
-                    <input
-                        v-model="row.value"
-                        type="number"
-                        min="0"
-                        max="5"
-                        :disabled="!isEditing || saving"
-                        @change="commitText"
-                    />
-                    <button type="button" class="secondary" :disabled="!isEditing || saving" @click="removeBackground(index)">
-                        Убрать
-                    </button>
-                </div>
-                <button type="button" class="secondary" :disabled="!isEditing || saving" @click="addBackground">
-                    Добавить дополнение
-                </button>
-            </section>
-
-            <section>
-                <h3>Дисциплины</h3>
-                <div class="sheet-discipline-add">
-                    <select v-model="disciplineToAdd" :disabled="!isEditing || saving">
-                        <option value="">Выберите дисциплину</option>
-                        <optgroup v-if="clanDisciplineOptions.length" label="Клановые">
-                            <option v-for="item in clanDisciplineOptions" :key="item.slug" :value="item.slug">
-                                {{ item.name }}
-                            </option>
-                        </optgroup>
-                        <optgroup v-if="otherDisciplineOptions.length" label="Остальные">
-                            <option v-for="item in otherDisciplineOptions" :key="item.slug" :value="item.slug">
-                                {{ item.name }}
-                            </option>
-                        </optgroup>
-                    </select>
-                    <button type="button" class="secondary" :disabled="!isEditing || saving || disciplineToAdd === ''" @click="addDiscipline">
-                        Добавить
-                    </button>
-                </div>
-                <div v-for="slug in Object.keys(localStats.disciplines ?? {})" :key="slug" class="sheet-discipline">
-                    <div class="sheet-discipline-head">
-                        <span>{{ disciplineLabel(slug) }}</span>
-                        <button type="button" class="secondary" :disabled="!isEditing || saving" @click="removeDiscipline(slug)">
-                            Убрать
-                        </button>
+        <div class="sheet-stack">
+            <section class="sheet-block">
+                <h3 class="sheet-block-heading">Шапка</h3>
+                <div v-if="!isEditing" class="sheet-header-readonly">
+                    <div class="sheet-header-field">
+                        Имя
+                        <span class="sheet-header-value-display">{{ display(sheet.canonical_name) }}</span>
                     </div>
-                    <StatDots
-                        label=""
-                        :max="5"
-                        :dots="disciplineTrack(slug)"
-                        :locked="!isEditing || saving"
-                        @pick="onDisciplineDotClick(slug, $event)"
-                    />
+                    <div class="sheet-header-field">
+                        Клан
+                        <span class="sheet-header-value-display">{{ display(sheet.clan?.name) }}</span>
+                    </div>
+                    <div class="sheet-header-field">
+                        Поколение
+                        <span class="sheet-header-value-display">{{ display(sheet.generation) }}</span>
+                    </div>
+                    <div class="sheet-header-field">
+                        Натура
+                        <span class="sheet-header-value-display">{{ display(sheet.nature) }}</span>
+                    </div>
+                    <div class="sheet-header-field">
+                        Маска
+                        <span class="sheet-header-value-display">{{ display(sheet.demeanor) }}</span>
+                    </div>
+                </div>
+                <div v-else class="sheet-header-edit">
+                    <label class="sheet-header-field">
+                        Имя
+                        <input v-model="localHeader.canonical_name" type="text" maxlength="120" :disabled="formLocked" />
+                    </label>
+                    <label class="sheet-header-field">
+                        Клан
+                        <select v-model="localHeader.clan_id" :disabled="formLocked">
+                            <option value="">—</option>
+                            <option v-for="c in clanOptions" :key="c.id" :value="String(c.id)">
+                                {{ c.name }}
+                            </option>
+                        </select>
+                    </label>
+                    <label class="sheet-header-field">
+                        Поколение
+                        <input
+                            v-model.number="localHeader.generation"
+                            type="number"
+                            min="4"
+                            max="15"
+                            :disabled="formLocked"
+                        />
+                    </label>
+                    <label class="sheet-header-field">
+                        Натура
+                        <input v-model="localHeader.nature" type="text" maxlength="64" :disabled="formLocked" />
+                    </label>
+                    <label class="sheet-header-field">
+                        Маска
+                        <input v-model="localHeader.demeanor" type="text" maxlength="64" :disabled="formLocked" />
+                    </label>
                 </div>
             </section>
 
-            <section>
-                <h3>Добродетели</h3>
-                <StatDots
-                    v-for="stat in virtueStats"
-                    :key="stat.key"
-                    :label="stat.label"
-                    :max="5"
-                    :dots="track(stat.key, 5)"
-                    :locked="!isEditing || saving"
-                    @pick="onDotClick(stat.key, $event, 5)"
-                />
-            </section>
-        </div>
-
-        <div v-else class="sheet-status">
-            <section>
-                <h3>Пороки и достоинства</h3>
-                <div v-for="(row, index) in localSheet.merits_flaws" :key="index" class="sheet-text-row">
-                    <input
-                        v-model="row.name"
-                        type="text"
-                        placeholder="Название"
-                        :disabled="!isEditing || saving"
-                        @change="commitText"
-                    />
-                    <input
-                        v-model.number="row.points"
-                        type="number"
-                        :disabled="!isEditing || saving"
-                        @change="commitText"
-                    />
-                    <select v-model="row.type" :disabled="!isEditing || saving" @change="commitText">
-                        <option value="merit">Достоинство</option>
-                        <option value="flaw">Порок</option>
-                    </select>
-                    <button type="button" class="secondary" :disabled="!isEditing || saving" @click="removeMerit(index)">
-                        Убрать
-                    </button>
+            <section class="sheet-block">
+                <h3 class="sheet-block-heading">Атрибуты</h3>
+                <div class="sheet-columns">
+                    <section v-for="column in attributeColumns" :key="column.key">
+                        <h4 class="sheet-subheading">{{ column.title }}</h4>
+                        <StatDots
+                            v-for="stat in column.stats"
+                            :key="stat.key"
+                            :label="stat.label"
+                            :max="5"
+                            :dots="track(stat.key, 5)"
+                            :locked="!isEditing || formLocked"
+                            @pick="onDotClick(stat.key, $event, 5)"
+                        />
+                    </section>
                 </div>
-                <button type="button" class="secondary" :disabled="!isEditing || saving" @click="addMerit">
-                    Добавить
-                </button>
             </section>
 
-            <section>
-                <h3>{{ statLabel('state', 'humanity', 'Человечность') }}</h3>
-                <StatDots
-                    label=""
-                    :max="10"
-                    pool
-                    :dots="track('humanity', 10)"
-                    :locked="!isEditing || saving"
-                    @pick="onDotClick('humanity', $event, 10)"
-                />
+            <section class="sheet-block">
+                <h3 class="sheet-block-heading">Способности</h3>
+                <div class="sheet-columns">
+                    <section v-for="column in abilityColumns" :key="column.key">
+                        <h4 class="sheet-subheading">{{ column.title }}</h4>
+                        <StatDots
+                            v-for="stat in column.stats"
+                            :key="stat.key"
+                            :label="stat.label"
+                            :max="5"
+                            :dots="track(stat.key, 5)"
+                            :locked="!isEditing || formLocked"
+                            @pick="onDotClick(stat.key, $event, 5)"
+                        />
+                    </section>
+                </div>
             </section>
 
-            <section>
-                <h3>Сила воли</h3>
-                <StatDots
-                    :label="statLabel('state', 'willpower', 'Постоянная')"
-                    :max="10"
-                    pool
-                    :dots="track('willpower', 10)"
-                    :locked="!isEditing || saving"
-                    @pick="onDotClick('willpower', $event, 10)"
-                />
-                <StatDots
-                    :label="statLabel('state', 'temporary_willpower', 'Временная')"
-                    :max="10"
-                    pool
-                    :dots="track('temporary_willpower', 10)"
-                    :locked="!isEditing || saving"
-                    @pick="onDotClick('temporary_willpower', $event, 10)"
-                />
+            <section class="sheet-block">
+                <h3 class="sheet-block-heading">Преимущества</h3>
+                <div class="sheet-columns">
+                    <section>
+                        <h4 class="sheet-subheading">Дополнения</h4>
+                        <div v-for="(row, index) in localSheet.backgrounds" :key="index" class="sheet-text-row">
+                            <input
+                                v-model="row.name"
+                                type="text"
+                                placeholder="Название"
+                                :disabled="!isEditing || formLocked"
+                                @change="commitText"
+                            />
+                            <input
+                                v-model="row.value"
+                                type="number"
+                                min="0"
+                                max="5"
+                                :disabled="!isEditing || formLocked"
+                                @change="commitText"
+                            />
+                            <button type="button" class="secondary" :disabled="!isEditing || formLocked" @click="removeBackground(index)">
+                                Убрать
+                            </button>
+                        </div>
+                        <button type="button" class="secondary" :disabled="!isEditing || formLocked" @click="addBackground">
+                            Добавить дополнение
+                        </button>
+                    </section>
+
+                    <section>
+                        <h4 class="sheet-subheading">Дисциплины</h4>
+                        <div class="sheet-discipline-add">
+                            <select v-model="disciplineToAdd" :disabled="!isEditing || formLocked">
+                                <option value="">Выберите дисциплину</option>
+                                <optgroup v-if="clanDisciplineOptions.length" label="Клановые">
+                                    <option v-for="item in clanDisciplineOptions" :key="item.slug" :value="item.slug">
+                                        {{ item.name }}
+                                    </option>
+                                </optgroup>
+                                <optgroup v-if="otherDisciplineOptions.length" label="Остальные">
+                                    <option v-for="item in otherDisciplineOptions" :key="item.slug" :value="item.slug">
+                                        {{ item.name }}
+                                    </option>
+                                </optgroup>
+                            </select>
+                            <button type="button" class="secondary" :disabled="!isEditing || formLocked || disciplineToAdd === ''" @click="addDiscipline">
+                                Добавить
+                            </button>
+                        </div>
+                        <div v-for="slug in Object.keys(localStats.disciplines ?? {})" :key="slug" class="sheet-discipline">
+                            <div class="sheet-discipline-head">
+                                <span>{{ disciplineLabel(slug) }}</span>
+                                <button type="button" class="secondary" :disabled="!isEditing || formLocked" @click="removeDiscipline(slug)">
+                                    Убрать
+                                </button>
+                            </div>
+                            <StatDots
+                                label=""
+                                :max="5"
+                                :dots="disciplineTrack(slug)"
+                                :locked="!isEditing || formLocked"
+                                @pick="onDisciplineDotClick(slug, $event)"
+                            />
+                        </div>
+                    </section>
+
+                    <section>
+                        <h4 class="sheet-subheading">Добродетели</h4>
+                        <StatDots
+                            v-for="stat in virtueStats"
+                            :key="stat.key"
+                            :label="stat.label"
+                            :max="5"
+                            :dots="track(stat.key, 5)"
+                            :locked="!isEditing || formLocked"
+                            @pick="onDotClick(stat.key, $event, 5)"
+                        />
+                    </section>
+                </div>
             </section>
 
-            <section>
-                <h3>{{ statLabel('state', 'blood_pool', 'Запас крови') }}</h3>
-                <StatDots
-                    label=""
-                    :max="10"
-                    pool
-                    :dots="track('blood_pool', 10)"
-                    :locked="!isEditing || saving"
-                    @pick="onDotClick('blood_pool', $event, 10)"
-                />
-            </section>
+            <section class="sheet-block">
+                <h3 class="sheet-block-heading">Статус</h3>
+                <div class="sheet-status">
+                    <section>
+                        <h4 class="sheet-subheading">Пороки и достоинства</h4>
+                        <div v-for="(row, index) in localSheet.merits_flaws" :key="index" class="sheet-text-row">
+                            <input
+                                v-model="row.name"
+                                type="text"
+                                placeholder="Название"
+                                :disabled="!isEditing || formLocked"
+                                @change="commitText"
+                            />
+                            <input
+                                v-model.number="row.points"
+                                type="number"
+                                :disabled="!isEditing || formLocked"
+                                @change="commitText"
+                            />
+                            <select v-model="row.type" :disabled="!isEditing || formLocked" @change="commitText">
+                                <option value="merit">Достоинство</option>
+                                <option value="flaw">Порок</option>
+                            </select>
+                            <button type="button" class="secondary" :disabled="!isEditing || formLocked" @click="removeMerit(index)">
+                                Убрать
+                            </button>
+                        </div>
+                        <button type="button" class="secondary" :disabled="!isEditing || formLocked" @click="addMerit">
+                            Добавить
+                        </button>
+                    </section>
 
-            <section class="sheet-health">
-                <h3>Здоровье</h3>
-                <label>
-                    Уровень
-                    <select v-model.number="healthLevel" :disabled="!isEditing || saving" @change="onHealthChange">
-                        <option v-for="option in healthLevels" :key="option.value" :value="option.value">
-                            {{ option.label }}
-                        </option>
-                    </select>
-                </label>
-                <fieldset class="sheet-damage" :disabled="!isEditing || saving">
-                    <legend>Тип урона</legend>
-                    <label>
-                        <input v-model="healthDamage" type="radio" value="bashing" @change="onHealthChange" />
-                        Ушибы
-                    </label>
-                    <label>
-                        <input v-model="healthDamage" type="radio" value="lethal" @change="onHealthChange" />
-                        Летальный
-                    </label>
-                    <label>
-                        <input v-model="healthDamage" type="radio" value="aggravated" @change="onHealthChange" />
-                        Аггравированный
-                    </label>
-                </fieldset>
-                <p class="sheet-penalty">Штраф к кубам: {{ healthPenalty }}</p>
-            </section>
+                    <section>
+                        <h4 class="sheet-subheading">{{ statLabel('state', 'humanity', 'Человечность') }}</h4>
+                        <StatDots
+                            label=""
+                            :max="10"
+                            pool
+                            :dots="track('humanity', 10)"
+                            :locked="!isEditing || formLocked"
+                            @pick="onDotClick('humanity', $event, 10)"
+                        />
+                    </section>
 
-            <section>
-                <h3>Слабость</h3>
-                <textarea
-                    v-model="localSheet.weakness"
-                    rows="3"
-                    :disabled="!isEditing || saving"
-                    @change="commitText"
-                />
+                    <section>
+                        <h4 class="sheet-subheading">Сила воли</h4>
+                        <StatDots
+                            :label="statLabel('state', 'willpower', 'Постоянная')"
+                            :max="10"
+                            pool
+                            :dots="track('willpower', 10)"
+                            :locked="!isEditing || formLocked"
+                            @pick="onDotClick('willpower', $event, 10)"
+                        />
+                        <StatDots
+                            :label="statLabel('state', 'temporary_willpower', 'Временная')"
+                            :max="10"
+                            pool
+                            :dots="track('temporary_willpower', 10)"
+                            :locked="!isEditing || formLocked"
+                            @pick="onDotClick('temporary_willpower', $event, 10)"
+                        />
+                    </section>
+
+                    <section>
+                        <h4 class="sheet-subheading">{{ statLabel('state', 'blood_pool', 'Запас крови') }}</h4>
+                        <StatDots
+                            label=""
+                            :max="10"
+                            pool
+                            :dots="track('blood_pool', 10)"
+                            :locked="!isEditing || formLocked"
+                            @pick="onDotClick('blood_pool', $event, 10)"
+                        />
+                    </section>
+
+                    <section class="sheet-health">
+                        <h4 class="sheet-subheading">Здоровье</h4>
+                        <label>
+                            Уровень
+                            <select v-model.number="healthLevel" :disabled="!isEditing || formLocked" @change="onHealthChange">
+                                <option v-for="option in healthLevels" :key="option.value" :value="option.value">
+                                    {{ option.label }}
+                                </option>
+                            </select>
+                        </label>
+                        <fieldset class="sheet-damage" :disabled="!isEditing || formLocked">
+                            <legend>Тип урона</legend>
+                            <label>
+                                <input v-model="healthDamage" type="radio" value="bashing" @change="onHealthChange" />
+                                Ушибы
+                            </label>
+                            <label>
+                                <input v-model="healthDamage" type="radio" value="lethal" @change="onHealthChange" />
+                                Летальный
+                            </label>
+                            <label>
+                                <input v-model="healthDamage" type="radio" value="aggravated" @change="onHealthChange" />
+                                Аггравированный
+                            </label>
+                        </fieldset>
+                        <p class="sheet-penalty">Штраф к кубам: {{ healthPenalty }}</p>
+                    </section>
+
+                    <section>
+                        <h4 class="sheet-subheading">Слабость</h4>
+                        <textarea
+                            v-model="localSheet.weakness"
+                            rows="3"
+                            :disabled="!isEditing || formLocked"
+                            @change="commitText"
+                        />
+                    </section>
+                </div>
             </section>
         </div>
-    </section>
+    </div>
 </template>
 
 <script setup>
-import { onMounted, watch } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { healthLevels, useCharacterSheetGrid } from '../../composables/useCharacterSheetGrid';
 import StatDots from './StatDots.vue';
 
@@ -285,18 +341,30 @@ const props = defineProps({
         type: Array,
         default: () => [],
     },
+    clans: {
+        type: Array,
+        default: () => [],
+    },
 });
 
 const emit = defineEmits(['saved']);
 
+const clanOptions = computed(() => {
+    const list = Array.isArray(props.clans) ? props.clans : [];
+
+    return list
+        .slice()
+        .sort((a, b) => String(a.name ?? '').localeCompare(String(b.name ?? ''), 'ru'));
+});
+
 const {
-    tabs,
-    activeTab,
     isEditing,
     saving,
+    identitySaving,
     error,
     localStats,
     localSheet,
+    localHeader,
     disciplineToAdd,
     attributeColumns,
     abilityColumns,
@@ -324,6 +392,8 @@ const {
     commitText,
 } = useCharacterSheetGrid(props, emit);
 
+const formLocked = computed(() => identitySaving.value || saving.value);
+
 function display(value) {
     if (value === null || value === undefined || value === '') {
         return '—';
@@ -348,22 +418,38 @@ onMounted(() => {
     gap: 1rem;
 }
 
-.sheet-grid-header h2,
-.sheet-columns h3,
-.sheet-status h3 {
-    margin: 0 0 0.75rem;
+.sheet-grid-header h2 {
+    margin: 0;
 }
 
-.sheet-tabs {
+.sheet-stack {
     display: flex;
-    flex-wrap: wrap;
-    gap: 0.35rem;
-    margin: 0.75rem 0 1rem;
+    flex-direction: column;
+    gap: 1.25rem;
+    margin-top: 0.25rem;
 }
 
-.sheet-tabs button.is-active {
-    border-color: var(--text, #1c140f);
+.sheet-block {
+    padding: 1rem 1.1rem;
+    border: 1px solid var(--border, #c9bfb3);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.sheet-block-heading {
+    margin: 0 0 0.85rem;
+    padding-bottom: 0.35rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border-bottom: 1px solid var(--border, #c9bfb3);
     color: var(--text, #1c140f);
+}
+
+.sheet-subheading {
+    margin: 0 0 0.65rem;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text-muted, #5c534a);
 }
 
 .sheet-columns {
@@ -372,15 +458,40 @@ onMounted(() => {
     gap: 1rem 1.25rem;
 }
 
-.sheet-header-fields p {
-    display: grid;
-    grid-template-columns: 8rem 1fr;
-    gap: 0.75rem;
-    margin: 0 0 0.4rem;
+.sheet-columns > section > .sheet-subheading:first-child {
+    margin-top: 0;
 }
 
-.sheet-header-fields span {
+/* Шапка: пять колонок; в каждой подпись сверху и значение/поле снизу (одинаково в просмотре и редактировании) */
+.sheet-header-readonly,
+.sheet-header-edit {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 0.5rem 0.75rem;
+    align-items: start;
+}
+
+.sheet-header-field {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+    min-width: 0;
+    font-size: 0.85rem;
     color: var(--text-muted, #8a8078);
+}
+
+.sheet-header-field input,
+.sheet-header-field select {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.sheet-header-value-display {
+    font-size: 0.9rem;
+    line-height: 1.35;
+    color: var(--text, #1c140f);
+    word-break: break-word;
+    min-width: 0;
 }
 
 .sheet-text-row,
@@ -432,6 +543,11 @@ onMounted(() => {
 
 @media (max-width: 900px) {
     .sheet-columns {
+        grid-template-columns: 1fr;
+    }
+
+    .sheet-header-readonly,
+    .sheet-header-edit {
         grid-template-columns: 1fr;
     }
 }

@@ -1,14 +1,7 @@
 import { computed, ref, watch } from 'vue';
 import { cycleDot, dotTrack, healthPenaltyFor, normalizeStats, useCharacterStats } from './useCharacterStats';
+import { api } from '../auth';
 import { apiErrorMessage } from '../utils/apiError';
-
-const TABS = [
-    { id: 'header', label: 'Шапка' },
-    { id: 'attributes', label: 'Атрибуты' },
-    { id: 'abilities', label: 'Способности' },
-    { id: 'advantages', label: 'Преимущества' },
-    { id: 'status', label: 'Статус' },
-];
 
 const COLUMN_TITLES = {
     physical: 'Физические',
@@ -93,11 +86,53 @@ function numericOrText(value) {
     return Number.isFinite(number) && String(value).trim() !== '' ? number : String(value);
 }
 
+function normalizeHeaderFromSheet(sheet) {
+    const source = sheet && typeof sheet === 'object' ? sheet : {};
+    const genRaw = source.generation;
+    let generation = '';
+    if (genRaw !== null && genRaw !== undefined && genRaw !== '') {
+        const g = Number(genRaw);
+
+        generation = Number.isFinite(g) ? g : '';
+    }
+
+    return {
+        canonical_name: String(source.canonical_name ?? ''),
+        clan_id: source.clan_id === null || source.clan_id === undefined || source.clan_id === ''
+            ? ''
+            : String(source.clan_id),
+        generation,
+        nature: String(source.nature ?? ''),
+        demeanor: String(source.demeanor ?? ''),
+    };
+}
+
+function identityPayload(header) {
+    const clanRaw = header.clan_id;
+    const clan_id = clanRaw === '' || clanRaw === null ? null : Number(clanRaw);
+
+    let generation = null;
+    if (header.generation !== '' && header.generation !== null && header.generation !== undefined) {
+        const g = Number(header.generation);
+
+        generation = Number.isFinite(g) ? g : null;
+    }
+
+    return {
+        canonical_name: header.canonical_name.trim(),
+        clan_id: Number.isFinite(clan_id) ? clan_id : null,
+        generation,
+        nature: header.nature.trim() === '' ? null : header.nature.trim(),
+        demeanor: header.demeanor.trim() === '' ? null : header.demeanor.trim(),
+    };
+}
+
 export function useCharacterSheetGrid(props, emit) {
-    const activeTab = ref('header');
     const isEditing = ref(false);
     const localStats = ref(normalizeStats(props.stats));
     const localSheet = ref(normalizeSheetData(props.sheetData));
+    const localHeader = ref(normalizeHeaderFromSheet(props.sheet));
+    const identitySaving = ref(false);
     const disciplineToAdd = ref('');
     const { saving, error, load, save } = useCharacterStats(() => props.characterId);
     let epoch = 0;
@@ -160,6 +195,17 @@ export function useCharacterSheetGrid(props, emit) {
         { deep: true },
     );
 
+    watch(
+        () => props.sheet,
+        (sheet) => {
+            if (isEditing.value || saving.value || identitySaving.value) {
+                return;
+            }
+            localHeader.value = normalizeHeaderFromSheet(sheet);
+        },
+        { deep: true },
+    );
+
     function openDisciplines(clan) {
         return (props.availableDisciplines ?? []).filter((item) => {
             const isClan = item.is_clan_discipline === true;
@@ -194,6 +240,7 @@ export function useCharacterSheetGrid(props, emit) {
         isEditing.value = false;
         localStats.value = normalizeStats(props.stats);
         localSheet.value = normalizeSheetData(props.sheetData);
+        localHeader.value = normalizeHeaderFromSheet(props.sheet);
 
         try {
             const loaded = await load(props.characterId);
@@ -210,8 +257,47 @@ export function useCharacterSheetGrid(props, emit) {
         }
     }
 
-    function toggleEditing() {
-        isEditing.value = !isEditing.value;
+    async function persistIdentity() {
+        if (!isEditing.value || identitySaving.value) {
+            return;
+        }
+
+        const numericId = Number(props.characterId);
+        if (!Number.isFinite(numericId) || numericId <= 0) {
+            return;
+        }
+
+        identitySaving.value = true;
+        error.value = '';
+
+        try {
+            const { data } = await api.patch(`/characters/${numericId}`, identityPayload(localHeader.value));
+            const character = data.character;
+            if (character && typeof character === 'object') {
+                localHeader.value = normalizeHeaderFromSheet(character);
+            }
+            emit('saved', { character });
+        } catch (err) {
+            error.value = apiErrorMessage(err, 'Не удалось сохранить шапку.');
+            localHeader.value = normalizeHeaderFromSheet(props.sheet);
+        } finally {
+            identitySaving.value = false;
+        }
+    }
+
+    async function toggleEditing() {
+        if (isEditing.value) {
+            await persistIdentity();
+            if (error.value !== '') {
+                return;
+            }
+            isEditing.value = false;
+
+            return;
+        }
+
+        localHeader.value = normalizeHeaderFromSheet(props.sheet);
+        isEditing.value = true;
     }
 
     function writeHealth(level, damage) {
@@ -365,13 +451,13 @@ export function useCharacterSheetGrid(props, emit) {
     }
 
     return {
-        tabs: TABS,
-        activeTab,
         isEditing,
         saving,
+        identitySaving,
         error,
         localStats,
         localSheet,
+        localHeader,
         disciplineToAdd,
         attributeColumns,
         abilityColumns,
@@ -397,5 +483,6 @@ export function useCharacterSheetGrid(props, emit) {
         removeMerit,
         onHealthChange,
         commitText,
+        persistIdentity,
     };
 }
