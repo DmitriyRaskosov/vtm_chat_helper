@@ -127,6 +127,7 @@
                 <DiceRoller
                     :is-storyteller="isStoryteller"
                     :my-character-id="myCharacterId"
+                    :roll-character-id="diceRollCharacterId"
                     :character-options="diceCharacterOptions"
                     :rolling="rolling"
                     :roll-error="rollError"
@@ -592,6 +593,14 @@ async function onAddInventoryItem(payload) {
         inventoryPanel.value?.resetForm();
     }
 }
+
+const diceRollCharacterId = computed(() => {
+    if (isStoryteller.value) {
+        return speakerCharacterId.value ?? null;
+    }
+
+    return selectedPcId.value ?? myCharacterId.value;
+});
 
 const diceCharacterOptions = computed(() => {
     if (isStoryteller.value) {

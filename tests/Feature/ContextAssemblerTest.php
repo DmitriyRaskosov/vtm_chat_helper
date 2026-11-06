@@ -2,13 +2,12 @@
 
 namespace Tests\Feature;
 
-use App\Character\CharacterStateService;
+use App\Character\CharacterStatsService;
 use App\Context\ContextAssembler;
 use App\Context\ContextBuild;
 use App\Context\ContextBuilder;
 use App\Context\ContextPass;
 use App\Context\ContextRequest;
-use App\Enums\CharacterHealthDamage;
 use App\Enums\WorldRelationKind;
 use App\Models\CanonClan;
 use App\Models\CanonSect;
@@ -205,13 +204,7 @@ class ContextAssemblerTest extends TestCase
 
     public function test_character_state_provider_includes_blood_and_health(): void
     {
-        $character = Character::query()->findOrFail($this->npcId);
-        app(CharacterStateService::class)->apply($character, [
-            'blood_pool' => 2,
-            'temporary_willpower' => 5,
-            'health_level' => 4,
-            'health_damage' => CharacterHealthDamage::Lethal,
-        ]);
+        $this->writeCharacterStats(2, 4, 'lethal');
 
         $build = $this->assembleReply();
         $userContent = $build->messages[1]['content'];
@@ -229,13 +222,7 @@ class ContextAssemblerTest extends TestCase
 
     public function test_character_state_provider_omits_willpower(): void
     {
-        $character = Character::query()->findOrFail($this->npcId);
-        app(CharacterStateService::class)->apply($character, [
-            'blood_pool' => 7,
-            'temporary_willpower' => 9,
-            'health_level' => 0,
-            'health_damage' => CharacterHealthDamage::Bashing,
-        ]);
+        $this->writeCharacterStats(7, 0, 'bashing');
 
         $build = $this->assembleReply();
         $userContent = $build->messages[1]['content'];
@@ -298,13 +285,7 @@ class ContextAssemblerTest extends TestCase
 
     public function test_character_state_in_full_context(): void
     {
-        $character = Character::query()->findOrFail($this->npcId);
-        app(CharacterStateService::class)->apply($character, [
-            'blood_pool' => 2,
-            'temporary_willpower' => 5,
-            'health_level' => 4,
-            'health_damage' => CharacterHealthDamage::Lethal,
-        ]);
+        $this->writeCharacterStats(2, 4, 'lethal');
 
         $fakeChat = $this->fakeChat()
             ->push('{"topics":["test topic"]}')
@@ -593,5 +574,19 @@ class ContextAssemblerTest extends TestCase
                 'motivation' => str_repeat('Мотивация. ', 30),
             ])
             ->assertStatus(200);
+    }
+
+    private function writeCharacterStats(int $bloodPool, int $healthLevel, string $damage): void
+    {
+        $character = Character::query()->findOrFail($this->npcId);
+        $character->stats = [
+            'blood_pool' => CharacterStatsService::dotTrack($bloodPool, 10),
+            'health' => [
+                'level' => $healthLevel,
+                'damage' => $damage,
+                'penalty' => CharacterStatsService::healthPenalty($healthLevel),
+            ],
+        ];
+        $character->save();
     }
 }

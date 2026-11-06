@@ -2,7 +2,6 @@
 
 namespace App\Character;
 
-use App\Enums\CharacterHealthDamage;
 use App\Models\Character;
 
 final class CharacterStatsService
@@ -183,43 +182,6 @@ final class CharacterStatsService
         $character->save();
 
         return $character;
-    }
-
-    /**
-     * @param  array{
-     *     blood_pool: int,
-     *     temporary_willpower: int,
-     *     health_level: int,
-     *     health_damage: mixed
-     * }  $fields
-     * @return array{
-     *     blood_pool: int,
-     *     temporary_willpower: int,
-     *     health_level: int,
-     *     health_damage: string,
-     *     health_penalty: int
-     * }
-     */
-    public function applyLegacy(Character $character, array $fields): array
-    {
-        $stats = is_array($character->stats) ? $character->stats : self::defaults();
-        $level = (int) $fields['health_level'];
-        $damage = $fields['health_damage'];
-        $damageValue = $damage instanceof CharacterHealthDamage ? $damage->value : (string) $damage;
-
-        $stats['blood_pool'] = self::dotTrack((int) $fields['blood_pool'], 10);
-        $stats['willpower'] = self::dotTrack((int) $fields['temporary_willpower'], 10);
-        $stats['health'] = [
-            'level' => $level,
-            'damage' => $damageValue,
-            'penalty' => self::healthPenalty($level),
-        ];
-        unset($stats['temporary_willpower'], $stats['health_level'], $stats['health_damage'], $stats['health_penalty']);
-
-        $character->stats = $stats;
-        $character->save();
-
-        return self::legacyState($character->stats);
     }
 
     /**

@@ -110,7 +110,7 @@
                 <div v-else class="profile-grid">
                     <article v-for="macro in macros" :key="macro.id" class="card profile-macro-card">
                         <h3 class="profile-name">{{ macro.name }}</h3>
-                        <p class="muted">Пул {{ macro.pool }} · сложность {{ macro.difficulty }}</p>
+                        <p class="muted">Пул {{ macro.pool > 0 ? macro.pool : 'по статам' }} · сложность {{ macro.difficulty }}</p>
                         <div class="profile-actions">
                             <button type="button" class="secondary" @click="openEditMacro(macro)">
                                 Редактировать

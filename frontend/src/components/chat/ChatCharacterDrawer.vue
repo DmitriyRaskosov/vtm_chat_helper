@@ -20,7 +20,66 @@
 
         <div v-if="selectedCharacterId" class="chat-character-drawer-body">
             <SheetImageSection :character-id="selectedCharacterId" :can-upload="false" start-open />
-            <SheetStateSection :character-id="selectedCharacterId" :can-edit="canEditState" />
+            <section class="chat-drawer-stats">
+                <h3>Состояние</h3>
+                <p v-if="loading" class="muted">Загрузка…</p>
+                <p v-if="error" class="error">{{ error }}</p>
+
+                <h4>Запас крови</h4>
+                <StatDots
+                    label=""
+                    :max="10"
+                    pool
+                    :dots="track('blood_pool', 10)"
+                    :locked="statsLocked"
+                    @pick="onDotClick('blood_pool', $event, 10)"
+                />
+
+                <h4>Сила воли</h4>
+                <StatDots
+                    label="Постоянная"
+                    :max="10"
+                    pool
+                    :dots="track('willpower', 10)"
+                    :locked="statsLocked"
+                    @pick="onDotClick('willpower', $event, 10)"
+                />
+                <StatDots
+                    label="Временная"
+                    :max="10"
+                    pool
+                    :dots="track('temporary_willpower', 10)"
+                    :locked="statsLocked"
+                    @pick="onDotClick('temporary_willpower', $event, 10)"
+                />
+
+                <div class="chat-drawer-health">
+                    <label>
+                        Health
+                        <select v-model.number="healthLevel" :disabled="statsLocked" @change="onHealthChange">
+                            <option v-for="option in drawerHealthLevels" :key="option.value" :value="option.value">
+                                {{ option.label }}
+                            </option>
+                        </select>
+                    </label>
+                    <fieldset class="chat-drawer-damage" :disabled="statsLocked">
+                        <legend class="muted">Тип урона</legend>
+                        <label>
+                            <input v-model="healthDamage" type="radio" value="bashing" @change="onHealthChange" />
+                            Bashing
+                        </label>
+                        <label>
+                            <input v-model="healthDamage" type="radio" value="lethal" @change="onHealthChange" />
+                            Lethal
+                        </label>
+                        <label>
+                            <input v-model="healthDamage" type="radio" value="aggravated" @change="onHealthChange" />
+                            Aggravated
+                        </label>
+                    </fieldset>
+                    <p class="chat-drawer-penalty">Штраф к кубам: {{ healthPenalty }}</p>
+                </div>
+            </section>
         </div>
         <p v-else class="muted">Выберите персонажа.</p>
     </aside>
@@ -28,8 +87,9 @@
 
 <script setup>
 import { computed } from 'vue';
+import { drawerHealthLevels, useChatCharacterStats } from '../../composables/useChatCharacterStats';
 import SheetImageSection from '../sheet/SheetImageSection.vue';
-import SheetStateSection from '../sheet/SheetStateSection.vue';
+import StatDots from '../sheet/StatDots.vue';
 
 const props = defineProps({
     isStoryteller: { type: Boolean, required: true },
@@ -69,4 +129,51 @@ function onSelectChange(event) {
 
     emit('select-character', Number.isFinite(value) ? value : null);
 }
+
+const {
+    loading,
+    saving,
+    error,
+    healthLevel,
+    healthDamage,
+    healthPenalty,
+    track,
+    onDotClick,
+    onHealthChange,
+} = useChatCharacterStats(() => props.selectedCharacterId, canEditState);
+
+const statsLocked = computed(() => !canEditState.value || saving.value || loading.value);
 </script>
+
+<style scoped>
+.chat-drawer-stats h3,
+.chat-drawer-stats h4 {
+    margin: 0.75rem 0 0.4rem;
+}
+
+.chat-drawer-health {
+    display: grid;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+.chat-drawer-health select {
+    display: block;
+    width: 100%;
+    margin-top: 0.25rem;
+}
+
+.chat-drawer-damage {
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+
+.chat-drawer-damage label {
+    margin-right: 0.75rem;
+}
+
+.chat-drawer-penalty {
+    margin: 0;
+}
+</style>

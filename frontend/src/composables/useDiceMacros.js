@@ -1,6 +1,69 @@
 import { ref } from 'vue';
 import { api } from '../auth';
 import { apiErrorMessage } from '../utils/apiError';
+import { canonicalStatKey } from '../utils/sheetStatCatalog';
+
+export function calculatePool(macroStats, characterStats) {
+    const stats = characterStats && typeof characterStats === 'object' ? characterStats : {};
+    let total = 0;
+
+    for (const name of statNames(macroStats)) {
+        total += countableDots(statTrack(stats, canonicalStatKey(name)));
+    }
+
+    return total;
+}
+
+function statNames(macroStats) {
+    const source = Array.isArray(macroStats)
+        ? macroStats
+        : (typeof macroStats === 'string' ? [macroStats] : []);
+    const names = [];
+
+    for (const name of source) {
+        if (typeof name !== 'string') {
+            continue;
+        }
+        for (const part of name.split(',')) {
+            const trimmed = part.trim();
+            if (trimmed !== '') {
+                names.push(trimmed);
+            }
+        }
+    }
+
+    return names;
+}
+
+function statTrack(stats, key) {
+    if (key === '' || stats[key] === undefined) {
+        const disciplines = stats.disciplines;
+        if (disciplines && typeof disciplines === 'object' && Array.isArray(disciplines[key])) {
+            return disciplines[key];
+        }
+
+        return null;
+    }
+
+    return stats[key];
+}
+
+function countableDots(value) {
+    if (!Array.isArray(value)) {
+        return 0;
+    }
+
+    let count = 0;
+
+    for (const dot of value) {
+        const state = Number(dot);
+        if (state === 1 || state === 2) {
+            count += 1;
+        }
+    }
+
+    return count;
+}
 
 export function useDiceMacros() {
     const macros = ref([]);

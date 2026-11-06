@@ -82,6 +82,22 @@ class DiceMacroApiTest extends TestCase
             ->assertJsonCount(0, 'macros');
     }
 
+    public function test_macro_without_pool_stores_zero_and_stat_keys(): void
+    {
+        $user = User::factory()->create();
+
+        $created = $this->actingAs($user, 'sanctum')->postJson('/api/dice-macros', [
+            'name' => 'Драка',
+            'difficulty' => 6,
+            'pool' => null,
+            'stats' => ['strength, brawl'],
+        ]);
+
+        $created->assertCreated();
+        $created->assertJsonPath('macro.pool', 0);
+        $created->assertJsonPath('macro.stats', ['strength', 'brawl']);
+    }
+
     public function test_user_cannot_update_or_delete_foreign_macro(): void
     {
         $owner = User::factory()->create();

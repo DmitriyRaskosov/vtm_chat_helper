@@ -7,7 +7,7 @@
                 :key="index"
                 type="button"
                 class="stats-dot"
-                :class="[dotClass(index), { 'is-locked': locked }]"
+                :class="[dotKind(index), { 'is-locked': locked }]"
                 :aria-disabled="locked"
                 :aria-label="`${label || 'Точка'} ${index}`"
                 @click.prevent="emit('pick', index)"
@@ -17,13 +17,26 @@
 </template>
 
 <script setup>
-defineProps({
+const props = defineProps({
     label: { type: String, default: '' },
     max: { type: Number, required: true },
     pool: { type: Boolean, default: false },
-    dotClass: { type: Function, required: true },
+    dots: { type: Array, default: () => [] },
     locked: { type: Boolean, default: false },
 });
+
+function dotKind(index) {
+    const state = Number(props.dots[index - 1] ?? 0);
+
+    if (state === 2) {
+        return 'is-temporary';
+    }
+    if (state === 1) {
+        return 'is-permanent';
+    }
+
+    return 'is-empty';
+}
 
 const emit = defineEmits(['pick']);
 </script>
@@ -69,13 +82,17 @@ const emit = defineEmits(['pick']);
     height: 1.15rem;
 }
 
-.stats-dot.is-permanent {
+button.stats-dot.is-permanent {
     background: var(--text, #1c140f);
     border-color: var(--text, #1c140f);
 }
 
-.stats-dot.is-temporary {
+button.stats-dot.is-temporary {
     background: #9d2c2c;
     border-color: #9d2c2c;
+}
+
+button.stats-dot.is-empty {
+    background: transparent;
 }
 </style>

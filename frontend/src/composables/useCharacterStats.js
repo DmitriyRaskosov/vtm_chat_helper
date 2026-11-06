@@ -39,6 +39,47 @@ export function dotTrack(value, max) {
     return dots;
 }
 
+export function cycleDot(dots, position) {
+    const next = dots.slice();
+    const state = next[position];
+
+    if (state === 0) {
+        for (let cursor = 0; cursor <= position; cursor += 1) {
+            if (next[cursor] === 0) {
+                next[cursor] = 2;
+            }
+        }
+    } else if (state === 2) {
+        next[position] = 1;
+    } else if (state === 1) {
+        for (let cursor = position; cursor < next.length; cursor += 1) {
+            next[cursor] = 0;
+        }
+    }
+
+    return next;
+}
+
+export function healthPenaltyFor(level) {
+    if (level <= 1) {
+        return 0;
+    }
+    if (level <= 3) {
+        return -1;
+    }
+    if (level <= 5) {
+        return -2;
+    }
+    if (level === 6) {
+        return -5;
+    }
+    if (level >= 7) {
+        return -100;
+    }
+
+    return 0;
+}
+
 export function normalizeStats(stats) {
     const source = stats && typeof stats === 'object' ? stats : {};
     const next = {};

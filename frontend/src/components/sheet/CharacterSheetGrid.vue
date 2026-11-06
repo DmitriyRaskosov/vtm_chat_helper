@@ -39,7 +39,7 @@
                     :key="stat.key"
                     :label="stat.label"
                     :max="5"
-                    :dot-class="(index) => dotClass(stat.key, index, 5)"
+                    :dots="track(stat.key, 5)"
                     :locked="!isEditing || saving"
                     @pick="onDotClick(stat.key, $event, 5)"
                 />
@@ -54,7 +54,7 @@
                     :key="stat.key"
                     :label="stat.label"
                     :max="5"
-                    :dot-class="(index) => dotClass(stat.key, index, 5)"
+                    :dots="track(stat.key, 5)"
                     :locked="!isEditing || saving"
                     @pick="onDotClick(stat.key, $event, 5)"
                 />
@@ -119,7 +119,7 @@
                     <StatDots
                         label=""
                         :max="5"
-                        :dot-class="(index) => disciplineDotClass(slug, index)"
+                        :dots="disciplineTrack(slug)"
                         :locked="!isEditing || saving"
                         @pick="onDisciplineDotClick(slug, $event)"
                     />
@@ -133,7 +133,7 @@
                     :key="stat.key"
                     :label="stat.label"
                     :max="5"
-                    :dot-class="(index) => dotClass(stat.key, index, 5)"
+                    :dots="track(stat.key, 5)"
                     :locked="!isEditing || saving"
                     @pick="onDotClick(stat.key, $event, 5)"
                 />
@@ -176,7 +176,7 @@
                     label=""
                     :max="10"
                     pool
-                    :dot-class="(index) => dotClass('humanity', index, 10)"
+                    :dots="track('humanity', 10)"
                     :locked="!isEditing || saving"
                     @pick="onDotClick('humanity', $event, 10)"
                 />
@@ -188,7 +188,7 @@
                     :label="statLabel('state', 'willpower', 'Постоянная')"
                     :max="10"
                     pool
-                    :dot-class="(index) => dotClass('willpower', index, 10)"
+                    :dots="track('willpower', 10)"
                     :locked="!isEditing || saving"
                     @pick="onDotClick('willpower', $event, 10)"
                 />
@@ -196,7 +196,7 @@
                     :label="statLabel('state', 'temporary_willpower', 'Временная')"
                     :max="10"
                     pool
-                    :dot-class="(index) => dotClass('temporary_willpower', index, 10)"
+                    :dots="track('temporary_willpower', 10)"
                     :locked="!isEditing || saving"
                     @pick="onDotClick('temporary_willpower', $event, 10)"
                 />
@@ -208,7 +208,7 @@
                     label=""
                     :max="10"
                     pool
-                    :dot-class="(index) => dotClass('blood_pool', index, 10)"
+                    :dots="track('blood_pool', 10)"
                     :locked="!isEditing || saving"
                     @pick="onDotClick('blood_pool', $event, 10)"
                 />
@@ -308,8 +308,8 @@ const {
     healthPenalty,
     disciplineLabel,
     statLabel,
-    dotClass,
-    disciplineDotClass,
+    track,
+    disciplineTrack,
     refresh,
     toggleEditing,
     onDotClick,

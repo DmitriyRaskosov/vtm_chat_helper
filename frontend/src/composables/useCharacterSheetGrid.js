@@ -1,5 +1,5 @@
 import { computed, ref, watch } from 'vue';
-import { dotTrack, normalizeStats, useCharacterStats } from './useCharacterStats';
+import { cycleDot, dotTrack, healthPenaltyFor, normalizeStats, useCharacterStats } from './useCharacterStats';
 import { apiErrorMessage } from '../utils/apiError';
 
 const TABS = [
@@ -93,47 +93,6 @@ function numericOrText(value) {
     return Number.isFinite(number) && String(value).trim() !== '' ? number : String(value);
 }
 
-function penaltyFor(level) {
-    if (level <= 1) {
-        return 0;
-    }
-    if (level <= 3) {
-        return -1;
-    }
-    if (level <= 5) {
-        return -2;
-    }
-    if (level === 6) {
-        return -5;
-    }
-    if (level >= 7) {
-        return -100;
-    }
-
-    return 0;
-}
-
-function cycleDot(dots, position) {
-    const next = dots.slice();
-    const state = next[position];
-
-    if (state === 0) {
-        for (let cursor = 0; cursor <= position; cursor += 1) {
-            if (next[cursor] === 0) {
-                next[cursor] = 2;
-            }
-        }
-    } else if (state === 2) {
-        next[position] = 1;
-    } else if (state === 1) {
-        for (let cursor = position; cursor < next.length; cursor += 1) {
-            next[cursor] = 0;
-        }
-    }
-
-    return next;
-}
-
 export function useCharacterSheetGrid(props, emit) {
     const activeTab = ref('header');
     const isEditing = ref(false);
@@ -177,7 +136,7 @@ export function useCharacterSheetGrid(props, emit) {
         },
     });
 
-    const healthPenalty = computed(() => penaltyFor(healthLevel.value));
+    const healthPenalty = computed(() => healthPenaltyFor(healthLevel.value));
 
     watch(
         () => props.stats,
@@ -222,16 +181,12 @@ export function useCharacterSheetGrid(props, emit) {
         return props.schema?.[group]?.[key] ?? fallback;
     }
 
-    function dotClass(key, index, max) {
-        const state = dotTrack(localStats.value[key], max)[Number(index) - 1];
-
-        return state === 1 ? 'is-permanent' : state === 2 ? 'is-temporary' : 'is-empty';
+    function track(key, max) {
+        return dotTrack(localStats.value[key], max);
     }
 
-    function disciplineDotClass(slug, index) {
-        const state = dotTrack(localStats.value.disciplines?.[slug], 5)[Number(index) - 1];
-
-        return state === 1 ? 'is-permanent' : state === 2 ? 'is-temporary' : 'is-empty';
+    function disciplineTrack(slug) {
+        return dotTrack(localStats.value.disciplines?.[slug], 5);
     }
 
     async function refresh() {
@@ -265,7 +220,7 @@ export function useCharacterSheetGrid(props, emit) {
             health: {
                 level,
                 damage,
-                penalty: penaltyFor(level),
+                penalty: healthPenaltyFor(level),
             },
         };
     }
@@ -428,8 +383,8 @@ export function useCharacterSheetGrid(props, emit) {
         healthPenalty,
         disciplineLabel,
         statLabel,
-        dotClass,
-        disciplineDotClass,
+        track,
+        disciplineTrack,
         refresh,
         toggleEditing,
         onDotClick,

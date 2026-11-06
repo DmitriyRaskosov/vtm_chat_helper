@@ -7,7 +7,6 @@ use App\Http\Controllers\CharacterAvatarController;
 use App\Http\Controllers\CharacterItemController;
 use App\Http\Controllers\CharacterSheetController;
 use App\Http\Controllers\CharacterSheetImageController;
-use App\Http\Controllers\CharacterStateController;
 use App\Http\Controllers\CharacterStatsController;
 use App\Http\Controllers\ChatController;
 use App\Http\Controllers\ChronicleController;
@@ -125,7 +124,6 @@ Route::middleware('auth:sanctum')->group(function () {
         ->can('delete', 'character');
     Route::put('/characters/{character}/place', [CharacterSheetController::class, 'updatePlace'])
         ->can('updatePlace', 'character');
-    Route::put('/characters/{character}/state', [CharacterStateController::class, 'update']);
     Route::patch('/characters/{character}/stats', [CharacterStatsController::class, 'update']);
     Route::get('/characters/{character}/items', [CharacterItemController::class, 'index']);
     Route::post('/characters/{character}/items', [CharacterItemController::class, 'store']);

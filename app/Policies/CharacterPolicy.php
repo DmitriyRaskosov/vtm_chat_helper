@@ -96,19 +96,6 @@ class CharacterPolicy
             && (int) $character->user_id === (int) $user->id;
     }
 
-    public function updateState(User $user, Character $character): bool
-    {
-        if ($this->userIsStorytellerInChronicleId($user, (int) $character->chronicle_id)) {
-            return true;
-        }
-
-        if ($character->character_type === CharacterType::Player && (int) $character->user_id === (int) $user->id) {
-            return true;
-        }
-
-        return false;
-    }
-
     public function speakAs(User $user, Character $character): bool
     {
         if (! $character->is_active) {

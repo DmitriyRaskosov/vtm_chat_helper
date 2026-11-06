@@ -1209,66 +1209,10 @@ summary {
 }
 
 .chat-character-drawer-body .sheet-image-section,
-.chat-character-drawer-body .sheet-state-section {
+.chat-character-drawer-body .chat-drawer-stats {
     margin-bottom: 1rem;
 }
 
-.sheet-state-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(8rem, 1fr));
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-}
-
-.sheet-state-grid label {
-    display: block;
-}
-
-.sheet-state-grid input {
-    width: 100%;
-    margin-top: 0.25rem;
-}
-
-.sheet-state-health {
-    display: grid;
-    gap: 0.75rem;
-    margin-bottom: 1rem;
-}
-
-.sheet-state-health label {
-    display: block;
-}
-
-.sheet-state-health select {
-    width: 100%;
-    margin-top: 0.25rem;
-}
-
-.sheet-state-damage {
-    margin: 0;
-    padding: 0;
-    border: none;
-}
-
-.sheet-state-damage legend {
-    padding: 0;
-    margin-bottom: 0.35rem;
-    font-size: 0.85rem;
-}
-
-.sheet-state-damage-option {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.35rem;
-    margin-right: 0.75rem;
-    margin-bottom: 0.25rem;
-    font-size: 0.9rem;
-}
-
-.sheet-state-penalty {
-    margin: 0;
-    font-size: 0.95rem;
-}
 .dice-roller label {
     display: block;
     margin-top: 0.75rem;

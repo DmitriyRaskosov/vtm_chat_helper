@@ -126,11 +126,13 @@
 
 <script setup>
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue';
-import { useDiceMacros } from '../../composables/useDiceMacros';
+import { calculatePool, useDiceMacros } from '../../composables/useDiceMacros';
+import { useCharacterStats } from '../../composables/useCharacterStats';
 
 const props = defineProps({
     isStoryteller: { type: Boolean, required: true },
     myCharacterId: { type: [Number, String], default: null },
+    rollCharacterId: { type: [Number, String], default: null },
     characterOptions: { type: Array, required: true },
     rolling: { type: Boolean, default: false },
     rollError: { type: String, default: '' },
@@ -148,6 +150,7 @@ const {
 
 const selectedMacroId = ref('');
 const appliedMacroName = ref('');
+const characterStats = ref({});
 const pool = ref(5);
 const difficulty = ref(6);
 const diceType = ref(10);
@@ -161,6 +164,81 @@ const localResult = ref(null);
 const isSumMode = computed(() => rollMode.value === 'sum');
 
 const displayResult = computed(() => localResult.value ?? props.lastResult?.result ?? null);
+
+const { load: loadCharacterStats } = useCharacterStats(() => characterId.value);
+const statsLoading = ref(false);
+let statsEpoch = 0;
+
+watch(characterId, (id) => {
+    loadStatsForCharacter(id);
+}, { immediate: true });
+
+watch(characterStats, () => {
+    applyCalculatedPool();
+});
+
+function macroStatNames(stats) {
+    if (!Array.isArray(stats)) {
+        return [];
+    }
+
+    return stats.filter((name) => typeof name === 'string' && name !== '');
+}
+
+function selectedMacro() {
+    const id = Number(selectedMacroId.value);
+    if (!Number.isInteger(id) || id <= 0) {
+        return null;
+    }
+
+    return macros.value.find((row) => Number(row.id) === id) ?? null;
+}
+
+function applyCalculatedPool() {
+    if (statsLoading.value) {
+        return;
+    }
+
+    const macro = selectedMacro();
+    const names = macroStatNames(macro?.stats);
+    if (names.length === 0) {
+        return;
+    }
+
+    pool.value = calculatePool(names, characterStats.value);
+}
+
+async function loadStatsForCharacter(id) {
+    const current = ++statsEpoch;
+    const numericId = Number(id);
+
+    if (!Number.isFinite(numericId) || numericId <= 0) {
+        statsLoading.value = false;
+        characterStats.value = {};
+
+        return;
+    }
+
+    statsLoading.value = true;
+
+    try {
+        const loaded = await loadCharacterStats(numericId);
+        if (current !== statsEpoch) {
+            return;
+        }
+        characterStats.value = loaded.stats ?? {};
+    } catch {
+        if (current !== statsEpoch) {
+            return;
+        }
+        characterStats.value = {};
+    } finally {
+        if (current === statsEpoch) {
+            statsLoading.value = false;
+            applyCalculatedPool();
+        }
+    }
+}
 
 function applyMacroById(raw) {
     if (raw === null || raw === undefined || raw === '') {
@@ -179,7 +257,12 @@ function applyMacroById(raw) {
         return;
     }
 
-    pool.value = Number(macro.pool);
+    const names = macroStatNames(macro.stats);
+    if (names.length > 0 && !statsLoading.value) {
+        pool.value = calculatePool(names, characterStats.value);
+    } else if (names.length === 0 && (!Number.isFinite(Number(pool.value)) || Number(pool.value) < 1)) {
+        pool.value = 1;
+    }
     difficulty.value = Number(macro.difficulty);
     diceType.value = Number(macro.dice_type);
     useWillpower.value = Boolean(macro.use_willpower);
@@ -194,15 +277,20 @@ watch(selectedMacroId, (id) => {
     applyMacroById(id);
 });
 
+function presetCharacterId() {
+    const preset = props.rollCharacterId ?? (props.isStoryteller ? null : props.myCharacterId);
+    const numericId = Number(preset);
+
+    return Number.isFinite(numericId) && numericId > 0 ? numericId : null;
+}
+
 function resetForm() {
     selectedMacroId.value = '';
     appliedMacroName.value = '';
     pool.value = 5;
     difficulty.value = 6;
     diceType.value = 10;
-    characterId.value = props.isStoryteller
-        ? null
-        : (props.myCharacterId ?? null);
+    characterId.value = presetCharacterId();
     rollMode.value = 'successes';
     comment.value = '';
     isHidden.value = false;
