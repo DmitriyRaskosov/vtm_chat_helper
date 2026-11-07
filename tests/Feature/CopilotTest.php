@@ -142,6 +142,7 @@ class CopilotTest extends TestCase
     {
         $this->fakeChat()
             ->push('{"topics":["test topic"]}')
+            ->push('   ')
             ->push('   ');
 
         $response = $this->actingAs($this->storyteller, 'sanctum')

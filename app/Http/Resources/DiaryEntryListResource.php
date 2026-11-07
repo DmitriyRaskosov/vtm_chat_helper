@@ -33,6 +33,7 @@ class DiaryEntryListResource extends JsonResource
             'from_message_id' => $entry->from_message_id === null ? null : (int) $entry->from_message_id,
             'to_message_id' => $entry->to_message_id === null ? null : (int) $entry->to_message_id,
             'is_stale' => (bool) $entry->is_stale,
+            'is_truncated' => (bool) $entry->is_truncated,
             'importance' => $entry->importance === null ? null : (float) $entry->importance,
             'emotion' => $emotion instanceof DiaryEmotion ? $emotion->value : null,
             'preview' => mb_substr($text, 0, 300),

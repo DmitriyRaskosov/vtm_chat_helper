@@ -73,7 +73,12 @@ class DeepSeekChatProvider implements ChatProvider
             throw new RuntimeException('DeepSeek returned an empty chat response.');
         }
 
-        return new ChatTurn($content);
+        $finishReason = $response->json('choices.0.finish_reason');
+
+        return new ChatTurn(
+            $content,
+            is_string($finishReason) ? $finishReason : null,
+        );
     }
 
     public function complete(string $prompt): string

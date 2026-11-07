@@ -61,8 +61,11 @@ final class FakeChatProvider implements ChatProvider
 
         $item = array_shift($this->queue);
         $content = is_string($item) ? $item : (string) ($item['content'] ?? '');
+        $finishReason = is_array($item) && isset($item['finishReason']) && is_string($item['finishReason'])
+            ? $item['finishReason']
+            : null;
 
-        return new ChatTurn($content);
+        return new ChatTurn($content, $finishReason);
     }
 
     public function complete(string $prompt): string

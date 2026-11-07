@@ -63,6 +63,21 @@ class NpcCopilotService
             ];
             $turn = $this->chat->chatTurn($messages, $replyOptions);
             $raw = $turn->content;
+
+            if ($this->needsCopilotDraftRetry($turn, $raw, $draftCount)) {
+                $messages[] = [
+                    'role' => 'user',
+                    'content' => 'Your previous answer was too long. Make drafts shorter and strictly return valid JSON.',
+                ];
+                $turn = $this->chat->chatTurn($messages, $replyOptions);
+                $raw = $turn->content;
+
+                if ($this->needsCopilotDraftRetry($turn, $raw, $draftCount)) {
+                    throw new LlmResponseInvalidException;
+                }
+            }
+        } catch (LlmResponseInvalidException $e) {
+            throw $e;
         } catch (\Throwable $e) {
             throw new LlmUnavailableException($e);
         }
@@ -261,6 +276,21 @@ class NpcCopilotService
         }
 
         return array_values(array_unique($drafts));
+    }
+
+    private function needsCopilotDraftRetry(ChatTurn $turn, string $raw, int $expected): bool
+    {
+        if ($turn->finishReason === 'length') {
+            return true;
+        }
+
+        try {
+            $this->parseDrafts($raw, $expected);
+
+            return false;
+        } catch (LlmResponseInvalidException) {
+            return true;
+        }
     }
 
     private function extractJson(string $raw): ?string

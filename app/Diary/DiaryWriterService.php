@@ -2,6 +2,7 @@
 
 namespace App\Diary;
 
+use App\Diary\Data\DiaryLlmCallResult;
 use App\Diary\Data\WriteEntryResult;
 use App\Diary\Data\WriteSceneResult;
 use App\Diary\Exceptions\DiaryGenerationFailedException;
@@ -23,6 +24,8 @@ use Illuminate\Support\Facades\Log;
 
 class DiaryWriterService
 {
+    use RetriesLlmOutput;
+
     private const MAX_MESSAGES_PER_CALL = 60;
 
     public function __construct(
@@ -131,16 +134,19 @@ class DiaryWriterService
         $fromMessageId = (int) $roleplayMessages->first()->id;
 
         try {
-            $raw = $this->generateEntryText(
+            $llm = $this->generateEntryText(
                 $npc,
                 $formattedMessages,
                 $fromMessageId,
                 $toMessageId,
+                $scene,
                 excludeEntryId: null,
             );
         } catch (\Throwable $e) {
             throw new DiaryGenerationFailedException('LLM call failed: '.$e->getMessage(), $e);
         }
+
+        $raw = $llm->content;
 
         if ($raw === '') {
             throw new DiaryGenerationFailedException('LLM returned empty diary entry.');
@@ -175,6 +181,7 @@ class DiaryWriterService
             $parsed['emotion']?->value,
             VectorLiteral::fromArray($vector),
             $this->chronicleInGameDate($scene),
+            $llm->isTruncated,
         );
 
         return new WriteEntryResult(true, $messages->count());
@@ -248,13 +255,15 @@ class DiaryWriterService
             return false;
         }
 
-        $raw = $this->generateEntryText($character, $formattedMessages, $fromId, $toId, $entry->id);
+        $sceneModel = $scene;
 
-        if ($raw === '') {
+        $llm = $this->generateEntryText($character, $formattedMessages, $fromId, $toId, $sceneModel, $entry->id);
+
+        if ($llm->content === '') {
             return false;
         }
 
-        $parsed = DiaryMetadataParser::parse($raw);
+        $parsed = DiaryMetadataParser::parse($llm->content);
         $newEntry = $parsed['entry'];
         if ($newEntry === '') {
             return false;
@@ -268,6 +277,7 @@ class DiaryWriterService
             $parsed['importance'],
             $parsed['emotion']?->value,
             VectorLiteral::fromArray($vector),
+            $llm->isTruncated,
         );
 
         Log::info('diary.regenerate.entry_done', [
@@ -283,8 +293,9 @@ class DiaryWriterService
         string $formattedMessages,
         int $fromMessageId,
         int $toMessageId,
+        Scene $scene,
         ?int $excludeEntryId = null,
-    ): string {
+    ): DiaryLlmCallResult {
         $npc->loadMissing(['clan', 'sect', 'biography']);
 
         $name = WorldEntity::query()->whereKey($npc->id)->value('canonical_name') ?? 'NPC';
@@ -311,7 +322,8 @@ class DiaryWriterService
             ? trim($previousEntry)
             : '(нет — это первая запись)';
 
-        $turn = $this->chat->chatTurn(
+        return $this->callWithRetry(
+            $this->chat,
             [
                 ['role' => 'system', 'content' => $this->prompts->get('diary.writer.system')],
                 ['role' => 'user', 'content' => $this->prompts->get('diary.writer.user', [
@@ -330,9 +342,9 @@ class DiaryWriterService
                 'max_tokens' => (int) config('diary.write.max_output_tokens'),
                 'temperature' => (float) config('diary.write.temperature'),
             ],
+            (int) $npc->id,
+            (int) $scene->id,
         );
-
-        return trim($turn->content);
     }
 
     private function chronicleInGameDate(Scene $scene): ?\DateTimeInterface

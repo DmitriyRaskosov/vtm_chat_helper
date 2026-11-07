@@ -28,6 +28,7 @@
                     <header class="diary-entry-header">
                         <span class="diary-level">L{{ entry.level }}</span>
                         <span v-if="entry.is_stale" class="stale-badge">ИСТОЧНИК ИЗМЕНЁН</span>
+                        <span v-if="entry.is_truncated" class="stale-badge">ОБРЕЗАНО</span>
                         <span v-if="entry.emotion" class="diary-emotion">{{ entry.emotion }}</span>
                         <span v-if="entry.importance !== null" class="muted">importance: {{ entry.importance.toFixed(2) }}</span>
                         <span v-if="entry.scene_title" class="muted">{{ entry.scene_title }}</span>
@@ -63,6 +64,7 @@
                         <template v-if="activeEntry.importance !== null"> · importance: {{ activeEntry.importance.toFixed(2) }}</template>
                         · {{ activeEntry.scene_title || 'без сцены' }}
                         <span v-if="activeEntry.is_stale" class="stale-badge">ИСТОЧНИК ИЗМЕНЁН</span>
+                        <span v-if="activeEntry.is_truncated" class="stale-badge">ОБРЕЗАНО</span>
                     </h2>
                     <button type="button" class="link" @click="close">Закрыть</button>
                 </header>

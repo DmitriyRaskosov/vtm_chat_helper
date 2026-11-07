@@ -23,6 +23,7 @@
                 <article v-for="entry in entries" :key="entry.id" class="card workshop-diary-entry">
                     <header class="diary-entry-header">
                         <span class="diary-level">L{{ entry.level }}</span>
+                        <span v-if="entry.is_truncated" class="stale-badge">ОБРЕЗАНО</span>
                         <span class="muted">{{ formatDate(entry.created_at) }}</span>
                         <span v-if="entry.scene_title" class="muted">{{ entry.scene_title }}</span>
                     </header>

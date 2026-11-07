@@ -2,6 +2,7 @@
 
 namespace App\Diary;
 
+use App\Diary\Data\DiaryLlmCallResult;
 use App\Diary\Data\SummarizeSceneResult;
 use App\Diary\Exceptions\DiaryGenerationFailedException;
 use App\Enums\CharacterType;
@@ -18,6 +19,8 @@ use Illuminate\Support\Facades\Log;
 
 class DiarySummarizerService
 {
+    use RetriesLlmOutput;
+
     private const MAX_L0_ENTRIES = 30;
 
     public function __construct(
@@ -117,16 +120,16 @@ class DiarySummarizerService
         }
 
         try {
-            $raw = $this->generateSummaryText($npc, $l0Entries);
+            $llm = $this->generateSummaryText($npc, $scene, $l0Entries);
         } catch (\Throwable $e) {
             throw new DiaryGenerationFailedException('LLM call failed: '.$e->getMessage(), $e);
         }
 
-        if ($raw === '') {
+        if ($llm->content === '') {
             throw new DiaryGenerationFailedException('LLM returned empty L1 entry.');
         }
 
-        $parsed = DiaryMetadataParser::parse($raw);
+        $parsed = DiaryMetadataParser::parse($llm->content);
         $entry = $parsed['entry'];
         if ($entry === '') {
             throw new DiaryGenerationFailedException('LLM returned empty L1 entry after parsing.');
@@ -156,6 +159,7 @@ class DiarySummarizerService
             $parsed['emotion']?->value,
             VectorLiteral::fromArray($vector),
             $this->chronicleInGameDate($scene),
+            $llm->isTruncated,
         );
 
         return true;
@@ -164,7 +168,7 @@ class DiarySummarizerService
     /**
      * @param  Collection<int, CharacterDiaryEntry>  $l0Entries
      */
-    private function generateSummaryText(Character $npc, Collection $l0Entries): string
+    private function generateSummaryText(Character $npc, Scene $scene, Collection $l0Entries): DiaryLlmCallResult
     {
         $npc->loadMissing(['clan', 'sect']);
 
@@ -183,7 +187,8 @@ class DiarySummarizerService
             ->map(fn (CharacterDiaryEntry $e, int $i): string => '[entry '.($i + 1)."]\n".trim($e->entry))
             ->implode("\n\n");
 
-        $turn = $this->chat->chatTurn(
+        return $this->callWithRetry(
+            $this->chat,
             [
                 ['role' => 'system', 'content' => $this->prompts->get('diary.summarizer.system')],
                 ['role' => 'user', 'content' => $this->prompts->get('diary.summarizer.user', [
@@ -198,9 +203,9 @@ class DiarySummarizerService
                 'max_tokens' => (int) config('diary.summarize.max_output_tokens'),
                 'temperature' => (float) config('diary.summarize.temperature'),
             ],
+            (int) $npc->id,
+            (int) $scene->id,
         );
-
-        return trim($turn->content);
     }
 
     private function chronicleInGameDate(Scene $scene): ?\DateTimeInterface
@@ -252,13 +257,13 @@ class DiarySummarizerService
             return false;
         }
 
-        $raw = $this->generateSummaryText($character, $l0Entries);
+        $llm = $this->generateSummaryText($character, $scene, $l0Entries);
 
-        if ($raw === '') {
+        if ($llm->content === '') {
             return false;
         }
 
-        $parsed = DiaryMetadataParser::parse($raw);
+        $parsed = DiaryMetadataParser::parse($llm->content);
         $newEntry = $parsed['entry'];
         if ($newEntry === '') {
             return false;
@@ -272,6 +277,7 @@ class DiarySummarizerService
             $parsed['importance'],
             $parsed['emotion']?->value,
             VectorLiteral::fromArray($vector),
+            $llm->isTruncated,
         );
 
         Log::info('diary.regenerate.summary_done', [
