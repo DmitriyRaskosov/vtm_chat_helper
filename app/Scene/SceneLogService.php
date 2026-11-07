@@ -2,10 +2,13 @@
 
 namespace App\Scene;
 
+use App\Broadcasting\SafeBroadcaster;
 use App\Dice\DiceRollResult;
 use App\Enums\DiceRollMode;
 use App\Enums\SceneLogType;
 use App\Enums\SceneLogVisibility;
+use App\Events\DiceRolled;
+use App\Http\Resources\SceneLogResource;
 use App\Models\Character;
 use App\Models\Scene;
 use App\Models\SceneLog;
@@ -62,7 +65,7 @@ final class SceneLogService
             $message .= ' — '.$trimmedComment;
         }
 
-        return SceneLog::query()->create([
+        $log = SceneLog::query()->create([
             'scene_id' => $scene->id,
             'user_id' => $user->id,
             'character_id' => $character?->id,
@@ -73,6 +76,15 @@ final class SceneLogService
             'willpower_spent' => $result->willpowerSpent,
             'payload' => $result->toPayload(),
         ]);
+
+        $logPayload = (new SceneLogResource($log))->toArray(request());
+        SafeBroadcaster::send(new DiceRolled(
+            (int) $scene->id,
+            $logPayload,
+            $result->toPayload(),
+        ));
+
+        return $log;
     }
 
     /**

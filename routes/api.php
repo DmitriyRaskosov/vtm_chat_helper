@@ -25,6 +25,7 @@ use App\Http\Controllers\SceneContextController;
 use App\Http\Controllers\SceneContextImageController;
 use App\Http\Controllers\SceneController;
 use App\Http\Controllers\SceneParticipantController;
+use App\Http\Controllers\SceneTypingController;
 use App\Http\Controllers\UserNoteController;
 use Illuminate\Support\Facades\Route;
 
@@ -138,6 +139,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/scenes/{scene}/image', [SceneContextImageController::class, 'store'])
         ->can('update', 'scene');
     Route::get('/scenes/{scene}/participants', [SceneParticipantController::class, 'index'])
+        ->can('view', 'scene');
+    Route::post('/scenes/{scene}/typing', [SceneTypingController::class, 'store'])
         ->can('view', 'scene');
 
     Route::post('/game-sessions/{gameSession}/scenes', [SceneController::class, 'store']);

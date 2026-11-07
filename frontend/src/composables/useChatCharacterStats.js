@@ -6,6 +6,7 @@ import {
     healthPenaltyFor,
     normalizeStats,
     useCharacterStats,
+    useCharacterStatsBroadcast,
 } from './useCharacterStats';
 
 export const drawerHealthLevels = [
@@ -19,7 +20,7 @@ export const drawerHealthLevels = [
     { value: 7, label: '7 - Incapacitated' },
 ];
 
-export function useChatCharacterStats(characterId, canEdit) {
+export function useChatCharacterStats(characterId, canEdit, selectedSceneId = null) {
     const localStats = ref(normalizeStats(null));
     const loading = ref(false);
     const { saving, error, load, save } = useCharacterStats(characterId);
@@ -48,6 +49,12 @@ export function useChatCharacterStats(characterId, canEdit) {
     watch(resolveCharacterId, () => {
         refresh();
     }, { immediate: true });
+
+    if (selectedSceneId != null) {
+        useCharacterStatsBroadcast(selectedSceneId, characterId, (stats) => {
+            localStats.value = stats;
+        });
+    }
 
     function resolveCharacterId() {
         const source = typeof characterId === 'function' ? characterId() : unref(characterId);

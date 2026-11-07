@@ -2,7 +2,10 @@
 
 namespace App\Scene;
 
+use App\Broadcasting\SafeBroadcaster;
 use App\Enums\SceneStatus;
+use App\Events\SceneUpdated;
+use App\Http\Resources\SceneContextResource;
 use App\Models\ChronicleLocation;
 use App\Models\Location;
 use App\Models\Scene;
@@ -94,7 +97,11 @@ class SceneContextService
             $context->updated_by = $updatedBy?->id;
             $context->save();
 
-            return $context->refresh();
+            $context = $context->refresh();
+            $contextPayload = (new SceneContextResource($lockedScene, $context, $this))->toArray(request());
+            SafeBroadcaster::send(new SceneUpdated((int) $lockedScene->id, $contextPayload));
+
+            return $context;
         });
     }
 

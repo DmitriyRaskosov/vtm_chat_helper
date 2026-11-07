@@ -34,19 +34,21 @@ export function useSceneContextImage(sceneId) {
         try {
             const response = await api.get(`/scenes/${numericId}/image`, {
                 responseType: 'blob',
+                validateStatus: (status) => (status >= 200 && status < 300) || status === 404,
             });
+
+            if (response.status === 404) {
+                return null;
+            }
 
             objectUrl = URL.createObjectURL(response.data);
             imageUrl.value = objectUrl;
 
             return objectUrl;
         } catch (err) {
-            if (err.response?.status === 404) {
-                return null;
-            }
-
             error.value = apiErrorMessage(err, 'Не удалось загрузить фото локации.');
-            throw err;
+
+            return null;
         } finally {
             loading.value = false;
         }

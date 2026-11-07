@@ -1,6 +1,6 @@
 # Spec: WebSockets (Мгновенная доставка данных)
 
-**Status:** Approved
+**Status:** Completed
 **Date:** 2026-11-07
 
 ## 1. Контекст и Цель
@@ -26,3 +26,13 @@
 ## 4. Out of Scope
 *   WebRTC (голосовой чат).
 *   Трансляция позиций фигурок на карте.
+
+## 5. Post-Implementation Notes
+
+Внедрены WebSockets (Laravel Reverb) для мгновенной доставки сообщений, статов персонажа (канал сцены, фильтр по `character_id` на клиенте), лога боя и смены контекста/локации. Docker-сервис `reverb`, Echo на фронте; авторизация приватного канала через `POST /broadcasting/auth` (инстанс `apiRoot`, не `/api`).
+
+Реализован индикатор «Печатает...»: `POST /api/scenes/{scene}/typing` → `UserTyping`, троттлинг запроса раз в 2 с, гашение индикатора у получателей через 3 с.
+
+Настроен fallback: `useConnectionStatus` слушает `state_change` Echo; при недоступности WS дольше 5 с включается резервный polling и баннер «Соединение нестабильно». При восстановлении polling отключается, сообщения и лог догоняются по `lastId` / `after_id`; дубликаты отсекаются по `id > lastId`.
+
+Фронтенд-тесты: `npm test` (`connectionStatusLogic.test.js`) проверяют таймеры lost/restored. Backend: `WebSocketBroadcastTest`, Access Matrix для typing.

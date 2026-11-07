@@ -4,6 +4,7 @@ import { CHRONICLE_NOT_SELECTED, chronicleCollectionPath } from './useCurrentChr
 import { applyChronicleInGameTime } from './useInGameTime';
 import { useFlash } from './useFlash';
 import { apiErrorMessage } from '../utils/apiError';
+import { useSceneChannelListener } from './useSceneChannel';
 export function sceneStatusLabel(status) {
     return {
         active: 'активна',
@@ -268,6 +269,20 @@ export function useSceneSession({ auth, chronicleId }) {
         loadSceneSituation(sceneId);
     });
 
+    function applyBroadcastContext(context) {
+        if (!context || typeof context !== 'object') {
+            return;
+        }
+
+        sceneSituation.value = context.situation ?? '';
+        environmentDetails.value = context.environment_details ?? '';
+        sceneSituationRevision.value = Number(context.revision ?? sceneSituationRevision.value);
+    }
+
+    useSceneChannelListener(selectedSceneId, '.SceneUpdated', (payload) => {
+        applyBroadcastContext(payload?.context);
+    });
+
     async function loadParticipants() {
         const sceneId = selectedSceneId.value;
         const previousNpcId = selectedNpcId.value;
@@ -504,6 +519,7 @@ export function useSceneSession({ auth, chronicleId }) {
         releaseMyTurn,
         saveSceneSituation,
         sceneSituationRevision,
+        applyBroadcastContext,
         pollSceneSituation,
         loadParticipants,
         addToScene,

@@ -498,6 +498,10 @@ final class AccessMatrixFixtures
             ];
         }
 
+        if ($method === 'POST' && $uriTemplate === 'scenes/{scene}/typing') {
+            return ['is_ooc' => false];
+        }
+
         return [];
     }
 

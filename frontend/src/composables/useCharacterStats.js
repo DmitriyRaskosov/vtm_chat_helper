@@ -1,6 +1,7 @@
-import { ref, unref } from 'vue';
+import { ref, toValue, unref } from 'vue';
 import { api } from '../auth';
 import { apiErrorMessage } from '../utils/apiError';
+import { useSceneChannelListener } from './useSceneChannel';
 
 export function dotTrack(value, max) {
     const length = Math.max(0, Number(max) || 0);
@@ -185,4 +186,25 @@ export function useCharacterStats(characterId) {
         load,
         save,
     };
+}
+
+/**
+ * @param {import('vue').MaybeRefOrGetter<number|null|undefined>} selectedSceneId
+ * @param {import('vue').MaybeRefOrGetter<number|null|undefined>} characterId
+ * @param {(stats: ReturnType<typeof normalizeStats>, sheetData: object|null) => void} onUpdate
+ */
+export function useCharacterStatsBroadcast(selectedSceneId, characterId, onUpdate) {
+    useSceneChannelListener(selectedSceneId, '.CharacterStatsUpdated', (payload) => {
+        const targetId = Number(payload?.character_id);
+        const openId = Number(toValue(characterId));
+
+        if (!Number.isFinite(targetId) || !Number.isFinite(openId) || targetId !== openId) {
+            return;
+        }
+
+        const statsBlock = payload?.stats;
+        const stats = normalizeStats(statsBlock?.stats ?? statsBlock);
+        const sheetData = statsBlock?.sheet_data ?? null;
+        onUpdate(stats, sheetData);
+    });
 }

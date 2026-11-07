@@ -2,9 +2,12 @@
 
 namespace App\Messages;
 
+use App\Broadcasting\SafeBroadcaster;
 use App\Diary\DiaryScheduler;
 use App\Enums\CharacterType;
 use App\Enums\ChronicleRole;
+use App\Events\MessageSent;
+use App\Http\Resources\MessageResource;
 use App\Messages\Exceptions\CopilotDraftNotFoundException;
 use App\Messages\Exceptions\CopilotRequestAlreadyUsedException;
 use App\Messages\Exceptions\CopilotRequestMismatchException;
@@ -118,12 +121,15 @@ final class MessageService
 
         $this->diaryScheduler->scheduleForScene($scene);
 
-        return $message->load('user:id,name');
+        $message = $message->load('user:id,name');
+        $this->broadcastMessageSent($message, $user);
+
+        return $message;
     }
 
     public function postSystem(Scene $scene, User $storyteller, string $body): Message
     {
-        return $storyteller->messages()->create([
+        $message = $storyteller->messages()->create([
             'scene_id' => $scene->id,
             'body' => $body,
             'npc_name' => null,
@@ -132,6 +138,10 @@ final class MessageService
             'is_ooc' => false,
             'is_system' => true,
         ])->load('user:id,name');
+
+        $this->broadcastMessageSent($message, $storyteller);
+
+        return $message;
     }
 
     /**
@@ -197,5 +207,14 @@ final class MessageService
         if (! is_array($drafts) || ! array_key_exists($draftIndex, $drafts)) {
             throw new CopilotDraftNotFoundException;
         }
+    }
+
+    private function broadcastMessageSent(Message $message, User $author): void
+    {
+        $message->loadMissing(['user:id,name', 'authorCharacter.entity']);
+        $characterLookup = $this->characterLookup(collect([$message]), $author);
+        $payload = (new MessageResource($message, $characterLookup, $author))->toArray(request());
+
+        SafeBroadcaster::send(new MessageSent((int) $message->scene_id, $payload));
     }
 }

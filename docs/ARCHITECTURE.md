@@ -25,8 +25,19 @@
 * `DiceService` — чистая математика (V20).
 * `EventGeneratorService` — собирает контекст (локация, броски) и просит LLM описать исход.
 
+## Инфраструктура (Docker)
+* **laravel.test** — PHP-FPM, HTTP API.
+* **reverb** — Laravel Reverb (`php artisan reverb:start`, порт 8080 в сети compose); наружу пробрасывается для браузера (например `8081` на хост).
+* **frontend** — Vite; прокси `/api` и `/broadcasting/auth` на Laravel.
+
+## Real-time (WebSockets)
+* Broadcaster: `reverb` (`BROADCAST_CONNECTION=reverb`). События — `ShouldBroadcastNow`, обёртка `SafeBroadcaster` (не роняет HTTP при падении Reverb).
+* Приватный канал сцены: `private-scene.{scene_id}`; доступ в `routes/channels.php` — активный член хроники сцены.
+* События: `MessageSent`, `CharacterStatsUpdated`, `UserTyping`, `DiceRolled`, `SceneUpdated`.
+* SPA: Laravel Echo (`frontend/src/echo.js`), авторизация канала через `apiRoot` → `POST /broadcasting/auth`. При обрыве WS >5 с — резервный polling (`useConnectionStatus`), догон по `after_id` / `lastId`.
+
 ## Frontend (Vue 3)
-* **Composables:** Вся логика вынесена из компонентов (`useChatMessages`, `useSceneSession`, `useDraggable`).
+* **Composables:** Вся логика вынесена из компонентов (`useChatMessages`, `useSceneSession`, `useDraggable`, `useConnectionStatus`).
 * **Layout:** Узкий сайдбар (навигация) -> Центральная сцена (чат IC/OOC, композер) -> Правая панель (участники, Copilot, События).
 * **Плавающие окна:** Панели инструментов (Кубы, Чарлист, Заметки, Дневник) рендерятся через `position: fixed` (вне DOM-дерева колонки), чтобы их можно было двигать и выносить за пределы экрана.
 * **Стейт:** Глобальное состояние через `auth.js` (реактивные refs). Без Pinia.

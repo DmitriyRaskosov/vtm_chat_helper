@@ -2,6 +2,7 @@ import { ref, toValue, watch } from 'vue';
 import { api } from '../auth';
 import { chronicleCollectionPath } from './useCurrentChronicle';
 import { apiErrorMessage } from '../utils/apiError';
+import { useSceneChannelListener } from './useSceneChannel';
 
 export function useSceneBattleLog({ chronicleId, selectedSceneId, isStoryteller }) {
     const logs = ref([]);
@@ -24,10 +25,21 @@ export function useSceneBattleLog({ chronicleId, selectedSceneId, isStoryteller 
         const appended = [];
 
         for (const row of incoming) {
-            if (!known.has(row.id)) {
-                known.add(row.id);
-                appended.push(row);
+            const rowId = Number(row.id);
+            if (!Number.isFinite(rowId)) {
+                continue;
             }
+
+            if (known.has(rowId)) {
+                continue;
+            }
+
+            if (rowId <= lastLogId.value) {
+                continue;
+            }
+
+            known.add(rowId);
+            appended.push(row);
         }
 
         if (appended.length) {
@@ -91,6 +103,23 @@ export function useSceneBattleLog({ chronicleId, selectedSceneId, isStoryteller 
     watch(selectedSceneId, async () => {
         resetLogs();
         await reloadLogs();
+    });
+
+    useSceneChannelListener(selectedSceneId, '.DiceRolled', (payload) => {
+        const log = payload?.log;
+        if (!log?.id) {
+            return;
+        }
+
+        if (log.visibility === 'storyteller_only' && !toValue(isStoryteller)) {
+            return;
+        }
+
+        if (Number(log.id) <= lastLogId.value) {
+            return;
+        }
+
+        mergeLogs([log]);
     });
 
     return {

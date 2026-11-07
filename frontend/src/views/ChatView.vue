@@ -37,6 +37,10 @@
                 </button>
             </header>
 
+            <p v-if="isFallbackMode" class="connection-fallback-notice" role="status">
+                Соединение нестабильно. Включен резервный режим
+            </p>
+
             <LocationBanner
                 v-if="gameSession && selectedScene"
                 :image-url="locationImageUrl"
@@ -59,8 +63,8 @@
                         :is-storyteller="isStoryteller"
                         :current-user-id="auth.user.value?.id ?? null"
                         :storyteller-user-ids="storytellerUserIds"
-                        :is-typing="isTyping && !isOoc"
-                        :typing-label="myCharacterName ?? auth.user.value?.name ?? ''"
+                        :is-typing="Boolean(remoteTypingIcLabel)"
+                        :typing-label="remoteTypingIcLabel"
                         @toggle-ooc="toggleOoc"
                         @delete="deleteMessage"
                         @restore="restoreMessage"
@@ -88,8 +92,8 @@
                         :is-storyteller="isStoryteller"
                         :current-user-id="auth.user.value?.id ?? null"
                         :storyteller-user-ids="storytellerUserIds"
-                        :is-typing="isTyping && isOoc"
-                        :typing-label="myCharacterName ?? auth.user.value?.name ?? ''"
+                        :is-typing="Boolean(remoteTypingOocLabel)"
+                        :typing-label="remoteTypingOocLabel"
                         @toggle-ooc="toggleOoc"
                         @delete="deleteMessage"
                         @restore="restoreMessage"
@@ -187,6 +191,7 @@
                     :participants="drawerParticipants"
                     :selected-character-id="drawerCharacterId"
                     :my-character-id="myCharacterId"
+                    :scene-id="selectedSceneId"
                     @close="isCharacterOpen = false"
                     @select-character="drawerCharacterId = $event"
                 />
@@ -335,6 +340,7 @@ import { useChatPanels } from '../composables/useChatPanels';
 import { useDiceRoll, useSceneBattleLog } from '../composables/useSceneBattleLog';
 import { sceneStatusLabel, useSceneSession } from '../composables/useSceneSession';
 import { useSceneContextImage } from '../composables/useSceneContextImage';
+import { useConnectionStatus } from '../composables/useConnectionStatus';
 import { useUserNotes } from '../composables/useUserNotes';
 
 const auth = useAuth();
@@ -433,7 +439,8 @@ const {
     body,
     isOoc,
     showDeleted,
-    isTyping,
+    remoteTypingIcLabel,
+    remoteTypingOocLabel,
     storytellerUserIds,
     isIcAutoScroll,
     isOocAutoScroll,
@@ -712,8 +719,37 @@ watch(activeCharacterId, (characterId, previousId) => {
     }
 });
 
-let timer;
+let pollTimer = null;
 let polling = false;
+
+const {
+    isFallbackMode,
+    onConnectionLost,
+    onConnectionRestored,
+    startMonitoring,
+} = useConnectionStatus();
+
+function startFallbackPolling() {
+    if (pollTimer !== null) {
+        return;
+    }
+
+    pollTimer = setInterval(poll, 3000);
+    poll().catch(() => {});
+}
+
+function stopFallbackPolling() {
+    if (pollTimer !== null) {
+        clearInterval(pollTimer);
+        pollTimer = null;
+    }
+}
+
+async function syncAfterConnectionRestore() {
+    await load(lastId());
+    await pollLogs();
+    await pollSceneSituation();
+}
 
 function resetCopilotDrafts() {
     rightSidebar.value?.resetDrafts();
@@ -894,10 +930,24 @@ watch(chronicleId, async () => {
     await bootstrapChat();
 });
 
+watch(sceneSituationRevision, async () => {
+    if (selectedSceneId.value != null) {
+        await reloadSceneImage(selectedSceneId.value);
+    }
+});
+
 onMounted(async () => {
     await bootstrapChat();
     turnSoundReady = true;
-    timer = setInterval(poll, 3000);
+
+    onConnectionLost(() => {
+        startFallbackPolling();
+    });
+    onConnectionRestored(() => {
+        stopFallbackPolling();
+        syncAfterConnectionRestore().catch(() => {});
+    });
+    startMonitoring();
 
     if (splitContainer.value) {
         const containerWidth = splitContainer.value.getBoundingClientRect().width;
@@ -906,7 +956,7 @@ onMounted(async () => {
 });
 
 onUnmounted(() => {
-    clearInterval(timer);
+    stopFallbackPolling();
     closeAll();
 });
 </script>

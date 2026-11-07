@@ -2,9 +2,12 @@ import { computed, nextTick, onUnmounted, ref, toValue, watch } from 'vue';
 import { api } from '../auth';
 import { playSoundForMessage } from '../utils/chatMessageSound';
 import { CHRONICLE_NOT_SELECTED, chronicleCollectionPath } from './useCurrentChronicle';
+import { useSceneChannelListener } from './useSceneChannel';
 
 const COMPOSER_MODE_KEY = 'chat-composer-mode';
 const SELECTED_PC_KEY = 'chat-selected-pc-id';
+const TYPING_SEND_INTERVAL_MS = 2000;
+const TYPING_HIDE_MS = 3000;
 
 function readComposerOocFromStorage() {
     return localStorage.getItem(COMPOSER_MODE_KEY) === 'ooc';
@@ -12,6 +15,22 @@ function readComposerOocFromStorage() {
 
 function writeComposerOocToStorage(isOoc) {
     localStorage.setItem(COMPOSER_MODE_KEY, isOoc ? 'ooc' : 'ic');
+}
+
+function isNpcMessage(message) {
+    return message.npc_name != null && message.npc_name !== '';
+}
+
+function withMineForViewer(message, viewerUserId) {
+    const userId = Number(viewerUserId);
+
+    return {
+        ...message,
+        mine: !message.is_system
+            && !isNpcMessage(message)
+            && Number.isFinite(userId)
+            && Number(message.user_id) === userId,
+    };
 }
 
 export function useChatMessages({
@@ -29,7 +48,8 @@ export function useChatMessages({
     const body = ref('');
     const isOoc = ref(readComposerOocFromStorage());
     const showDeleted = ref(false);
-    const isTyping = ref(false);
+    const remoteTypingIcLabel = ref('');
+    const remoteTypingOocLabel = ref('');
     const storytellerUserIds = ref([]);
     const isIcAutoScroll = ref(true);
     const isOocAutoScroll = ref(true);
@@ -41,33 +61,107 @@ export function useChatMessages({
         (message) => message.is_ooc && !message.is_system,
     ));
 
-    let typingIdleTimer = null;
+    let typingHideIcTimer = null;
+    let typingHideOocTimer = null;
+    let lastTypingSentAt = 0;
 
-    function clearTypingTimer() {
-        if (typingIdleTimer !== null) {
-            clearTimeout(typingIdleTimer);
-            typingIdleTimer = null;
+    function clearTypingHideTimer(kind) {
+        const timer = kind === 'ooc' ? typingHideOocTimer : typingHideIcTimer;
+
+        if (timer !== null) {
+            clearTimeout(timer);
+        }
+
+        if (kind === 'ooc') {
+            typingHideOocTimer = null;
+        } else {
+            typingHideIcTimer = null;
         }
     }
 
-    watch(body, (value) => {
-        if (!value.trim()) {
-            isTyping.value = false;
-            clearTypingTimer();
-
+    function showRemoteTyping(userName, isOocChannel) {
+        if (!userName) {
             return;
         }
 
-        isTyping.value = true;
-        clearTypingTimer();
-        typingIdleTimer = setTimeout(() => {
-            isTyping.value = false;
-            typingIdleTimer = null;
-        }, 2000);
+        const kind = isOocChannel ? 'ooc' : 'ic';
+
+        if (kind === 'ooc') {
+            remoteTypingOocLabel.value = userName;
+            clearTypingHideTimer('ooc');
+            typingHideOocTimer = setTimeout(() => {
+                remoteTypingOocLabel.value = '';
+                typingHideOocTimer = null;
+            }, TYPING_HIDE_MS);
+        } else {
+            remoteTypingIcLabel.value = userName;
+            clearTypingHideTimer('ic');
+            typingHideIcTimer = setTimeout(() => {
+                remoteTypingIcLabel.value = '';
+                typingHideIcTimer = null;
+            }, TYPING_HIDE_MS);
+        }
+    }
+
+    function maybeSendTypingSignal() {
+        if (!canPost.value || !selectedSceneId.value) {
+            return;
+        }
+
+        const text = body.value.trim();
+        if (!text) {
+            return;
+        }
+
+        const now = Date.now();
+        if (now - lastTypingSentAt < TYPING_SEND_INTERVAL_MS) {
+            return;
+        }
+
+        lastTypingSentAt = now;
+        api.post(`/scenes/${selectedSceneId.value}/typing`, { is_ooc: isOoc.value }).catch(() => {});
+    }
+
+    watch(body, () => {
+        maybeSendTypingSignal();
     });
 
     onUnmounted(() => {
-        clearTypingTimer();
+        clearTypingHideTimer('ic');
+        clearTypingHideTimer('ooc');
+    });
+
+    useSceneChannelListener(selectedSceneId, '.MessageSent', (payload) => {
+        const message = payload?.message;
+        if (!message?.id) {
+            return;
+        }
+
+        const last = lastId();
+        if (Number(message.id) <= last) {
+            return;
+        }
+
+        const normalized = withMineForViewer(message, auth.user.value?.id);
+        merge([normalized], { playSounds: true });
+        scrollDown({
+            ic: !normalized.is_ooc,
+            ooc: Boolean(normalized.is_ooc),
+        });
+    });
+
+    useSceneChannelListener(selectedSceneId, '.UserTyping', (payload) => {
+        console.log('UserTyping', payload);
+
+        const remoteUserId = Number(payload?.user_id);
+        const viewerId = Number(auth.user.value?.id);
+
+        if (Number.isFinite(remoteUserId) && Number.isFinite(viewerId) && remoteUserId === viewerId) {
+            return;
+        }
+
+        const userName = typeof payload?.user_name === 'string' ? payload.user_name : '';
+        showRemoteTyping(userName, Boolean(payload?.is_ooc));
     });
 
     watch(isOoc, (value) => {
@@ -150,13 +244,25 @@ export function useChatMessages({
     }
 
     function merge(incoming, { playSounds = false } = {}) {
+        const tailId = lastId();
         const added = [];
 
         for (const message of incoming) {
-            if (!messages.value.some((item) => item.id === message.id)) {
-                messages.value.push(message);
-                added.push(message);
+            const messageId = Number(message.id);
+            if (!Number.isFinite(messageId)) {
+                continue;
             }
+
+            if (messages.value.some((item) => item.id === messageId)) {
+                continue;
+            }
+
+            if (messageId <= tailId) {
+                continue;
+            }
+
+            messages.value.push(message);
+            added.push(message);
         }
 
         if (!playSounds || !added.length) {
@@ -224,7 +330,9 @@ export function useChatMessages({
             storytellerUserIds.value = data.storyteller_user_ids;
         }
 
-        merge(data.messages ?? [], { playSounds: afterId > 0 });
+        const viewerId = auth.user.value?.id;
+        const incoming = (data.messages ?? []).map((row) => withMineForViewer(row, viewerId));
+        merge(incoming, { playSounds: afterId > 0 });
         if (stickIc || stickOoc) {
             await scrollDown({ ic: stickIc, ooc: stickOoc });
         }
@@ -267,10 +375,8 @@ export function useChatMessages({
         }
 
         const { data } = await api.post(path, payload);
-        merge([data.message]);
+        merge([withMineForViewer(data.message, auth.user.value?.id)]);
         body.value = '';
-        isTyping.value = false;
-        clearTypingTimer();
         await scrollDown({ ic: !isOoc.value, ooc: isOoc.value });
     }
 
@@ -307,7 +413,8 @@ export function useChatMessages({
         body,
         isOoc,
         showDeleted,
-        isTyping,
+        remoteTypingIcLabel,
+        remoteTypingOocLabel,
         storytellerUserIds,
         isIcAutoScroll,
         isOocAutoScroll,

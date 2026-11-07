@@ -96,6 +96,7 @@ const props = defineProps({
     participants: { type: Array, default: () => [] },
     selectedCharacterId: { type: [Number, String], default: null },
     myCharacterId: { type: [Number, String], default: null },
+    sceneId: { type: [Number, String], default: null },
 });
 
 const emit = defineEmits(['close', 'select-character']);
@@ -140,7 +141,11 @@ const {
     track,
     onDotClick,
     onHealthChange,
-} = useChatCharacterStats(() => props.selectedCharacterId, canEditState);
+} = useChatCharacterStats(
+    () => props.selectedCharacterId,
+    canEditState,
+    () => props.sceneId,
+);
 
 const statsLocked = computed(() => !canEditState.value || saving.value || loading.value);
 </script>

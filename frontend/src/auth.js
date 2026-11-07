@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { computed, ref } from 'vue';
 
+import { connectEcho, disconnectEcho } from './echo';
+
 const TOKEN_KEY = 'game-chat-token';
 export const CHRONICLE_STORAGE_KEY = 'game-chat-chronicle';
 
@@ -66,40 +68,52 @@ export const api = axios.create({
     headers: { Accept: 'application/json' },
 });
 
-api.interceptors.request.use((config) => {
+/** Маршруты Laravel вне префикса `/api` (broadcasting, и т.п.) */
+export const apiRoot = axios.create({
+    baseURL: '/',
+    headers: { Accept: 'application/json' },
+});
+
+function attachAuthHeader(config) {
     if (token.value) {
         config.headers.Authorization = `Bearer ${token.value}`;
     }
 
     return config;
-});
+}
 
-api.interceptors.response.use(
-    (response) => response,
-    (error) => {
-        const status = error.response?.status;
-        const url = error.config?.url ?? '';
-        const isAuthEndpoint = /\/(login|register)(\?|$)/.test(url);
+function handleUnauthorizedResponse(error) {
+    const status = error.response?.status;
+    const url = error.config?.url ?? '';
+    const isAuthEndpoint = /\/(login|register)(\?|$)/.test(url);
+    const isBroadcastingAuth = /\/broadcasting\/auth(\?|$)/.test(url);
 
-        if (status === 401 && !isAuthEndpoint) {
-            clear();
-            onUnauthorized?.();
-        }
+    if (status === 401 && !isAuthEndpoint && !isBroadcastingAuth) {
+        clear();
+        onUnauthorized?.();
+    }
 
-        return Promise.reject(error);
-    },
-);
+    return Promise.reject(error);
+}
+
+api.interceptors.request.use(attachAuthHeader);
+apiRoot.interceptors.request.use(attachAuthHeader);
+
+api.interceptors.response.use((response) => response, handleUnauthorizedResponse);
+apiRoot.interceptors.response.use((response) => response, handleUnauthorizedResponse);
 
 function setSession(nextToken, nextUser) {
     token.value = nextToken;
     user.value = nextUser;
     localStorage.setItem(TOKEN_KEY, nextToken);
+    connectEcho();
 }
 
 function clear() {
     token.value = '';
     user.value = null;
     localStorage.removeItem(TOKEN_KEY);
+    disconnectEcho();
 }
 
 export async function refreshUser() {
