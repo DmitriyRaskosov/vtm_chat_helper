@@ -9,7 +9,6 @@ use App\Character\CharacterCreationService;
 use App\Character\CharacterIdentityService;
 use App\Character\CharacterPlaceService;
 use App\Character\CharacterSheetReader;
-use App\Character\CharacterTraitService;
 use App\Character\CharacterVisibility;
 use App\Character\DisciplineService;
 use App\Character\Exceptions\BiographyUnchangedException;
@@ -21,7 +20,6 @@ use App\Http\Requests\UpdateCharacterBiographyRequest;
 use App\Http\Requests\UpdateCharacterDisciplinesRequest;
 use App\Http\Requests\UpdateCharacterIdentityRequest;
 use App\Http\Requests\UpdateCharacterPlaceRequest;
-use App\Http\Requests\UpdateCharacterTraitsRequest;
 use App\Http\Resources\CharacterResource;
 use App\Http\Resources\CharacterSheetResource;
 use App\Models\Character;
@@ -40,7 +38,6 @@ class CharacterSheetController extends Controller
         private DisciplineService $disciplines,
         private CharacterBiographyService $biographies,
         private CharacterPlaceService $place,
-        private CharacterTraitService $traits,
         private CurrentChronicle $currentChronicle,
         private CharacterVisibility $visibility,
     ) {}
@@ -177,17 +174,6 @@ class CharacterSheetController extends Controller
             );
         } catch (BiographyUnchangedException) {
         }
-
-        return response()->json([
-            'character' => (new CharacterSheetResource($character->refresh(), $this->reader))->toArray($request),
-        ]);
-    }
-
-    public function updateTraits(UpdateCharacterTraitsRequest $request, Character $character): JsonResponse
-    {
-        $this->authorize('update', $character);
-
-        $this->traits->sync($character, $request->validated('traits') ?? []);
 
         return response()->json([
             'character' => (new CharacterSheetResource($character->refresh(), $this->reader))->toArray($request),

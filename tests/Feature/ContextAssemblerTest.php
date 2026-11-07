@@ -144,14 +144,14 @@ class ContextAssemblerTest extends TestCase
 
     public function test_npc_identity_social_status_uses_title_trait_over_status(): void
     {
-        $this->actingAs($this->storyteller, 'sanctum')
-            ->putJson('/api/characters/'.$this->npcId.'/traits', [
+        Character::query()->whereKey($this->npcId)->update([
+            'sheet_data' => [
                 'traits' => [
-                    ['key' => 'status', 'label' => 'Статус', 'value' => 'Анарх'],
-                    ['key' => 'title', 'label' => 'Титул', 'value' => 'Примоген'],
+                    ['name' => 'status', 'label' => 'Статус', 'value' => 'Анарх'],
+                    ['name' => 'title', 'label' => 'Титул', 'value' => 'Примоген'],
                 ],
-            ])
-            ->assertStatus(200);
+            ],
+        ]);
 
         $userContent = $this->assembleReply()->messages[1]['content'];
 
@@ -159,15 +159,36 @@ class ContextAssemblerTest extends TestCase
         $this->assertStringNotContainsString('Social Status: Анарх', $userContent);
     }
 
+    public function test_identity_and_personality_read_traits_from_sheet_data(): void
+    {
+        Character::query()->whereKey($this->npcId)->update([
+            'sheet_data' => [
+                'traits' => [
+                    ['name' => 'status', 'label' => 'Статус', 'value' => 'Анарх'],
+                    ['name' => 'title', 'label' => 'Титул', 'value' => 'Примоген'],
+                    ['name' => 'tone', 'label' => 'Тон', 'value' => 'Мрачный'],
+                ],
+            ],
+        ]);
+
+        $userContent = $this->assembleReply()->messages[1]['content'];
+
+        $this->assertStringContainsString('Social Status: Примоген', $userContent);
+        $this->assertStringNotContainsString('Social Status: Анарх', $userContent);
+        $this->assertStringContainsString('## Personality', $userContent);
+        $this->assertStringContainsString('[behavior] Тон: Мрачный', $userContent);
+        $this->assertStringNotContainsString('[behavior] Титул:', $userContent);
+    }
+
     public function test_npc_identity_social_status_uses_status_trait_when_title_is_absent(): void
     {
-        $this->actingAs($this->storyteller, 'sanctum')
-            ->putJson('/api/characters/'.$this->npcId.'/traits', [
+        Character::query()->whereKey($this->npcId)->update([
+            'sheet_data' => [
                 'traits' => [
-                    ['key' => 'status', 'label' => 'Статус', 'value' => 'Князь'],
+                    ['name' => 'status', 'label' => 'Статус', 'value' => 'Князь'],
                 ],
-            ])
-            ->assertStatus(200);
+            ],
+        ]);
 
         $userContent = $this->assembleReply()->messages[1]['content'];
 
@@ -560,13 +581,13 @@ class ContextAssemblerTest extends TestCase
             );
         }
 
-        $this->actingAs($this->storyteller, 'sanctum')
-            ->putJson('/api/characters/'.$this->npcId.'/traits', [
+        Character::query()->whereKey($this->npcId)->update([
+            'sheet_data' => [
                 'traits' => [
-                    ['key' => 'tone', 'label' => 'Тон', 'value' => str_repeat('Мрачный ', 30)],
+                    ['name' => 'tone', 'label' => 'Тон', 'value' => str_repeat('Мрачный ', 30)],
                 ],
-            ])
-            ->assertStatus(200);
+            ],
+        ]);
 
         $this->actingAs($this->storyteller, 'sanctum')
             ->putJson('/api/characters/'.$this->npcId.'/biography', [

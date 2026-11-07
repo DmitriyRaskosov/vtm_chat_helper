@@ -32,8 +32,8 @@ class CharacterSheetResource extends JsonResource
         $data = $this->reader->aggregate($this->resource);
         $user = $request->user();
 
-        if (! $this->viewerIsStoryteller($user)) {
-            unset($data['inventory']);
+        if (! $this->viewerIsStoryteller($user) && is_array($data['sheet_data'] ?? null)) {
+            unset($data['sheet_data']['inventory']);
         }
 
         return $data;

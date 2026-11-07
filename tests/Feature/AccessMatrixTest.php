@@ -406,12 +406,6 @@ class AccessMatrixTest extends TestCase
                 'player_foreign' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
-            self::forRoles('characters.traits.own', 'PUT', 'characters/{playerCharacter}/traits', [
-                'guest' => self::EXPECT_401,
-                'player_owner' => self::EXPECT_ALLOWED,
-                'player_foreign' => self::EXPECT_403,
-                'storyteller' => self::EXPECT_ALLOWED,
-            ]),
             self::forRoles('characters.place', 'PUT', 'characters/{npc}/place', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_403,

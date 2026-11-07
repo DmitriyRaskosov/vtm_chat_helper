@@ -285,14 +285,14 @@ class DiaryWriterService
         int $toMessageId,
         ?int $excludeEntryId = null,
     ): string {
-        $npc->loadMissing(['clan', 'sect', 'traits', 'biography']);
+        $npc->loadMissing(['clan', 'sect', 'biography']);
 
         $name = WorldEntity::query()->whereKey($npc->id)->value('canonical_name') ?? 'NPC';
         $clan = $npc->clan !== null ? $npc->clan->name : '—';
         $sect = $npc->sect !== null ? $npc->sect->name : '—';
 
-        $traits = $npc->traits
-            ->map(fn ($t): string => "- {$t->label}: {$t->value}")
+        $traits = collect($npc->sheetTraits())
+            ->map(fn (array $trait): string => '- '.(string) ($trait['label'] ?? '').': '.(string) ($trait['value'] ?? ''))
             ->implode("\n");
         if ($traits === '') {
             $traits = '(нет)';

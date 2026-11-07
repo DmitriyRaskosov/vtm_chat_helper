@@ -16,7 +16,6 @@ use App\Models\CanonSect;
 use App\Models\Character;
 use App\Models\CharacterBiography;
 use App\Models\CharacterDiscipline;
-use App\Models\CharacterTrait;
 use App\Models\Chronicle;
 use App\Models\ChronicleMember;
 use App\Models\GameSession;
@@ -801,6 +800,15 @@ Malört — пьёт демонстративно. Часть её образа:
                 'status' => WorldEntityStatus::Active,
             ]);
 
+            $traits = [];
+            foreach ($def['traits'] as $trait) {
+                $traits[] = [
+                    'name' => $trait[0],
+                    'label' => $trait[1],
+                    'value' => $trait[2],
+                ];
+            }
+
             $character = Character::query()->create([
                 'id' => $entity->id,
                 'chronicle_id' => $chronicle->id,
@@ -810,22 +818,15 @@ Malört — пьёт демонстративно. Часть её образа:
                 'demeanor' => $def['demeanor'],
                 'concept' => $def['concept'],
                 'generation' => $def['generation'],
-                'description' => $def['description'] ?? null,
                 'is_active' => true,
+                'sheet_data' => [
+                    'description' => $def['description'] ?? null,
+                    'traits' => $traits,
+                ],
             ]);
 
             $character->sect_id = $sects[$def['sect_slug']] ?? null;
             $character->save();
-
-            foreach ($def['traits'] as $i => $trait) {
-                CharacterTrait::query()->create([
-                    'character_id' => $character->id,
-                    'key' => $trait[0],
-                    'label' => $trait[1],
-                    'value' => $trait[2],
-                    'sort_order' => array_key_exists(3, $trait) ? $trait[3] : $i * 10,
-                ]);
-            }
 
             foreach ($def['disciplines'] ?? [] as [$slug, $level]) {
                 $disciplineId = $disciplines[$slug] ?? null;

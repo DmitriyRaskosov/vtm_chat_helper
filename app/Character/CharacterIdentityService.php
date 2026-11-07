@@ -29,7 +29,7 @@ class CharacterIdentityService
 
         $typed = [];
 
-        foreach (['nature', 'demeanor', 'concept', 'description', 'inventory'] as $field) {
+        foreach (['nature', 'demeanor', 'concept'] as $field) {
             if (! array_key_exists($field, $fields)) {
                 continue;
             }
@@ -37,6 +37,8 @@ class CharacterIdentityService
             $value = $fields[$field];
             $typed[$field] = is_string($value) && trim($value) !== '' ? trim($value) : null;
         }
+
+        $this->assignSheetText($character, $fields);
 
         if (array_key_exists('generation', $fields)) {
             $generation = $fields['generation'];
@@ -55,9 +57,34 @@ class CharacterIdentityService
 
         if ($typed !== []) {
             $this->applyTyped($character, $typed);
+        } elseif ($character->isDirty('sheet_data')) {
+            $character->save();
         }
 
         return $character->refresh();
+    }
+
+    /**
+     * @param  array<string, mixed>  $fields
+     */
+    private function assignSheetText(Character $character, array $fields): void
+    {
+        $sheet = is_array($character->sheet_data) ? $character->sheet_data : [];
+        $changed = false;
+
+        foreach (['description', 'inventory'] as $field) {
+            if (! array_key_exists($field, $fields)) {
+                continue;
+            }
+
+            $value = $fields[$field];
+            $sheet[$field] = is_string($value) && trim($value) !== '' ? trim($value) : null;
+            $changed = true;
+        }
+
+        if ($changed) {
+            $character->sheet_data = CharacterStatsService::normalizeSheetData($sheet);
+        }
     }
 
     private function rename(Character $character, string $name): void

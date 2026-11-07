@@ -1,6 +1,6 @@
 # Spec: Вырезание рудиментов старого листа и перенос зависимостей (SDD №3 в серии, №13 основной общий)
 
-**Status:** Draft
+**Status:** Completed
 **Date:** 2026-11-07
 
 ## 1. Контекст и Цель
@@ -16,3 +16,10 @@
 
 ## 3. Out of Scope
 *   Изменение логики вычисления статов (это уже готово).
+
+## Post-Implementation Notes
+- Данные черт, описания и инвентаря перенесены в `sheet_data`. Таблица `character_traits` и колонки `description`, `inventory` удалены миграцией `2026_11_07_000001`.
+- Отдельных `CharacterTraitController` и `CharacterTraitResource` не было: удалён метод `updateTraits` и маршрут `PUT /characters/{character}/traits`.
+- `NpcIdentityProvider`, `PersonalityProvider` и `SceneProvider` читают черты из `sheet_data.traits`. Дневник тоже.
+- С листа убраны старые секции. В ответе листа больше нет верхнеуровневых `description`, `inventory` и `traits`; значения живут в `sheet_data`. Список персонажей по-прежнему отдаёт `description`.
+- Сохранение сетки не затирает черты, описание и инвентарь, если этих ключей нет в запросе. Игроку `sheet_data.inventory` в листе не отдаётся.

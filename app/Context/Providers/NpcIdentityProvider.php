@@ -93,21 +93,27 @@ class NpcIdentityProvider implements ContextProvider
             return 'Neonate';
         }
 
-        $character->loadMissing('traits');
-
         foreach (['title', 'status'] as $key) {
-            $trait = $character->traits->firstWhere('key', $key);
-            if ($trait === null) {
-                continue;
-            }
-
-            $value = trim((string) $trait->value);
+            $value = $this->traitValue($character, $key);
             if ($value !== '') {
                 return $value;
             }
         }
 
         return 'Neonate';
+    }
+
+    private function traitValue(Character $character, string $name): string
+    {
+        foreach ($character->sheetTraits() as $trait) {
+            if (($trait['name'] ?? null) !== $name) {
+                continue;
+            }
+
+            return trim((string) ($trait['value'] ?? ''));
+        }
+
+        return '';
     }
 
     private function canonName(mixed $name): string

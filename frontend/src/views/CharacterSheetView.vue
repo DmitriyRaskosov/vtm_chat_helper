@@ -10,71 +10,18 @@
             <RouterLink :to="diaryLink" class="link">Дневник</RouterLink>
         </div>
 
-        <section class="card sheet-grid-spoiler">
-            <details>
-                <summary>Чарлист (сетка)</summary>
-                <CharacterSheetGrid
-                    :character-id="characterId"
-                    :stats="sheet.stats"
-                    :schema="sheet.sheet_schema"
-                    :sheet="sheet"
-                    :sheet-data="sheet.sheet_data"
-                    :available-disciplines="sheet.available_disciplines"
-                    :clans="clans"
-                    @saved="onStatsSaved"
-                />
-            </details>
+        <section class="card">
+            <CharacterSheetGrid
+                :character-id="characterId"
+                :stats="sheet.stats"
+                :schema="sheet.sheet_schema"
+                :sheet="sheet"
+                :sheet-data="sheet.sheet_data"
+                :available-disciplines="sheet.available_disciplines"
+                :clans="clans"
+                @saved="onStatsSaved"
+            />
         </section>
-
-        <SheetImageSection :character-id="characterId" :can-upload="isStoryteller" />
-
-        <SheetHeaderSection
-            :identity="identity"
-            :role-details="roleDetails"
-            :sheet="sheet"
-            :flash="flash.identity"
-            :role-flash="flash.role"
-            :is-storyteller="isStoryteller"
-            @save="saveIdentity"
-            @save-role="saveRoleDetails"
-        />
-
-        <SheetAdvantagesSection
-            v-model:new-discipline-id="newDisciplineId"
-            :discipline-rows="disciplineRows"
-            :unused-disciplines="unusedDisciplines"
-            @set-discipline="setDiscipline"
-            @add-discipline="addDiscipline"
-            @remove-discipline="removeDiscipline"
-        />
-
-        <SheetBiographySection
-            :sheet="sheet"
-            :biography="biography"
-            :flash="flash.biography"
-            @save="saveBiography"
-        />
-
-        <SheetTraitsSection
-            :traits="traits"
-            :presets="traitPresets"
-            :flash="flash.traits"
-            @save="saveTraits"
-            @add-preset="addTraitPreset"
-            @add-custom="addCustomTrait"
-            @remove="removeTrait"
-        />
-
-        <SheetPlaceSection
-            :sheet="sheet"
-            :place="place"
-            :sects="sects"
-            :clans="clans"
-            :is-storyteller="isStoryteller"
-            :missing-place-option="missingPlaceOption"
-            :flash="flash.place"
-            @save="savePlace"
-        />
         </div>
         <p v-else-if="error" class="error">{{ error }}</p>
         <p v-else class="muted">Загрузка…</p>
@@ -84,12 +31,6 @@
 
 <script setup>
 import AppNav from '../components/layout/AppNav.vue';
-import SheetAdvantagesSection from '../components/sheet/SheetAdvantagesSection.vue';
-import SheetBiographySection from '../components/sheet/SheetBiographySection.vue';
-import SheetHeaderSection from '../components/sheet/SheetHeaderSection.vue';
-import SheetImageSection from '../components/sheet/SheetImageSection.vue';
-import SheetPlaceSection from '../components/sheet/SheetPlaceSection.vue';
-import SheetTraitsSection from '../components/sheet/SheetTraitsSection.vue';
 import CharacterSheetGrid from '../components/sheet/CharacterSheetGrid.vue';
 import { computed, onMounted, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
@@ -104,31 +45,7 @@ const {
     sheet,
     error,
     isStoryteller,
-    identity,
-    roleDetails,
-    biography,
-    place,
-    newDisciplineId,
-    traits,
-    traitPresets,
-    flash,
-    sects,
     clans,
-    disciplineRows,
-    unusedDisciplines,
-    formatSigned,
-    missingPlaceOption,
-    saveIdentity,
-    saveRoleDetails,
-    saveBiography,
-    saveTraits,
-    addTraitPreset,
-    addCustomTrait,
-    removeTrait,
-    savePlace,
-    setDiscipline,
-    addDiscipline,
-    removeDiscipline,
 } = useCharacterSheet(characterId);
 
 function onStatsSaved(payload) {

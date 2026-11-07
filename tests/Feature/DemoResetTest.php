@@ -84,9 +84,10 @@ class DemoResetTest extends TestCase
     {
         $this->assertSame(0, $this->exitCode('demo:reset'));
 
-        $abrahamSpeech = $this->demoCharacter('Абрахам Леру')->traits()->where('key', 'speech_style')->value('value');
-        $this->assertIsString($abrahamSpeech);
-        $this->assertStringContainsString('экземплярами', $abrahamSpeech);
+        $abrahamSpeech = collect($this->demoCharacter('Абрахам Леру')->sheetTraits())
+            ->first(fn (array $trait): bool => ($trait['name'] ?? '') === 'speech_style');
+        $this->assertIsArray($abrahamSpeech);
+        $this->assertStringContainsString('экземплярами', (string) $abrahamSpeech['value']);
 
         $vorobei = $this->demoCharacter('Воробей');
         $this->assertSame('sabbat', $vorobei->sect->slug);
@@ -95,7 +96,7 @@ class DemoResetTest extends TestCase
 
         $ilse = $this->demoCharacter('Ильзе Фогель');
         $this->assertSame(11, $ilse->generation);
-        $this->assertSame('моль комнатная', $ilse->description);
+        $this->assertSame('моль комнатная', $ilse->sheet_data['description'] ?? null);
 
         $this->assertNull($this->demoCharacter('Порижана')->biography->summary);
         $this->assertNull(WorldEntity::query()->where('canonical_name', 'Рин')->first());

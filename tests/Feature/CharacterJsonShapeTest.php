@@ -109,12 +109,9 @@ class CharacterJsonShapeTest extends TestCase
                 'nature',
                 'demeanor',
                 'concept',
-                'description',
-                'inventory',
                 'is_active',
                 'disciplines',
                 'biography',
-                'traits',
                 'state',
                 'stats',
                 'sheet_schema',
@@ -141,12 +138,9 @@ class CharacterJsonShapeTest extends TestCase
                 'nature',
                 'demeanor',
                 'concept',
-                'description',
-                'inventory',
                 'is_active',
                 'disciplines',
                 'biography',
-                'traits',
                 'state',
                 'stats',
                 'sheet_schema',
@@ -170,7 +164,6 @@ class CharacterJsonShapeTest extends TestCase
         $this->assertIsString($character['canonical_name']);
         $this->assertIsBool($character['is_active']);
         $this->assertIsArray($character['disciplines']);
-        $this->assertIsArray($character['traits']);
     }
 
     public function test_post_characters_response_wraps_character_sheet(): void
@@ -188,7 +181,6 @@ class CharacterJsonShapeTest extends TestCase
                 'canonical_name',
                 'character_type',
                 'disciplines',
-                'traits',
             ],
         ]);
     }

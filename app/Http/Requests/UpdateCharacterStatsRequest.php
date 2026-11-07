@@ -22,6 +22,12 @@ class UpdateCharacterStatsRequest extends FormRequest
             'sheet_data.merits_flaws.*.points' => ['required', 'integer'],
             'sheet_data.merits_flaws.*.type' => ['required', 'string', 'in:merit,flaw'],
             'sheet_data.weakness' => ['sometimes', 'nullable', 'string'],
+            'sheet_data.traits' => ['sometimes', 'array'],
+            'sheet_data.traits.*.name' => ['required', 'string', 'max:64'],
+            'sheet_data.traits.*.label' => ['required', 'string', 'max:120'],
+            'sheet_data.traits.*.value' => ['present', 'string'],
+            'sheet_data.description' => ['sometimes', 'nullable', 'string'],
+            'sheet_data.inventory' => ['sometimes', 'nullable', 'string'],
         ];
     }
 

@@ -118,6 +118,52 @@ class CharacterStatsApiTest extends TestCase
             ->assertJsonPath('sheet_data.weakness', 'Вспыльчивость');
     }
 
+    public function test_sheet_data_traits_description_and_inventory_survive_stats_patch(): void
+    {
+        $npcId = $this->createNpc();
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->patchJson("/api/characters/{$npcId}/stats", [
+                'stats' => [
+                    'blood_pool' => [1, 0, 0, 0, 0, 0, 0, 0, 0, 0],
+                ],
+                'sheet_data' => [
+                    'backgrounds' => [
+                        ['name' => 'Союзники', 'value' => 1],
+                    ],
+                    'traits' => [
+                        ['name' => 'title', 'label' => 'Титул', 'value' => 'Князь'],
+                    ],
+                    'description' => 'Старое описание',
+                    'inventory' => 'Кинжал',
+                ],
+            ])
+            ->assertOk()
+            ->assertJsonPath('sheet_data.traits.0.name', 'title')
+            ->assertJsonPath('sheet_data.traits.0.label', 'Титул')
+            ->assertJsonPath('sheet_data.traits.0.value', 'Князь')
+            ->assertJsonPath('sheet_data.description', 'Старое описание')
+            ->assertJsonPath('sheet_data.inventory', 'Кинжал')
+            ->assertJsonPath('sheet_data.backgrounds.0.name', 'Союзники');
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->patchJson("/api/characters/{$npcId}/stats", [
+                'stats' => [
+                    'blood_pool' => [1, 1, 0, 0, 0, 0, 0, 0, 0, 0],
+                ],
+                'sheet_data' => [
+                    'backgrounds' => [
+                        ['name' => 'Ресурсы', 'value' => 3],
+                    ],
+                ],
+            ])
+            ->assertOk()
+            ->assertJsonPath('sheet_data.backgrounds.0.name', 'Ресурсы')
+            ->assertJsonPath('sheet_data.traits.0.value', 'Князь')
+            ->assertJsonPath('sheet_data.description', 'Старое описание')
+            ->assertJsonPath('sheet_data.inventory', 'Кинжал');
+    }
+
     public function test_invalid_sheet_data_is_rejected(): void
     {
         $npcId = $this->createNpc();

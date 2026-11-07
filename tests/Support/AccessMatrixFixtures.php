@@ -424,10 +424,6 @@ final class AccessMatrixFixtures
             ];
         }
 
-        if ($method === 'PUT' && str_contains($uriTemplate, '/traits')) {
-            return ['traits' => []];
-        }
-
         if ($method === 'PUT' && str_contains($uriTemplate, '/place')) {
             return ['location_entity_id' => null];
         }

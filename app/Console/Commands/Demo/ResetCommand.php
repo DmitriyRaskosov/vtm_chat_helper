@@ -31,7 +31,6 @@ class ResetCommand extends Command
             DB::statement('TRUNCATE scene_contexts RESTART IDENTITY CASCADE');
             DB::statement('TRUNCATE scenes RESTART IDENTITY CASCADE');
             DB::statement('TRUNCATE game_sessions RESTART IDENTITY CASCADE');
-            DB::statement('TRUNCATE character_traits RESTART IDENTITY CASCADE');
             DB::statement('TRUNCATE character_biographies RESTART IDENTITY CASCADE');
             DB::statement('TRUNCATE character_disciplines RESTART IDENTITY CASCADE');
             DB::statement('TRUNCATE character_powers RESTART IDENTITY CASCADE');

@@ -133,7 +133,14 @@ final class CharacterStatsService
 
     /**
      * @param  array<string, mixed>  $data
-     * @return array{backgrounds: list<array{name: string, value: int|string}>, merits_flaws: list<array{name: string, points: int, type: string}>, weakness: string}
+     * @return array{
+     *     backgrounds: list<array{name: string, value: int|string}>,
+     *     merits_flaws: list<array{name: string, points: int, type: string}>,
+     *     weakness: string,
+     *     traits?: list<array{name: string, label: string, value: string}>,
+     *     description?: string|null,
+     *     inventory?: string|null
+     * }
      */
     public static function normalizeSheetData(array $data): array
     {
@@ -163,11 +170,54 @@ final class CharacterStatsService
             ];
         }
 
-        return [
+        $normalized = [
             'backgrounds' => $backgrounds,
             'merits_flaws' => $merits,
             'weakness' => (string) ($data['weakness'] ?? ''),
         ];
+
+        if (array_key_exists('traits', $data) && is_array($data['traits'])) {
+            $traits = [];
+            foreach ($data['traits'] as $row) {
+                if (! is_array($row)) {
+                    continue;
+                }
+
+                $traits[] = [
+                    'name' => (string) ($row['name'] ?? ''),
+                    'label' => (string) ($row['label'] ?? ''),
+                    'value' => (string) ($row['value'] ?? ''),
+                ];
+            }
+            $normalized['traits'] = $traits;
+        }
+
+        if (array_key_exists('description', $data)) {
+            $normalized['description'] = self::nullableSheetString($data['description']);
+        }
+
+        if (array_key_exists('inventory', $data)) {
+            $normalized['inventory'] = self::nullableSheetString($data['inventory']);
+        }
+
+        return $normalized;
+    }
+
+    private static function nullableSheetString(mixed $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if (is_string($value)) {
+            return $value;
+        }
+
+        if (is_int($value) || is_float($value)) {
+            return (string) $value;
+        }
+
+        return null;
     }
 
     /**
@@ -177,6 +227,12 @@ final class CharacterStatsService
     {
         $character->stats = self::normalize($stats);
         if ($sheetData !== null) {
+            $existing = is_array($character->sheet_data) ? $character->sheet_data : [];
+            foreach (['traits', 'description', 'inventory'] as $key) {
+                if (! array_key_exists($key, $sheetData) && array_key_exists($key, $existing)) {
+                    $sheetData[$key] = $existing[$key];
+                }
+            }
             $character->sheet_data = self::normalizeSheetData($sheetData);
         }
         $character->save();

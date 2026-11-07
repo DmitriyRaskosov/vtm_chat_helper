@@ -42,9 +42,7 @@ class SceneParticipantResource extends JsonResource
             'character_id' => (int) $participant->character_id,
             'character_name' => is_string($name) && $name !== '' ? $name : null,
             'character_type' => $characterType instanceof CharacterType ? $characterType->value : $characterType,
-            'character_description' => is_string($character?->description) && trim($character->description) !== ''
-                ? trim($character->description)
-                : null,
+            'character_description' => $this->characterDescription($character),
             'user_id' => $character?->user_id === null ? null : (int) $character->user_id,
             'role' => $participant->role->value,
             'visible' => (bool) $participant->visible,
@@ -52,5 +50,16 @@ class SceneParticipantResource extends JsonResource
             'entered_at' => $participant->entered_at?->toISOString(),
             'left_at' => $participant->left_at?->toISOString(),
         ];
+    }
+
+    private function characterDescription(?Character $character): ?string
+    {
+        $sheet = $character?->sheet_data;
+        $description = is_array($sheet) ? ($sheet['description'] ?? null) : null;
+        if (! is_string($description) || trim($description) === '') {
+            return null;
+        }
+
+        return trim($description);
     }
 }

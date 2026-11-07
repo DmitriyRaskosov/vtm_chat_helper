@@ -26,8 +26,8 @@ class PersonalityProvider implements ContextProvider
             return ContextSection::omitted($this->key(), ['reason' => 'no_character']);
         }
 
-        $character->loadMissing('traits');
-        if ($character->traits->isEmpty()) {
+        $traits = $character->sheetTraits();
+        if ($traits === []) {
             return ContextSection::omitted($this->key(), [
                 'character_id' => (int) $character->id,
                 'reason' => 'empty',
@@ -35,17 +35,18 @@ class PersonalityProvider implements ContextProvider
         }
 
         $lines = [];
-        foreach ($character->traits as $trait) {
-            if ($trait->key === 'title') {
+        foreach ($traits as $trait) {
+            if (($trait['name'] ?? '') === 'title') {
                 continue;
             }
 
-            $value = trim($trait->value);
-            if ($value === '') {
+            $raw = (string) ($trait['value'] ?? '');
+            if (trim($raw) === '') {
                 continue;
             }
 
-            $lines[] = "[behavior] {$trait->label}: {$trait->value}";
+            $label = trim((string) ($trait['label'] ?? ''));
+            $lines[] = "[behavior] {$label}: {$raw}";
         }
 
         if ($lines === []) {
@@ -59,7 +60,10 @@ class PersonalityProvider implements ContextProvider
 
         return ContextSection::fromContent($this->key(), $content, $this->estimator, [
             'character_id' => (int) $character->id,
-            'trait_keys' => $character->traits->pluck('key')->values()->all(),
+            'trait_keys' => array_map(
+                fn (array $trait): string => (string) ($trait['name'] ?? ''),
+                $traits,
+            ),
         ], $truncated ? 'lines_tail' : null);
     }
 }

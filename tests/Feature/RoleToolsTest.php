@@ -129,8 +129,8 @@ class RoleToolsTest extends TestCase
                 'inventory' => 'Кинжал',
             ])
             ->assertOk()
-            ->assertJsonPath('character.description', 'Высокий вампир')
-            ->assertJsonPath('character.inventory', 'Кинжал');
+            ->assertJsonPath('character.sheet_data.description', 'Высокий вампир')
+            ->assertJsonPath('character.sheet_data.inventory', 'Кинжал');
 
         $pc = $this->actingAs($this->storyteller, 'sanctum')
             ->postJson('/api/chronicles/'.$this->chronicle->id.'/characters', [
@@ -150,7 +150,7 @@ class RoleToolsTest extends TestCase
         $this->actingAs($this->player, 'sanctum')
             ->getJson("/api/characters/{$pcId}")
             ->assertOk()
-            ->assertJsonPath('character.description', 'Заметное лицо')
-            ->assertJsonMissingPath('character.inventory');
+            ->assertJsonPath('character.sheet_data.description', 'Заметное лицо')
+            ->assertJsonMissingPath('character.sheet_data.inventory');
     }
 }

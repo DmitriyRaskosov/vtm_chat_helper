@@ -35,8 +35,6 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'is_active',
     'sheet_image_path',
     'avatar_path',
-    'description',
-    'inventory',
     'stats',
     'sheet_data',
 ])]
@@ -141,11 +139,23 @@ class Character extends Model
     }
 
     /**
-     * @return HasMany<CharacterTrait, $this>
+     * @return list<array<string, mixed>>
      */
-    public function traits(): HasMany
+    public function sheetTraits(): array
     {
-        return $this->hasMany(CharacterTrait::class)->orderBy('sort_order');
+        $sheet = $this->sheet_data;
+        if (! is_array($sheet) || ! is_array($sheet['traits'] ?? null)) {
+            return [];
+        }
+
+        $traits = [];
+        foreach ($sheet['traits'] as $trait) {
+            if (is_array($trait)) {
+                $traits[] = $trait;
+            }
+        }
+
+        return $traits;
     }
 
     /**

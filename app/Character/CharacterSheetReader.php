@@ -17,13 +17,15 @@ class CharacterSheetReader
             'entity',
             'sect',
             'biography',
-            'traits',
             'user',
             'clan',
             'sire.entity',
         ]);
 
         $biography = $character->biography;
+        $sheet = is_array($character->sheet_data)
+            ? CharacterStatsService::normalizeSheetData($character->sheet_data)
+            : CharacterStatsService::emptySheetData();
 
         return [
             'id' => (int) $character->id,
@@ -52,8 +54,6 @@ class CharacterSheetReader
             'nature' => $character->nature,
             'demeanor' => $character->demeanor,
             'concept' => $character->concept,
-            'description' => $character->description,
-            'inventory' => $character->inventory,
             'is_active' => (bool) $character->is_active,
             'disciplines' => $character->disciplines->map(fn ($row): array => [
                 'discipline_id' => (int) $row->discipline_id,
@@ -72,19 +72,10 @@ class CharacterSheetReader
                 'current_version' => (int) $biography->current_version,
                 'status' => $biography->status->value,
             ],
-            'traits' => $character->traits->map(fn ($trait): array => [
-                'id' => (int) $trait->id,
-                'key' => $trait->key,
-                'label' => $trait->label,
-                'value' => $trait->value,
-                'sort_order' => (int) $trait->sort_order,
-            ])->values()->all(),
             'state' => CharacterStatsService::legacyState(is_array($character->stats) ? $character->stats : null),
             'stats' => $character->stats,
             'sheet_schema' => config('sheet_schema'),
-            'sheet_data' => is_array($character->sheet_data)
-                ? CharacterStatsService::normalizeSheetData($character->sheet_data)
-                : CharacterStatsService::emptySheetData(),
+            'sheet_data' => $sheet,
             'available_disciplines' => $this->availableDisciplines($character),
         ];
     }

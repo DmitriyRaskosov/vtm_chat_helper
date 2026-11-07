@@ -9,7 +9,6 @@ use App\Context\TokenEstimator;
 use App\Models\CanonClan;
 use App\Models\CanonSect;
 use App\Models\Character;
-use App\Models\CharacterTrait;
 use App\Models\SceneContext;
 use App\Models\SceneParticipant;
 use App\Models\WorldEntity;
@@ -61,7 +60,7 @@ class SceneProvider implements ContextProvider
         if ($characterIds !== []) {
             $characters = Character::query()
                 ->whereIn('id', $characterIds)
-                ->get(['id', 'clan_id', 'sect_id']);
+                ->get(['id', 'clan_id', 'sect_id', 'sheet_data']);
 
             $clanIds = $characters->pluck('clan_id')->filter()->unique()->values()->all();
             $sectIds = $characters->pluck('sect_id')->filter()->unique()->values()->all();
@@ -75,13 +74,16 @@ class SceneProvider implements ContextProvider
 
             $charactersById = $characters->keyBy('id');
 
-            foreach (CharacterTrait::query()
-                ->whereIn('character_id', $characterIds)
-                ->where('key', 'title')
-                ->get(['character_id', 'value']) as $trait) {
-                $title = trim((string) $trait->value);
-                if ($title !== '') {
-                    $titlesByCharacterId[(int) $trait->character_id] = $title;
+            foreach ($characters as $character) {
+                foreach ($character->sheetTraits() as $trait) {
+                    if (($trait['name'] ?? '') !== 'title') {
+                        continue;
+                    }
+
+                    $title = trim((string) ($trait['value'] ?? ''));
+                    if ($title !== '') {
+                        $titlesByCharacterId[(int) $character->id] = $title;
+                    }
                 }
             }
         }
