@@ -4,20 +4,24 @@
 **Date:** 2026-11-07
 
 ## 1. Контекст и Цель
-После внедрения нового интерактивного чарлиста (SDD №10-12), на странице `CharacterSheetView.vue` остался старый UI: формы Шапки, Биографии, Инвентаря и Черты (Traits). Эти блоки дублируют функционал и тянут данные из старых таблиц/колонок (`character_traits`, `description`, `inventory`).
-Цель — полностью удалить старый UI, перенести все данные в единое JSON-поле `sheet_data`, удалить старые колонки/таблицы из БД и переписать все Context Providers (для Copilot), чтобы они читали новые данные.
+Под новым листом на странице персонажа остались старые формы шапки, биографии, инвентаря и черт. Они дублируют лист, а помощник всё ещё может читать старые сведения. Старые формы нужно убрать, а черты, описание и инвентарь хранить и отдавать помощнику из того же листа.
 
-## 2. Acceptance Criteria (EARS)
-*   **AC-1 (Миграция данных):** THE system SHALL перенести данные из таблицы `character_traits` в `sheet_data->traits`, а также поля `description` и `inventory` в `sheet_data` (в виде структурированных массивов/строк).
-*   **AC-2 (Удаление БД):** THE system SHALL удалить таблицу `character_traits` и колонки `description`, `inventory` из таблицы `characters`.
-*   **AC-3 (Context Providers):** THE system SHALL обновить `NpcIdentityProvider`, `PersonalityProvider` и `SceneProvider`, чтобы они читали черты, описание и инвентарь из нового JSON `sheet_data`.
-*   **AC-4 (Frontend):** THE system SHALL удалить старые компоненты из `CharacterSheetView.vue` (`SheetHeaderSection`, `SheetBiographySection`, `SheetTraitsSection`, `SheetPlaceSection` и т.д.).
-*   **AC-5 (API):** THE system SHALL удалить `CharacterTraitController` и `CharacterTraitService` (управление чертами теперь внутри `PATCH /stats`).
+## 2. User Stories
+*   **US-1:** Как игрок, я хочу один лист без старых форм под ним, чтобы не править одни и те же сведения в двух местах.
+*   **US-2:** Как рассказчик, я хочу, чтобы помощник по-прежнему знал черты, описание и инвентарь персонажа после переноса.
+*   **US-3:** Как рассказчик, я хочу сохранять черты вместе с остальным листом, чтобы не было отдельной формы только для черт.
 
-## 3. Out of Scope
-*   Изменение логики вычисления статов (это уже готово).
+## 3. Acceptance Criteria (EARS)
+*   **AC-1:** WHEN данные старого листа переносятся, THE system SHALL сохранить черты, описание и инвентарь в данных нового листа.
+*   **AC-2:** WHEN перенос завершён, THE system SHALL больше не хранить черты, описание и инвентарь отдельным устаревшим способом.
+*   **AC-3:** WHEN помощник собирает личность персонажа, его характер или состав сцены, THE system SHALL брать черты, описание и инвентарь из листа.
+*   **AC-4:** WHEN открыт лист персонажа, THE system SHALL не показывать под новым листом старые блоки шапки, биографии, черт и места.
+*   **AC-5:** WHEN лист сохраняется, THE system SHALL сохранять черты вместе с остальными данными листа. Отдельного сохранения только черт больше нет.
 
-## Post-Implementation Notes
+## 4. Out of Scope
+*   Изменение того, как считаются статы. Это уже сделано.
+
+## 5. Post-Implementation Notes
 - Данные черт, описания и инвентаря перенесены в `sheet_data`. Таблица `character_traits` и колонки `description`, `inventory` удалены миграцией `2026_11_07_000001`.
 - Отдельных `CharacterTraitController` и `CharacterTraitResource` не было: удалён метод `updateTraits` и маршрут `PUT /characters/{character}/traits`.
 - `NpcIdentityProvider`, `PersonalityProvider` и `SceneProvider` читают черты из `sheet_data.traits`. Дневник тоже.

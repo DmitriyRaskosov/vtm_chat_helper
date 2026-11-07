@@ -27,3 +27,4 @@
 
 ## 3. Риски
 *   Не забыть удалить старые интерфейсы и тесты, иначе проект будет тащить мертвый код.
+*   **Вынесено из критериев приёмки:** удалить `CharacterState`, `CharacterStateController`, `CharacterStateService` и `PUT /api/characters/{character}/state`. Панель `ChatCharacterDrawer.vue` читает `characters.stats` и пишет `PATCH /stats`. Пул макроса — сумма точек `1` и `2` по ключам из списка статов макроса; отсутствующий ключ даёт 0. Таблица `character_states` в реализации оставлена.

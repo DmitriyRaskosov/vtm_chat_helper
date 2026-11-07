@@ -1,6 +1,6 @@
 # Tasks: Вкладки черновиков Copilot
 
-Status: Completed
+**Status:** Completed
 
 ## Этап 1: Frontend (UI)
 - [x] В `StorytellerCopilotPanel.vue` заменить список `.draft-list` на ряд кнопок-вкладок.
@@ -14,5 +14,5 @@ Status: Completed
 
 ## Этап 3: Финализация (DoD)
 - [x] Сборка фронта в Docker (`docker compose exec frontend npm run build`) — повторно после правок правой панели.
-- [ ] Ручная проверка в браузере (если агент может). В этой сессии браузерных инструментов нет.
+- [ ] Ручная проверка в браузере: генерация, переключение вкладок, правка, отправка.
 - [x] Обновить статусы в spec.md и tasks.md на Completed.

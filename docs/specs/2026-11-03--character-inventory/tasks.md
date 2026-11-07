@@ -1,6 +1,6 @@
 # Tasks: Инвентарь персонажа
 
-Status: Completed
+**Status:** Completed
 
 ## Этап 1: Backend (База и Модели)
 - [x] Создать миграцию `create_character_items_table`.

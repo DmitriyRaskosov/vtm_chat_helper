@@ -36,3 +36,4 @@
 ## 3. Риски и ограничения
 *   **Старые записи:** У существующих записей `in_game_date` будет `null`. В `DiaryRenderer` нужно обрабатывать это (если null — выводить `[diary — earlier]` или использовать `created_at`).
 *   **Смена сцены:** При переключении на старую сцену время хроники не должно откатываться назад. Изменения времени в старой сцене меняют только её `started_at_in_game`, но не глобальное время хроники (если сцена не активна).
+*   **Вынесено из критериев приёмки:** колонки `chronicles.current_in_game_date`, `scenes.started_at_in_game`, `character_diary_entries.in_game_date`. Выбор времени — `input[type=datetime-local]`. Относительная подпись — Carbon `diffForHumans` в `DiaryProvider` / `DiaryRenderer`. `InventoryProvider` дату не показывает.

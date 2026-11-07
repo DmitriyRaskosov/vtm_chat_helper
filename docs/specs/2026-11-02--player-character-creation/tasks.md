@@ -1,6 +1,6 @@
 # Tasks: Создание персонажа игроком
 
-Status: Completed
+**Status:** Completed
 
 ## Этап 1: Backend (Права и Валидация)
 - [x] Обновить `CharacterPolicy::create`: разрешить игроку создавать персонажа, если тип `player`.

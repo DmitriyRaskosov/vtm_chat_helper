@@ -1,5 +1,7 @@
 # Tasks: {Название фичи}
 
+**Status:** Draft
+
 ## Stage 1: Backend (Foundation)
 - [ ] Создать миграцию `add_avatar_path_to_characters_table`.
 - [ ] Обновить модель `Character`.

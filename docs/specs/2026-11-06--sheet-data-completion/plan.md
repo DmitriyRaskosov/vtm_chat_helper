@@ -27,3 +27,4 @@
 
 ## 3. Риски
 *   Перенос старых данных (кровь, здоровье) в новые табы.
+*   **Вынесено из критериев приёмки:** колонка `characters.sheet_data` (`jsonb`): `backgrounds`, `merits_flaws`, `weakness`. Дисциплины канона с флагом клановой (`canon_clan_disciplines` / `is_clan_discipline`) через `CharacterSheetReader`. Группы точек живут в `characters.stats`. UI — `CharacterSheetGrid.vue`, пять вкладок. Сохранение текстовых полей вместе со статами в `PATCH /api/characters/{character}/stats`.

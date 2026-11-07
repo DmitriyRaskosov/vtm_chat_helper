@@ -16,13 +16,18 @@
 * `Scene/` — управление сценами, библиотека локаций, генератор событий (EventGenerator).
 
 ## 🏗 Процесс разработки (Spec-Driven Development)
-Мы работаем по методологии SDD. Никакой код не пишется без утвержденной спецификации.
-Для написания кода используй скилл `.cursor/skills/ub-mode/SKILL.md`, но не забывай про PROJECT OVERRIDE (SDD) в его начале.
+Никакой код не пишется без утверждённой спеки и плана. Шаги 1 и 2 ниже
+гейтятся явным утверждением человека — переходи к следующему шагу только
+после «ок».
+
+Для написания кода используй скилл `.cursor/skills/ub-mode/SKILL.md`, но не
+забывай про PROJECT OVERRIDE (SDD) в его начале. **При конфликте `SKILL.md`
+и этого файла побеждает `AGENTS.md`.**
 
 1. **Specify:** Человек дает задачу. Ты (ИИ) создаешь папку `docs/specs/YYYY-MM-DD--feature-name/` и заполняешь `spec.md` по шаблону из `docs/specs/_template/spec.md`. Ждешь утверждения.
-2. **Plan:** После утверждения спеки, заполняешь `plan.md` (архитектура, затрагиваемые файлы, риски). Ждешь утверждения.
+2. **Plan:** После утверждения спеки заполняешь `plan.md` по шаблону `docs/specs/_template/plan.md` (архитектура, затрагиваемые файлы, верификация AC, риски, открытые вопросы). Ждёшь утверждения.
 3. **Tasks:** Разбиваешь план на шаги в `tasks.md` (с чек-листом).
-4. **Implement:** Последовательно выполняешь задачи из `tasks.md`, отмечая их галочками.
+4. **Implement:** Последовательно выполняешь задачи из `tasks.md`, отмечая их галочками. Одна задача — один дифф.
 5. **Validate:** Сверяешь результат с Acceptance Criteria из `spec.md`.
 
 ## 🚫 Правила разработки (Strict Rules)
@@ -48,19 +53,21 @@
 * Плавающие окна инструментов реализуются через `position: fixed` и composable `useDraggable`.
 
 ### 5. Тестирование
-* Тесты: `docker compose exec laravel.test php artisan test` и `docker compose exec laravel.test ./vendor/bin/pint` должны быть зелёными перед завершением работы.
-* Каждая новая фича должна сопровождаться Feature-тестом (минимум один на успешный сценарий и один на ошибку), проверяющим Acceptance Criteria.
+* Каждая новая фича сопровождается Feature-тестом (минимум один на успешный сценарий и один на ошибку), проверяющим Acceptance Criteria.
+* Тесты (`php artisan test`) и Pint (`./vendor/bin/pint`) должны быть зелёными перед завершением задачи. Команды запуска — в разделе 🛠 «Полезные команды».
 
-### 6. Дополнительные правила заполнения файлов.
-* Формат spec.md:
-  - Шапка: `# Spec: Название`, `**Status:**`, `**Date:**`.
-  - Разделы: 1. Контекст и Цель, 2. User Stories, 3. Acceptance Criteria, 4. Out of Scope.
-  - Раздел Post-Implementation Notes — только для статуса Completed, в самом конце файла. Не обязательно №5, но обязательно в конце.
-  - Technical Context в spec.md не пишем, все технические детали только в plan.md.
-* `tasks.md` содержит только чек-лист и статус. Заметок и итогов там нет.
+### 6. Правила заполнения SDD-файлов.
+* **Структура `spec.md`** — в шаблоне `docs/specs/_template/spec.md`. При необходимости изменить структуру — обновляй шаблон, а не этот раздел.
+* **Technical Context в `spec.md` не пишем** — все технические детали только в `plan.md`.
+* **`Post-Implementation Notes`** — только при статусе `Completed`, в самом конце `spec.md`.
+* **`tasks.md`** содержит только чек-лист и статус. Заметок и итогов там нет.
 
 ## 🛠 Полезные команды
-* Тесты: `docker compose exec laravel.test php artisan test`
-* Форматирование: `docker compose exec laravel.test ./vendor/bin/pint`
-* Статический анализ: `docker compose exec laravel.test ./vendor/bin/phpstan analyse`
-* Сборка фронта: `cd frontend && npm run build`
+Backend-команды выполняются в контейнере `laravel.test` через
+`docker compose exec laravel.test ...`:
+* **Тесты:** `php artisan test`
+* **Форматирование:** `./vendor/bin/pint`
+* **Статический анализ:** `./vendor/bin/phpstan analyse`
+
+Сборка фронта (на хосте):
+* **Сборка:** `cd frontend && npm run build`

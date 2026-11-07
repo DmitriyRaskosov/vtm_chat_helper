@@ -21,3 +21,4 @@
 ## 3. Риски
 *   Самое опасное — потеря данных при миграции. Нужно сделать дамп базы перед запуском.
 *   Если `NpcIdentityProvider` сломается, Copilot потеряет личность NPC (промпты будут пустыми). Тесты `ContextAssemblerTest` обязательны.
+*   **Вынесено из критериев приёмки:** `character_traits` → `sheet_data.traits`; колонки `characters.description` и `characters.inventory` → `sheet_data`, затем эти колонки и таблица удаляются. `NpcIdentityProvider`, `PersonalityProvider`, `SceneProvider` (и дневник) читают черты из JSON. С `CharacterSheetView.vue` убираются старые секции. Отдельного `CharacterTraitController` не было: удаляются `updateTraits` и `PUT /characters/{character}/traits`. Игроку `sheet_data.inventory` в листе не отдаётся.

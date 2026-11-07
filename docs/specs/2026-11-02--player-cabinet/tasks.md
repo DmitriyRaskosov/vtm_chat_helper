@@ -1,6 +1,6 @@
 # Tasks: Личный кабинет игрока (Player Cabinet)
 
-Status: Completed
+**Status:** Completed
 
 ## Этап 1: Backend (База и Сервисы)
 - [x] Создать миграцию `add_avatar_path_to_characters_table` (добавить `avatar_path` string nullable).

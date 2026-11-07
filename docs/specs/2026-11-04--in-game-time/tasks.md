@@ -1,6 +1,6 @@
 # Tasks: Игровое время (In-Game Time)
 
-Status: Completed
+**Status:** Completed
 
 ## Этап 1: Backend (БД и Модели)
 - [x] Создать миграции для добавления `current_in_game_date` (chronicles), `started_at_in_game` (scenes), `in_game_date` (diary_entries).

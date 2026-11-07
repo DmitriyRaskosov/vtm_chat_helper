@@ -38,3 +38,8 @@
 ## 3. Тестирование
 *   `CharacterStatsTest`: проверка API (сохранение/чтение JSON).
 *   Ручная проверка UI (режим редактирования, логика кликов).
+
+## 4. Риски
+*   Перенос крови, Воли и здоровья из `character_states` в `characters.stats` может потерять значения.
+*   Пока живы `CharacterState` и `PUT /state`, лист и старая форма могут разойтись.
+*   **Вынесено из критериев приёмки:** `config/sheet_schema.php`; колонка `characters.stats` (`jsonb`, cast `array`); `PATCH /api/characters/{character}/stats`; право `CharacterPolicy::update`. Точки в реализации — массив `0/1/2` (пусто / постоянно / временно), не отдельный флаг. Кровь и Воля — до 10 точек, остальные статы — до 5. Удаление `CharacterState` в эту часть не входит.

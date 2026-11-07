@@ -1,6 +1,6 @@
 # Tasks: Макросы кубиков (Dice Macros)
 
-Status: Completed
+**Status:** Completed
 
 ## Этап 1: Backend (TDD - База и API)
 - [x] Создать миграцию `create_dice_macros_table`.

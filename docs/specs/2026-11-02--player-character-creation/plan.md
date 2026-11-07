@@ -44,3 +44,4 @@
 ## 3. Риски и ограничения
 *   **Создание WorldEntity:** Создание персонажа — это сложный процесс (создается запись в `world_entities` и в `characters`). Нужно убедиться, что `WorldEntityService` корректно работает при вызове из `CharacterCreationService` игроком.
 *   **Контекст хроники:** Игрок должен создавать персонажа строго в той хронике, в которой он сейчас находится (через `CurrentChronicle`).
+*   **Вынесено из критериев приёмки:** `canonical_name` обязателен, уникален в хронике, max 100; `clan_id` обязателен (`exists:canon_clans`); `concept` необязателен. Игрок не передаёт `user_id` и `character_type`: сервис ставит `character_type = player` и `user_id` текущего пользователя. Повторный активный PC — `PlayerCharacterLimitException` (422).

@@ -1,6 +1,6 @@
 # Tasks: Поддержка нескольких персонажей (Multi-character)
 
-Status: Completed
+**Status:** Completed
 
 ## Этап 1: Backend (База и Модели)
 - [x] Создать миграцию `remove_unique_active_player_index_from_characters`.

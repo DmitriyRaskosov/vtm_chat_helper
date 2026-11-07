@@ -1,13 +1,12 @@
 # Tasks: Интерактивный Чарлист (Часть 1)
 
-Status: Completed
+**Status:** Completed
 
 ## Этап 1: Backend (База и Миграция данных)
 - [x] Создать `config/sheet_schema.php` с базовыми группами (attributes, abilities, state).
 - [x] Создать миграцию `add_stats_to_characters_table` (jsonb).
 - [x] Создать миграцию для переноса данных из `character_states` в `characters.stats` (или artisan-команду).
 - [x] Добавить cast `stats => array` в модель `Character`.
-- [ ] Удалить/отключить старую модель `CharacterState` (если она больше не используется).
 
 ## Этап 2: Backend (TDD - API)
 - [x] Написать падающий тест `CharacterStatsApiTest`: игрок может обновить `stats` (JSON), storyteller может обновить, чужой игрок — нет.

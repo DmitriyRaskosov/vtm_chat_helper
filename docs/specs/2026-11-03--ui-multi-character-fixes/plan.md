@@ -24,3 +24,8 @@
 ### 3.2 Личный Кабинет (`ProfileView.vue`)
 *   Добавить кнопку «Выйти на сцену» (если PC нет на сцене) и «Покинуть сцену» (если PC на сцене). 
 *   Кнопки вызывают `POST /api/scenes/{scene}/participants` и `PATCH /api/scenes/{scene}/participants/{character}`.
+
+## 4. Риски
+*   Список участников, собранный через `.find` по `user_id`, снова скроет второго персонажа.
+*   Аватар по постоянному пути `avatars/{id}.jpg` останется в кэше браузера без метки версии.
+*   **Вынесено из критериев приёмки:** cache-bust аватара (`?v=` и `updated_at`), чарлист через новый blob-url. Селектор чата фильтрует `is_current`. Доработка списка: `CharacterSheetController::index` отдаёт всех PC игрока, видимость — `CharacterVisibility::visibleIdsForPlayerCharacters()`.
