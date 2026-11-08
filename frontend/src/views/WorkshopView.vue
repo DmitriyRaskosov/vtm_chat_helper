@@ -28,6 +28,14 @@
                 >
                     Дневники
                 </button>
+                <button
+                    type="button"
+                    class="tab"
+                    :class="{ active: tab === 'prompts' }"
+                    @click="tab = 'prompts'"
+                >
+                    Промпты
+                </button>
             </div>
 
             <section v-if="tab === 'characters'" class="workshop-panel">
@@ -180,7 +188,8 @@
                 </form>
             </section>
 
-            <DiaryManagement v-else :npcs="npcCharacters" />
+            <DiaryManagement v-else-if="tab === 'diaries'" :npcs="npcCharacters" />
+            <PromptEditor v-else-if="tab === 'prompts'" />
         </div>
     </div>
 </template>
@@ -190,6 +199,7 @@ import { computed, onMounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRoute } from 'vue-router';
 import DiaryManagement from '../components/workshop/DiaryManagement.vue';
 import LocationTree from '../components/workshop/LocationTree.vue';
+import PromptEditor from '../components/workshop/PromptEditor.vue';
 import AppNav from '../components/layout/AppNav.vue';
 import { useCharacterList } from '../composables/useCharacterList';
 import { useChronicleLocationImage } from '../composables/useChronicleLocationImage';

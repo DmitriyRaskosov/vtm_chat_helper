@@ -287,6 +287,24 @@ class AccessMatrixTest extends TestCase
                 'player_foreign' => self::EXPECT_ALLOWED,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
+            self::forRoles('workshop.prompts.index', 'GET', 'workshop/prompts', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('workshop.prompts.update', 'PUT', 'workshop/prompts/{key}', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('workshop.prompts.destroy', 'DELETE', 'workshop/prompts/{key}', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
             self::forRoles('dice-macros.index', 'GET', 'dice-macros', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_ALLOWED,

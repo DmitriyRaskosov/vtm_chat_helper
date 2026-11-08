@@ -2,6 +2,7 @@
 
 namespace App\Prompt;
 
+use App\Models\PromptOverride;
 use Illuminate\Support\Facades\File;
 use RuntimeException;
 
@@ -24,6 +25,11 @@ class PromptRepository
     {
         if (isset($this->cache[$key])) {
             return $this->cache[$key];
+        }
+
+        $override = PromptOverride::query()->find($key);
+        if ($override !== null) {
+            return $this->cache[$key] = $override->content;
         }
 
         $relativePath = preg_replace('/\./', '/', $key, 1).'.md';

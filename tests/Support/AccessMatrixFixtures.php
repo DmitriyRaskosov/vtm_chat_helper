@@ -266,6 +266,7 @@ final class AccessMatrixFixtures
             '{chronicleLocation}' => (string) $this->chronicleLocation->id,
             '{item}' => (string) $this->playerItem->id,
             '{macro}' => (string) $this->diceMacro->id,
+            '{key}' => 'copilot.topics.system',
         ];
 
         if (str_contains($uriTemplate, '{locationNode}')) {
@@ -382,6 +383,10 @@ final class AccessMatrixFixtures
 
         if ($method === 'PATCH' && str_starts_with($uriTemplate, 'messages/{')) {
             return ['body' => 'Обновлённый текст сообщения.'];
+        }
+
+        if ($method === 'PUT' && $uriTemplate === 'workshop/prompts/{key}') {
+            return ['content' => 'Текст промпта для матрицы доступа.'];
         }
 
         if ($method === 'PUT' && $uriTemplate === 'user-notes') {

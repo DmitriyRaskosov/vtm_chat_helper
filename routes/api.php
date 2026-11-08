@@ -21,12 +21,14 @@ use App\Http\Controllers\EventGeneratorController;
 use App\Http\Controllers\GameSessionController;
 use App\Http\Controllers\LocationNodeController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PromptController;
 use App\Http\Controllers\SceneContextController;
 use App\Http\Controllers\SceneContextImageController;
 use App\Http\Controllers\SceneController;
 use App\Http\Controllers\SceneParticipantController;
 use App\Http\Controllers\SceneTypingController;
 use App\Http\Controllers\UserNoteController;
+use App\Models\PromptOverride;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [RegisterController::class, 'store']);
@@ -90,6 +92,15 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::patch('/messages/{message}/ooc', [ChatController::class, 'toggleOoc']);
     Route::get('/user-notes', [UserNoteController::class, 'index']);
     Route::put('/user-notes', [UserNoteController::class, 'update']);
+    Route::get('/workshop/prompts', [PromptController::class, 'index'])
+        ->can('viewAny', PromptOverride::class);
+    Route::put('/workshop/prompts/{key}', [PromptController::class, 'update'])
+        ->where('key', '.+')
+        ->can('update', PromptOverride::class);
+    Route::delete('/workshop/prompts/{key}', [PromptController::class, 'destroy'])
+        ->where('key', '.+')
+        ->can('delete', PromptOverride::class);
+
     Route::get('/dice-macros', [DiceMacroController::class, 'index']);
     Route::post('/dice-macros', [DiceMacroController::class, 'store']);
     Route::patch('/dice-macros/{macro}', [DiceMacroController::class, 'update'])
