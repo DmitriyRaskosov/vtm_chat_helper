@@ -11,10 +11,13 @@ use App\Models\Chronicle;
 use App\Models\ChronicleMember;
 use App\Models\Scene;
 use App\Models\User;
+use App\Policies\Concerns\GuardsChronicleMembership;
 use Illuminate\Auth\Access\Response;
 
 class CharacterPolicy
 {
+    use GuardsChronicleMembership;
+
     public function __construct(
         private CurrentChronicle $currentChronicle,
     ) {}
@@ -32,6 +35,7 @@ class CharacterPolicy
     public function create(User $user, ?CharacterType $characterType = null): Response|bool
     {
         $chronicle = $this->currentChronicle->get();
+        $this->ensureActiveMemberOfChronicle($user, $chronicle);
 
         if ($user->isStorytellerIn($chronicle)) {
             return true;
@@ -80,6 +84,8 @@ class CharacterPolicy
 
     public function manageItems(User $user, Character $character): bool
     {
+        $this->ensureActiveMember($user, (int) $character->chronicle_id);
+
         if ($this->userIsStorytellerInChronicleId($user, (int) $character->chronicle_id)) {
             return true;
         }
@@ -90,6 +96,8 @@ class CharacterPolicy
 
     public function speakAs(User $user, Character $character): bool
     {
+        $this->ensureActiveMember($user, (int) $character->chronicle_id);
+
         if (! $character->is_active) {
             return false;
         }
@@ -103,6 +111,7 @@ class CharacterPolicy
     public function viewInScene(User $user, Character $character, Scene $scene): bool
     {
         $scene->loadMissing('gameSession');
+        $this->ensureActiveMember($user, (int) $scene->gameSession->chronicle_id);
 
         if ((int) $character->chronicle_id !== (int) $scene->gameSession->chronicle_id) {
             throw new CharacterNotInChronicleException;
@@ -123,6 +132,8 @@ class CharacterPolicy
 
     private function denyUnlessManagesSheet(User $user, Character $character): Response|bool
     {
+        $this->ensureActiveMember($user, (int) $character->chronicle_id);
+
         if ($this->userIsStorytellerInChronicleId($user, (int) $character->chronicle_id) || $character->isPlayableBy($user)) {
             return true;
         }
@@ -132,6 +143,8 @@ class CharacterPolicy
 
     private function denyUnlessStorytellerInCharacterChronicle(User $user, Character $character): Response|bool
     {
+        $this->ensureActiveMember($user, (int) $character->chronicle_id);
+
         return $this->userIsStorytellerInChronicleId($user, (int) $character->chronicle_id)
             ? true
             : Response::deny('Только рассказчик.');
@@ -148,21 +161,21 @@ class CharacterPolicy
 
     private function userIsPlayerIn(User $user, Chronicle $chronicle): bool
     {
-        return ChronicleMember::query()
+        return once(fn () => ChronicleMember::query()
             ->where('chronicle_id', $chronicle->id)
             ->where('user_id', $user->id)
             ->whereNull('left_at')
             ->where('role', ChronicleRole::Player)
-            ->exists();
+            ->exists());
     }
 
     private function userIsStorytellerInChronicleId(User $user, int $chronicleId): bool
     {
-        return ChronicleMember::query()
+        return once(fn () => ChronicleMember::query()
             ->where('chronicle_id', $chronicleId)
             ->where('user_id', $user->id)
             ->whereNull('left_at')
             ->where('role', ChronicleRole::Storyteller)
-            ->exists();
+            ->exists());
     }
 }

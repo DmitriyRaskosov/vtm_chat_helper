@@ -57,6 +57,7 @@ class SceneAuthorizationTest extends TestCase
         $sceneId = (int) $scene->json('scene.id');
 
         $player = User::factory()->create();
+        $this->joinChronicle($player, $this->chronicle, ChronicleRole::Player);
 
         $this->actingAs($player, 'sanctum')
             ->patchJson("/api/scenes/{$sceneId}/close")
@@ -76,6 +77,7 @@ class SceneAuthorizationTest extends TestCase
     {
         $npcId = $this->createNpc();
         $player = User::factory()->create();
+        $this->joinChronicle($player, $this->chronicle, ChronicleRole::Player);
 
         $this->actingAs($player, 'sanctum')
             ->getJson("/api/characters/{$npcId}/diary")

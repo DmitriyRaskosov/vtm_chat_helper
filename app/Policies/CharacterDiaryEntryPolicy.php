@@ -6,10 +6,13 @@ use App\Chronicle\CurrentChronicle;
 use App\Models\CharacterDiaryEntry;
 use App\Models\Chronicle;
 use App\Models\User;
+use App\Policies\Concerns\GuardsChronicleMembership;
 use Illuminate\Auth\Access\Response;
 
 class CharacterDiaryEntryPolicy
 {
+    use GuardsChronicleMembership;
+
     public function __construct(
         private CurrentChronicle $currentChronicle,
     ) {}
@@ -41,6 +44,8 @@ class CharacterDiaryEntryPolicy
 
     private function denyUnlessStoryteller(User $user, Chronicle $chronicle): Response|bool
     {
+        $this->ensureActiveMemberOfChronicle($user, $chronicle);
+
         return $user->isStorytellerIn($chronicle)
             ? true
             : Response::deny('Только рассказчик.');

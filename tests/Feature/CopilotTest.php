@@ -89,6 +89,7 @@ class CopilotTest extends TestCase
     public function test_copilot_requires_storyteller(): void
     {
         $player = User::factory()->create();
+        $this->joinChronicle($player, $this->chronicle, ChronicleRole::Player);
 
         $response = $this->actingAs($player, 'sanctum')
             ->postJson($this->chronicleApi($this->chronicle, 'copilot/drafts'), [

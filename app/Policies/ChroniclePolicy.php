@@ -3,19 +3,19 @@
 namespace App\Policies;
 
 use App\Models\Chronicle;
-use App\Models\ChronicleMember;
 use App\Models\User;
+use App\Policies\Concerns\GuardsChronicleMembership;
 use Illuminate\Auth\Access\Response;
 
 class ChroniclePolicy
 {
-    public function view(User $user, Chronicle $chronicle): Response|bool
+    use GuardsChronicleMembership;
+
+    public function view(User $user, Chronicle $chronicle): bool
     {
-        return ChronicleMember::query()
-            ->where('chronicle_id', $chronicle->id)
-            ->where('user_id', $user->id)
-            ->whereNull('left_at')
-            ->exists();
+        $this->ensureActiveMemberOfChronicle($user, $chronicle);
+
+        return true;
     }
 
     public function create(User $user): bool
@@ -25,6 +25,8 @@ class ChroniclePolicy
 
     public function update(User $user, Chronicle $chronicle): Response|bool
     {
+        $this->ensureActiveMemberOfChronicle($user, $chronicle);
+
         return $user->isStorytellerIn($chronicle)
             ? true
             : Response::deny('Только рассказчик.');
@@ -32,11 +34,15 @@ class ChroniclePolicy
 
     public function viewInvitations(User $user, Chronicle $chronicle): bool
     {
+        $this->ensureActiveMemberOfChronicle($user, $chronicle);
+
         return $user->isStorytellerIn($chronicle);
     }
 
     public function createInvitation(User $user, Chronicle $chronicle): Response|bool
     {
+        $this->ensureActiveMemberOfChronicle($user, $chronicle);
+
         return $user->isStorytellerIn($chronicle)
             ? true
             : Response::deny('Только рассказчик.');
@@ -44,6 +50,8 @@ class ChroniclePolicy
 
     public function revokeInvitation(User $user, Chronicle $chronicle): Response|bool
     {
+        $this->ensureActiveMemberOfChronicle($user, $chronicle);
+
         return $user->isStorytellerIn($chronicle)
             ? true
             : Response::deny('Только рассказчик.');

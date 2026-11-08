@@ -69,12 +69,12 @@ class User extends Authenticatable
 
     public function isStorytellerIn(Chronicle $chronicle): bool
     {
-        return ChronicleMember::query()
+        return once(fn () => ChronicleMember::query()
             ->where('chronicle_id', $chronicle->id)
             ->where('user_id', $this->id)
             ->whereNull('left_at')
             ->where('role', ChronicleRole::Storyteller)
-            ->exists();
+            ->exists());
     }
 
     /**

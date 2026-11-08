@@ -43,8 +43,7 @@ class CharacterAuthorizationTest extends TestCase
 
         $this->actingAs($player, 'sanctum')
             ->getJson("/api/characters/{$npcId}")
-            ->assertStatus(403)
-            ->assertJsonPath('message', 'You cannot access this character sheet.');
+            ->assertNotFound();
     }
 
     public function test_joined_player_create_keeps_own_player_character(): void

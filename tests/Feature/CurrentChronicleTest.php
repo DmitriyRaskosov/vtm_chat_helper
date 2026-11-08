@@ -3,13 +3,15 @@
 namespace Tests\Feature;
 
 use App\Chronicle\CurrentChronicle;
-use App\Chronicle\Exceptions\NoChronicleException;
+use App\Chronicle\Exceptions\ChronicleNotFoundException;
 use App\Enums\ChronicleRole;
 use App\Models\Chronicle;
 use App\Models\GameSession;
 use App\Models\User;
 use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
+use Illuminate\Http\Request;
+use Illuminate\Routing\Route;
 use Tests\Support\JoinsChronicle;
 use Tests\TestCase;
 
@@ -29,14 +31,25 @@ class CurrentChronicleTest extends TestCase
         $this->storyteller = User::factory()->create();
     }
 
-    public function test_current_chronicle_without_route_parameter_returns_409(): void
+    public function test_current_chronicle_without_route_parameter_returns_404(): void
     {
-        try {
-            $this->app->make(CurrentChronicle::class)->get();
-            $this->fail('Expected NoChronicleException.');
-        } catch (NoChronicleException $e) {
-            $this->assertSame('There is no available chronicle.', $e->getMessage());
-        }
+        $this->expectException(ChronicleNotFoundException::class);
+
+        $this->app->make(CurrentChronicle::class)->get();
+    }
+
+    public function test_current_chronicle_numeric_route_parameter_without_model_returns_404(): void
+    {
+        $request = Request::create('/api/chronicles/99999/characters', 'GET');
+        $route = new Route(['GET'], '/api/chronicles/{chronicle}/characters', fn () => null);
+        $route->bind($request);
+        $route->setParameter('chronicle', '99999');
+        $request->setRouteResolver(fn () => $route);
+        $this->app->instance('request', $request);
+
+        $this->expectException(ChronicleNotFoundException::class);
+
+        $this->app->make(CurrentChronicle::class)->get();
     }
 
     public function test_active_game_session_without_active_session_returns_null(): void

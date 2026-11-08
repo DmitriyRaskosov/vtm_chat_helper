@@ -37,6 +37,7 @@ class MessageAuthorizationTest extends TestCase
             'created_by' => $this->storyteller->id,
         ]);
         $this->joinChronicle($this->storyteller, $chronicle, ChronicleRole::Storyteller);
+        $this->joinChronicle($this->player, $chronicle, ChronicleRole::Player);
         $gameSession = GameSession::factory()->active()->create([
             'chronicle_id' => $chronicle->id,
             'created_by' => $this->storyteller->id,

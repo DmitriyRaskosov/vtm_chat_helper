@@ -66,7 +66,7 @@ class CharacterTest extends TestCase
                 'clan_id' => $clan->id,
             ]);
 
-        $response->assertStatus(403);
+        $response->assertNotFound();
         $this->assertDatabaseMissing('world_entities', [
             'canonical_name' => 'Запрещённый',
         ]);

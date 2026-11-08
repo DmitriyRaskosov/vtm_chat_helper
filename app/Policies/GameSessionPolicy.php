@@ -5,18 +5,20 @@ namespace App\Policies;
 use App\Chronicle\CurrentChronicle;
 use App\Models\Character;
 use App\Models\Chronicle;
-use App\Models\ChronicleMember;
 use App\Models\GameSession;
 use App\Models\User;
+use App\Policies\Concerns\GuardsChronicleMembership;
 use Illuminate\Auth\Access\Response;
 
 class GameSessionPolicy
 {
+    use GuardsChronicleMembership;
+
     public function __construct(
         private CurrentChronicle $currentChronicle,
     ) {}
 
-    public function view(User $user, GameSession $gameSession): Response|bool
+    public function view(User $user, GameSession $gameSession): bool
     {
         return $this->denyUnlessActiveMember($user, $this->chronicleForGameSession($gameSession));
     }
@@ -39,10 +41,7 @@ class GameSessionPolicy
     public function releaseTurn(User $user, GameSession $gameSession): Response|bool
     {
         $chronicle = $this->chronicleForGameSession($gameSession);
-        $memberCheck = $this->denyUnlessActiveMember($user, $chronicle);
-        if ($memberCheck !== true) {
-            return $memberCheck;
-        }
+        $this->ensureActiveMemberOfChronicle($user, $chronicle);
 
         $activeId = $gameSession->active_character_id;
         if ($activeId === null) {
@@ -57,19 +56,17 @@ class GameSessionPolicy
         return true;
     }
 
-    private function denyUnlessActiveMember(User $user, Chronicle $chronicle): Response|bool
+    private function denyUnlessActiveMember(User $user, Chronicle $chronicle): bool
     {
-        return ChronicleMember::query()
-            ->where('chronicle_id', $chronicle->id)
-            ->where('user_id', $user->id)
-            ->whereNull('left_at')
-            ->exists()
-            ? true
-            : Response::deny('Вы не участник этой хроники.');
+        $this->ensureActiveMemberOfChronicle($user, $chronicle);
+
+        return true;
     }
 
     private function denyUnlessStoryteller(User $user, Chronicle $chronicle): Response|bool
     {
+        $this->ensureActiveMemberOfChronicle($user, $chronicle);
+
         return $user->isStorytellerIn($chronicle)
             ? true
             : Response::deny('Только рассказчик.');

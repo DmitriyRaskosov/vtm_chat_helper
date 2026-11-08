@@ -3,17 +3,21 @@
 namespace App\Policies;
 
 use App\Models\Chronicle;
-use App\Models\ChronicleMember;
 use App\Models\GameSession;
 use App\Models\Scene;
 use App\Models\User;
+use App\Policies\Concerns\GuardsChronicleMembership;
 use Illuminate\Auth\Access\Response;
 
 class ScenePolicy
 {
-    public function view(User $user, Scene $scene): Response|bool
+    use GuardsChronicleMembership;
+
+    public function view(User $user, Scene $scene): bool
     {
-        return $this->denyUnlessActiveMember($user, $this->chronicleForScene($scene));
+        $this->ensureActiveMemberOfChronicle($user, $this->chronicleForScene($scene));
+
+        return true;
     }
 
     public function create(User $user, GameSession $gameSession): Response|bool
@@ -36,24 +40,18 @@ class ScenePolicy
         return $this->denyUnlessStoryteller($user, $this->chronicleForScene($scene));
     }
 
-    public function addParticipant(User $user, Scene $scene): Response|bool
+    public function addParticipant(User $user, Scene $scene): bool
     {
-        $chronicle = $this->chronicleForScene($scene);
-        if ($user->isStorytellerIn($chronicle)) {
-            return true;
-        }
+        $this->ensureActiveMemberOfChronicle($user, $this->chronicleForScene($scene));
 
-        return $this->denyUnlessActiveMember($user, $chronicle);
+        return true;
     }
 
-    public function removeParticipant(User $user, Scene $scene): Response|bool
+    public function removeParticipant(User $user, Scene $scene): bool
     {
-        $chronicle = $this->chronicleForScene($scene);
-        if ($user->isStorytellerIn($chronicle)) {
-            return true;
-        }
+        $this->ensureActiveMemberOfChronicle($user, $this->chronicleForScene($scene));
 
-        return $this->denyUnlessActiveMember($user, $chronicle);
+        return true;
     }
 
     public function createCopilotDraft(User $user, Scene $scene): Response|bool
@@ -61,19 +59,10 @@ class ScenePolicy
         return $this->denyUnlessStoryteller($user, $this->chronicleForScene($scene));
     }
 
-    private function denyUnlessActiveMember(User $user, Chronicle $chronicle): Response|bool
-    {
-        return ChronicleMember::query()
-            ->where('chronicle_id', $chronicle->id)
-            ->where('user_id', $user->id)
-            ->whereNull('left_at')
-            ->exists()
-            ? true
-            : Response::deny('Вы не участник этой хроники.');
-    }
-
     private function denyUnlessStoryteller(User $user, Chronicle $chronicle): Response|bool
     {
+        $this->ensureActiveMemberOfChronicle($user, $chronicle);
+
         return $user->isStorytellerIn($chronicle)
             ? true
             : Response::deny('Только рассказчик.');

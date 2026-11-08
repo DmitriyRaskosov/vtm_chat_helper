@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Chronicle\Exceptions\ChronicleAccessDeniedException;
 use App\Enums\ChronicleRole;
 use App\Models\Chronicle;
 use App\Models\User;
@@ -18,7 +19,12 @@ class ChroniclePolicyTest extends TestCase
         $chronicle = Chronicle::factory()->create();
         $outsider = User::factory()->create();
 
-        $this->assertFalse(Gate::forUser($outsider)->allows('view', $chronicle));
+        try {
+            Gate::forUser($outsider)->authorize('view', $chronicle);
+            $this->fail('Expected ChronicleAccessDeniedException.');
+        } catch (ChronicleAccessDeniedException) {
+            $this->assertTrue(true);
+        }
     }
 
     public function test_player_cannot_create_invitation(): void
@@ -69,7 +75,6 @@ class ChroniclePolicyTest extends TestCase
                 'expires_at' => now()->addDay()->toIso8601String(),
                 'max_uses' => 1,
             ])
-            ->assertStatus(403)
-            ->assertJsonPath('message', 'Только рассказчик.');
+            ->assertNotFound();
     }
 }

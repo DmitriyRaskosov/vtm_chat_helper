@@ -13,6 +13,8 @@ class AccessMatrixTest extends TestCase
 
     private const EXPECT_403 = '403';
 
+    private const EXPECT_404 = '404';
+
     private const EXPECT_DENY = 'deny';
 
     private const EXPECT_ALLOWED = 'allowed';
@@ -669,6 +671,16 @@ class AccessMatrixTest extends TestCase
             return;
         }
 
+        if ($expected === self::EXPECT_404) {
+            if ($status !== 404) {
+                $this->markTestSkipped("bug: {$caseId} expected 404, got {$status}");
+            }
+
+            $request->assertNotFound();
+
+            return;
+        }
+
         if ($expected === self::EXPECT_DENY) {
             if (! in_array($status, [403, 404], true)) {
                 $this->markTestSkipped("bug: {$caseId} expected 403 or 404, got {$status}");
@@ -679,11 +691,11 @@ class AccessMatrixTest extends TestCase
             return;
         }
 
-        if (in_array($status, [401, 403], true)) {
+        if (in_array($status, [401, 403, 404], true)) {
             $this->markTestSkipped("bug: {$caseId} expected allowed, got {$status}");
         }
 
-        $this->assertNotContains($status, [401, 403], $caseId);
+        $this->assertNotContains($status, [401, 403, 404], $caseId);
     }
 
     /**
@@ -722,7 +734,7 @@ class AccessMatrixTest extends TestCase
             return self::EXPECT_ALLOWED;
         }
 
-        return self::EXPECT_DENY;
+        return self::EXPECT_404;
     }
 
     /**

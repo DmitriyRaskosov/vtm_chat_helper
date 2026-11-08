@@ -2,7 +2,7 @@
 
 namespace App\Chronicle;
 
-use App\Chronicle\Exceptions\NoChronicleException;
+use App\Chronicle\Exceptions\ChronicleNotFoundException;
 use App\Models\Chronicle;
 use Illuminate\Support\Facades\Route;
 
@@ -21,13 +21,6 @@ final class CurrentChronicle
             return $chronicle;
         }
 
-        if (is_string($chronicle) && ctype_digit($chronicle)) {
-            $resolved = Chronicle::query()->find((int) $chronicle);
-            if ($resolved !== null) {
-                return $resolved;
-            }
-        }
-
-        throw new NoChronicleException;
+        throw new ChronicleNotFoundException;
     }
 }
