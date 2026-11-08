@@ -48,6 +48,9 @@ return [
             'personality' => [
                 'max' => 1800,
             ],
+            'lore_rag' => [
+                'max' => 700,
+            ],
             'world_lore' => [
                 'max' => 700,
             ],

@@ -23,5 +23,6 @@ class DatabaseSeeder extends Seeder
         ]);
 
         Artisan::call('canon:import-lore');
+        Artisan::call('canon:chunk-lore');
     }
 }

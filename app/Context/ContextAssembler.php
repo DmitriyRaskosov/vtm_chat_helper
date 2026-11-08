@@ -9,6 +9,7 @@ use App\Context\Providers\ContextProvider;
 use App\Context\Providers\DiaryProvider;
 use App\Context\Providers\DirectRelationsProvider;
 use App\Context\Providers\InventoryProvider;
+use App\Context\Providers\LoreRagProvider;
 use App\Context\Providers\NpcIdentityProvider;
 use App\Context\Providers\PersonalityProvider;
 use App\Context\Providers\RecentMessagesProvider;
@@ -38,6 +39,7 @@ class ContextAssembler
         'scene',
         'character_state',
         'inventory',
+        'lore_rag',
         'world_lore',
         'storyteller_prompt',
         'recent_messages',
@@ -55,6 +57,7 @@ class ContextAssembler
         'direct_relations',
         'personality',
         'biography',
+        'lore_rag',
         'world_lore',
         'diary',
     ];
@@ -76,6 +79,7 @@ class ContextAssembler
         DirectRelationsProvider $relations,
         BiographyProvider $biography,
         PersonalityProvider $personality,
+        LoreRagProvider $loreRag,
         WorldLoreProvider $world,
         DiaryProvider $diary,
         ClosingInstructionProvider $closing,
@@ -91,6 +95,7 @@ class ContextAssembler
             $relations->key() => $relations,
             $biography->key() => $biography,
             $personality->key() => $personality,
+            $loreRag->key() => $loreRag,
             $world->key() => $world,
             $diary->key() => $diary,
             $closing->key() => $closing,
