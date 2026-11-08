@@ -161,21 +161,41 @@ class CharacterPolicy
 
     private function userIsPlayerIn(User $user, Chronicle $chronicle): bool
     {
-        return once(fn () => ChronicleMember::query()
+        $cacheKey = 'policy.player.'.$user->id.'.'.$chronicle->id;
+
+        if (app()->bound($cacheKey)) {
+            return (bool) app($cacheKey);
+        }
+
+        $isPlayer = ChronicleMember::query()
             ->where('chronicle_id', $chronicle->id)
             ->where('user_id', $user->id)
             ->whereNull('left_at')
             ->where('role', ChronicleRole::Player)
-            ->exists());
+            ->exists();
+
+        app()->instance($cacheKey, $isPlayer);
+
+        return $isPlayer;
     }
 
     private function userIsStorytellerInChronicleId(User $user, int $chronicleId): bool
     {
-        return once(fn () => ChronicleMember::query()
+        $cacheKey = 'policy.storyteller.'.$user->id.'.'.$chronicleId;
+
+        if (app()->bound($cacheKey)) {
+            return (bool) app($cacheKey);
+        }
+
+        $isStoryteller = ChronicleMember::query()
             ->where('chronicle_id', $chronicleId)
             ->where('user_id', $user->id)
             ->whereNull('left_at')
             ->where('role', ChronicleRole::Storyteller)
-            ->exists());
+            ->exists();
+
+        app()->instance($cacheKey, $isStoryteller);
+
+        return $isStoryteller;
     }
 }

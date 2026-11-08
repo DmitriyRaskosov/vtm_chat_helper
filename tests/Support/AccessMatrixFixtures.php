@@ -25,6 +25,7 @@ use Database\Seeders\CanonDisciplineSeeder;
 use Database\Seeders\CanonSectSeeder;
 use Illuminate\Foundation\Testing\TestCase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
 
 final class AccessMatrixFixtures
 {
@@ -41,6 +42,8 @@ final class AccessMatrixFixtures
     public Chronicle $otherChronicle;
 
     public ChronicleInvitation $invitation;
+
+    public string $invitationAcceptToken;
 
     public GameSession $gameSession;
 
@@ -81,6 +84,8 @@ final class AccessMatrixFixtures
         $test->seed(CanonSectSeeder::class);
         $test->seed(CanonClanSeeder::class);
         $test->seed(CanonDisciplineSeeder::class);
+
+        Storage::fake('public');
 
         $fixtures = new self;
 
@@ -124,9 +129,11 @@ final class AccessMatrixFixtures
             ->player()
             ->create();
 
+        $fixtures->invitationAcceptToken = 'access-matrix-invite-token';
         $fixtures->invitation = ChronicleInvitation::factory()->create([
             'chronicle_id' => $fixtures->chronicle->id,
             'created_by' => $fixtures->storyteller->id,
+            'token_hash' => hash('sha256', $fixtures->invitationAcceptToken),
         ]);
 
         $fixtures->gameSession = GameSession::factory()->active()->create([
@@ -211,7 +218,41 @@ final class AccessMatrixFixtures
             'stats' => [],
         ]);
 
+        $fixtures->seedMatrixImageFiles();
+
         return $fixtures;
+    }
+
+    private function seedMatrixImageFiles(): void
+    {
+        $png = base64_decode(
+            'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+            true,
+        );
+
+        $sceneImagePath = 'scenes/'.$this->scene->id.'/location.png';
+        Storage::disk('public')->put($sceneImagePath, $png);
+        $context = SceneContext::query()->firstOrCreate(
+            ['scene_id' => $this->scene->id],
+            [
+                'chronicle_id' => $this->chronicle->id,
+                'revision' => 0,
+            ],
+        );
+        $context->location_image_path = $sceneImagePath;
+        $context->save();
+
+        $locationImagePath = 'locations/'.$this->chronicleLocation->id.'/image.png';
+        Storage::disk('public')->put($locationImagePath, $png);
+        $this->chronicleLocation->image_path = $locationImagePath;
+        $this->chronicleLocation->save();
+
+        foreach ([$this->npc, $this->playerCharacter] as $character) {
+            $sheetPath = 'characters/'.$character->id.'/sheet.png';
+            Storage::disk('public')->put($sheetPath, $png);
+            $character->sheet_image_path = $sheetPath;
+            $character->save();
+        }
     }
 
     public function ensureLocationNode(): LocationNode
@@ -252,7 +293,7 @@ final class AccessMatrixFixtures
             '{scene}' => (string) $this->scene->id,
             '{chronicle}' => (string) $this->chronicle->id,
             '{invitation}' => (string) $this->invitation->id,
-            '{token}' => 'missing-token',
+            '{token}' => $this->invitationAcceptToken,
             '{gameSession}' => (string) $this->gameSession->id,
             '{npc}' => (string) $this->npc->id,
             '{playerCharacter}' => (string) $this->playerCharacter->id,

@@ -2,7 +2,9 @@
 
 namespace Tests\Feature;
 
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Testing\TestResponse;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\Support\AccessMatrixFixtures;
 use Tests\TestCase;
@@ -281,30 +283,35 @@ class AccessMatrixTest extends TestCase
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_ALLOWED,
                 'player_foreign' => self::EXPECT_ALLOWED,
+                'player_other_chronicle' => self::EXPECT_ALLOWED,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
             self::forRoles('user-notes.update', 'PUT', 'user-notes', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_ALLOWED,
                 'player_foreign' => self::EXPECT_ALLOWED,
+                'player_other_chronicle' => self::EXPECT_ALLOWED,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
             self::forRoles('workshop.prompts.index', 'GET', 'workshop/prompts', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_403,
                 'player_foreign' => self::EXPECT_403,
+                'player_other_chronicle' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
             self::forRoles('workshop.prompts.update', 'PUT', 'workshop/prompts/{key}', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_403,
                 'player_foreign' => self::EXPECT_403,
+                'player_other_chronicle' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
             self::forRoles('workshop.prompts.destroy', 'DELETE', 'workshop/prompts/{key}', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_403,
                 'player_foreign' => self::EXPECT_403,
+                'player_other_chronicle' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
             self::forRoles('dice-macros.index', 'GET', 'dice-macros', [
@@ -645,11 +652,9 @@ class AccessMatrixTest extends TestCase
         $uri = $this->fixtures->resolveUri($uriTemplate);
         $payload = $this->fixtures->payload($method, $uriTemplate, $role);
 
-        $request = $user === null
-            ? $this->json($method, $uri, $payload)
-            : $this->actingAs($user, 'sanctum')->json($method, $uri, $payload);
+        $request = $this->sendAccessMatrixRequest($user, $method, $uri, $payload, $uriTemplate);
 
-        $status = $request->status();
+        $status = $request->getStatusCode();
 
         if ($expected === self::EXPECT_401) {
             if ($status !== 401) {
@@ -696,6 +701,44 @@ class AccessMatrixTest extends TestCase
         }
 
         $this->assertNotContains($status, [401, 403, 404], $caseId);
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function sendAccessMatrixRequest(
+        ?User $user,
+        string $method,
+        string $uri,
+        array $payload,
+        string $uriTemplate,
+    ): TestResponse {
+        if ($method === 'GET' && self::returnsBinaryFile($uriTemplate)) {
+            $response = $user === null
+                ? $this->get($uri)
+                : $this->actingAs($user, 'sanctum')->get($uri);
+
+            return $this->ensureTestResponse($response);
+        }
+
+        return $user === null
+            ? $this->json($method, $uri, $payload)
+            : $this->actingAs($user, 'sanctum')->json($method, $uri, $payload);
+    }
+
+    private static function returnsBinaryFile(string $uriTemplate): bool
+    {
+        return str_ends_with($uriTemplate, '/image')
+            || str_ends_with($uriTemplate, '/sheet-image');
+    }
+
+    private function ensureTestResponse(mixed $response): TestResponse
+    {
+        if ($response instanceof TestResponse) {
+            return TestResponse::fromBaseResponse($response->baseResponse);
+        }
+
+        return TestResponse::fromBaseResponse($response);
     }
 
     /**

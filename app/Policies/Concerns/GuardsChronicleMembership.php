@@ -23,10 +23,20 @@ trait GuardsChronicleMembership
 
     private function userIsActiveMember(User $user, int $chronicleId): bool
     {
-        return once(fn () => ChronicleMember::query()
+        $cacheKey = 'policy.active_member.'.$user->id.'.'.$chronicleId;
+
+        if (app()->bound($cacheKey)) {
+            return (bool) app($cacheKey);
+        }
+
+        $isMember = ChronicleMember::query()
             ->where('chronicle_id', $chronicleId)
             ->where('user_id', $user->id)
             ->whereNull('left_at')
-            ->exists());
+            ->exists();
+
+        app()->instance($cacheKey, $isMember);
+
+        return $isMember;
     }
 }

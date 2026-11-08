@@ -69,12 +69,22 @@ class User extends Authenticatable
 
     public function isStorytellerIn(Chronicle $chronicle): bool
     {
-        return once(fn () => ChronicleMember::query()
+        $cacheKey = 'user.storyteller.'.$this->id.'.'.$chronicle->id;
+
+        if (app()->bound($cacheKey)) {
+            return (bool) app($cacheKey);
+        }
+
+        $isStoryteller = ChronicleMember::query()
             ->where('chronicle_id', $chronicle->id)
             ->where('user_id', $this->id)
             ->whereNull('left_at')
             ->where('role', ChronicleRole::Storyteller)
-            ->exists());
+            ->exists();
+
+        app()->instance($cacheKey, $isStoryteller);
+
+        return $isStoryteller;
     }
 
     /**
