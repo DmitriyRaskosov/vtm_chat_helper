@@ -19,6 +19,7 @@ trait CreatesDiaryEntries
         bool $isStale = false,
         ?string $embeddingSourceText = null,
         ?float $importance = null,
+        ?int $combatEncounterId = null,
     ): CharacterDiaryEntry {
         /** @var Character $npc */
         $npc = $this->npc;
@@ -39,6 +40,7 @@ trait CreatesDiaryEntries
             'character_id' => $npc->id,
             'chronicle_id' => $chronicle->id,
             'scene_id' => $sceneId ?? $scene->id,
+            'combat_encounter_id' => $combatEncounterId,
             'level' => $level,
             'from_message_id' => $fromMessageId,
             'to_message_id' => $toMessageId,

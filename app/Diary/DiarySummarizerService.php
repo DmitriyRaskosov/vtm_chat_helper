@@ -30,9 +30,12 @@ class DiarySummarizerService
         private DiaryEntryRepository $entries,
     ) {}
 
-    public function summarizeScene(Scene $scene): SummarizeSceneResult
-    {
-        $npcs = $this->resolveSceneNpcs($scene);
+    public function summarizeScene(
+        Scene $scene,
+        ?int $combatEncounterId = null,
+        ?int $characterId = null,
+    ): SummarizeSceneResult {
+        $npcs = $this->resolveSceneNpcs($scene, $characterId);
         if ($npcs->isEmpty()) {
             return new SummarizeSceneResult(0, 0, 0, []);
         }
@@ -43,7 +46,7 @@ class DiarySummarizerService
 
         foreach ($npcs as $npc) {
             try {
-                $result = $this->summarizeForNpc($npc, $scene);
+                $result = $this->summarizeForNpc($npc, $scene, $combatEncounterId);
 
                 if ($result) {
                     $created++;
@@ -68,53 +71,39 @@ class DiarySummarizerService
         );
     }
 
-    private function summarizeForNpc(Character $npc, Scene $scene): bool
+    private function summarizeForNpc(Character $npc, Scene $scene, ?int $combatEncounterId = null): bool
     {
-        $l0Entries = CharacterDiaryEntry::query()
-            ->where('character_id', $npc->id)
-            ->where('scene_id', $scene->id)
-            ->where('level', 0)
-            ->orderBy('created_at')
-            ->limit(self::MAX_L0_ENTRIES)
-            ->get();
-
-        if ($l0Entries->isEmpty()) {
-            return false;
-        }
-        $l0Entries = CharacterDiaryEntry::query()
-            ->where('character_id', $npc->id)
-            ->where('scene_id', $scene->id)
-            ->where('level', 0)
-            ->where('is_stale', false)   // ← НОВОЕ
-            ->orderBy('created_at')
-            ->limit(self::MAX_L0_ENTRIES)
-            ->get();
-
-        if ($l0Entries->isEmpty()) {
-            return false;
-        }
-
-        // Нечего синтезировать из одной L0 — пропускаем.
-        if ($l0Entries->count() < 2) {
-            Log::info('diary.summarize.skipped_single_l0', [
-                'npc_id' => $npc->id,
-                'scene_id' => $scene->id,
-            ]);
-
-            return false;
-        }
-
-        $existingL1 = CharacterDiaryEntry::query()
+        $lastToMessageId = (int) (CharacterDiaryEntry::query()
             ->where('character_id', $npc->id)
             ->where('scene_id', $scene->id)
             ->where('level', 1)
-            ->exists();
+            ->max('to_message_id') ?? 0);
 
-        if ($existingL1) {
-            Log::info('diary.summarize.already_exists', [
-                'npc_id' => $npc->id,
-                'scene_id' => $scene->id,
-            ]);
+        $l0Query = CharacterDiaryEntry::query()
+            ->where('character_id', $npc->id)
+            ->where('scene_id', $scene->id)
+            ->where('level', 0)
+            ->where('is_stale', false)
+            ->where('from_message_id', '>', $lastToMessageId)
+            ->orderBy('created_at')
+            ->limit(self::MAX_L0_ENTRIES);
+
+        if ($combatEncounterId !== null) {
+            $l0Query->where('combat_encounter_id', $combatEncounterId);
+        } else {
+            $l0Query->whereNull('combat_encounter_id');
+        }
+
+        $l0Entries = $l0Query->get();
+
+        if ($l0Entries->count() < 2) {
+            if ($l0Entries->count() === 1) {
+                Log::info('diary.summarize.skipped_single_l0', [
+                    'npc_id' => $npc->id,
+                    'scene_id' => $scene->id,
+                    'combat_encounter_id' => $combatEncounterId,
+                ]);
+            }
 
             return false;
         }
@@ -160,6 +149,7 @@ class DiarySummarizerService
             VectorLiteral::fromArray($vector),
             $this->chronicleInGameDate($scene),
             $llm->isTruncated,
+            $combatEncounterId,
         );
 
         return true;
@@ -215,8 +205,17 @@ class DiarySummarizerService
         return $scene->gameSession?->chronicle?->current_in_game_date;
     }
 
-    private function resolveSceneNpcs(Scene $scene): Collection
+    private function resolveSceneNpcs(Scene $scene, ?int $characterId = null): Collection
     {
+        if ($characterId !== null) {
+            $character = Character::query()
+                ->whereKey($characterId)
+                ->where('character_type', CharacterType::Npc)
+                ->first();
+
+            return $character === null ? collect() : collect([$character]);
+        }
+
         $ids = $scene->participants()
             ->pluck('character_id')
             ->unique()

@@ -7,11 +7,13 @@ use App\Diary\Data\WriteEntryResult;
 use App\Diary\Data\WriteSceneResult;
 use App\Diary\Exceptions\DiaryGenerationFailedException;
 use App\Enums\CharacterType;
+use App\Enums\CombatEncounterStatus;
 use App\Http\Controllers\ChatController;
 use App\Jobs\WriteDiaryJob;
 use App\Llm\ChatProvider;
 use App\Models\Character;
 use App\Models\CharacterDiaryEntry;
+use App\Models\CombatEncounter;
 use App\Models\Message;
 use App\Models\Scene;
 use App\Models\SceneParticipant;
@@ -182,6 +184,7 @@ class DiaryWriterService
             VectorLiteral::fromArray($vector),
             $this->chronicleInGameDate($scene),
             $llm->isTruncated,
+            $this->activeCombatEncounterId($scene),
         );
 
         return new WriteEntryResult(true, $messages->count());
@@ -352,6 +355,16 @@ class DiaryWriterService
         $scene->loadMissing('gameSession.chronicle');
 
         return $scene->gameSession?->chronicle?->current_in_game_date;
+    }
+
+    private function activeCombatEncounterId(Scene $scene): ?int
+    {
+        $id = CombatEncounter::query()
+            ->where('scene_id', $scene->id)
+            ->where('status', CombatEncounterStatus::Active)
+            ->value('id');
+
+        return $id === null ? null : (int) $id;
     }
 
     private function resolveSceneNpcs(Scene $scene): Collection

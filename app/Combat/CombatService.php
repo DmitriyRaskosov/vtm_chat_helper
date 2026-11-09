@@ -7,11 +7,13 @@ use App\Character\CharacterStatsService;
 use App\Combat\Exceptions\CharacterNotInSceneException;
 use App\Combat\Exceptions\DuplicateCombatParticipantException;
 use App\Combat\Exceptions\NoActiveCombatParticipantException;
+use App\Diary\DiaryScheduler;
 use App\Enums\CharacterType;
 use App\Enums\CombatEncounterStatus;
 use App\Events\CombatParticipantUpdatedEvent;
 use App\Events\CombatStartedEvent;
 use App\Events\CombatTurnChangedEvent;
+use App\Jobs\WriteDiaryJob;
 use App\Models\Character;
 use App\Models\CombatEncounter;
 use App\Models\CombatParticipant;
@@ -30,7 +32,10 @@ final class CombatService
      */
     public const DEFAULT_STAT_KEYS = ['dexterity', 'wits'];
 
-    public function __construct(private GameSessionService $turns) {}
+    public function __construct(
+        private GameSessionService $turns,
+        private DiaryScheduler $diaryScheduler,
+    ) {}
 
     public function startEncounter(Scene $scene): CombatEncounter
     {
@@ -61,6 +66,7 @@ final class CombatService
         }
 
         $this->broadcastStarted($created);
+        $this->diaryScheduler->scheduleSummary($scene);
 
         return $created;
     }
@@ -240,12 +246,16 @@ final class CombatService
             return $encounter;
         }
 
+        $scene = Scene::query()->findOrFail($encounter->scene_id);
+        WriteDiaryJob::dispatchSync($scene->id);
+
         $encounter->status = CombatEncounterStatus::Finished;
         $encounter->ended_at = now();
         $encounter->save();
         $this->syncActiveCharacter($encounter, null);
         $finished = $encounter->refresh();
         $this->broadcastTurn($finished);
+        $this->diaryScheduler->scheduleSummary($scene, (int) $encounter->id);
 
         return $finished;
     }

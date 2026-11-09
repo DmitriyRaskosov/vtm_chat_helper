@@ -23,14 +23,20 @@ class SummarizeSceneDiaryJob implements ShouldBeUnique, ShouldQueue
 
     public int $uniqueFor = 900;
 
-    public function __construct(public int $sceneId)
-    {
+    public function __construct(
+        public int $sceneId,
+        public ?int $combatEncounterId = null,
+        public ?int $characterId = null,
+    ) {
         $this->timeout = (int) config('diary.write_timeout', 540);
     }
 
     public function uniqueId(): string
     {
-        return 'diary-summary-scene-'.$this->sceneId;
+        $combat = $this->combatEncounterId ?? 'none';
+        $character = $this->characterId ?? 'all';
+
+        return 'diary-summary-scene-'.$this->sceneId.'-c'.$combat.'-npc'.$character;
     }
 
     public function handle(
@@ -50,7 +56,11 @@ class SummarizeSceneDiaryJob implements ShouldBeUnique, ShouldQueue
         $writeResult = $writer->writeForScene($scene);
 
         // 2. Собрать L1 из всех L0 этой сцены.
-        $summaryResult = $summarizer->summarizeScene($scene);
+        $summaryResult = $summarizer->summarizeScene(
+            $scene,
+            $this->combatEncounterId,
+            $this->characterId,
+        );
 
         Log::info('diary.summary.job.done', [
             'scene_id' => $this->sceneId,

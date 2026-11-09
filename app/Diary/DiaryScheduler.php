@@ -52,9 +52,12 @@ final class DiaryScheduler
         ]);
     }
 
-    public function scheduleSummary(Scene $scene): void
-    {
-        SummarizeSceneDiaryJob::dispatch($scene->id)->afterCommit();
+    public function scheduleSummary(
+        Scene $scene,
+        ?int $combatEncounterId = null,
+        ?int $characterId = null,
+    ): void {
+        SummarizeSceneDiaryJob::dispatch($scene->id, $combatEncounterId, $characterId)->afterCommit();
     }
 
     public function scheduleFinal(Scene $scene, Character $character): void

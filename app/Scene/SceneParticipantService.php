@@ -188,6 +188,11 @@ class SceneParticipantService
             $this->diaryScheduler->scheduleFinal($scene, $character);
         }
 
+        $combatEncounterId = $this->combat->activeEncounterId($scene);
+        if ($combatEncounterId !== null) {
+            $this->diaryScheduler->scheduleSummary($scene, $combatEncounterId, (int) $character->id);
+        }
+
         return $participant;
     }
 
