@@ -116,11 +116,22 @@
                     :inventory-character-id="inventoryCharacterId"
                     :participants="currentParticipants"
                     :active-player-characters="playerCharactersOnScene"
+                    :combat-active="combatActive"
+                    :can-start-combat="selectedSceneId != null"
                     v-model:selected-pc-id="selectedPcId"
                     @send="send"
+                    @start-combat="onStartCombat"
                 />
             </footer>
 
+            <CombatTracker
+                v-if="selectedSceneId != null"
+                ref="combatTrackerRef"
+                v-model:open="isCombatOpen"
+                :scene-id="selectedSceneId"
+                :scene-participants="currentParticipants"
+                @active="combatActive = $event"
+            />
             <FloatingWindow
                 v-if="isDiceOpen"
                 title="Кубы"
@@ -321,6 +332,7 @@ import { useRoute } from 'vue-router';
 import { isStoryteller, useAuth } from '../auth';
 import AppNav from '../components/layout/AppNav.vue';
 import ChatCharacterDrawer from '../components/chat/ChatCharacterDrawer.vue';
+import CombatTracker from '../components/chat/CombatTracker.vue';
 import ChatComposer from '../components/chat/ChatComposer.vue';
 import ChatLog from '../components/chat/ChatLog.vue';
 import ChatNotesPanel from '../components/chat/ChatNotesPanel.vue';
@@ -385,8 +397,17 @@ const {
     isInventoryOpen,
     isCharacterOpen,
     isDiaryOpen,
+    isCombatOpen,
     closeAll,
 } = useChatPanels();
+
+const combatTrackerRef = ref(null);
+const combatActive = ref(false);
+
+async function onStartCombat() {
+    isCombatOpen.value = true;
+    await combatTrackerRef.value?.startCombat();
+}
 
 const {
     gameSession,

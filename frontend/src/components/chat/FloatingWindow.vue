@@ -9,6 +9,7 @@
         >
             <header class="floating-window-header" @mousedown="onHeaderMouseDown">
                 <span class="floating-window-title">{{ title }}</span>
+                <slot name="tools" />
                 <span class="floating-window-actions">
                     <button
                         type="button"

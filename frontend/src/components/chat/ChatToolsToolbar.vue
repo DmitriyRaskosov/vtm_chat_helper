@@ -48,6 +48,25 @@
         >
             📖 Дневник
         </button>
+        <button
+            type="button"
+            class="secondary chat-tools-toolbar-btn"
+            :class="{ active: isCombatOpen }"
+            title="Трекер боя"
+            @click="toggleCombat"
+        >
+            ⚔ Бой
+        </button>
+        <button
+            v-if="isStoryteller && !combatActive"
+            type="button"
+            class="secondary chat-tools-toolbar-btn"
+            title="Начать бой"
+            :disabled="!canStartCombat"
+            @click="emit('start-combat')"
+        >
+            Начать бой
+        </button>
     </div>
 </template>
 
@@ -59,7 +78,11 @@ const props = defineProps({
     isStoryteller: { type: Boolean, required: true },
     myCharacterId: { type: [Number, String], default: null },
     inventoryCharacterId: { type: [Number, String], default: null },
+    combatActive: { type: Boolean, default: false },
+    canStartCombat: { type: Boolean, default: false },
 });
+
+const emit = defineEmits(['start-combat']);
 
 const {
     isDiceOpen,
@@ -67,11 +90,13 @@ const {
     isInventoryOpen,
     isCharacterOpen,
     isDiaryOpen,
+    isCombatOpen,
     toggleDice,
     toggleNotes,
     toggleInventory,
     toggleCharacter,
     toggleDiary,
+    toggleCombat,
 } = useChatPanels();
 
 const characterSheetEnabled = computed(() => (

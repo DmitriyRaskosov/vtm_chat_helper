@@ -63,6 +63,9 @@
                 :is-storyteller="isStoryteller"
                 :my-character-id="myCharacterId"
                 :inventory-character-id="inventoryCharacterId"
+                :combat-active="combatActive"
+                :can-start-combat="canStartCombat"
+                @start-combat="emit('start-combat')"
             />
 
             <label class="toggle composer-deleted-toggle">
@@ -100,6 +103,8 @@ const props = defineProps({
     inventoryCharacterId: { type: [Number, String], default: null },
     participants: { type: Array, default: () => [] },
     activePlayerCharacters: { type: Array, default: () => [] },
+    combatActive: { type: Boolean, default: false },
+    canStartCombat: { type: Boolean, default: false },
 });
 
 const body = defineModel('body', { type: String });
@@ -108,7 +113,7 @@ const showDeleted = defineModel('showDeleted', { type: Boolean, default: false }
 const speakerCharacterId = defineModel('speakerCharacterId');
 const selectedPcId = defineModel('selectedPcId');
 
-const emit = defineEmits(['send']);
+const emit = defineEmits(['send', 'start-combat']);
 
 const npcParticipants = computed(() => props.participants.filter(
     (row) => row.character_type === 'npc',

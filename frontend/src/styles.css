@@ -2660,6 +2660,20 @@ body.chat-split-resizing .gothic-layout .chat-split-resizer {
     height: 440px;
 }
 
+.floating-window.floating-window--combat {
+    width: min(36rem, calc(100vw - 1.5rem));
+    height: auto;
+    max-height: 24rem;
+    resize: none;
+}
+
+.floating-window-header .floating-window-tool {
+    margin: 0;
+    padding: 0.1rem 0.45rem;
+    font-size: 0.72rem;
+    white-space: nowrap;
+}
+
 .floating-window-header {
     display: flex;
     align-items: center;

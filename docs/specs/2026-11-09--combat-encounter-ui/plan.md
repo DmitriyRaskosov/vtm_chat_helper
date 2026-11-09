@@ -1,23 +1,62 @@
-# Plan: Боевая Секвенция Сцены (Этап 3: Синхронизация)
+# Plan: Боевая Секвенция (Этап 2: UI Трекера)
 
-## 1. Backend (Laravel)
-### 1.1 Лог боя
-*   Миграция: добавить `combat_encounter_id` (nullable, FK) в `scene_logs`.
-*   `SceneLogService::logDiceRoll`: если есть активная секция, записывать ID.
+**Status:** Completed
+**Date:** 2026-11-09
 
-### 1.2 Автоматизация ходов
-*   `CombatService::nextTurn`: 
-    *   Обновлять `active_character_id` в `GameSession` или `SceneContext` на текущего участника.
-    *   Если ход переходит к игроку — эмитить `CombatTurnChanged` (ShouldBroadcastNow).
+## 1. Подход и архитектура
 
-### 1.3 WebSockets (События)
-*   `CombatTurnChanged` (ShouldBroadcastNow) — в `private-scene.{id}`.
-*   `CombatStateUpdated` (при добавлении/удалении участников).
+**Общий подход.** Всё взаимодействие с API выносится в composable `useCombatTracker`. Сам компонент `CombatTracker.vue` будет рендерить плавающую панель, использовать уже существующий `useDraggable` для перемещения по экрану и отображать ленту.
 
-## 2. Frontend (Vue 3)
-### 2.1 Слушатели
-*   В `useCombatTracker.js` подписаться на `CombatTurnChanged`. Обновлять локальное состояние.
-*   Если `active_character_id === myCharacterId`, играть звук (`new Audio()`).
+**Состояние.** Локальный `reactive` стейт внутри composable (без Pinia, так как состояние нужно только компоненту и его дочерним карточкам). Опрос (polling) каждые 5 секунд для синхронизации с сервером (если игрок). Рассказчик обновляет состояние после каждого действия.
 
-### 2.2 Фильтрация
-*   В `useSceneBattleLog.js`: если есть активный бой, показывать только логи с этим `combat_encounter_id`.
+**Компоненты:**
+- `CombatTracker.vue` — основной контейнер. Содержит кнопки управления, ленту участников и меню «Добавить участника».
+- `CombatParticipantCard.vue` — карточка участника (аватар, имя, бейдж скрытности). Оборачивается в Vue-обертку для Drag-and-Drop.
+- `CombatParticipantPlaceholder.vue` — заглушка для скрытых игроков (серый вопрос).
+
+**Drag-and-Drop.** Использовать нативный HTML5 Drag-and-Drop (draggable="true", события `dragstart`, `dragover`, `drop`). При дропе пересчитываем локальный массив, отправляем `PATCH /api/combat/{combat}/participants/{participant}/initiative` с новым значением.
+
+**Взаимодействие с API:**
+- `POST /api/scenes/{scene}/combat` — старт.
+- `GET /api/scenes/{scene}/combat` — загрузка (и поллинг для игрока).
+- `POST /api/combat/{combat}/next-turn` — следующая карточка.
+- `PATCH /api/combat/{combat}/participants/{participant}/active` — выбывание/возврат.
+- `PATCH /api/combat/{combat}/participants/{participant}/reveal` — раскрытие.
+- `PATCH /api/combat/{combat}/participants/{participant}/initiative` — при D&D.
+- `POST /api/combat/{combat}/participants` — добавление.
+
+**Ролевая видимость.** Бэкенд уже отдает игроку «обезличенные» объекты. Composable просто проверяет, есть ли `id` у участника. Если нет — рендерит `Placeholder`.
+
+## 2. Затрагиваемые файлы
+
+**Frontend:**
+- `frontend/src/composables/useCombatTracker.js` — логика API, поллинг, локальный стейт, D&D-обработчики.
+- `frontend/src/components/chat/CombatTracker.vue` — HUD, лента.
+- `frontend/src/components/chat/CombatParticipantCard.vue` — карточка.
+- `frontend/src/components/chat/ChatScene.vue` (или где сейчас рендерится шапка сцены) — интеграция: если `activeEncounter` есть — показывать кнопку/окно трекера.
+- `frontend/src/views/ChatView.vue` (или родитель) — подключение трекера.
+
+**Tests:**
+- Тестирование фронта в этом проекте (если нет Vitest) — только ручное.
+
+## 3. Верификация AC
+
+| AC | Как проверяется |
+|---|---|
+| AC-1 | Вручную: создаем бой через API, перезагружаем страницу — панель видна. |
+| AC-2..5 | Вручную: проверяем отображение, сортировку, выбывших. |
+| AC-6 | Вручную: заходим под игроком, у скрытого нет имени и аватара. |
+| AC-7 | Вручную: заходим под рассказчиком, видим бейдж «Скрыт». |
+| AC-8..12 | Вручную: нажимаем кнопки, проверяем обновление UI и запросы в Network. |
+
+## 4. Риски
+
+- **Риск:** Drag-and-Drop может конфликтовать с версткой (карточки «уезжают»).
+  **Митигация:** использовать CSS Grid/Flex, обновлять массив локально для мгновенного отклика, отправлять API-запрос асинхронно.
+- **Риск:** Поллинг каждые 5 сек может нагружать сервер.
+  **Митигация:** в Этапе 3 заменим на WebSockets.
+
+## 5. Допущения
+
+- [Assumption] Интеграция HUD будет висеть поверх чата, но не перекрывать ввод и кнопки отправки сообщений.
+- [Assumption] Для начала достаточно кнопки «Следующий ход», кнопки «Назад» нет (по ТЗ ядра).
