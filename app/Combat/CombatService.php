@@ -2,16 +2,23 @@
 
 namespace App\Combat;
 
+use App\Broadcasting\SafeBroadcaster;
 use App\Character\CharacterStatsService;
 use App\Combat\Exceptions\CharacterNotInSceneException;
 use App\Combat\Exceptions\DuplicateCombatParticipantException;
 use App\Combat\Exceptions\NoActiveCombatParticipantException;
+use App\Enums\CharacterType;
 use App\Enums\CombatEncounterStatus;
+use App\Events\CombatParticipantUpdatedEvent;
+use App\Events\CombatStartedEvent;
+use App\Events\CombatTurnChangedEvent;
 use App\Models\Character;
 use App\Models\CombatEncounter;
 use App\Models\CombatParticipant;
+use App\Models\GameSession;
 use App\Models\Scene;
 use App\Models\SceneParticipant;
+use App\Scene\GameSessionService;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +30,8 @@ final class CombatService
      */
     public const DEFAULT_STAT_KEYS = ['dexterity', 'wits'];
 
+    public function __construct(private GameSessionService $turns) {}
+
     public function startEncounter(Scene $scene): CombatEncounter
     {
         $existing = $this->findActive($scene);
@@ -31,7 +40,7 @@ final class CombatService
         }
 
         try {
-            return DB::transaction(function () use ($scene): CombatEncounter {
+            $created = DB::transaction(function () use ($scene): CombatEncounter {
                 return CombatEncounter::query()->create([
                     'scene_id' => $scene->id,
                     'status' => CombatEncounterStatus::Active,
@@ -50,6 +59,10 @@ final class CombatService
 
             return $won;
         }
+
+        $this->broadcastStarted($created);
+
+        return $created;
     }
 
     public function addParticipant(
@@ -77,7 +90,7 @@ final class CombatService
         }
 
         try {
-            return DB::transaction(fn (): CombatParticipant => CombatParticipant::query()->create([
+            $created = DB::transaction(fn (): CombatParticipant => CombatParticipant::query()->create([
                 'combat_encounter_id' => $encounter->id,
                 'character_id' => $character->id,
                 'initiative' => null,
@@ -87,6 +100,10 @@ final class CombatService
         } catch (UniqueConstraintViolationException) {
             throw new DuplicateCombatParticipantException('Character is already in this combat encounter.');
         }
+
+        $this->broadcastParticipantChange($created);
+
+        return $created;
     }
 
     /**
@@ -96,7 +113,7 @@ final class CombatService
         CombatEncounter $encounter,
         array $statKeys = self::DEFAULT_STAT_KEYS,
     ): CombatEncounter {
-        return DB::transaction(function () use ($encounter, $statKeys): CombatEncounter {
+        $updated = DB::transaction(function () use ($encounter, $statKeys): CombatEncounter {
             $locked = CombatEncounter::query()->lockForUpdate()->findOrFail($encounter->id);
             $locked->load('participants.character');
 
@@ -114,11 +131,15 @@ final class CombatService
 
             return $locked->refresh();
         });
+
+        $this->broadcastParticipant($updated, null);
+
+        return $updated;
     }
 
     public function nextTurn(CombatEncounter $encounter): CombatEncounter
     {
-        return DB::transaction(function () use ($encounter): CombatEncounter {
+        $updated = DB::transaction(function () use ($encounter): CombatEncounter {
             $locked = CombatEncounter::query()->lockForUpdate()->findOrFail($encounter->id);
             $ordered = $this->orderedParticipants($locked);
             $activeIndexes = [];
@@ -147,14 +168,23 @@ final class CombatService
 
             $locked->current_turn_index = $next;
             $locked->save();
+            $locked->refresh();
+
+            if ($locked->status === CombatEncounterStatus::Active) {
+                $this->syncActiveCharacter($locked, $this->currentCharacterId($locked));
+            }
 
             return $locked->refresh();
         });
+
+        $this->broadcastTurn($updated);
+
+        return $updated;
     }
 
     public function setParticipantActive(CombatParticipant $participant, bool $isActive): CombatParticipant
     {
-        return DB::transaction(function () use ($participant, $isActive): CombatParticipant {
+        $updated = DB::transaction(function () use ($participant, $isActive): CombatParticipant {
             $encounter = CombatEncounter::query()->lockForUpdate()->findOrFail($participant->combat_encounter_id);
             $currentCharacterId = $this->currentCharacterId($encounter);
 
@@ -167,19 +197,25 @@ final class CombatService
 
             return $participant->refresh();
         });
+
+        $this->broadcastParticipantChange($updated);
+
+        return $updated;
     }
 
     public function revealParticipant(CombatParticipant $participant): CombatParticipant
     {
         $participant->is_hidden = false;
         $participant->save();
+        $revealed = $participant->refresh();
+        $this->broadcastParticipantChange($revealed);
 
-        return $participant->refresh();
+        return $revealed;
     }
 
     public function setInitiative(CombatParticipant $participant, int $initiative): CombatParticipant
     {
-        return DB::transaction(function () use ($participant, $initiative): CombatParticipant {
+        $updated = DB::transaction(function () use ($participant, $initiative): CombatParticipant {
             $encounter = CombatEncounter::query()->lockForUpdate()->findOrFail($participant->combat_encounter_id);
             $currentCharacterId = $this->currentCharacterId($encounter);
 
@@ -192,6 +228,10 @@ final class CombatService
 
             return $participant->refresh();
         });
+
+        $this->broadcastParticipantChange($updated);
+
+        return $updated;
     }
 
     public function finishEncounter(CombatEncounter $encounter): CombatEncounter
@@ -203,8 +243,18 @@ final class CombatService
         $encounter->status = CombatEncounterStatus::Finished;
         $encounter->ended_at = now();
         $encounter->save();
+        $this->syncActiveCharacter($encounter, null);
+        $finished = $encounter->refresh();
+        $this->broadcastTurn($finished);
 
-        return $encounter->refresh();
+        return $finished;
+    }
+
+    public function activeEncounterId(Scene $scene): ?int
+    {
+        $active = $this->findActive($scene);
+
+        return $active === null ? null : (int) $active->id;
     }
 
     public function finishForScene(Scene $scene): void
@@ -333,6 +383,97 @@ final class CombatService
 
         $encounter->current_turn_index = $index === false ? 0 : (int) $index;
         $encounter->save();
+    }
+
+    private function broadcastStarted(CombatEncounter $encounter): void
+    {
+        $context = $this->broadcastContext($encounter);
+        SafeBroadcaster::send(new CombatStartedEvent(
+            $context['chronicle_id'],
+            $context['scene_id'],
+            (int) $encounter->id,
+        ));
+    }
+
+    private function broadcastTurn(CombatEncounter $encounter): void
+    {
+        $context = $this->broadcastContext($encounter);
+        $encounter->loadMissing('scene.gameSession');
+        $activeId = $encounter->scene->gameSession->active_character_id;
+
+        SafeBroadcaster::send(new CombatTurnChangedEvent(
+            $context['chronicle_id'],
+            $context['scene_id'],
+            (int) $encounter->id,
+            (int) $encounter->current_round,
+            (int) $encounter->current_turn_index,
+            $activeId === null ? null : (int) $activeId,
+            $encounter->status->value,
+        ));
+    }
+
+    private function broadcastParticipant(CombatEncounter $encounter, ?int $participantId): void
+    {
+        $context = $this->broadcastContext($encounter);
+        SafeBroadcaster::send(new CombatParticipantUpdatedEvent(
+            $context['chronicle_id'],
+            $context['scene_id'],
+            (int) $encounter->id,
+            $participantId,
+        ));
+    }
+
+    private function broadcastParticipantChange(CombatParticipant $participant): void
+    {
+        $participant->load('encounter');
+        $encounter = $participant->encounter;
+        if (! $encounter instanceof CombatEncounter) {
+            return;
+        }
+
+        $this->broadcastParticipant($encounter, (int) $participant->id);
+    }
+
+    /**
+     * @return array{chronicle_id: int, scene_id: int}
+     */
+    private function broadcastContext(CombatEncounter $encounter): array
+    {
+        $encounter->loadMissing('scene.gameSession');
+
+        return [
+            'chronicle_id' => (int) $encounter->scene->gameSession->chronicle_id,
+            'scene_id' => (int) $encounter->scene_id,
+        ];
+    }
+
+    private function syncActiveCharacter(CombatEncounter $encounter, ?int $characterId): void
+    {
+        $encounter->loadMissing('scene.gameSession');
+        $session = $encounter->scene?->gameSession;
+        if (! $session instanceof GameSession) {
+            return;
+        }
+
+        $this->turns->setActiveCharacter($session, $this->playerTurnId($session, $characterId));
+    }
+
+    private function playerTurnId(GameSession $session, ?int $characterId): ?int
+    {
+        if ($characterId === null) {
+            return null;
+        }
+
+        $character = Character::query()->find($characterId);
+        if (
+            ! $character instanceof Character
+            || $character->character_type !== CharacterType::Player
+            || (int) $character->chronicle_id !== (int) $session->chronicle_id
+        ) {
+            return null;
+        }
+
+        return (int) $character->id;
     }
 
     private function findActive(Scene $scene): ?CombatEncounter

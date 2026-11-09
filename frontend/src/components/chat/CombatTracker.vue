@@ -126,13 +126,15 @@ import FloatingWindow from './FloatingWindow.vue';
 
 const props = defineProps({
     sceneId: { type: Number, default: null },
+    chronicleId: { type: [Number, String], default: null },
     sceneParticipants: { type: Array, default: () => [] },
 });
 
 const open = defineModel('open', { type: Boolean, default: false });
-const emit = defineEmits(['active']);
+const emit = defineEmits(['active', 'turn', 'encounter-id']);
 
 const sceneId = toRef(props, 'sceneId');
+const chronicleId = toRef(props, 'chronicleId');
 const {
     encounter,
     participants,
@@ -149,7 +151,10 @@ const {
     finishCombat,
     moveParticipant,
     rollInitiative,
-} = useCombatTracker(sceneId);
+    load,
+} = useCombatTracker(sceneId, chronicleId, {
+    onTurn: (characterId) => emit('turn', characterId),
+});
 
 const windowTitle = computed(() => (
     encounter.value ? `Бой · раунд ${encounter.value.current_round}` : 'Бой'
@@ -157,6 +162,7 @@ const windowTitle = computed(() => (
 
 watch(encounter, (value, previous) => {
     emit('active', value != null);
+    emit('encounter-id', value?.id ?? null);
     if (value != null && previous == null) {
         open.value = true;
     }
@@ -166,7 +172,10 @@ onUnmounted(() => {
     emit('active', false);
 });
 
-defineExpose({ startCombat });
+defineExpose({
+    startCombat,
+    reload: () => load({ silent: true }),
+});
 
 const addOpen = ref(false);
 const characterId = ref(null);

@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
     'character_id',
     'chronicle_id',
     'scene_id',
+    'combat_encounter_id',
     'level',
     'from_message_id',
     'to_message_id',

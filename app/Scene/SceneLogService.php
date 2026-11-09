@@ -24,6 +24,7 @@ final class SceneLogService
         DiceRollResult $result,
         bool $isHidden,
         ?string $comment = null,
+        ?int $combatEncounterId = null,
     ): SceneLog {
         $visibility = $isHidden
             ? SceneLogVisibility::StorytellerOnly
@@ -67,6 +68,7 @@ final class SceneLogService
 
         $log = SceneLog::query()->create([
             'scene_id' => $scene->id,
+            'combat_encounter_id' => $combatEncounterId,
             'user_id' => $user->id,
             'character_id' => $character?->id,
             'type' => SceneLogType::DiceRoll,

@@ -5,7 +5,10 @@ import { apiRoot } from './auth';
 
 window.Pusher = Pusher;
 
-const reverbScheme = import.meta.env.VITE_REVERB_SCHEME ?? 'http';
+const reverbScheme = import.meta.env.VITE_REVERB_SCHEME || 'http';
+const reverbHost = import.meta.env.VITE_REVERB_HOST || 'localhost';
+// Браузер на хосте. В compose Reverb слушает 8080 и опубликован как 8081:8080.
+const reverbPort = Number(import.meta.env.VITE_REVERB_PORT) || 8081;
 
 /** @type {Echo|null} */
 let echoInstance = null;
@@ -17,11 +20,11 @@ export function createEcho() {
     return new Echo({
         broadcaster: 'reverb',
         key: import.meta.env.VITE_REVERB_APP_KEY,
-        wsHost: import.meta.env.VITE_REVERB_HOST,
-        wsPort: import.meta.env.VITE_REVERB_PORT ?? 80,
-        wssPort: import.meta.env.VITE_REVERB_PORT ?? 443,
+        wsHost: reverbHost,
+        wsPort: reverbPort,
+        wssPort: reverbPort,
         forceTLS: reverbScheme === 'https',
-        enabledTransports: ['ws', 'wss'],
+        enabledTransports: reverbScheme === 'https' ? ['wss'] : ['ws'],
         authorizer: (channel) => ({
             authorize: (socketId, callback) => {
                 apiRoot.post('/broadcasting/auth', {
@@ -51,6 +54,8 @@ export function connectEcho() {
         echoInstance = createEcho();
     }
 
+    window.Echo = echoInstance;
+
     return echoInstance;
 }
 
@@ -59,6 +64,8 @@ export function disconnectEcho() {
         echoInstance.disconnect();
         echoInstance = null;
     }
+
+    window.Echo = null;
 }
 
 /**

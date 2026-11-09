@@ -80,6 +80,7 @@
                 :selected-scene-id="selectedSceneId"
                 :is-storyteller="isStoryteller"
                 :active="tab === 'battle'"
+                :active-encounter-id="activeEncounterId"
                 @seed-change="eventSeed = $event"
             />
         </div>
@@ -116,6 +117,7 @@ const props = defineProps({
     canPost: { type: Boolean, required: true },
     logs: { type: Array, required: true },
     logError: { type: String, default: '' },
+    activeEncounterId: { type: Number, default: null },
 });
 
 const selectedNpcId = defineModel('selectedNpcId');

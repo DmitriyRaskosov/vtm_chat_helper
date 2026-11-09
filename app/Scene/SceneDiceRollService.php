@@ -3,6 +3,7 @@
 namespace App\Scene;
 
 use App\Character\Exceptions\CharacterNotInChronicleException;
+use App\Combat\CombatService;
 use App\Dice\DiceRollResult;
 use App\Dice\DiceService;
 use App\Enums\DiceRollMode;
@@ -18,6 +19,7 @@ final class SceneDiceRollService
     public function __construct(
         private DiceService $dice,
         private SceneLogService $sceneLogs,
+        private CombatService $combat,
     ) {}
 
     /**
@@ -53,7 +55,15 @@ final class SceneDiceRollService
         }
 
         $result = $this->dice->roll($pool, $difficulty, $diceType, $mode, $useWillpower);
-        $log = $this->sceneLogs->logDiceRoll($scene, $user, $character, $result, $isHidden, $comment);
+        $log = $this->sceneLogs->logDiceRoll(
+            $scene,
+            $user,
+            $character,
+            $result,
+            $isHidden,
+            $comment,
+            $this->combat->activeEncounterId($scene),
+        );
 
         return [
             'result' => $result,

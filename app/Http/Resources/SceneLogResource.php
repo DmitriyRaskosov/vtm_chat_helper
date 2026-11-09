@@ -21,6 +21,7 @@ class SceneLogResource extends JsonResource
         return [
             'id' => $log->id,
             'scene_id' => $log->scene_id,
+            'combat_encounter_id' => $log->combat_encounter_id,
             'character_id' => $log->character_id,
             'type' => $log->type->value,
             'visibility' => $log->visibility->value,

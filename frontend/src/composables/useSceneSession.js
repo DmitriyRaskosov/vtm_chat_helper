@@ -138,6 +138,17 @@ export function useSceneSession({ auth, chronicleId }) {
         }
     }
 
+    function applyRemoteActiveCharacter(characterId) {
+        if (!gameSession.value) {
+            return;
+        }
+
+        gameSession.value = {
+            ...gameSession.value,
+            active_character_id: characterId == null ? null : Number(characterId),
+        };
+    }
+
     const activeCharacterId = computed(() => {
         const id = gameSession.value?.active_character_id;
 
@@ -513,6 +524,7 @@ export function useSceneSession({ auth, chronicleId }) {
         sceneNpcs,
         activeCharacterId,
         isMyTurn,
+        applyRemoteActiveCharacter,
         bindMessages,
         loadGameSession,
         passTurn,

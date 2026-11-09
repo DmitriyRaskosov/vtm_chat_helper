@@ -2,13 +2,31 @@
     <section class="card battle-log">
         <div class="battle-log-heading">
             <h2>Лог боя</h2>
+            <div v-if="activeEncounterId" class="battle-log-filter">
+                <button
+                    type="button"
+                    class="secondary battle-log-filter-btn"
+                    :aria-pressed="!combatOnly"
+                    @click="combatOnly = false"
+                >
+                    Все броски
+                </button>
+                <button
+                    type="button"
+                    class="secondary battle-log-filter-btn"
+                    :aria-pressed="combatOnly"
+                    @click="combatOnly = true"
+                >
+                    Только текущий бой
+                </button>
+            </div>
         </div>
         <p v-if="!selectedSceneId" class="muted">Выберите сцену, чтобы видеть броски кубиков.</p>
         <p v-else-if="logError" class="error">{{ logError }}</p>
         <div v-else class="battle-log-wrap">
             <ul ref="listEl" class="battle-log-list" @scroll="onScroll">
                 <li
-                    v-for="entry in logs"
+                    v-for="entry in visibleLogs"
                     :key="entry.id"
                     class="battle-log-item"
                     :class="{
@@ -53,7 +71,7 @@
                         </button>
                     </span>
                 </li>
-                <li v-if="!logs.length" class="muted">Пока нет бросков.</li>
+                <li v-if="!visibleLogs.length" class="muted">Пока нет бросков.</li>
             </ul>
             <button
                 v-if="showScrollDown"
@@ -70,7 +88,8 @@
 </template>
 
 <script setup>
-import { nextTick, ref, watch } from 'vue';
+import { computed, nextTick, ref, watch } from 'vue';
+import { filterBattleLogs } from '../../composables/combatSync';
 
 const props = defineProps({
     logs: { type: Array, required: true },
@@ -78,7 +97,15 @@ const props = defineProps({
     selectedSceneId: { type: Number, default: null },
     isStoryteller: { type: Boolean, default: false },
     active: { type: Boolean, default: true },
+    activeEncounterId: { type: Number, default: null },
 });
+
+const combatOnly = ref(true);
+const visibleLogs = computed(() => filterBattleLogs(
+    props.logs,
+    props.activeEncounterId,
+    combatOnly.value,
+));
 
 const listEl = ref(null);
 const showScrollDown = ref(false);
@@ -189,7 +216,14 @@ watch(
 );
 
 watch(
-    () => [props.logs.length, props.active],
+    () => props.activeEncounterId,
+    () => {
+        combatOnly.value = true;
+    },
+);
+
+watch(
+    () => [visibleLogs.value.length, props.active],
     async () => {
         if (!props.active) {
             return;
@@ -211,6 +245,22 @@ defineExpose({
 </script>
 
 <style scoped>
+.battle-log-filter {
+    display: inline-flex;
+    gap: 0.35rem;
+}
+
+.battle-log-filter-btn {
+    margin-top: 0;
+    padding: 0.1rem 0.45rem;
+    font-size: 0.75rem;
+}
+
+.battle-log-filter-btn[aria-pressed='true'] {
+    border-color: var(--accent, #c45c26);
+    color: var(--accent, #c45c26);
+}
+
 .battle-log-picks {
     display: inline-flex;
     gap: 0.35rem;

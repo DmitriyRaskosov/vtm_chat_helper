@@ -2,17 +2,17 @@ import { computed, onScopeDispose, ref, toValue, watch } from 'vue';
 import { api, isStoryteller } from '../auth';
 import { apiErrorMessage } from '../utils/apiError';
 import { reorderCombatParticipants, sortCombatParticipants } from './combatTrackerOrder';
+import { applyCombatTurn, sameCombatScene } from './combatSync';
 
-const POLL_MS = 5000;
-
-export function useCombatTracker(sceneId) {
+export function useCombatTracker(sceneId, chronicleId, { onTurn } = {}) {
     const combat = ref(null);
     const loading = ref(false);
     const busy = ref(false);
     const error = ref('');
     const holdSync = ref(false);
 
-    let pollTimer = null;
+    let channel = null;
+    let boundChronicleId = null;
 
     const encounter = computed(() => (
         combat.value && combat.value.status === 'active' ? combat.value : null
@@ -210,32 +210,76 @@ export function useCombatTracker(sceneId) {
         }
     }
 
-    function stopPolling() {
-        if (pollTimer !== null) {
-            clearInterval(pollTimer);
-            pollTimer = null;
-        }
-    }
-
-    function syncPolling() {
-        stopPolling();
-        if (isStoryteller.value || toValue(sceneId) == null) {
+    function onStarted(payload) {
+        if (!sameCombatScene(toValue(sceneId), payload)) {
             return;
         }
 
-        pollTimer = setInterval(() => {
+        load({ silent: combat.value != null });
+    }
+
+    function onTurnChanged(payload) {
+        if (!sameCombatScene(toValue(sceneId), payload)) {
+            return;
+        }
+
+        onTurn?.(payload?.active_character_id ?? null);
+
+        if (holdSync.value) {
+            return;
+        }
+
+        if (!combat.value) {
             load({ silent: true });
-        }, POLL_MS);
+            return;
+        }
+
+        combat.value = applyCombatTurn(combat.value, payload);
+    }
+
+    function onParticipantUpdated(payload) {
+        if (!sameCombatScene(toValue(sceneId), payload) || holdSync.value) {
+            return;
+        }
+
+        load({ silent: true });
+    }
+
+    function unbindChronicle() {
+        if (boundChronicleId == null) {
+            return;
+        }
+
+        channel?.stopListening('.CombatStarted');
+        channel?.stopListening('.CombatTurnChanged');
+        channel?.stopListening('.CombatParticipantUpdated');
+        window.Echo?.leave(`chronicle.${boundChronicleId}`);
+        channel = null;
+        boundChronicleId = null;
+    }
+
+    function bindChronicle() {
+        unbindChronicle();
+
+        const id = Number(toValue(chronicleId));
+        if (!Number.isFinite(id) || id <= 0 || typeof window.Echo?.private !== 'function') {
+            return;
+        }
+
+        channel = window.Echo.private(`chronicle.${id}`);
+        boundChronicleId = id;
+        channel.listen('.CombatStarted', onStarted);
+        channel.listen('.CombatTurnChanged', onTurnChanged);
+        channel.listen('.CombatParticipantUpdated', onParticipantUpdated);
     }
 
     watch(() => toValue(sceneId), () => {
         load();
-        syncPolling();
     }, { immediate: true });
 
-    watch(isStoryteller, syncPolling);
+    watch(() => Number(toValue(chronicleId)), bindChronicle, { immediate: true });
 
-    onScopeDispose(stopPolling);
+    onScopeDispose(unbindChronicle);
 
     return {
         encounter,

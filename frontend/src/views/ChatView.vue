@@ -129,8 +129,11 @@
                 ref="combatTrackerRef"
                 v-model:open="isCombatOpen"
                 :scene-id="selectedSceneId"
+                :chronicle-id="chronicleId"
                 :scene-participants="currentParticipants"
                 @active="combatActive = $event"
+                @encounter-id="combatEncounterId = $event"
+                @turn="applyRemoteActiveCharacter"
             />
             <FloatingWindow
                 v-if="isDiceOpen"
@@ -318,6 +321,7 @@
             :can-post="canPost"
             :logs="logs"
             :log-error="logError"
+            :active-encounter-id="combatEncounterId"
             @select-participant="onSelectParticipant"
             @npc-sent="onNpcSent"
             @open-scene-manage="sceneManageOpen = true"
@@ -403,6 +407,7 @@ const {
 
 const combatTrackerRef = ref(null);
 const combatActive = ref(false);
+const combatEncounterId = ref(null);
 
 async function onStartCombat() {
     isCombatOpen.value = true;
@@ -437,6 +442,7 @@ const {
     sceneNpcs,
     activeCharacterId,
     isMyTurn,
+    applyRemoteActiveCharacter,
     bindMessages,
     loadGameSession,
     saveSceneSituation,
@@ -770,6 +776,7 @@ async function syncAfterConnectionRestore() {
     await load(lastId());
     await pollLogs();
     await pollSceneSituation();
+    await combatTrackerRef.value?.reload();
 }
 
 function resetCopilotDrafts() {
@@ -842,8 +849,10 @@ async function poll() {
             await pollLogs();
             await pollSceneSituation();
         }
+
+        await combatTrackerRef.value?.reload();
     } catch {
-        // A later poll retries transient API failures.
+        // Следующий цикл повторит запрос, если API на миг недоступен.
     } finally {
         polling = false;
     }

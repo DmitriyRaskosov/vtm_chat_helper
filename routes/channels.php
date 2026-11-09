@@ -7,6 +7,14 @@ use Illuminate\Support\Facades\Broadcast;
 
 Broadcast::routes(['middleware' => ['auth:sanctum']]);
 
+Broadcast::channel('chronicle.{chronicleId}', function (User $user, string $chronicleId): bool {
+    return ChronicleMember::query()
+        ->where('chronicle_id', (int) $chronicleId)
+        ->where('user_id', $user->id)
+        ->whereNull('left_at')
+        ->exists();
+});
+
 Broadcast::channel('scene.{sceneId}', function (User $user, string $sceneId): bool {
     $scene = Scene::query()->with('gameSession')->find((int) $sceneId);
 

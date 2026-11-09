@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
  */
 #[Fillable([
     'scene_id',
+    'combat_encounter_id',
     'user_id',
     'character_id',
     'type',
@@ -65,6 +66,7 @@ class SceneLog extends Model
         return [
             'type' => SceneLogType::class,
             'visibility' => SceneLogVisibility::class,
+            'combat_encounter_id' => 'integer',
             'payload' => 'array',
             'willpower_spent' => 'boolean',
             'created_at' => 'datetime',
