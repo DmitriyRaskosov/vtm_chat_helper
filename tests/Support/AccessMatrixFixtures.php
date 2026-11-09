@@ -2,6 +2,7 @@
 
 namespace Tests\Support;
 
+use App\Enums\CombatEncounterStatus;
 use App\Models\CanonClan;
 use App\Models\CanonDiscipline;
 use App\Models\Character;
@@ -11,6 +12,8 @@ use App\Models\Chronicle;
 use App\Models\ChronicleInvitation;
 use App\Models\ChronicleLocation;
 use App\Models\ChronicleMember;
+use App\Models\CombatEncounter;
+use App\Models\CombatParticipant;
 use App\Models\CopilotRequest;
 use App\Models\DiceMacro;
 use App\Models\GameSession;
@@ -68,6 +71,10 @@ final class AccessMatrixFixtures
     public CopilotRequest $copilotRequest;
 
     public SceneParticipant $sceneParticipant;
+
+    public CombatEncounter $combatEncounter;
+
+    public CombatParticipant $combatParticipant;
 
     public ChronicleLocation $chronicleLocation;
 
@@ -201,6 +208,21 @@ final class AccessMatrixFixtures
             'character_id' => $fixtures->npc->id,
         ]);
 
+        $fixtures->combatEncounter = CombatEncounter::query()->create([
+            'scene_id' => $fixtures->scene->id,
+            'status' => CombatEncounterStatus::Active,
+            'current_round' => 1,
+            'current_turn_index' => 0,
+            'started_at' => now(),
+        ]);
+        $fixtures->combatParticipant = CombatParticipant::query()->create([
+            'combat_encounter_id' => $fixtures->combatEncounter->id,
+            'character_id' => $fixtures->npc->id,
+            'initiative' => 1,
+            'is_active' => true,
+            'is_hidden' => false,
+        ]);
+
         $fixtures->playerItem = CharacterItem::query()->create([
             'character_id' => $fixtures->playerCharacter->id,
             'name' => 'Трость',
@@ -291,6 +313,8 @@ final class AccessMatrixFixtures
     {
         $map = [
             '{scene}' => (string) $this->scene->id,
+            '{combat}' => (string) $this->combatEncounter->id,
+            '{participant}' => (string) $this->combatParticipant->id,
             '{chronicle}' => (string) $this->chronicle->id,
             '{invitation}' => (string) $this->invitation->id,
             '{token}' => $this->invitationAcceptToken,
@@ -411,6 +435,21 @@ final class AccessMatrixFixtures
         if ($method === 'PATCH' && $uriTemplate === 'game-sessions/{gameSession}/turn') {
             return [
                 'character_id' => $this->playerCharacter->id,
+            ];
+        }
+
+        if ($method === 'PATCH' && $uriTemplate === 'combat/{combat}/participants/{participant}/active') {
+            return ['is_active' => true];
+        }
+
+        if ($method === 'POST' && $uriTemplate === 'combat/{combat}/participants/{participant}/initiative') {
+            return ['initiative' => 5];
+        }
+
+        if ($method === 'POST' && $uriTemplate === 'combat/{combat}/participants') {
+            return [
+                'character_id' => $this->playerCharacter->id,
+                'is_hidden' => false,
             ];
         }
 

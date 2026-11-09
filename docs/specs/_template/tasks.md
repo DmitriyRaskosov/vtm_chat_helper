@@ -1,6 +1,11 @@
 # Tasks: {Название фичи}
 
 **Status:** Draft
+**Date:** YYYY-MM-DD
+
+<!--
+  Допустимые статусы: Draft → Approved → Completed.
+-->
 
 ## Stage 1: Backend (Foundation)
 - [ ] Создать миграцию `add_avatar_path_to_characters_table`.

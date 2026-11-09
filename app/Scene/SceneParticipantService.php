@@ -2,6 +2,7 @@
 
 namespace App\Scene;
 
+use App\Combat\CombatService;
 use App\Diary\DiaryScheduler;
 use App\Enums\CharacterType;
 use App\Enums\ChronicleRole;
@@ -27,6 +28,7 @@ class SceneParticipantService
         private SceneContextService $contexts,
         private DiaryScheduler $diaryScheduler,
         private MessageService $messages,
+        private CombatService $combat,
     ) {}
 
     /**
@@ -168,6 +170,8 @@ class SceneParticipantService
             $current->left_at = now();
             $current->left_message_id = $lastMessageId === null ? null : (int) $lastMessageId;
             $current->save();
+
+            $this->combat->deactivateForParticipant($current);
 
             $character->loadMissing('entity');
             $this->messages->postSystem(

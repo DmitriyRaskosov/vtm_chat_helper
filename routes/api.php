@@ -13,6 +13,7 @@ use App\Http\Controllers\ChronicleController;
 use App\Http\Controllers\ChronicleInvitationController;
 use App\Http\Controllers\ChronicleLocationController;
 use App\Http\Controllers\ChronicleLocationImageController;
+use App\Http\Controllers\CombatController;
 use App\Http\Controllers\CopilotController;
 use App\Http\Controllers\DiaryEntryController;
 use App\Http\Controllers\DiceMacroController;
@@ -28,6 +29,7 @@ use App\Http\Controllers\SceneController;
 use App\Http\Controllers\SceneParticipantController;
 use App\Http\Controllers\SceneTypingController;
 use App\Http\Controllers\UserNoteController;
+use App\Models\CombatEncounter;
 use App\Models\PromptOverride;
 use Illuminate\Support\Facades\Route;
 
@@ -161,6 +163,24 @@ Route::middleware('auth:sanctum')->group(function () {
         ->can('activate', 'scene');
     Route::patch('/scenes/{scene}/close', [SceneController::class, 'close'])
         ->can('close', 'scene');
+    Route::post('/scenes/{scene}/combat', [CombatController::class, 'store'])
+        ->can('create', [CombatEncounter::class, 'scene']);
+    Route::get('/scenes/{scene}/combat', [CombatController::class, 'show'])
+        ->can('view', 'scene');
+    Route::post('/combat/{combat}/participants', [CombatController::class, 'addParticipant'])
+        ->can('update', 'combat');
+    Route::patch('/combat/{combat}/participants/{participant}/active', [CombatController::class, 'setActive'])
+        ->can('update', 'combat');
+    Route::post('/combat/{combat}/participants/{participant}/reveal', [CombatController::class, 'reveal'])
+        ->can('update', 'combat');
+    Route::post('/combat/{combat}/participants/{participant}/initiative', [CombatController::class, 'setInitiative'])
+        ->can('update', 'combat');
+    Route::post('/combat/{combat}/roll-initiative', [CombatController::class, 'rollInitiative'])
+        ->can('update', 'combat');
+    Route::post('/combat/{combat}/next-turn', [CombatController::class, 'nextTurn'])
+        ->can('update', 'combat');
+    Route::post('/combat/{combat}/finish', [CombatController::class, 'finish'])
+        ->can('update', 'combat');
     Route::put('/scenes/{scene}/context', [SceneContextController::class, 'update'])
         ->can('update', 'scene');
     Route::post('/scenes/{scene}/participants', [SceneParticipantController::class, 'store'])

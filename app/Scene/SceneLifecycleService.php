@@ -2,6 +2,7 @@
 
 namespace App\Scene;
 
+use App\Combat\CombatService;
 use App\Diary\DiaryScheduler;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneStatus;
@@ -15,6 +16,7 @@ final class SceneLifecycleService
     public function __construct(
         private SceneContextService $contexts,
         private DiaryScheduler $diaryScheduler,
+        private CombatService $combat,
     ) {}
 
     public function create(
@@ -116,6 +118,8 @@ final class SceneLifecycleService
 
             return $lockedScene->refresh();
         });
+
+        $this->combat->finishForScene($closed);
 
         $this->diaryScheduler->scheduleSummary($closed);
 

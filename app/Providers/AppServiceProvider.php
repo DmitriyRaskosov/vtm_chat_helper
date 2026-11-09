@@ -4,13 +4,17 @@ namespace App\Providers;
 
 use App\Llm\ChatProvider;
 use App\Llm\DeepSeekChatProvider;
+use App\Models\CombatEncounter;
+use App\Models\CombatParticipant;
 use App\Models\CopilotRequest;
 use App\Models\Scene;
+use App\Policies\CombatEncounterPolicy;
 use App\Policies\CopilotPolicy;
 use App\Policies\ScenePolicy;
 use App\Rag\EmbeddingProvider;
 use App\Rag\OllamaEmbeddingProvider;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -36,5 +40,9 @@ class AppServiceProvider extends ServiceProvider
     {
         Gate::policy(CopilotRequest::class, CopilotPolicy::class);
         Gate::policy(Scene::class, ScenePolicy::class);
+        Gate::policy(CombatEncounter::class, CombatEncounterPolicy::class);
+
+        Route::model('combat', CombatEncounter::class);
+        Route::model('participant', CombatParticipant::class);
     }
 }
