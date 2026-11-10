@@ -129,12 +129,16 @@ No clan, bloodline, discipline, sect, generation, Humanity, Beast, frenzy, or r�
 
 Match the wound to the band. A graze does not break a leg. A knockdown is not death. Band 6+ is death or a disabling ruin, told through this Action and this room.
 
+## OUTPUT FORMAT
+
+Return exactly one JSON object with a single key `prose`. The value of `prose` is the full narrative: two to four short Russian paragraphs as specified in HOW TO WRITE. No other keys. Example shape: `{"prose": "Paragraph one.\n\nParagraph two."}`
+
 ## FORBIDDEN IN THE OUTPUT
 
 - Any outcome other than the matched rule.
 - A second attack, a counterattack that deals damage, or a new action after this one.
 - Game terms, numbers, and the words успех, ботч, бросок, кубик, дисциплина, клан.
-- Markdown, labels, headings, lists, JSON, a preamble, or an afterword.
+- Markdown, labels, headings, lists, a preamble, or an afterword outside the `prose` string.
 - Advice to the storyteller. The outcome is settled.
 
 ## WORKED PATTERNS
@@ -168,4 +172,4 @@ Before you answer, confirm in silence:
 3. Every object and surface exists in the Action or the Environment.
 4. A willpower beat appears exactly where the flag is true, and a lost spend still loses.
 5. The band matches the net, including the Rule 4 bonus.
-6. The output is two to four Russian paragraphs and nothing else.
+6. The `prose` value is two to four Russian paragraphs and nothing else.

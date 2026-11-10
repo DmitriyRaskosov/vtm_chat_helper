@@ -61,15 +61,35 @@ final class EventGeneratorService
                 [
                     'temperature' => (float) config('copilot.event_temperature'),
                     'max_tokens' => (int) config('copilot.event_max_output_tokens'),
+                    'json_object' => true,
                 ],
             );
         } catch (\Throwable $e) {
             throw new EventGenerationFailedException($e);
         }
 
-        $text = trim($turn->content);
+        return $this->extractProseFromLlmContent($turn->content);
+    }
+
+    private function extractProseFromLlmContent(string $content): string
+    {
+        $text = trim($content);
         if ($text === '') {
             throw new EventGenerationFailedException;
+        }
+
+        if (str_starts_with($text, '{')) {
+            $decoded = json_decode($text, true);
+            if (
+                is_array($decoded)
+                && isset($decoded['prose'])
+                && is_string($decoded['prose'])
+            ) {
+                $prose = trim($decoded['prose']);
+                if ($prose !== '') {
+                    return $prose;
+                }
+            }
         }
 
         return $text;

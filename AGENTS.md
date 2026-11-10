@@ -15,6 +15,32 @@
 * `Rag/` — интеграция с Ollama (EmbeddingProvider).
 * `Scene/` — управление сценами, библиотека локаций, генератор событий (EventGenerator).
 
+## 🗺 Routing Map (Навигационная карта)
+
+**🚨 ПРАВИЛО ДЛЯ АГЕНТА:** Прежде чем использовать `grep` или `find` по всему проекту, найди свою задачу в таблице ниже. Если задача касается известного модуля, сразу открывай указанные файлы. Это сэкономит токены и контекст.
+
+| Feature | Backend (Laravel) | Frontend (Vue 3) |
+| :--- | :--- | :--- |
+| **Боевая секвенция (Ядро)** | `app/Combat/CombatService.php`<br>`app/Http/Controllers/CombatController.php` | — |
+| **Боевая секвенция (UI и Логика)** | `app/Events/Combat*Event.php`<br>`app/Broadcasting/SafeBroadcaster.php` | `components/chat/CombatTracker.vue`<br>`composables/useCombatTracker.js`<br>`composables/combatTrackerOrder.js` |
+| **Дневники NPC (L0/L1, RAG)** | `app/Diary/DiaryWriterService.php`<br>`app/Diary/DiarySummarizerService.php`<br>`app/Diary/DiaryRetrievalService.php`<br>`app/Jobs/*Diary*.php` | `components/chat/DiaryPanel.vue`<br>`components/workshop/DiaryManagement.vue` |
+| **Копилот (Генерация ответов NPC)** | `app/Llm/NpcCopilotService.php`<br>`app/Llm/CopilotDraftService.php`<br>`app/Context/ContextAssembler.php`<br>`resources/prompts/copilot/` | `components/chat/StorytellerCopilotPanel.vue`<br>`composables/useCopilotPanel.js` |
+| **Броски кубов и Макросы** | `app/Dice/DiceService.php`<br>`app/Scene/SceneDiceRollService.php`<br>`app/Http/Controllers/DiceRollController.php` | `components/chat/DiceRoller.vue`<br>`composables/useDiceMacros.js` |
+| **Генератор событий (Проза)** | `app/Scene/EventGeneratorService.php`<br>`resources/prompts/copilot/event.system.md` | `components/chat/EventGeneratorModal.vue`<br>`composables/useEventGenerator.js` |
+| **Управление сценой и Сессиями** | `app/Scene/SceneLifecycleService.php`<br>`app/Scene/SceneParticipantService.php`<br>`app/Scene/SceneContextService.php` | `views/ChatView.vue`<br>`components/chat/SceneManagementModal.vue`<br>`composables/useSceneSession.js` |
+| **Чарлисты и Статы** | `app/Character/CharacterStatsService.php`<br>`app/Character/CharacterSheetReader.php`<br>`app/Http/Controllers/CharacterSheetController.php`<br>`config/sheet_schema.php` | `views/CharacterSheetView.vue`<br>`components/sheet/CharacterSheetGrid.vue`<br>`composables/useCharacterStats.js` |
+| **Инвентарь персонажа** | `app/Character/CharacterItemService.php` | `components/chat/InventoryPanel.vue`<br>`composables/useCharacterInventory.js` |
+| **Чат и Сообщения** | `app/Messages/MessageService.php`<br>`app/Messages/MessageEditService.php`<br>`app/Http/Controllers/ChatController.php` | `components/chat/ChatLog.vue`<br>`components/chat/ChatComposer.vue`<br>`composables/useChatMessages.js` |
+| **WebSockets (Echo/Reverb)** | `routes/channels.php`<br>`config/reverb.php`<br>`app/Events/` | `echo.js`<br>`composables/useConnectionStatus.js` |
+| **Хроники и Приглашения** | `app/Chronicle/ChronicleService.php`<br>`app/Chronicle/InvitationService.php` | `views/ChronicleListView.vue`<br>`components/layout/ChronicleSwitcher.vue` |
+| **Локации (Библиотека)** | `app/Scene/SceneContextService.php`<br>`app/Chronicle/ChronicleLocationService.php` | `components/chat/LocationBanner.vue`<br>`components/chat/LocationManagerModal.vue` |
+| **Мастерская (Промпты)** | `app/Prompt/PromptRepository.php`<br>`app/Prompt/PromptWorkshopService.php` | `views/WorkshopView.vue`<br>`components/workshop/PromptEditor.vue` |
+
+**Правила работы с картой:**
+1. Если задача касается **промптов** — сначала смотри `resources/prompts/` (они не хардкодятся в PHP).
+2. Если задача касается **конфигов** (температура LLM, лимиты) — смотри `config/llm.php`, `config/copilot.php`, `config/diary.php`.
+3. Если задача касается **событий/вебсокетов** — смотри `app/Events/` и `frontend/src/echo.js`.
+
 ## 🏗 Процесс разработки (Spec-Driven Development)
 Никакой код не пишется без утверждённой спеки и плана. Шаги 1 и 2 ниже
 гейтятся явным утверждением человека — переходи к следующему шагу только

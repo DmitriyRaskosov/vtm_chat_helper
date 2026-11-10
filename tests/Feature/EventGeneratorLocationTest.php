@@ -208,6 +208,27 @@ class EventGeneratorLocationTest extends TestCase
         $this->assertSame(1, substr_count($system, '- Скамья: дуб, 100кг'));
     }
 
+    public function test_generate_returns_plain_prose_when_llm_returns_json_object(): void
+    {
+        $prose = 'Абрахам отступает на шаг, не поднимая руки.';
+        $fake = $this->fakeChat()->push(json_encode(['prose' => $prose], JSON_UNESCAPED_UNICODE));
+
+        $result = app(EventGeneratorService::class)->generate(
+            $this->scene,
+            'Порижана бьет скамьей',
+            2,
+            false,
+            false,
+            1,
+            false,
+            false,
+        );
+
+        $this->assertSame($prose, $result);
+        $this->assertStringNotContainsString('{', $result);
+        $this->assertTrue($fake->requests()[0]['options']['json_object'] ?? false);
+    }
+
     /**
      * @param  list<float>  $vector
      */
