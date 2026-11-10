@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'token_estimate',
     'token_estimator_version',
     'is_ooc',
+    'is_narration',
     'is_system',
 ])]
 #[ObservedBy(MessageObserver::class)]
@@ -36,6 +37,10 @@ class Message extends Model
 
     public function displayAuthor(?string $characterCanonicalName = null): string
     {
+        if ($this->isNarration()) {
+            return 'Повествование';
+        }
+
         if ($this->author_character_id !== null) {
             $name = $characterCanonicalName;
             if ($name === null && $this->relationLoaded('authorCharacter')) {
@@ -57,6 +62,16 @@ class Message extends Model
     public function isOoc(): bool
     {
         return (bool) $this->is_ooc;
+    }
+
+    public function isNarration(): bool
+    {
+        return (bool) $this->is_narration;
+    }
+
+    public function narrationContextLine(): string
+    {
+        return '[narration] '.trim((string) $this->body);
     }
 
     /**
@@ -95,6 +110,7 @@ class Message extends Model
     {
         return [
             'is_ooc' => 'boolean',
+            'is_narration' => 'boolean',
             'is_system' => 'boolean',
         ];
     }

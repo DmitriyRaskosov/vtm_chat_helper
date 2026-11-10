@@ -21,6 +21,13 @@ class MessagePolicy
         return true;
     }
 
+    public function narrate(User $user, Scene $scene): bool
+    {
+        $scene->loadMissing('gameSession.chronicle');
+
+        return $user->isStorytellerIn($scene->gameSession->chronicle);
+    }
+
     public function update(User $user, Message $message): Response|bool
     {
         return $this->denyUnlessCanEdit($user, $message);

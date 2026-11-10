@@ -5,9 +5,9 @@
                 <button
                     type="button"
                     class="mode-btn"
-                    :class="{ active: !isOoc, ic: !isOoc }"
+                    :class="{ active: !isOoc && !isNarration, ic: !isOoc && !isNarration }"
                     :disabled="!canPost"
-                    @click="isOoc = false"
+                    @click="selectIc"
                 >
                     Реплика
                 </button>
@@ -16,13 +16,23 @@
                     class="mode-btn"
                     :class="{ active: isOoc, ooc: isOoc }"
                     :disabled="!canPost"
-                    @click="isOoc = true"
+                    @click="selectOoc"
                 >
                     Обсуждение
                 </button>
+                <button
+                    v-if="isStoryteller"
+                    type="button"
+                    class="mode-btn"
+                    :class="{ active: isNarration, narration: isNarration }"
+                    :disabled="!canPost"
+                    @click="selectNarration"
+                >
+                    Повествование
+                </button>
             </div>
 
-            <label v-if="isStoryteller" class="npc-selector">
+            <label v-if="isStoryteller && !isNarration" class="npc-selector">
                 <span class="npc-selector-label">Писать от лица:</span>
                 <select
                     :value="speakerCharacterId ?? ''"
@@ -55,7 +65,7 @@
                     </option>
                 </select>
             </label>
-            <p v-else-if="myCharacterName" class="composer-as">
+            <p v-else-if="myCharacterName && !isNarration" class="composer-as">
                 Пишете за: <strong>{{ myCharacterName }}</strong>
             </p>
 
@@ -109,6 +119,7 @@ const props = defineProps({
 
 const body = defineModel('body', { type: String });
 const isOoc = defineModel('isOoc', { type: Boolean, default: false });
+const isNarration = defineModel('isNarration', { type: Boolean, default: false });
 const showDeleted = defineModel('showDeleted', { type: Boolean, default: false });
 const speakerCharacterId = defineModel('speakerCharacterId');
 const selectedPcId = defineModel('selectedPcId');
@@ -128,10 +139,29 @@ const fieldPlaceholder = computed(() => {
         return props.placeholder;
     }
 
+    if (isNarration.value) {
+        return 'Опишите действие или обстановку...';
+    }
+
     return isOoc.value
         ? 'Вопрос мастеру, мета-обсуждение...'
         : 'Ваши слова или действия...';
 });
+
+function selectIc() {
+    isOoc.value = false;
+    isNarration.value = false;
+}
+
+function selectOoc() {
+    isNarration.value = false;
+    isOoc.value = true;
+}
+
+function selectNarration() {
+    isOoc.value = false;
+    isNarration.value = true;
+}
 
 function onSpeakerChange(event) {
     const value = Number(event.target.value);

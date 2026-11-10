@@ -73,7 +73,12 @@ final class MessageService
 
     public function post(Scene $scene, User $user, PostMessageData $data): Message
     {
-        [$authorCharacterId, $npcName] = $this->resolveWorldAuthor($scene, $user, $data->characterId);
+        if ($data->isNarration) {
+            $authorCharacterId = null;
+            $npcName = null;
+        } else {
+            [$authorCharacterId, $npcName] = $this->resolveWorldAuthor($scene, $user, $data->characterId);
+        }
 
         $message = DB::transaction(function () use ($scene, $user, $data, $authorCharacterId, $npcName): Message {
             if ($data->copilotRequestId === null) {
@@ -84,6 +89,7 @@ final class MessageService
                     'author_character_id' => $authorCharacterId,
                     'copilot_request_id' => null,
                     'is_ooc' => $data->isOoc,
+                    'is_narration' => $data->isNarration,
                 ]);
             }
 
@@ -110,6 +116,7 @@ final class MessageService
                 'author_character_id' => $authorCharacterId,
                 'copilot_request_id' => $copilotRequest->id,
                 'is_ooc' => $data->isOoc,
+                'is_narration' => $data->isNarration,
             ]);
 
             $copilotRequest->update([
@@ -136,6 +143,7 @@ final class MessageService
             'author_character_id' => null,
             'copilot_request_id' => null,
             'is_ooc' => false,
+            'is_narration' => false,
             'is_system' => true,
         ])->load('user:id,name');
 

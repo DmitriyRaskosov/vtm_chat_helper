@@ -56,6 +56,7 @@ class MessageResource extends JsonResource
             'npc_name' => $message->npc_name,
             'author_character_id' => $characterId,
             'is_ooc' => (bool) $message->is_ooc,
+            'is_narration' => $message->isNarration(),
             'is_system' => (bool) $message->is_system,
             'is_deleted' => $message->trashed(),
             'created_at' => $message->created_at?->timezone(config('app.timezone'))->format('H:i'),
@@ -65,6 +66,10 @@ class MessageResource extends JsonResource
 
     private function avatarPath(Message $message): ?string
     {
+        if ($message->isNarration()) {
+            return null;
+        }
+
         $path = $message->authorCharacter?->avatar_path;
 
         return is_string($path) && $path !== '' ? $path : null;

@@ -1070,6 +1070,19 @@ summary {
     font-size: 0.92rem;
 }
 
+.narration-badge {
+    display: inline-block;
+    margin-right: 0.5rem;
+    color: var(--gold);
+    font-family: var(--font-lore);
+    font-size: 0.85rem;
+    font-style: normal;
+    font-weight: 600;
+    letter-spacing: 0.03em;
+    text-transform: none;
+    vertical-align: middle;
+}
+
 .ooc-badge {
     display: inline-block;
     padding: 1px 6px;
@@ -2141,6 +2154,17 @@ body.chat-split-resizing .gothic-layout .chat-split-resizer {
     background: var(--bg-light);
 }
 
+.chat-log .msg.msg-narration {
+    align-self: stretch;
+    max-width: 100%;
+}
+
+.chat-log .msg.msg-narration .msg-body {
+    font-family: var(--font-lore);
+    font-style: normal;
+    border-left: 3px solid var(--gold);
+}
+
 .chat-log .msg.msg-system {
     align-self: center;
     max-width: 100%;
@@ -2220,6 +2244,11 @@ body.chat-split-resizing .gothic-layout .chat-split-resizer {
 .mode-btn.active.ooc {
     background: var(--bg-light);
     color: var(--on-accent);
+}
+
+.mode-btn.active.narration {
+    background: var(--bg-light);
+    color: var(--gold);
 }
 
 .npc-selector {

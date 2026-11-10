@@ -17,6 +17,11 @@ class StoreMessageRequest extends FormRequest
         return [
             'body' => ['required', 'string', 'max:8000'],
             'is_ooc' => ['sometimes', 'boolean'],
+            'is_narration' => [
+                'sometimes',
+                'boolean',
+                Rule::prohibitedIf(fn (): bool => $this->boolean('is_ooc')),
+            ],
             'npc_name' => ['prohibited'],
             'character_id' => ['sometimes', 'nullable', 'integer', 'exists:characters,id'],
             'scene_id' => ['sometimes', 'integer', 'exists:scenes,id'],

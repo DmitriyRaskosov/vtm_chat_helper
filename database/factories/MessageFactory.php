@@ -24,6 +24,7 @@ class MessageFactory extends Factory
             'author_character_id' => null,
             'copilot_request_id' => null,
             'is_ooc' => false,
+            'is_narration' => false,
         ];
     }
 

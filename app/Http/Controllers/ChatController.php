@@ -74,6 +74,11 @@ class ChatController extends Controller
         $user = $request->user();
         $this->authorize('create', [Message::class, $scene]);
 
+        $isNarration = (bool) ($validated['is_narration'] ?? false);
+        if ($isNarration) {
+            $this->authorize('narrate', [Message::class, $scene]);
+        }
+
         $characterId = isset($validated['character_id']) ? (int) $validated['character_id'] : null;
         if ($characterId !== null) {
             $character = Character::query()->findOrFail($characterId);
@@ -89,6 +94,7 @@ class ChatController extends Controller
         $data = new PostMessageData(
             body: $validated['body'],
             isOoc: (bool) ($validated['is_ooc'] ?? false),
+            isNarration: (bool) ($validated['is_narration'] ?? false),
             characterId: $characterId,
             copilotRequestId: isset($validated['copilot_request_id']) ? (int) $validated['copilot_request_id'] : null,
             copilotDraftIndex: isset($validated['copilot_draft_index']) ? (int) $validated['copilot_draft_index'] : null,

@@ -68,7 +68,9 @@ class RecentMessagesProvider implements ContextProvider
             $ids[] = (int) $message->id;
             $authorId = $message->author_character_id;
             $canonical = is_numeric($authorId) ? ($names[(int) $authorId] ?? null) : null;
-            if ($message->is_system) {
+            if ($message->isNarration()) {
+                $lines[] = $message->narrationContextLine();
+            } elseif ($message->is_system) {
                 $lines[] = '[system] '.$message->body;
             } else {
                 $author = $message->displayAuthor(is_string($canonical) ? $canonical : null);

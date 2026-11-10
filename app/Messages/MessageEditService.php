@@ -3,6 +3,7 @@
 namespace App\Messages;
 
 use App\Diary\DiaryScheduler;
+use App\Messages\Exceptions\NarrationOocConflictException;
 use App\Models\Message;
 use App\Models\User;
 
@@ -12,6 +13,10 @@ class MessageEditService
 
     public function toggleOoc(Message $message, User $user, bool $isOoc): Message
     {
+        if ($isOoc && $message->isNarration()) {
+            throw new NarrationOocConflictException;
+        }
+
         if ((bool) $message->is_ooc === $isOoc) {
             return $message;
         }

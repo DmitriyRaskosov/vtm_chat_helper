@@ -389,7 +389,13 @@ class DiaryWriterService
     {
         return $messages
             ->filter(fn (Message $m): bool => ! $m->is_system)
-            ->map(fn (Message $m): string => $m->displayAuthor().': '.trim((string) $m->body))
+            ->map(function (Message $m): string {
+                if ($m->isNarration()) {
+                    return $m->narrationContextLine();
+                }
+
+                return $m->displayAuthor().': '.trim((string) $m->body);
+            })
             ->implode("\n");
     }
 }

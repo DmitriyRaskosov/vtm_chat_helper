@@ -106,6 +106,7 @@
                 <ChatComposer
                     v-model:body="body"
                     v-model:is-ooc="isOoc"
+                    v-model:is-narration="isNarration"
                     v-model:show-deleted="showDeleted"
                     v-model:speaker-character-id="speakerCharacterId"
                     :can-post="canCompose"
@@ -465,6 +466,7 @@ const {
     oocMessages,
     body,
     isOoc,
+    isNarration,
     showDeleted,
     remoteTypingIcLabel,
     remoteTypingOocLabel,

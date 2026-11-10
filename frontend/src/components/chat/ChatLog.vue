@@ -14,14 +14,16 @@
                 <template v-else>
                     <div class="meta">
                         <img
-                            v-if="avatarSrc(message)"
+                            v-if="!message.is_narration && avatarSrc(message)"
                             class="msg-avatar"
                             :src="avatarSrc(message)"
                             alt=""
                         />
-                        <span v-if="message.is_ooc" class="ooc-badge">OOC</span>
+                        <span v-if="message.is_narration" class="narration-badge">Повествование</span>
+                        <span v-else-if="message.is_ooc" class="ooc-badge">OOC</span>
                         <span v-if="message.is_deleted" class="deleted-badge">УДАЛЕНО</span>
-                        {{ authorLabel(message) }} · {{ message.created_at }}
+                        <template v-if="message.is_narration">{{ message.created_at }}</template>
+                        <template v-else>{{ authorLabel(message) }} · {{ message.created_at }}</template>
                     </div>
                     <div v-if="editingId !== message.id" class="msg-body">{{ message.body }}</div>
                     <div v-else ref="editPanelEl" class="msg-edit">
@@ -42,7 +44,12 @@
                             >
                                 Редактировать
                             </button>
-                            <button type="button" class="msg-action" @click="emit('toggle-ooc', message)">
+                            <button
+                                v-if="!message.is_narration"
+                                type="button"
+                                class="msg-action"
+                                @click="emit('toggle-ooc', message)"
+                            >
                                 {{ message.is_ooc ? '→ In Character' : '→ Out Of Character' }}
                             </button>
                             <button type="button" class="msg-action danger" @click="emit('delete', message)">
@@ -140,9 +147,10 @@ function messageClasses(message) {
     const classes = {
         'msg-deleted': message.is_deleted,
         'msg-system': message.is_system,
+        'msg-narration': message.is_narration,
     };
 
-    if (message.is_system) {
+    if (message.is_system || message.is_narration) {
         return classes;
     }
 
@@ -198,7 +206,7 @@ function canEdit(message) {
 }
 
 function avatarSrc(message) {
-    if (message.is_system) {
+    if (message.is_system || message.is_narration) {
         return '';
     }
 

@@ -27,6 +27,7 @@ class ChatJsonShapeTest extends TestCase
         'npc_name',
         'author_character_id',
         'is_ooc',
+        'is_narration',
         'is_system',
         'is_deleted',
         'created_at',
@@ -94,6 +95,8 @@ class ChatJsonShapeTest extends TestCase
         $this->assertIsBool($item['is_deleted']);
         $this->assertFalse($item['is_deleted']);
         $this->assertIsBool($item['is_ooc']);
+        $this->assertIsBool($item['is_narration']);
+        $this->assertFalse($item['is_narration']);
         $this->assertIsBool($item['mine']);
         $this->assertNull($item['avatar_path']);
     }

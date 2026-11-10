@@ -19,6 +19,9 @@ Write exactly {{draftCount}} variants. Each is a single chat message — no narr
 OOC
 Lines marked [OOC] are meta between storyteller and players. The NPC does not hear them and must not mention them.
 
+NARRATION
+Lines that start with [narration] are the voice of the world: an objective description of events, not a character's speech. There is no author name. Treat what they describe as a fact that has already happened. If the narration says a character fell, that character is on the floor. React to the events. Do not address, answer, or refer to an author of the narration. Your own drafts are only this NPC's reply: never start them with [narration] and never write in the world's voice.
+
 CHAT AUTHORSHIP
 Lines tagged [author] belong to the name before the colon.
 Строки в чате принадлежат автору. Если в строке описано действие (например, 'бьет', 'блокирует'), этот автор является СУБЪЕКТОМ действия. Не приписывай действия другим.

@@ -9,12 +9,18 @@ const SELECTED_PC_KEY = 'chat-selected-pc-id';
 const TYPING_SEND_INTERVAL_MS = 2000;
 const TYPING_HIDE_MS = 3000;
 
-function readComposerOocFromStorage() {
-    return localStorage.getItem(COMPOSER_MODE_KEY) === 'ooc';
+function readComposerMode() {
+    const stored = localStorage.getItem(COMPOSER_MODE_KEY);
+
+    if (stored === 'ooc' || stored === 'narration') {
+        return stored;
+    }
+
+    return 'ic';
 }
 
-function writeComposerOocToStorage(isOoc) {
-    localStorage.setItem(COMPOSER_MODE_KEY, isOoc ? 'ooc' : 'ic');
+function writeComposerMode(mode) {
+    localStorage.setItem(COMPOSER_MODE_KEY, mode);
 }
 
 function isNpcMessage(message) {
@@ -46,7 +52,8 @@ export function useChatMessages({
 }) {
     const messages = ref([]);
     const body = ref('');
-    const isOoc = ref(readComposerOocFromStorage());
+    const isNarration = ref(readComposerMode() === 'narration' && Boolean(toValue(isStoryteller)));
+    const isOoc = ref(readComposerMode() === 'ooc');
     const showDeleted = ref(false);
     const remoteTypingIcLabel = ref('');
     const remoteTypingOocLabel = ref('');
@@ -164,8 +171,19 @@ export function useChatMessages({
         showRemoteTyping(userName, Boolean(payload?.is_ooc));
     });
 
-    watch(isOoc, (value) => {
-        writeComposerOocToStorage(value);
+    watch([isOoc, isNarration], () => {
+        if (isNarration.value) {
+            writeComposerMode('narration');
+            return;
+        }
+
+        writeComposerMode(isOoc.value ? 'ooc' : 'ic');
+    });
+
+    watch(isStoryteller, (value) => {
+        if (!value && isNarration.value) {
+            isNarration.value = false;
+        }
     });
 
     function readStoredPcId() {
@@ -344,27 +362,31 @@ export function useChatMessages({
             return;
         }
     
+        const narration = Boolean(isStoryteller.value) && isNarration.value;
         const payload = {
             body: text,
             scene_id: selectedSceneId.value,
-            is_ooc: isOoc.value,
+            is_ooc: narration ? false : isOoc.value,
+            is_narration: narration,
         };
-    
-        const chosenSpeaker = speakerCharacterId?.value;
-        let characterId = null;
 
-        if (isStoryteller.value) {
-            characterId = chosenSpeaker != null && chosenSpeaker !== ''
-                ? chosenSpeaker
-                : myCharacterId?.value;
-        } else if (activePlayerCharacters.value.length > 1 && selectedPcId.value) {
-            characterId = selectedPcId.value;
-        } else {
-            characterId = myCharacterId?.value;
-        }
+        if (!narration) {
+            const chosenSpeaker = speakerCharacterId?.value;
+            let characterId = null;
 
-        if (characterId) {
-            payload.character_id = characterId;
+            if (isStoryteller.value) {
+                characterId = chosenSpeaker != null && chosenSpeaker !== ''
+                    ? chosenSpeaker
+                    : myCharacterId?.value;
+            } else if (activePlayerCharacters.value.length > 1 && selectedPcId.value) {
+                characterId = selectedPcId.value;
+            } else {
+                characterId = myCharacterId?.value;
+            }
+
+            if (characterId) {
+                payload.character_id = characterId;
+            }
         }
     
         let path;
@@ -412,6 +434,7 @@ export function useChatMessages({
         oocMessages,
         body,
         isOoc,
+        isNarration,
         showDeleted,
         remoteTypingIcLabel,
         remoteTypingOocLabel,
