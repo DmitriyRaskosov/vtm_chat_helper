@@ -1,5 +1,11 @@
 <template>
     <aside class="right-panel">
+        <div v-if="loading" class="sidebar-skeleton" aria-busy="true" aria-label="Загрузка панели">
+            <div class="skeleton-block"></div>
+            <div class="skeleton-block"></div>
+            <div class="skeleton-block skeleton-block--tall"></div>
+        </div>
+        <template v-else>
         <div class="participants">
             <div class="participants-heading">
                 <button
@@ -36,6 +42,7 @@
         </div>
         <div class="tabs">
             <button
+                v-if="viewerIsStoryteller"
                 type="button"
                 class="tab"
                 :class="{ active: tab === 'copilot' }"
@@ -52,6 +59,7 @@
                 Лог боя
             </button>
             <button
+                v-if="viewerIsStoryteller"
                 type="button"
                 class="tab"
                 :class="{ active: tab === 'events' }"
@@ -60,9 +68,9 @@
                 События
             </button>
         </div>
-        <div v-show="tab === 'copilot'" class="tab-content">
+        <div v-if="viewerIsStoryteller" v-show="tab === 'copilot'" class="tab-content">
             <StorytellerCopilotPanel
-                v-if="isStoryteller"
+                v-if="viewerIsStoryteller"
                 ref="copilotPanel"
                 v-model:selected-npc-id="selectedNpcId"
                 :scene-npcs="sceneNpcs"
@@ -71,7 +79,6 @@
                 :can-post="canPost"
                 @sent="emit('npc-sent', $event)"
             />
-            <p v-else class="muted">Copilot доступен рассказчику.</p>
         </div>
         <div v-show="tab === 'battle'" class="tab-content">
             <BattleLog
@@ -84,9 +91,9 @@
                 @seed-change="eventSeed = $event"
             />
         </div>
-        <div v-show="tab === 'events'" class="tab-content">
+        <div v-if="viewerIsStoryteller" v-show="tab === 'events'" class="tab-content">
             <EventGeneratorModal
-                v-if="isStoryteller"
+                v-if="viewerIsStoryteller"
                 embedded
                 :open="true"
                 :generating="eventGenerating"
@@ -95,8 +102,8 @@
                 :seed="eventSeed"
                 @generate="onGenerateEvent"
             />
-            <p v-else class="muted">Генератор событий доступен рассказчику.</p>
         </div>
+        </template>
     </aside>
 </template>
 
@@ -105,6 +112,7 @@ import { computed, ref } from 'vue';
 import BattleLog from './BattleLog.vue';
 import EventGeneratorModal from './EventGeneratorModal.vue';
 import StorytellerCopilotPanel from './StorytellerCopilotPanel.vue';
+import { isStoryteller as viewerIsStoryteller } from '../../auth';
 import { useEventGenerator } from '../../composables/useEventGenerator';
 import { characterTypeLabel } from '../../utils/labels';
 
@@ -118,6 +126,7 @@ const props = defineProps({
     logs: { type: Array, required: true },
     logError: { type: String, default: '' },
     activeEncounterId: { type: Number, default: null },
+    loading: { type: Boolean, default: false },
 });
 
 const selectedNpcId = defineModel('selectedNpcId');
@@ -133,7 +142,7 @@ function toggleSceneCast() {
     localStorage.setItem(SCENE_CAST_OPEN_KEY, sceneCastOpen.value ? '1' : '0');
 }
 
-const tab = ref('copilot');
+const tab = ref(viewerIsStoryteller.value ? 'copilot' : 'battle');
 const copilotPanel = ref(null);
 const eventSeed = ref(null);
 const eventGeneratedText = ref('');

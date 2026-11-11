@@ -2,10 +2,12 @@
 
 namespace App\Scene;
 
+use App\Broadcasting\SafeBroadcaster;
 use App\Character\Exceptions\CharacterNotInChronicleException;
 use App\Enums\CharacterType;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneStatus;
+use App\Events\GameSessionTurnChanged;
 use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\GameSession;
@@ -102,8 +104,29 @@ final class GameSessionService
         }
 
         $gameSession->update(['active_character_id' => $characterId]);
+        $updated = $gameSession->refresh();
+        $this->broadcastTurn($updated);
 
-        return $gameSession->refresh();
+        return $updated;
+    }
+
+    private function broadcastTurn(GameSession $gameSession): void
+    {
+        $sceneIds = Scene::query()
+            ->where('game_session_id', $gameSession->id)
+            ->pluck('id')
+            ->map(fn ($id): int => (int) $id)
+            ->all();
+
+        if ($sceneIds === []) {
+            return;
+        }
+
+        SafeBroadcaster::send(new GameSessionTurnChanged(
+            (int) $gameSession->id,
+            $gameSession->active_character_id === null ? null : (int) $gameSession->active_character_id,
+            $sceneIds,
+        ));
     }
 
     public function releaseActiveCharacterForPlayer(GameSession $gameSession, User $user): GameSession

@@ -11,6 +11,7 @@ import ChronicleListView from './views/ChronicleListView.vue';
 import InvitationAcceptView from './views/InvitationAcceptView.vue';
 import WorkshopView from './views/WorkshopView.vue';
 import ProfileView from './views/ProfileView.vue';
+import NotFoundView from './views/NotFoundView.vue';
 
 function legacyChronicleRedirect(suffix) {
     return resolveChroniclePath(suffix);
@@ -71,6 +72,7 @@ const router = createRouter({
             redirect: (to) => legacyChronicleRedirect(`characters/${to.params.id}`),
         },
         { path: '/world', redirect: () => resolveChroniclePath('chat') },
+        { path: '/:pathMatch(.*)*', name: 'not-found', component: NotFoundView },
     ],
 });
 

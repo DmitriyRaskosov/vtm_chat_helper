@@ -6,6 +6,7 @@ const isInventoryOpen = ref(false);
 const isCharacterOpen = ref(false);
 const isDiaryOpen = ref(false);
 const isCombatOpen = ref(false);
+const isOocCollapsed = ref(false);
 
 export function useChatPanels() {
     function toggleDice() {
@@ -32,6 +33,10 @@ export function useChatPanels() {
         isCombatOpen.value = !isCombatOpen.value;
     }
 
+    function toggleOocCollapsed() {
+        isOocCollapsed.value = !isOocCollapsed.value;
+    }
+
     function closeAll() {
         isDiceOpen.value = false;
         isNotesOpen.value = false;
@@ -48,12 +53,14 @@ export function useChatPanels() {
         isCharacterOpen,
         isDiaryOpen,
         isCombatOpen,
+        isOocCollapsed,
         toggleDice,
         toggleNotes,
         toggleInventory,
         toggleCharacter,
         toggleDiary,
         toggleCombat,
+        toggleOocCollapsed,
         closeAll,
     };
 }

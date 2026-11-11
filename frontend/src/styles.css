@@ -1745,6 +1745,10 @@ summary {
 .sidebar {
     width: 60px;
     flex-shrink: 0;
+    align-self: flex-start;
+    position: sticky;
+    top: 0;
+    height: 100vh;
     background: var(--bg-panel);
     border-right: 1px solid var(--border);
     display: flex;
@@ -1824,6 +1828,9 @@ summary {
 }
 
 .top-bar {
+    position: relative;
+    z-index: 25;
+    flex-shrink: 0;
     background: var(--bg-panel);
     padding: 0.6rem 1.5rem;
     border-bottom: 1px solid var(--border);
@@ -1831,14 +1838,15 @@ summary {
     justify-content: space-between;
     align-items: center;
     gap: 1rem;
-    z-index: 20;
 }
 
 .scene-info {
     display: flex;
     align-items: center;
     gap: 1rem;
+    flex: 1 1 auto;
     min-width: 0;
+    overflow: hidden;
 }
 
 .scene-title {
@@ -2291,6 +2299,33 @@ body.chat-split-resizing .gothic-layout .chat-split-resizer {
     display: flex;
     gap: 1rem;
     align-items: flex-end;
+}
+
+.composer-input-stack {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+}
+
+.composer-input-stack.composer-your-turn .input-box {
+    box-shadow: 0 0 0 2px #e8b84a;
+}
+
+.composer-turn-close {
+    flex-shrink: 0;
+    padding: 0 0.35rem;
+    border: 0;
+    background: transparent;
+    color: #1a1a1a;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.composer-turn-restore {
+    align-self: flex-start;
 }
 
 .composer-wrapper .input-box {
@@ -3069,4 +3104,232 @@ body.floating-window-dragging {
     border-radius: 3px;
     border: 1px solid var(--border);
     color: var(--muted, var(--text));
+}
+
+* {
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) var(--bg-main);
+}
+
+*::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+*::-webkit-scrollbar-track {
+    background: var(--bg-main);
+}
+
+*::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 4px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: var(--gold);
+}
+
+.action-beat {
+    font-style: italic;
+    color: var(--text-muted);
+}
+
+.mention {
+    color: var(--gold);
+    background: color-mix(in srgb, var(--gold) 18%, transparent);
+    border-radius: 3px;
+    padding: 0 0.15em;
+}
+
+.chat-log .msg {
+    animation: fadeInUp 0.35s ease;
+}
+
+.chat-log .msg.msg-same-author {
+    margin-top: -0.4rem;
+}
+
+.chat-log .msg.msg-author-break {
+    margin-top: 0.55rem;
+}
+
+.chat-split-container--ooc-collapsed > .chat-split-resizer {
+    display: none;
+}
+
+.chat-ooc-pane--collapsed {
+    height: auto;
+    min-height: 0;
+}
+
+.chat-ooc-pane--collapsed .chat-log-wrap {
+    display: none;
+}
+
+.gothic-layout .chat-ooc-pane--collapsed {
+    flex: 0 0 auto;
+    width: auto;
+    align-self: flex-end;
+}
+
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(6px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.45;
+    }
+}
+
+@keyframes shake {
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    20% {
+        transform: rotate(-12deg);
+    }
+
+    40% {
+        transform: rotate(12deg);
+    }
+
+    60% {
+        transform: rotate(-8deg);
+    }
+
+    80% {
+        transform: rotate(8deg);
+    }
+}
+
+.shake {
+    display: inline-flex;
+    animation: shake 0.45s linear infinite;
+}
+
+.pulse {
+    animation: pulse 1.4s ease-in-out infinite;
+}
+
+.turn-badge.pulse {
+    animation: turn-badge-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes turn-badge-pulse {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 transparent;
+    }
+
+    50% {
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--gold) 65%, transparent);
+    }
+}
+
+.chat-skeleton,
+.sidebar-skeleton {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    min-height: 0;
+}
+
+.chat-skeleton {
+    flex: 1;
+    padding: 1rem 1.5rem;
+}
+
+.sidebar-skeleton {
+    flex: 1;
+    padding: 1rem;
+}
+
+.skeleton-block {
+    height: 2.2rem;
+    border-radius: 4px;
+    background: var(--bg-light);
+    animation: pulse 1.4s ease-in-out infinite;
+}
+
+.skeleton-block--bar {
+    height: 2.5rem;
+}
+
+.skeleton-block--banner {
+    height: 4.5rem;
+}
+
+.skeleton-block--log,
+.skeleton-block--tall {
+    flex: 1;
+    min-height: 12rem;
+}
+
+input[type="text"],
+input[type="password"],
+input[type="number"],
+input[type="email"],
+input[type="search"] {
+    appearance: none;
+    border-radius: 4px;
+    background: var(--input-bg);
+}
+
+textarea,
+select {
+    border-radius: 4px;
+    background-color: var(--input-bg);
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="number"]:focus,
+input[type="email"]:focus,
+input[type="search"]:focus,
+textarea:focus,
+select:focus {
+    outline: none;
+    border-color: var(--gold);
+    box-shadow: 0 0 0 1px var(--gold);
+}
+
+@media (min-width: 768px) {
+    select {
+        appearance: none;
+        padding-right: 1.75rem;
+        background-image:
+            linear-gradient(45deg, transparent 50%, var(--gold) 50%),
+            linear-gradient(135deg, var(--gold) 50%, transparent 50%);
+        background-position:
+            calc(100% - 0.95rem) 55%,
+            calc(100% - 0.65rem) 55%;
+        background-size: 0.3rem 0.3rem, 0.3rem 0.3rem;
+        background-repeat: no-repeat;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chat-log .msg,
+    .shake,
+    .pulse,
+    .turn-badge.pulse,
+    .skeleton-block {
+        animation: none;
+    }
 }

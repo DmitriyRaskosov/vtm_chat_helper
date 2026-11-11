@@ -82,27 +82,71 @@
                 <input v-model="showDeleted" type="checkbox" />
                 Удалённые
             </label>
+
+            <button
+                type="button"
+                class="btn-sm composer-ooc-collapse"
+                :aria-expanded="!isOocCollapsed"
+                aria-controls="chat-ooc-pane"
+                @click="toggleOocCollapsed"
+            >
+                {{ isOocCollapsed ? 'Развернуть обсуждение' : 'Свернуть обсуждение' }}
+            </button>
         </div>
 
         <div class="composer-input-row">
-            <textarea
-                v-model="body"
-                class="input-box"
-                maxlength="8000"
-                required
-                :disabled="!canPost"
-                :placeholder="fieldPlaceholder"
-                @keydown="onTextareaKeydown"
-            ></textarea>
+            <div class="composer-input-stack" :class="{ 'composer-your-turn': showTurnFrame }">
+                <div v-if="showTurnFrame" class="composer-turn-banner">
+                    <span class="composer-turn-label">
+                        ВАШ ХОД<span v-if="myCharacterName"> ({{ myCharacterName }})</span>
+                    </span>
+                    <button
+                        type="button"
+                        class="composer-turn-done"
+                        :disabled="turnBusy"
+                        @click="emit('end-turn')"
+                    >
+                        {{ turnBusy ? '…' : 'Готово' }}
+                    </button>
+                    <button
+                        type="button"
+                        class="composer-turn-close"
+                        title="Скрыть"
+                        @click="turnDismissed = true"
+                    >
+                        ×
+                    </button>
+                </div>
+                <button
+                    v-else-if="isMyTurn"
+                    type="button"
+                    class="btn-sm composer-turn-restore"
+                    @click="turnDismissed = false"
+                >
+                    ВАШ ХОД
+                </button>
+                <textarea
+                    v-model="body"
+                    class="input-box"
+                    maxlength="8000"
+                    required
+                    :disabled="!canPost"
+                    :placeholder="fieldPlaceholder"
+                    @keydown="onTextareaKeydown"
+                ></textarea>
+            </div>
             <button type="submit" class="btn-send" :disabled="!canPost">Отправить</button>
         </div>
     </form>
 </template>
 
 <script setup>
-import { computed } from 'vue';
+import { computed, ref, watch } from 'vue';
 import ChatToolsToolbar from './ChatToolsToolbar.vue';
+import { useChatPanels } from '../../composables/useChatPanels';
 import { characterTypeLabel } from '../../utils/labels';
+
+const { isOocCollapsed, toggleOocCollapsed } = useChatPanels();
 
 const props = defineProps({
     canPost: { type: Boolean, required: true },
@@ -115,6 +159,8 @@ const props = defineProps({
     activePlayerCharacters: { type: Array, default: () => [] },
     combatActive: { type: Boolean, default: false },
     canStartCombat: { type: Boolean, default: false },
+    isMyTurn: { type: Boolean, default: false },
+    turnBusy: { type: Boolean, default: false },
 });
 
 const body = defineModel('body', { type: String });
@@ -124,7 +170,16 @@ const showDeleted = defineModel('showDeleted', { type: Boolean, default: false }
 const speakerCharacterId = defineModel('speakerCharacterId');
 const selectedPcId = defineModel('selectedPcId');
 
-const emit = defineEmits(['send', 'start-combat']);
+const emit = defineEmits(['send', 'start-combat', 'end-turn']);
+
+const turnDismissed = ref(false);
+const showTurnFrame = computed(() => props.isMyTurn && !turnDismissed.value);
+
+watch(() => props.isMyTurn, (value, previous) => {
+    if (value && !previous) {
+        turnDismissed.value = false;
+    }
+});
 
 const npcParticipants = computed(() => props.participants.filter(
     (row) => row.character_type === 'npc',

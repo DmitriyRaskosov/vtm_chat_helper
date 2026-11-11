@@ -20,29 +20,21 @@
                         </option>
                     </select>
                 </div>
-                <TurnBadge
-                    v-if="isMyTurn && !turnBadgeDismissed"
-                    :character-name="myCharacterName ?? ''"
-                    :busy="participantBusy"
-                    @close="turnBadgeDismissed = true"
-                    @end-turn="releaseMyTurn"
-                />
-                <button
-                    v-else-if="isMyTurn && turnBadgeDismissed"
-                    type="button"
-                    class="turn-badge"
-                    @click="turnBadgeDismissed = false"
-                >
-                    ВАШ ХОД
-                </button>
             </header>
 
             <p v-if="isFallbackMode" class="connection-fallback-notice" role="status">
                 Соединение нестабильно. Включен резервный режим
             </p>
 
+            <div v-if="chatLoading" class="chat-skeleton" aria-busy="true" aria-live="polite">
+                <span class="sr-only">Загрузка сцены</span>
+                <div class="skeleton-block skeleton-block--bar"></div>
+                <div class="skeleton-block skeleton-block--banner"></div>
+                <div class="skeleton-block skeleton-block--log"></div>
+            </div>
+
             <LocationBanner
-                v-if="gameSession && selectedScene"
+                v-if="!chatLoading && gameSession && selectedScene"
                 :image-url="locationImageUrl"
                 :situation="sceneSituation"
                 :is-storyteller="isStoryteller"
@@ -52,7 +44,12 @@
                 @open-manage="sceneManageOpen = true"
             />
 
-            <div v-if="gameSession" ref="splitContainer" class="chat-container chat-split-container">
+            <div
+                v-if="!chatLoading && gameSession"
+                ref="splitContainer"
+                class="chat-container chat-split-container"
+                :class="{ 'chat-split-container--ooc-collapsed': isOocCollapsed }"
+            >
                 <section class="chat-ic-pane">
                     <h2 class="chat-pane-title">Сюжет</h2>
                     <ChatLog
@@ -79,7 +76,9 @@
                     @mousedown.prevent.stop="onSplitResizeStart"
                 />
                 <section
+                    id="chat-ooc-pane"
                     class="chat-ooc-pane"
+                    :class="{ 'chat-ooc-pane--collapsed': isOocCollapsed }"
                     :style="oocPaneStyle"
                     @mousedown="onOocPaneFocus"
                 >
@@ -102,7 +101,7 @@
                 </section>
             </div>
 
-            <footer v-if="gameSession" class="composer-anchor">
+            <footer v-if="!chatLoading && gameSession" class="composer-anchor">
                 <ChatComposer
                     v-model:body="body"
                     v-model:is-ooc="isOoc"
@@ -119,9 +118,12 @@
                     :active-player-characters="playerCharactersOnScene"
                     :combat-active="combatActive"
                     :can-start-combat="selectedSceneId != null"
+                    :is-my-turn="isMyTurn"
+                    :turn-busy="participantBusy"
                     v-model:selected-pc-id="selectedPcId"
                     @send="send"
                     @start-combat="onStartCombat"
+                    @end-turn="releaseMyTurn"
                 />
             </footer>
 
@@ -224,7 +226,7 @@
 
             <Teleport to="body" :disabled="!gameSession">
             <div
-                v-if="!gameSession || sceneSettingsOpen"
+                v-if="!chatLoading && (!gameSession || sceneSettingsOpen)"
                 class="modal-overlay"
                 :class="{ 'modal-overlay-static': !gameSession }"
                 @click.self="sceneSettingsOpen = false"
@@ -323,6 +325,7 @@
             :logs="logs"
             :log-error="logError"
             :active-encounter-id="combatEncounterId"
+            :loading="chatLoading"
             @select-participant="onSelectParticipant"
             @npc-sent="onNpcSent"
             @open-scene-manage="sceneManageOpen = true"
@@ -347,7 +350,6 @@ import DiceRoller from '../components/chat/DiceRoller.vue';
 import FloatingWindow from '../components/chat/FloatingWindow.vue';
 import LocationBanner from '../components/chat/LocationBanner.vue';
 import RightSidebar from '../components/chat/RightSidebar.vue';
-import TurnBadge from '../components/chat/TurnBadge.vue';
 import { playPlayerTurnSound } from '../utils/chatMessageSound';
 import SceneManagementModal from '../components/chat/SceneManagementModal.vue';
 import SceneToolbar from '../components/chat/SceneToolbar.vue';
@@ -376,7 +378,7 @@ const speakerCharacterId = ref(null);
 const sceneSettingsOpen = ref(false);
 const sceneManageOpen = ref(false);
 const locationZoomOpen = ref(false);
-const turnBadgeDismissed = ref(false);
+const chatLoading = ref(true);
 
 function readOocPaneWidth() {
     const raw = localStorage.getItem(OOC_PANE_WIDTH_KEY);
@@ -390,11 +392,6 @@ function readOocPaneWidth() {
 }
 
 const oocPaneWidth = ref(readOocPaneWidth());
-
-const oocPaneStyle = computed(() => ({
-    width: `${oocPaneWidth.value}px`,
-    flex: `0 0 ${oocPaneWidth.value}px`,
-}));
 const drawerCharacterId = ref(null);
 const {
     isDiceOpen,
@@ -403,8 +400,18 @@ const {
     isCharacterOpen,
     isDiaryOpen,
     isCombatOpen,
+    isOocCollapsed,
     closeAll,
 } = useChatPanels();
+
+const oocPaneStyle = computed(() => (
+    isOocCollapsed.value
+        ? {}
+        : {
+            width: `${oocPaneWidth.value}px`,
+            flex: `0 0 ${oocPaneWidth.value}px`,
+        }
+));
 
 const combatTrackerRef = ref(null);
 const combatActive = ref(false);
@@ -729,19 +736,13 @@ watch([isStoryteller, currentParticipants], () => {
 });
 
 watch(activeCharacterId, (characterId, previousId) => {
-    turnBadgeDismissed.value = false;
-
-    if (!turnSoundReady) {
-        return;
-    }
-
-    if (isStoryteller.value || myCharacterId.value == null) {
+    if (!turnSoundReady || isStoryteller.value) {
         return;
     }
 
     if (
-        characterId != null
-        && Number(characterId) === Number(myCharacterId.value)
+        isMyTurn.value
+        && characterId != null
         && Number(previousId) !== Number(characterId)
     ) {
         playPlayerTurnSound();
@@ -949,13 +950,19 @@ async function onDiceRoll(payload) {
 }
 
 async function bootstrapChat() {
+    chatLoading.value = true;
     messages.value = [];
     resetCopilotDrafts();
     resetLogs();
-    await loadGameSession();
-    await loadParticipants();
-    await load();
-    await reloadLogs();
+
+    try {
+        await loadGameSession();
+        await loadParticipants();
+        await load();
+        await reloadLogs();
+    } finally {
+        chatLoading.value = false;
+    }
 }
 
 watch(chronicleId, async () => {

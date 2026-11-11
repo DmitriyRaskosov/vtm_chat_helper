@@ -156,11 +156,13 @@ export function useSceneSession({ auth, chronicleId }) {
     });
 
     const isMyTurn = computed(() => {
-        if (activeCharacterId.value == null || myCharacterId.value == null) {
+        if (activeCharacterId.value == null) {
             return false;
         }
 
-        return activeCharacterId.value === Number(myCharacterId.value);
+        return myPlayerCharactersOnScene.value.some(
+            (row) => Number(row.character_id) === activeCharacterId.value,
+        );
     });
 
     async function loadGameSession(preferredSceneId = selectedSceneId.value) {
@@ -292,6 +294,15 @@ export function useSceneSession({ auth, chronicleId }) {
 
     useSceneChannelListener(selectedSceneId, '.SceneUpdated', (payload) => {
         applyBroadcastContext(payload?.context);
+    });
+
+    useSceneChannelListener(selectedSceneId, '.GameSessionTurnChanged', (payload) => {
+        const sessionId = Number(payload?.game_session_id);
+        if (gameSession.value && Number(gameSession.value.id) !== sessionId) {
+            return;
+        }
+
+        applyRemoteActiveCharacter(payload?.active_character_id ?? null);
     });
 
     async function loadParticipants() {

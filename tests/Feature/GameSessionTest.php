@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\ChronicleRole;
 use App\Enums\GameSessionStatus;
 use App\Enums\SceneStatus;
+use App\Events\GameSessionTurnChanged;
 use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\GameSession;
@@ -14,6 +15,7 @@ use App\Models\User;
 use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonSectSeeder;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\Event;
 use Tests\Support\JoinsChronicle;
 use Tests\TestCase;
 
@@ -140,6 +142,39 @@ class GameSessionTest extends TestCase
             ]);
         $clear->assertOk();
         $clear->assertJsonPath('game_session.active_character_id', null);
+    }
+
+    public function test_setting_turn_broadcasts_to_session_scenes(): void
+    {
+        Event::fake([GameSessionTurnChanged::class]);
+
+        $session = GameSession::factory()->active()->create([
+            'chronicle_id' => $this->chronicle->id,
+            'created_by' => $this->storyteller->id,
+        ]);
+        $scene = Scene::factory()->create([
+            'game_session_id' => $session->id,
+            'status' => SceneStatus::Active,
+            'position' => 1,
+        ]);
+        $playerPc = Character::factory()->player()->create([
+            'chronicle_id' => $this->chronicle->id,
+            'canonical_name' => 'Игроков Перс',
+        ]);
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->patchJson('/api/game-sessions/'.$session->id.'/turn', [
+                'character_id' => $playerPc->id,
+            ])
+            ->assertOk();
+
+        Event::assertDispatched(GameSessionTurnChanged::class, function (GameSessionTurnChanged $event) use ($session, $scene, $playerPc): bool {
+            return $event->gameSessionId === (int) $session->id
+                && $event->activeCharacterId === (int) $playerPc->id
+                && $event->sceneIds === [(int) $scene->id]
+                && $event->broadcastAs() === 'GameSessionTurnChanged'
+                && $event->broadcastWith()['active_character_id'] === (int) $playerPc->id;
+        });
     }
 
     public function test_turn_cannot_be_set_to_npc(): void

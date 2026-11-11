@@ -2,14 +2,14 @@
     <div class="chat-log-wrap" :class="`chat-log-wrap--${mode}`">
         <div ref="logEl" class="chat-log" aria-live="polite" @scroll="onScroll">
             <article
-                v-for="message in visibleMessages"
+                v-for="(message, index) in visibleMessages"
                 :key="message.id"
                 :data-message-id="message.id"
                 class="msg"
-                :class="messageClasses(message)"
+                :class="messageClasses(message, index)"
             >
                 <template v-if="message.is_system">
-                    <div class="msg-system-body">{{ message.body }}</div>
+                    <div class="msg-system-body" v-html="formatBody(message.body)"></div>
                 </template>
                 <template v-else>
                     <div class="meta">
@@ -25,7 +25,7 @@
                         <template v-if="message.is_narration">{{ message.created_at }}</template>
                         <template v-else>{{ authorLabel(message) }} · {{ message.created_at }}</template>
                     </div>
-                    <div v-if="editingId !== message.id" class="msg-body">{{ message.body }}</div>
+                    <div v-if="editingId !== message.id" class="msg-body" v-html="formatBody(message.body)"></div>
                     <div v-else ref="editPanelEl" class="msg-edit">
                         <textarea v-model="editBody" rows="3" maxlength="10000" />
                         <div class="msg-actions">
@@ -84,6 +84,7 @@
 <script setup>
 import { computed, nextTick, ref, watch } from 'vue';
 import { storagePublicUrl } from '../../utils/storagePublicUrl';
+import { parseMessageText } from '../../utils/textParser';
 
 const props = defineProps({
     messages: { type: Array, required: true },
@@ -143,12 +144,47 @@ function isStorytellerAuthor(message) {
     return props.storytellerUserIds.some((id) => Number(id) === userId);
 }
 
-function messageClasses(message) {
+function formatBody(body) {
+    return parseMessageText(body ?? '');
+}
+
+function authorKey(message) {
+    if (message.is_system) {
+        return `system:${message.id}`;
+    }
+
+    if (message.is_narration) {
+        return 'narration';
+    }
+
+    if (message.is_ooc) {
+        return `user:${message.user_id ?? message.author ?? ''}`;
+    }
+
+    if (message.author_character_id) {
+        return `character:${message.author_character_id}`;
+    }
+
+    if (message.user_id != null && message.user_id !== '') {
+        return `user:${message.user_id}`;
+    }
+
+    return `name:${message.author ?? ''}`;
+}
+
+function messageClasses(message, index) {
     const classes = {
         'msg-deleted': message.is_deleted,
         'msg-system': message.is_system,
         'msg-narration': message.is_narration,
     };
+
+    const previous = visibleMessages.value[index - 1];
+    if (previous && authorKey(previous) === authorKey(message)) {
+        classes['msg-same-author'] = true;
+    } else if (index > 0) {
+        classes['msg-author-break'] = true;
+    }
 
     if (message.is_system || message.is_narration) {
         return classes;

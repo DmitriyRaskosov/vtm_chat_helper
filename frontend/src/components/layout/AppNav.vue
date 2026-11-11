@@ -1,8 +1,17 @@
 <template>
     <nav class="sidebar">
-        <RouterLink :to="chatLink" class="nav-icon" :class="{ active: current === 'chat' }" title="Чат">💬</RouterLink>
-        <RouterLink :to="charactersLink" class="nav-icon" :class="{ active: current === 'characters' }" title="Персонажи">👤</RouterLink>
-        <RouterLink to="/profile" class="nav-icon" :class="{ active: current === 'profile' }" title="Личный кабинет">🎭</RouterLink>
+        <RouterLink :to="chatLink" class="nav-icon" :class="{ active: current === 'chat' }" title="Чат">
+            <span class="nav-glyph" aria-hidden="true">💬</span>
+            <span class="nav-label">Чат</span>
+        </RouterLink>
+        <RouterLink :to="charactersLink" class="nav-icon" :class="{ active: current === 'characters' }" title="Персонажи">
+            <span class="nav-glyph" aria-hidden="true">👤</span>
+            <span class="nav-label">Персонажи</span>
+        </RouterLink>
+        <RouterLink to="/profile" class="nav-icon" :class="{ active: current === 'profile' }" title="Личный кабинет">
+            <span class="nav-glyph" aria-hidden="true">🎭</span>
+            <span class="nav-label">Кабинет</span>
+        </RouterLink>
         <div class="sidebar-anchor">
             <button
                 type="button"
@@ -11,7 +20,8 @@
                 title="Хроники"
                 @click="chroniclesOpen = !chroniclesOpen"
             >
-                🌍
+                <span class="nav-glyph" aria-hidden="true">🌍</span>
+                <span class="nav-label">Хроники</span>
             </button>
             <div v-if="chroniclesOpen" class="sidebar-popover">
                 <ChronicleSwitcher />
@@ -28,7 +38,8 @@
             :class="{ active: current === 'workshop' }"
             title="Мастерская"
         >
-            ⚙️
+            <span class="nav-glyph" aria-hidden="true">⚙️</span>
+            <span class="nav-label">Мастерская</span>
         </RouterLink>
         <button
             type="button"
@@ -36,7 +47,8 @@
             title="Сменить тему"
             @click="toggleTheme"
         >
-            🌓
+            <span class="nav-glyph" aria-hidden="true">🌓</span>
+            <span class="nav-label">Тема</span>
         </button>
         <button
             type="button"
@@ -45,7 +57,8 @@
             :title="soundsMuted ? 'Звуки выключены' : 'Звуки включены'"
             @click="toggleSoundsMuted"
         >
-            {{ soundsMuted ? '🔕' : '🔔' }}
+            <span class="nav-glyph" aria-hidden="true">{{ soundsMuted ? '🔕' : '🔔' }}</span>
+            <span class="nav-label">Звуки</span>
         </button>
         <button
             type="button"
@@ -53,10 +66,63 @@
             :title="logoutTitle"
             @click="logout"
         >
-            ↪
+            <span class="nav-glyph" aria-hidden="true">↪</span>
+            <span class="nav-label">Выход</span>
         </button>
     </nav>
 </template>
+
+<style scoped>
+.sidebar {
+    width: auto;
+    min-width: 5.5rem;
+    align-items: stretch;
+    padding-right: 0.35rem;
+    padding-left: 0.35rem;
+}
+
+.nav-icon {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    gap: 0.15rem;
+    font-size: 1.5rem;
+}
+
+.sidebar-anchor {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+}
+
+.nav-label {
+    font-family: var(--font-ui);
+    font-size: 0.62rem;
+    line-height: 1.1;
+    letter-spacing: 0.02em;
+}
+
+.sidebar-popover {
+    left: 100%;
+}
+
+@media (max-width: 1280px) {
+    .sidebar {
+        width: 60px;
+        min-width: 60px;
+        padding-right: 0;
+        padding-left: 0;
+    }
+
+    .nav-label {
+        display: none;
+    }
+}
+</style>
 
 <script setup>
 import { computed, ref } from 'vue';

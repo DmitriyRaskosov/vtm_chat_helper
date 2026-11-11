@@ -120,6 +120,23 @@ class NarrationTest extends TestCase
         ]);
     }
 
+    public function test_ooc_with_narration_false_succeeds(): void
+    {
+        $npc = $this->createNpcOnScene();
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson($this->chronicleApi($this->chronicle, 'messages'), [
+                'body' => 'вывывы',
+                'scene_id' => $this->sceneId,
+                'is_ooc' => true,
+                'is_narration' => false,
+                'character_id' => $npc->id,
+            ])
+            ->assertStatus(201)
+            ->assertJsonPath('message.is_ooc', true)
+            ->assertJsonPath('message.is_narration', false);
+    }
+
     public function test_narration_cannot_be_ooc(): void
     {
         $this->actingAs($this->storyteller, 'sanctum')

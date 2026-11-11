@@ -19,7 +19,6 @@
         </div>
 
         <div v-if="selectedCharacterId" class="chat-character-drawer-body">
-            <SheetImageSection :character-id="selectedCharacterId" :can-upload="false" start-open />
             <section class="chat-drawer-stats">
                 <h3>Состояние</h3>
                 <p v-if="loading" class="muted">Загрузка…</p>
@@ -88,7 +87,6 @@
 <script setup>
 import { computed } from 'vue';
 import { drawerHealthLevels, useChatCharacterStats } from '../../composables/useChatCharacterStats';
-import SheetImageSection from '../sheet/SheetImageSection.vue';
 import StatDots from '../sheet/StatDots.vue';
 
 const props = defineProps({

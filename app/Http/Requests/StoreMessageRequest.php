@@ -20,7 +20,9 @@ class StoreMessageRequest extends FormRequest
             'is_narration' => [
                 'sometimes',
                 'boolean',
-                Rule::prohibitedIf(fn (): bool => $this->boolean('is_ooc')),
+                Rule::prohibitedIf(
+                    fn (): bool => $this->boolean('is_ooc') && $this->boolean('is_narration'),
+                ),
             ],
             'npc_name' => ['prohibited'],
             'character_id' => ['sometimes', 'nullable', 'integer', 'exists:characters,id'],
