@@ -425,20 +425,20 @@ onMounted(() => {
 .sheet-stack {
     display: flex;
     flex-direction: column;
-    gap: 1.25rem;
+    gap: 0.85rem;
     margin-top: 0.25rem;
 }
 
 .sheet-block {
-    padding: 1rem 1.1rem;
+    padding: 0.75rem 0.85rem;
     border: 1px solid var(--border, #c9bfb3);
     border-radius: 4px;
     background: rgba(255, 255, 255, 0.03);
 }
 
 .sheet-block-heading {
-    margin: 0 0 0.85rem;
-    padding-bottom: 0.35rem;
+    margin: 0 0 0.55rem;
+    padding-bottom: 0.3rem;
     font-size: 1rem;
     font-weight: 600;
     border-bottom: 1px solid var(--border, #c9bfb3);
@@ -446,7 +446,7 @@ onMounted(() => {
 }
 
 .sheet-subheading {
-    margin: 0 0 0.65rem;
+    margin: 0 0 0.45rem;
     font-size: 0.92rem;
     font-weight: 600;
     color: var(--text-muted, #5c534a);
@@ -455,7 +455,7 @@ onMounted(() => {
 .sheet-columns {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1rem 1.25rem;
+    gap: 0.65rem 0.85rem;
 }
 
 .sheet-columns > section > .sheet-subheading:first-child {
@@ -514,7 +514,7 @@ onMounted(() => {
 
 .sheet-status {
     display: grid;
-    gap: 1.25rem;
+    gap: 0.85rem;
 }
 
 .sheet-health {

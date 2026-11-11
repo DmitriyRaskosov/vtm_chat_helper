@@ -72,6 +72,9 @@
                             <button type="button" class="secondary" @click="openSheet(row)">
                                 Чарлист
                             </button>
+                            <button type="button" class="secondary" @click="openNotes(row)">
+                                Заметки
+                            </button>
                             <button
                                 v-if="!isArchived(row)"
                                 type="button"
@@ -147,6 +150,12 @@
             :error="macrosError"
             @save="onSaveMacro"
         />
+        <CharacterNotesModal
+            v-model:open="notesOpen"
+            :chronicle-id="notesChronicleId"
+            :character-id="notesCharacterId"
+            :character-name="notesCharacterName"
+        />
 
         <div v-if="pendingDelete" class="diary-backdrop" @click.self="pendingDelete = null">
             <div class="diary-modal card">
@@ -182,6 +191,7 @@ import AppNav from '../components/layout/AppNav.vue';
 import AvatarModal from '../components/profile/AvatarModal.vue';
 import CreateCharacterModal from '../components/profile/CreateCharacterModal.vue';
 import MacroModal from '../components/profile/MacroModal.vue';
+import CharacterNotesModal from '../components/profile/CharacterNotesModal.vue';
 import { currentChronicleId } from '../auth';
 import { useDiceMacros } from '../composables/useDiceMacros';
 import { useProfile } from '../composables/useProfile';
@@ -232,6 +242,17 @@ const pendingDelete = ref(null);
 const avatarInputs = reactive({});
 const sheetInputs = reactive({});
 const sceneBusyId = ref(null);
+const notesOpen = ref(false);
+const notesCharacterId = ref(null);
+const notesCharacterName = ref('');
+const notesChronicleId = ref(null);
+
+function openNotes(row) {
+    notesCharacterId.value = row.id;
+    notesCharacterName.value = row.canonical_name ?? '';
+    notesChronicleId.value = row.chronicle_id;
+    notesOpen.value = true;
+}
 
 onMounted(() => {
     if (currentChronicleId.value == null) {

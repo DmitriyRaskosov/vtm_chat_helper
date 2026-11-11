@@ -47,17 +47,22 @@ const emit = defineEmits(['pick']);
     grid-template-columns: minmax(7rem, 1fr) auto;
     gap: 0.5rem;
     align-items: center;
-    margin-bottom: 0.4rem;
+    margin-bottom: 0.3rem;
 }
 
 .stats-row-plain {
     grid-template-columns: 1fr;
 }
 
+.stats-label {
+    min-width: 0;
+}
+
 .stats-track {
     display: flex;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     gap: 0.35rem;
+    justify-self: end;
 }
 
 .stats-dot {

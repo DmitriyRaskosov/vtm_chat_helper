@@ -1742,6 +1742,20 @@ summary {
     padding: 1.5rem 1.25rem 2.5rem;
 }
 
+.w-full {
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.max-w-5xl {
+    max-width: 64rem;
+}
+
+.mx-auto {
+    margin-left: auto;
+    margin-right: auto;
+}
+
 .sidebar {
     width: 60px;
     flex-shrink: 0;
