@@ -53,6 +53,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/messages', [ChatController::class, 'store']);
         Route::get('/characters', [CharacterSheetController::class, 'index']);
         Route::post('/characters', [CharacterSheetController::class, 'store']);
+        Route::get('/characters/{character}/note', [UserNoteController::class, 'show']);
+        Route::put('/characters/{character}/note', [UserNoteController::class, 'update']);
         Route::post('/game-sessions', [GameSessionController::class, 'store']);
         Route::patch('/time', [ChronicleController::class, 'updateTime'])
             ->can('update', 'chronicle');
@@ -92,8 +94,6 @@ Route::middleware('auth:sanctum')->group(function () {
 
     Route::patch('/messages/{message}', [ChatController::class, 'update']);
     Route::patch('/messages/{message}/ooc', [ChatController::class, 'toggleOoc']);
-    Route::get('/user-notes', [UserNoteController::class, 'index']);
-    Route::put('/user-notes', [UserNoteController::class, 'update']);
     Route::get('/workshop/prompts', [PromptController::class, 'index'])
         ->can('viewAny', PromptOverride::class);
     Route::put('/workshop/prompts/{key}', [PromptController::class, 'update'])

@@ -94,6 +94,11 @@ class CharacterPolicy
             && (int) $character->user_id === (int) $user->id;
     }
 
+    public function manageNotes(User $user, Character $character): bool
+    {
+        return $this->manageItems($user, $character);
+    }
+
     public function speakAs(User $user, Character $character): bool
     {
         $this->ensureActiveMember($user, (int) $character->chronicle_id);

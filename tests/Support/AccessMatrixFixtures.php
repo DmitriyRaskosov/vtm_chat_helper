@@ -469,10 +469,9 @@ final class AccessMatrixFixtures
             return ['content' => 'Текст промпта для матрицы доступа.'];
         }
 
-        if ($method === 'PUT' && $uriTemplate === 'user-notes') {
+        if ($method === 'PUT' && str_contains($uriTemplate, '/note')) {
             return [
-                'scene_id' => $this->scene->id,
-                'content' => 'Заметка матрицы доступа',
+                'body' => 'Заметка матрицы доступа',
             ];
         }
 

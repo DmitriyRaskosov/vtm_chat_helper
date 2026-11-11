@@ -4,7 +4,10 @@
             <h2>Личные заметки</h2>
             <button type="button" class="chat-panel-close" aria-label="Закрыть" @click="emit('close')">×</button>
         </header>
-        <p class="muted">Видны только вам. Привязаны к текущей сцене.</p>
+        <p v-if="characterName" class="muted">
+            Заметки для {{ characterName }}. Видны только вам.
+        </p>
+        <p v-else class="muted">Видны только вам. Выберите персонажа, чтобы вести заметки.</p>
         <textarea
             v-model="content"
             rows="10"
@@ -27,6 +30,7 @@ defineProps({
     loading: { type: Boolean, required: true },
     saving: { type: Boolean, required: true },
     error: { type: String, required: true },
+    characterName: { type: String, default: '' },
 });
 
 const content = defineModel('content', { type: String, required: true });

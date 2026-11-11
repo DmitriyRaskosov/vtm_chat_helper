@@ -73,6 +73,7 @@
                 :is-storyteller="isStoryteller"
                 :my-character-id="myCharacterId"
                 :inventory-character-id="inventoryCharacterId"
+                :notes-character-id="notesCharacterId"
                 :combat-active="combatActive"
                 :can-start-combat="canStartCombat"
                 @start-combat="emit('start-combat')"
@@ -155,6 +156,7 @@ const props = defineProps({
     isStoryteller: { type: Boolean, required: true },
     myCharacterId: { type: [Number, String], default: null },
     inventoryCharacterId: { type: [Number, String], default: null },
+    notesCharacterId: { type: [Number, String], default: null },
     participants: { type: Array, default: () => [] },
     activePlayerCharacters: { type: Array, default: () => [] },
     combatActive: { type: Boolean, default: false },

@@ -13,8 +13,9 @@
             type="button"
             class="secondary chat-tools-toolbar-btn"
             :class="{ active: isNotesOpen }"
-            title="Личные заметки"
-            @click="toggleNotes"
+            :disabled="!notesEnabled"
+            :title="notesTitle"
+            @click="onNotesClick"
         >
             📝 Заметки
         </button>
@@ -78,6 +79,7 @@ const props = defineProps({
     isStoryteller: { type: Boolean, required: true },
     myCharacterId: { type: [Number, String], default: null },
     inventoryCharacterId: { type: [Number, String], default: null },
+    notesCharacterId: { type: [Number, String], default: null },
     combatActive: { type: Boolean, default: false },
     canStartCombat: { type: Boolean, default: false },
 });
@@ -123,6 +125,23 @@ const inventoryEnabled = computed(() => {
 const inventoryTitle = computed(() => (
     inventoryEnabled.value ? 'Инвентарь' : 'Сначала выберите персонажа'
 ));
+
+const notesEnabled = computed(() => {
+    const id = Number(props.notesCharacterId);
+
+    return Number.isFinite(id) && id > 0;
+});
+
+const notesTitle = computed(() => (
+    notesEnabled.value ? 'Личные заметки' : 'Сначала выберите персонажа'
+));
+
+function onNotesClick() {
+    if (!notesEnabled.value) {
+        return;
+    }
+    toggleNotes();
+}
 
 function onInventoryClick() {
     if (!inventoryEnabled.value) {

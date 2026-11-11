@@ -1,22 +1,59 @@
-import { ref, watch } from 'vue';
+import { ref, unref, watch } from 'vue';
 import { api } from '../auth';
 import { apiErrorMessage } from '../utils/apiError';
 
 let saveTimer;
 
-export function useUserNotes(selectedSceneId) {
+/**
+ * @param {import('vue').MaybeRefOrGetter<string|number|null|undefined>} chronicleId
+ * @param {import('vue').MaybeRefOrGetter<string|number|null|undefined>} selectedCharacterId
+ * @param {{ autoSave?: boolean, trackOpen?: boolean, reloadOnCharacterChange?: boolean }} [options]
+ */
+export function useUserNotes(chronicleId, selectedCharacterId, options = {}) {
+    const autoSave = options.autoSave ?? false;
+    const trackOpen = options.trackOpen ?? false;
+    const reloadOnCharacterChange = options.reloadOnCharacterChange ?? false;
+
     const open = ref(false);
     const content = ref('');
     const loading = ref(false);
     const saving = ref(false);
     const error = ref('');
-    const loadedSceneId = ref(null);
+    const loadedCharacterId = ref(null);
+
+    async function fetchNote(characterId) {
+        const cid = unref(chronicleId);
+        const id = Number(characterId);
+
+        if (!cid || !Number.isFinite(id) || id <= 0) {
+            return null;
+        }
+
+        const { data } = await api.get(`/chronicles/${cid}/characters/${id}/note`);
+
+        return data.note;
+    }
+
+    async function saveNote(characterId, body) {
+        const cid = unref(chronicleId);
+        const id = Number(characterId);
+
+        if (!cid || !Number.isFinite(id) || id <= 0) {
+            return null;
+        }
+
+        const { data } = await api.put(`/chronicles/${cid}/characters/${id}/note`, { body });
+
+        return data.note;
+    }
 
     async function load() {
-        const sceneId = selectedSceneId.value;
-        if (!sceneId) {
+        const characterId = unref(selectedCharacterId);
+        const id = Number(characterId);
+
+        if (!Number.isFinite(id) || id <= 0) {
             content.value = '';
-            loadedSceneId.value = null;
+            loadedCharacterId.value = null;
             return;
         }
 
@@ -24,12 +61,12 @@ export function useUserNotes(selectedSceneId) {
         error.value = '';
 
         try {
-            const { data } = await api.get('/user-notes', { params: { scene_id: sceneId } });
-            if (selectedSceneId.value !== sceneId) {
+            const note = await fetchNote(id);
+            if (Number(unref(selectedCharacterId)) !== id) {
                 return;
             }
-            content.value = data.note?.content ?? '';
-            loadedSceneId.value = sceneId;
+            content.value = note?.body ?? '';
+            loadedCharacterId.value = id;
         } catch (e) {
             error.value = apiErrorMessage(e, 'Не удалось загрузить заметки.');
         } finally {
@@ -38,8 +75,10 @@ export function useUserNotes(selectedSceneId) {
     }
 
     async function save() {
-        const sceneId = selectedSceneId.value;
-        if (!sceneId || saving.value) {
+        const characterId = unref(selectedCharacterId);
+        const id = Number(characterId);
+
+        if (!Number.isFinite(id) || id <= 0 || saving.value) {
             return;
         }
 
@@ -47,12 +86,10 @@ export function useUserNotes(selectedSceneId) {
         error.value = '';
 
         try {
-            const { data } = await api.put('/user-notes', {
-                scene_id: sceneId,
-                content: content.value,
-            });
-            if (selectedSceneId.value === sceneId) {
-                content.value = data.note?.content ?? content.value;
+            const note = await saveNote(id, content.value);
+            if (Number(unref(selectedCharacterId)) === id) {
+                content.value = note?.body ?? content.value;
+                loadedCharacterId.value = id;
             }
         } catch (e) {
             error.value = apiErrorMessage(e, 'Не удалось сохранить заметки.');
@@ -79,18 +116,31 @@ export function useUserNotes(selectedSceneId) {
         open.value = false;
     }
 
-    watch(selectedSceneId, () => {
-        if (open.value) {
-            load();
-        }
-    });
+    if (trackOpen) {
+        watch(selectedCharacterId, () => {
+            if (open.value) {
+                load();
+            }
+        });
+    }
 
-    watch(content, () => {
-        if (!open.value || loading.value || loadedSceneId.value !== selectedSceneId.value) {
-            return;
-        }
-        scheduleSave();
-    });
+    if (reloadOnCharacterChange) {
+        watch(selectedCharacterId, () => {
+            load();
+        });
+    }
+
+    if (autoSave) {
+        watch(content, () => {
+            if (trackOpen && !open.value) {
+                return;
+            }
+            if (loading.value || loadedCharacterId.value !== Number(unref(selectedCharacterId))) {
+                return;
+            }
+            scheduleSave();
+        });
+    }
 
     return {
         open,
@@ -98,6 +148,8 @@ export function useUserNotes(selectedSceneId) {
         loading,
         saving,
         error,
+        fetchNote,
+        saveNote,
         openModal,
         closeModal,
         load,

@@ -114,6 +114,7 @@
                     :is-storyteller="isStoryteller"
                     :my-character-id="myCharacterId"
                     :inventory-character-id="inventoryCharacterId"
+                    :notes-character-id="notesCharacterId"
                     :participants="currentParticipants"
                     :active-player-characters="playerCharactersOnScene"
                     :combat-active="combatActive"
@@ -172,6 +173,7 @@
                     :loading="notesLoading"
                     :saving="notesSaving"
                     :error="notesError"
+                    :character-name="notesCharacterName"
                     @close="isNotesOpen = false"
                     @save="saveNotes"
                 />
@@ -505,6 +507,14 @@ const {
 
 bindMessages(messages);
 
+const notesCharacterId = computed(() => {
+    if (isStoryteller.value) {
+        return speakerCharacterId.value;
+    }
+
+    return selectedPcId.value ?? myCharacterId.value;
+});
+
 const {
     content: notesContent,
     loading: notesLoading,
@@ -513,7 +523,7 @@ const {
     openModal: openNotes,
     closeModal: closeNotes,
     save: saveNotes,
-} = useUserNotes(selectedSceneId);
+} = useUserNotes(chronicleId, notesCharacterId, { autoSave: true, trackOpen: true });
 
 const {
     logs,
@@ -597,18 +607,12 @@ const myCharacterName = computed(() => {
     return onScene?.character_name ?? null;
 });
 
-const inventoryCharacterId = computed(() => {
-    if (isStoryteller.value) {
-        return speakerCharacterId.value;
-    }
+const inventoryCharacterId = notesCharacterId;
 
-    return selectedPcId.value ?? myCharacterId.value;
-});
-
-const inventoryCharacterName = computed(() => {
+const notesCharacterName = computed(() => {
     if (isStoryteller.value) {
         const row = currentParticipants.value.find(
-            (participant) => Number(participant.character_id) === Number(inventoryCharacterId.value),
+            (participant) => Number(participant.character_id) === Number(notesCharacterId.value),
         );
 
         return row?.character_name ?? '';
@@ -616,6 +620,8 @@ const inventoryCharacterName = computed(() => {
 
     return myCharacterName.value ?? '';
 });
+
+const inventoryCharacterName = notesCharacterName;
 
 const {
     items: inventoryItems,

@@ -8,8 +8,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 #[Fillable([
     'user_id',
-    'scene_id',
-    'content',
+    'chronicle_id',
+    'character_id',
+    'body',
 ])]
 class UserNote extends Model
 {
@@ -22,10 +23,18 @@ class UserNote extends Model
     }
 
     /**
-     * @return BelongsTo<Scene, $this>
+     * @return BelongsTo<Chronicle, $this>
      */
-    public function scene(): BelongsTo
+    public function chronicle(): BelongsTo
     {
-        return $this->belongsTo(Scene::class);
+        return $this->belongsTo(Chronicle::class);
+    }
+
+    /**
+     * @return BelongsTo<Character, $this>
+     */
+    public function character(): BelongsTo
+    {
+        return $this->belongsTo(Character::class);
     }
 }

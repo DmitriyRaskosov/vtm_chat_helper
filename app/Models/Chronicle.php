@@ -99,6 +99,14 @@ class Chronicle extends Model
         return $this->hasMany(ChronicleLocation::class);
     }
 
+    /**
+     * @return HasMany<Character, $this>
+     */
+    public function characters(): HasMany
+    {
+        return $this->hasMany(Character::class);
+    }
+
     protected function casts(): array
     {
         return [

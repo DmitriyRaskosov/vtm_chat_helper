@@ -4,7 +4,7 @@ namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
 
-class UpdateUserNoteRequest extends FormRequest
+class SaveUserNoteRequest extends FormRequest
 {
     /**
      * @return array<string, mixed>
@@ -12,8 +12,7 @@ class UpdateUserNoteRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'scene_id' => ['sometimes', 'nullable', 'integer', 'exists:scenes,id'],
-            'content' => ['required', 'string', 'max:20000'],
+            'body' => ['required', 'string', 'max:20000'],
         ];
     }
 }

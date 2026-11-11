@@ -98,22 +98,6 @@ class RoleToolsTest extends TestCase
             ->assertJsonPath('message.body', 'Свежее');
     }
 
-    public function test_user_notes_upsert_and_fetch_by_scene(): void
-    {
-        $this->actingAs($this->player, 'sanctum')
-            ->putJson('/api/user-notes', [
-                'scene_id' => $this->sceneId,
-                'content' => 'Моя заметка',
-            ])
-            ->assertOk()
-            ->assertJsonPath('note.content', 'Моя заметка');
-
-        $this->actingAs($this->player, 'sanctum')
-            ->getJson('/api/user-notes?scene_id='.$this->sceneId)
-            ->assertOk()
-            ->assertJsonPath('note.content', 'Моя заметка');
-    }
-
     public function test_storyteller_can_update_character_description_and_inventory(): void
     {
         $npc = $this->actingAs($this->storyteller, 'sanctum')

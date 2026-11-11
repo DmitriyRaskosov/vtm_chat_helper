@@ -333,18 +333,28 @@ class AccessMatrixTest extends TestCase
                 'player_foreign' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
-            self::forRoles('user-notes.index', 'GET', 'user-notes', [
+            self::forRoles('characters.note.show.own', 'GET', 'chronicles/{chronicle}/characters/{playerCharacter}/note', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_ALLOWED,
-                'player_foreign' => self::EXPECT_ALLOWED,
-                'player_other_chronicle' => self::EXPECT_ALLOWED,
+                'player_foreign' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
-            self::forRoles('user-notes.update', 'PUT', 'user-notes', [
+            self::forRoles('characters.note.show.npc', 'GET', 'chronicles/{chronicle}/characters/{npc}/note', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('characters.note.update.own', 'PUT', 'chronicles/{chronicle}/characters/{playerCharacter}/note', [
                 'guest' => self::EXPECT_401,
                 'player_owner' => self::EXPECT_ALLOWED,
-                'player_foreign' => self::EXPECT_ALLOWED,
-                'player_other_chronicle' => self::EXPECT_ALLOWED,
+                'player_foreign' => self::EXPECT_403,
+                'storyteller' => self::EXPECT_ALLOWED,
+            ]),
+            self::forRoles('characters.note.update.npc', 'PUT', 'chronicles/{chronicle}/characters/{npc}/note', [
+                'guest' => self::EXPECT_401,
+                'player_owner' => self::EXPECT_403,
+                'player_foreign' => self::EXPECT_403,
                 'storyteller' => self::EXPECT_ALLOWED,
             ]),
             self::forRoles('workshop.prompts.index', 'GET', 'workshop/prompts', [

@@ -2,37 +2,43 @@
 
 namespace App\Notes;
 
+use App\Character\Exceptions\CharacterNotInChronicleException;
+use App\Models\Character;
+use App\Models\Chronicle;
 use App\Models\User;
 use App\Models\UserNote;
 
 final class UserNoteService
 {
-    public function findForUser(User $user, ?int $sceneId): ?UserNote
+    public function getNote(User $user, Character $character, Chronicle $chronicle): ?UserNote
     {
+        $this->ensureCharacterInChronicle($character, $chronicle);
+
         return UserNote::query()
             ->where('user_id', $user->id)
-            ->when(
-                $sceneId === null,
-                fn ($query) => $query->whereNull('scene_id'),
-                fn ($query) => $query->where('scene_id', $sceneId),
-            )
+            ->where('character_id', $character->id)
+            ->where('chronicle_id', $chronicle->id)
             ->first();
     }
 
-    public function upsert(User $user, ?int $sceneId, string $content): UserNote
+    public function saveNote(User $user, Character $character, Chronicle $chronicle, string $body): UserNote
     {
-        $note = $this->findForUser($user, $sceneId);
+        $this->ensureCharacterInChronicle($character, $chronicle);
 
-        if ($note === null) {
-            return UserNote::query()->create([
+        return UserNote::query()->updateOrCreate(
+            [
                 'user_id' => $user->id,
-                'scene_id' => $sceneId,
-                'content' => $content,
-            ]);
+                'character_id' => $character->id,
+                'chronicle_id' => $chronicle->id,
+            ],
+            ['body' => $body],
+        );
+    }
+
+    private function ensureCharacterInChronicle(Character $character, Chronicle $chronicle): void
+    {
+        if ((int) $character->chronicle_id !== (int) $chronicle->id) {
+            throw new CharacterNotInChronicleException;
         }
-
-        $note->update(['content' => $content]);
-
-        return $note->refresh();
     }
 }
