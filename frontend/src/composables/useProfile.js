@@ -14,12 +14,14 @@ export function useProfile() {
     const onSceneCharacterIds = ref(new Set());
     const scenePresenceLoading = ref(false);
 
-    async function loadCharacters() {
+    async function loadCharacters(options = {}) {
         loading.value = true;
         error.value = '';
 
+        const params = options.includeArchived ? { archived: true } : {};
+
         try {
-            const response = await api.get('/profile/characters');
+            const response = await api.get('/profile/characters', { params });
             const rows = response.data?.data;
             characters.value = Array.isArray(rows) ? rows : [];
 

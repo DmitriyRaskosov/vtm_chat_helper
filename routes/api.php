@@ -20,6 +20,7 @@ use App\Http\Controllers\DiceMacroController;
 use App\Http\Controllers\DiceRollController;
 use App\Http\Controllers\EventGeneratorController;
 use App\Http\Controllers\GameSessionController;
+use App\Http\Controllers\LibraryCharacterController;
 use App\Http\Controllers\LocationNodeController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PromptController;
@@ -30,6 +31,7 @@ use App\Http\Controllers\SceneParticipantController;
 use App\Http\Controllers\SceneTypingController;
 use App\Http\Controllers\UserNoteController;
 use App\Models\CombatEncounter;
+use App\Models\LibraryCharacter;
 use App\Models\PromptOverride;
 use Illuminate\Support\Facades\Route;
 
@@ -53,6 +55,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/messages', [ChatController::class, 'store']);
         Route::get('/characters', [CharacterSheetController::class, 'index']);
         Route::post('/characters', [CharacterSheetController::class, 'store']);
+        Route::post('/characters/import', [LibraryCharacterController::class, 'import'])
+            ->can('view', 'chronicle');
         Route::get('/characters/{character}/note', [UserNoteController::class, 'show']);
         Route::put('/characters/{character}/note', [UserNoteController::class, 'update']);
         Route::post('/game-sessions', [GameSessionController::class, 'store']);
@@ -116,6 +120,13 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/character-sheet/catalog', [CharacterSheetController::class, 'catalog']);
 
     Route::get('/profile/characters', [ProfileController::class, 'index']);
+
+    Route::get('/library-characters', [LibraryCharacterController::class, 'index'])
+        ->can('viewAny', LibraryCharacter::class);
+    Route::post('/library-characters', [LibraryCharacterController::class, 'store'])
+        ->can('create', LibraryCharacter::class);
+    Route::delete('/library-characters/{libraryCharacter}', [LibraryCharacterController::class, 'destroy'])
+        ->can('delete', 'libraryCharacter');
 
     Route::get('/characters/{character}', [CharacterSheetController::class, 'show']);
     Route::get('/characters/{character}/sheet-image', [CharacterSheetImageController::class, 'show']);

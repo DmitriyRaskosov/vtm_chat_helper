@@ -23,8 +23,10 @@ class ProfileController extends Controller
             throw new AuthenticationException;
         }
 
+        $includeArchived = $request->boolean('archived');
+
         return ProfileCharacterResource::collection(
-            $this->profiles->charactersFor($user),
+            $this->profiles->charactersFor($user, $includeArchived),
         );
     }
 }

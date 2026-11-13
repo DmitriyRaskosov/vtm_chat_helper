@@ -2,6 +2,7 @@
 
 namespace Tests\Support;
 
+use App\Enums\CharacterType;
 use App\Enums\CombatEncounterStatus;
 use App\Models\CanonClan;
 use App\Models\CanonDiscipline;
@@ -17,6 +18,7 @@ use App\Models\CombatParticipant;
 use App\Models\CopilotRequest;
 use App\Models\DiceMacro;
 use App\Models\GameSession;
+use App\Models\LibraryCharacter;
 use App\Models\LocationNode;
 use App\Models\Message;
 use App\Models\Scene;
@@ -81,6 +83,8 @@ final class AccessMatrixFixtures
     public CharacterItem $playerItem;
 
     public DiceMacro $diceMacro;
+
+    public LibraryCharacter $libraryCharacter;
 
     private ?LocationNode $locationNodeCache = null;
 
@@ -164,6 +168,11 @@ final class AccessMatrixFixtures
             ->player($fixtures->playerOwner)
             ->forChronicle($fixtures->chronicle)
             ->create();
+        $fixtures->libraryCharacter = LibraryCharacter::query()->create([
+            'user_id' => $fixtures->playerOwner->id,
+            'name' => 'Шаблон матрицы',
+            'character_type' => CharacterType::Player,
+        ]);
         $fixtures->archivedNpc = Character::factory()->npc()->forChronicle($fixtures->chronicle)->create([
             'is_active' => false,
         ]);
@@ -331,6 +340,7 @@ final class AccessMatrixFixtures
             '{chronicleLocation}' => (string) $this->chronicleLocation->id,
             '{item}' => (string) $this->playerItem->id,
             '{macro}' => (string) $this->diceMacro->id,
+            '{libraryCharacter}' => (string) $this->libraryCharacter->id,
             '{key}' => 'copilot.topics.system',
         ];
 
@@ -394,6 +404,19 @@ final class AccessMatrixFixtures
                 'canonical_name' => 'Новый персонаж',
                 'character_type' => 'npc',
                 'clan_id' => CanonClan::query()->where('slug', 'tremere')->value('id'),
+            ];
+        }
+
+        if ($method === 'POST' && $uriTemplate === 'chronicles/{chronicle}/characters/import') {
+            return [
+                'library_character_id' => $this->libraryCharacter->id,
+                'canonical_name' => $this->libraryCharacter->name,
+            ];
+        }
+
+        if ($method === 'POST' && $uriTemplate === 'library-characters') {
+            return [
+                'character_id' => $this->playerCharacter->id,
             ];
         }
 

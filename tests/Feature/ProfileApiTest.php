@@ -119,4 +119,33 @@ class ProfileApiTest extends TestCase
     {
         $this->getJson('/api/profile/characters')->assertUnauthorized();
     }
+
+    public function test_archived_query_includes_inactive_characters(): void
+    {
+        $storyteller = User::factory()->create();
+        $chronicle = Chronicle::factory()->create(['created_by' => $storyteller->id]);
+        $this->joinChronicle($storyteller, $chronicle, ChronicleRole::Storyteller);
+
+        $activeNpc = Character::factory()->npc()->forChronicle($chronicle)->create([
+            'canonical_name' => 'Активный NPC',
+        ]);
+        $archivedNpc = Character::factory()->npc()->forChronicle($chronicle)->create([
+            'canonical_name' => 'Архивный NPC',
+            'is_active' => false,
+        ]);
+
+        $this->actingAs($storyteller, 'sanctum')
+            ->getJson('/api/profile/characters')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $activeNpc->id);
+
+        $response = $this->actingAs($storyteller, 'sanctum')
+            ->getJson('/api/profile/characters?archived=1');
+
+        $response->assertOk();
+        $response->assertJsonCount(2, 'data');
+        $ids = collect($response->json('data'))->pluck('id')->sort()->values()->all();
+        $this->assertSame([$activeNpc->id, $archivedNpc->id], $ids);
+    }
 }

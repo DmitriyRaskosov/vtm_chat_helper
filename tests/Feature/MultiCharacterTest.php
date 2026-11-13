@@ -75,6 +75,11 @@ class MultiCharacterTest extends TestCase
         $this->actingAs($this->player, 'sanctum')
             ->getJson('/api/profile/characters')
             ->assertOk()
+            ->assertJsonCount(0, 'data');
+
+        $this->actingAs($this->player, 'sanctum')
+            ->getJson('/api/profile/characters?archived=1')
+            ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id', $characterId)
             ->assertJsonPath('data.0.is_active', false);

@@ -7,9 +7,11 @@ use App\Llm\DeepSeekChatProvider;
 use App\Models\CombatEncounter;
 use App\Models\CombatParticipant;
 use App\Models\CopilotRequest;
+use App\Models\LibraryCharacter;
 use App\Models\Scene;
 use App\Policies\CombatEncounterPolicy;
 use App\Policies\CopilotPolicy;
+use App\Policies\LibraryCharacterPolicy;
 use App\Policies\ScenePolicy;
 use App\Rag\EmbeddingProvider;
 use App\Rag\OllamaEmbeddingProvider;
@@ -41,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(CopilotRequest::class, CopilotPolicy::class);
         Gate::policy(Scene::class, ScenePolicy::class);
         Gate::policy(CombatEncounter::class, CombatEncounterPolicy::class);
+        Gate::policy(LibraryCharacter::class, LibraryCharacterPolicy::class);
 
         Route::model('combat', CombatEncounter::class);
         Route::model('participant', CombatParticipant::class);

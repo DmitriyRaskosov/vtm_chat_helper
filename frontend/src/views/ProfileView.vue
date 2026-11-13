@@ -6,6 +6,28 @@
                 <h1>Личный кабинет</h1>
             </header>
 
+            <nav class="profile-tabs" aria-label="Разделы личного кабинета">
+                <button
+                    type="button"
+                    class="profile-tab"
+                    :class="{ 'profile-tab--active': activeTab === 'chronicles' }"
+                    @click="activeTab = 'chronicles'"
+                >
+                    Персонажи в хрониках
+                </button>
+                <button
+                    type="button"
+                    class="profile-tab"
+                    :class="{ 'profile-tab--active': activeTab === 'library' }"
+                    @click="switchToLibrary"
+                >
+                    Библиотека
+                </button>
+            </nav>
+
+            <p v-if="librarySuccess" class="profile-success muted">{{ librarySuccess }}</p>
+
+            <template v-if="activeTab === 'chronicles'">
             <p v-if="loading" class="muted">Загрузка персонажей…</p>
             <p v-else-if="error" class="error">{{ error }}</p>
             <template v-else>
@@ -79,6 +101,15 @@
                                 v-if="!isArchived(row)"
                                 type="button"
                                 class="secondary"
+                                :disabled="librarySaving || librarySavingId === row.id"
+                                @click="onSaveToLibrary(row)"
+                            >
+                                {{ librarySavingId === row.id ? 'Сохранение…' : 'В библиотеку' }}
+                            </button>
+                            <button
+                                v-if="!isArchived(row)"
+                                type="button"
+                                class="secondary"
                                 @click="onArchive(row)"
                             >
                                 В архив
@@ -92,7 +123,7 @@
                             >
                                 {{ isCharacterOnScene(row.id) ? 'Покинуть сцену' : 'Выйти на сцену' }}
                             </button>
-                            <template v-else>
+                            <template v-if="isArchived(row)">
                                 <button type="button" class="secondary" @click="onRestore(row)">
                                     Восстановить
                                 </button>
@@ -105,8 +136,19 @@
                     </div>
                 </section>
             </template>
+            </template>
 
-            <section v-if="!loading" class="profile-macros">
+            <LibraryCharacterList
+                v-else
+                :templates="libraryTemplates"
+                :loading="libraryLoading"
+                :saving="librarySaving"
+                :error="libraryError"
+                :import-handler="onLibraryImport"
+                :delete-handler="onLibraryDelete"
+            />
+
+            <section v-if="!loading && activeTab === 'chronicles'" class="profile-macros">
                 <div class="profile-toolbar">
                     <h2 class="profile-section-title">Макросы кубиков</h2>
                     <button type="button" @click="openCreateMacro">Создать макрос</button>
@@ -192,8 +234,10 @@ import AvatarModal from '../components/profile/AvatarModal.vue';
 import CreateCharacterModal from '../components/profile/CreateCharacterModal.vue';
 import MacroModal from '../components/profile/MacroModal.vue';
 import CharacterNotesModal from '../components/profile/CharacterNotesModal.vue';
+import LibraryCharacterList from '../components/profile/LibraryCharacterList.vue';
 import { currentChronicleId } from '../auth';
 import { useDiceMacros } from '../composables/useDiceMacros';
+import { useLibraryCharacters } from '../composables/useLibraryCharacters';
 import { useProfile } from '../composables/useProfile';
 
 const SheetViewer = defineAsyncComponent(() => import('../components/profile/SheetViewer.vue'));
@@ -219,6 +263,21 @@ const {
     activeSceneId,
     scenePresenceLoading,
 } = useProfile();
+
+const activeTab = ref('chronicles');
+const librarySavingId = ref(null);
+
+const {
+    templates: libraryTemplates,
+    loading: libraryLoading,
+    saving: librarySaving,
+    error: libraryError,
+    successMessage: librarySuccess,
+    fetchLibrary,
+    saveToLibrary,
+    deleteTemplate,
+    importTemplate,
+} = useLibraryCharacters();
 
 const {
     macros,
@@ -247,6 +306,32 @@ const notesCharacterId = ref(null);
 const notesCharacterName = ref('');
 const notesChronicleId = ref(null);
 
+function switchToLibrary() {
+    activeTab.value = 'library';
+    fetchLibrary().catch(() => {});
+}
+
+async function onSaveToLibrary(row) {
+    librarySavingId.value = row.id;
+
+    try {
+        await saveToLibrary(row.id);
+    } catch {
+        // ошибка в composable
+    } finally {
+        librarySavingId.value = null;
+    }
+}
+
+async function onLibraryImport(chronicleId, templateId, canonicalName) {
+    await importTemplate(chronicleId, templateId, canonicalName);
+    await loadCharacters({ includeArchived: showArchived.value }).catch(() => {});
+}
+
+async function onLibraryDelete(templateId) {
+    await deleteTemplate(templateId);
+}
+
 function openNotes(row) {
     notesCharacterId.value = row.id;
     notesCharacterName.value = row.canonical_name ?? '';
@@ -256,23 +341,21 @@ function openNotes(row) {
 
 onMounted(() => {
     if (currentChronicleId.value == null) {
-        loadCharacters().catch(() => {});
+        loadCharacters({ includeArchived: showArchived.value }).catch(() => {});
     }
 });
 
 watch(currentChronicleId, (id) => {
     loadScenePresence(id).catch(() => {});
-    loadCharacters().catch(() => {});
+    loadCharacters({ includeArchived: showArchived.value }).catch(() => {});
     loadMacros().catch(() => {});
 }, { immediate: true });
 
-const visibleCharacters = computed(() => {
-    if (showArchived.value) {
-        return characters.value;
-    }
-
-    return characters.value.filter((row) => row.is_active !== false);
+watch(showArchived, () => {
+    loadCharacters({ includeArchived: showArchived.value }).catch(() => {});
 });
+
+const visibleCharacters = computed(() => characters.value);
 
 const characterGroups = computed(() => {
     const groups = [];
@@ -295,9 +378,9 @@ const characterGroups = computed(() => {
 });
 
 const emptyLabel = computed(() => (
-    characters.value.length === 0
+    showArchived.value
         ? 'У вас пока нет персонажей.'
-        : 'Нет активных персонажей.'
+        : 'Нет активных персонажей. Включите «Показывать архивных», чтобы увидеть архив.'
 ));
 
 function isArchived(row) {
@@ -374,7 +457,7 @@ async function confirmDelete() {
 
 async function onCharacterCreated(character) {
     createOpen.value = false;
-    await loadCharacters().catch(() => {});
+    await loadCharacters({ includeArchived: showArchived.value }).catch(() => {});
     await loadScenePresence(currentChronicleId.value).catch(() => {});
 
     const chronicleId = character?.chronicle_id ?? currentChronicleId.value;
@@ -590,5 +673,29 @@ async function onSheetSelected(row, event) {
 
 .profile-confirm-actions button {
     margin-top: 0;
+}
+
+.profile-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin: 0 0 1.25rem;
+}
+
+.profile-tab {
+    margin-top: 0;
+    background: var(--bg-light);
+    border: 1px solid var(--border);
+    color: var(--text);
+}
+
+.profile-tab--active {
+    border-color: var(--gold);
+    color: var(--gold);
+}
+
+.profile-success {
+    margin: 0 0 1rem;
+    color: var(--gold);
 }
 </style>
