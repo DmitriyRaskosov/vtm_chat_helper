@@ -92,12 +92,18 @@ export function useProfile() {
             const response = await api.post(`/characters/${numericId}/sheet-image`, formData, {
                 headers: { 'Content-Type': 'multipart/form-data' },
             });
+            const sheetImagePath = response.data?.sheet_image_path ?? null;
             sheetReloadKeys.value = {
                 ...sheetReloadKeys.value,
                 [numericId]: Date.now(),
             };
+            characters.value = characters.value.map((character) => (
+                Number(character.id) === numericId
+                    ? { ...character, sheet_image_path: sheetImagePath }
+                    : character
+            ));
 
-            return response.data?.sheet_image_path ?? null;
+            return sheetImagePath;
         } catch (err) {
             error.value = apiErrorMessage(err, 'Не удалось загрузить чарлист.');
             throw err;
@@ -112,36 +118,6 @@ export function useProfile() {
             return Array.isArray(clans) ? clans : [];
         } catch (err) {
             error.value = apiErrorMessage(err, 'Не удалось загрузить кланы.');
-            throw err;
-        }
-    }
-
-    async function createCharacter(chronicleId, payload) {
-        const id = Number(chronicleId);
-
-        if (!Number.isFinite(id) || id <= 0) {
-            error.value = 'Хроника не выбрана.';
-            throw new Error(error.value);
-        }
-
-        error.value = '';
-
-        const body = {
-            canonical_name: String(payload?.canonical_name ?? '').trim(),
-            clan_id: Number(payload?.clan_id),
-        };
-        const concept = String(payload?.concept ?? '').trim();
-
-        if (concept !== '') {
-            body.concept = concept;
-        }
-
-        try {
-            const response = await api.post(`/chronicles/${id}/characters`, body);
-
-            return response.data?.character ?? null;
-        } catch (err) {
-            error.value = apiErrorMessage(err, 'Не удалось создать персонажа.');
             throw err;
         }
     }
@@ -186,6 +162,18 @@ export function useProfile() {
             ));
         } catch (err) {
             error.value = apiErrorMessage(err, 'Не удалось восстановить персонажа.');
+            throw err;
+        }
+    }
+
+    async function acknowledgeUpdate(characterId) {
+        const numericId = requireCharacterId(characterId);
+        error.value = '';
+
+        try {
+            await api.patch(`/characters/${numericId}/acknowledge-update`);
+        } catch (err) {
+            error.value = apiErrorMessage(err, 'Не удалось скрыть отметку.');
             throw err;
         }
     }
@@ -328,8 +316,8 @@ export function useProfile() {
         uploadAvatar,
         uploadSheet,
         loadClans,
-        createCharacter,
         archiveCharacter,
+        acknowledgeUpdate,
         restoreCharacter,
         deleteCharacter,
         avatarUrl,

@@ -29,7 +29,7 @@ class StoreCharacterRequest extends FormRequest
             'canonical_name' => ['required', 'string', 'max:100'],
             'character_type' => $isStoryteller
                 ? ['required', Rule::enum(CharacterType::class)]
-                : ['prohibited'],
+                : ['exclude'],
             'chronicle_id' => ['prohibited'],
             'user_id' => $isStoryteller
                 ? [

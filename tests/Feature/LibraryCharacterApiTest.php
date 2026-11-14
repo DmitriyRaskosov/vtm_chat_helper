@@ -4,11 +4,14 @@ namespace Tests\Feature;
 
 use App\Enums\CharacterType;
 use App\Enums\ChronicleRole;
+use App\Models\CanonClan;
 use App\Models\Character;
 use App\Models\Chronicle;
 use App\Models\LibraryCharacter;
 use App\Models\User;
+use Database\Seeders\CanonClanSeeder;
 use Database\Seeders\CanonDisciplineSeeder;
+use Database\Seeders\CanonSectSeeder;
 use Tests\Support\JoinsChronicle;
 use Tests\TestCase;
 
@@ -134,6 +137,72 @@ class LibraryCharacterApiTest extends TestCase
 
         $import->assertCreated();
         $import->assertJsonPath('character.canonical_name', 'API Герой (копия)');
+    }
+
+    public function test_player_creates_library_template_as_player(): void
+    {
+        $this->seed(CanonSectSeeder::class);
+        $this->seed(CanonClanSeeder::class);
+        $clan = CanonClan::query()->where('slug', 'tremere')->firstOrFail();
+
+        $response = $this->actingAs($this->owner, 'sanctum')
+            ->postJson('/api/library-characters', [
+                'name' => 'Шаблон Аделины',
+                'clan_id' => $clan->id,
+                'concept' => 'Учёный',
+                'character_type' => 'npc',
+            ]);
+
+        $response->assertCreated();
+        $response->assertJsonPath('library_character.name', 'Шаблон Аделины');
+        $response->assertJsonPath('library_character.character_type', CharacterType::Player->value);
+        $response->assertJsonPath('library_character.clan_id', $clan->id);
+        $response->assertJsonPath('library_character.concept', 'Учёный');
+
+        $this->assertDatabaseHas('library_characters', [
+            'user_id' => $this->owner->id,
+            'name' => 'Шаблон Аделины',
+            'character_type' => CharacterType::Player->value,
+        ]);
+        $this->assertDatabaseMissing('world_entities', [
+            'canonical_name' => 'Шаблон Аделины',
+        ]);
+    }
+
+    public function test_player_library_template_without_clan_returns_422(): void
+    {
+        $this->actingAs($this->owner, 'sanctum')
+            ->postJson('/api/library-characters', [
+                'name' => 'Без клана',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['clan_id']);
+    }
+
+    public function test_storyteller_can_create_npc_library_template(): void
+    {
+        $created = $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson('/api/library-characters', [
+                'name' => 'Горгулья',
+                'character_type' => 'npc',
+            ]);
+
+        $created->assertCreated();
+        $created->assertJsonPath('library_character.character_type', CharacterType::Npc->value);
+        $created->assertJsonPath('library_character.name', 'Горгулья');
+
+        $this->assertDatabaseHas('library_characters', [
+            'user_id' => $this->storyteller->id,
+            'name' => 'Горгулья',
+            'character_type' => CharacterType::Npc->value,
+        ]);
+
+        $this->actingAs($this->storyteller, 'sanctum')
+            ->postJson('/api/library-characters', [
+                'name' => 'Без типа',
+            ])
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['character_type']);
     }
 
     public function test_user_cannot_delete_others_library_template(): void

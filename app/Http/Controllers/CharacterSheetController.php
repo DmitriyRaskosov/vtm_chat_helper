@@ -23,6 +23,8 @@ use App\Http\Requests\UpdateCharacterPlaceRequest;
 use App\Http\Resources\CharacterResource;
 use App\Http\Resources\CharacterSheetResource;
 use App\Models\Character;
+use App\Models\User;
+use Illuminate\Auth\AuthenticationException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -78,13 +80,13 @@ class CharacterSheetController extends Controller
             $query->whereIn('id', $this->visibility->visibleIdsForPlayerCharacters($chronicleId, $pcIds));
         }
 
-        $characters = $query->with('entity')->orderBy('id')->get();
+        $characters = $query->with(['entity', 'chronicle'])->orderBy('id')->get();
 
         $archivedModels = $isStorytellerInChronicle
             ? Character::query()
                 ->where('chronicle_id', $chronicleId)
                 ->where('is_active', false)
-                ->with('entity')
+                ->with(['entity', 'chronicle'])
                 ->orderBy('id')
                 ->get()
             : collect();
@@ -102,16 +104,17 @@ class CharacterSheetController extends Controller
 
         $validated = $request->validated();
         $user = $request->user();
+        if (! $user instanceof User) {
+            throw new AuthenticationException;
+        }
 
-        if ($user !== null && ! $user->isStorytellerIn($chronicle)) {
+        if (! $user->isStorytellerIn($chronicle)) {
             $this->authorize('create', [Character::class, CharacterType::Player]);
-            $validated['user_id'] = $user->id;
-            $validated['character_type'] = CharacterType::Player->value;
         } else {
             $this->authorize('create', Character::class);
         }
 
-        $character = $this->creation->create($validated);
+        $character = $this->creation->create($validated, $user);
 
         return response()->json([
             'character' => (new CharacterSheetResource($character, $this->reader))->toArray($request),
@@ -139,6 +142,7 @@ class CharacterSheetController extends Controller
         }
 
         $this->identity->update($character, $fields);
+        $this->recordStorytellerEdit($user, $character);
 
         return response()->json([
             'character' => (new CharacterSheetResource($character->refresh(), $this->reader))->toArray($request),
@@ -150,6 +154,7 @@ class CharacterSheetController extends Controller
         $this->authorize('update', $character);
 
         $this->disciplines->sync($character, $request->validated('disciplines'));
+        $this->recordStorytellerEdit($request->user(), $character);
 
         return response()->json([
             'character' => (new CharacterSheetResource($character->refresh(), $this->reader))->toArray($request),
@@ -175,6 +180,8 @@ class CharacterSheetController extends Controller
         } catch (BiographyUnchangedException) {
         }
 
+        $this->recordStorytellerEdit($request->user(), $character);
+
         return response()->json([
             'character' => (new CharacterSheetResource($character->refresh(), $this->reader))->toArray($request),
         ]);
@@ -186,6 +193,18 @@ class CharacterSheetController extends Controller
         $this->authorize('update', $character);
 
         $this->place->apply($character, $request->validated());
+        $this->recordStorytellerEdit($request->user(), $character);
+
+        return response()->json([
+            'character' => (new CharacterSheetResource($character->refresh(), $this->reader))->toArray($request),
+        ]);
+    }
+
+    public function acknowledgeUpdate(Request $request, Character $character): JsonResponse
+    {
+        $this->authorize('update', $character);
+
+        $this->creation->acknowledgeStorytellerEdit($character);
 
         return response()->json([
             'character' => (new CharacterSheetResource($character->refresh(), $this->reader))->toArray($request),
@@ -220,5 +239,14 @@ class CharacterSheetController extends Controller
         $this->archiveService->delete($character);
 
         return response()->noContent();
+    }
+
+    private function recordStorytellerEdit(mixed $user, Character $character): void
+    {
+        if (! $user instanceof User) {
+            return;
+        }
+
+        $this->creation->recordStorytellerEdit($user, $character);
     }
 }

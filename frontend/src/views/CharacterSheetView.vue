@@ -1,6 +1,6 @@
 <template>
     <div class="with-sidebar">
-        <AppNav current="characters" />
+        <AppNav />
         <div class="page-main">
         <div v-if="sheet" class="sheet-page w-full max-w-5xl mx-auto">
 

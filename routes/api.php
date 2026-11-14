@@ -136,6 +136,7 @@ Route::middleware('auth:sanctum')->group(function () {
         ->can('manageProfile', 'character');
 
     Route::patch('/characters/{character}', [CharacterSheetController::class, 'update']);
+    Route::patch('/characters/{character}/acknowledge-update', [CharacterSheetController::class, 'acknowledgeUpdate']);
     Route::put('/characters/{character}/disciplines', [CharacterSheetController::class, 'updateDisciplines']);
 
     Route::put('/characters/{character}/biography', [CharacterSheetController::class, 'updateBiography']);

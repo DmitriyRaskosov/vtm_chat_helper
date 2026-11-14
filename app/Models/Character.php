@@ -12,9 +12,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * @property CharacterType $character_type
+ * @property Carbon|null $updated_by_storyteller_at
  * @property array<string, mixed>|null $stats
  * @property array<string, mixed>|null $sheet_data
  */
@@ -33,6 +35,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
     'demeanor',
     'concept',
     'is_active',
+    'updated_by_storyteller_at',
     'sheet_image_path',
     'avatar_path',
     'stats',
@@ -227,6 +230,7 @@ class Character extends Model
             'apparent_age' => 'integer',
             'actual_age' => 'integer',
             'is_active' => 'boolean',
+            'updated_by_storyteller_at' => 'datetime',
             'avatar_path' => 'string',
             'stats' => 'array',
             'sheet_data' => 'array',

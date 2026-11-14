@@ -87,6 +87,25 @@ class User extends Authenticatable
         return $isStoryteller;
     }
 
+    public function isStorytellerAnywhere(): bool
+    {
+        $cacheKey = 'user.storyteller.any.'.$this->id;
+
+        if (app()->bound($cacheKey)) {
+            return (bool) app($cacheKey);
+        }
+
+        $isStoryteller = ChronicleMember::query()
+            ->where('user_id', $this->id)
+            ->whereNull('left_at')
+            ->where('role', ChronicleRole::Storyteller)
+            ->exists();
+
+        app()->instance($cacheKey, $isStoryteller);
+
+        return $isStoryteller;
+    }
+
     /**
      * @return array<string, string>
      */

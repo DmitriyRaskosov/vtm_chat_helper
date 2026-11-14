@@ -49,14 +49,24 @@ class CharacterJsonShapeTest extends TestCase
         $response->assertStatus(200);
         $response->assertJsonStructure([
             'characters' => [
-                '*' => ['id', 'canonical_name', 'character_type', 'user_id', 'description'],
+                '*' => ['id', 'canonical_name', 'character_type', 'user_id', 'description', 'chronicle_title', 'sheet_image_path'],
             ],
             'archived',
         ]);
 
         $item = collect($response->json('characters'))->firstWhere('id', $characterId);
         $this->assertNotNull($item);
-        $this->assertSame(['id', 'canonical_name', 'character_type', 'user_id', 'description'], array_keys($item));
+        $this->assertSame([
+            'id',
+            'canonical_name',
+            'character_type',
+            'user_id',
+            'description',
+            'chronicle_title',
+            'sheet_image_path',
+        ], array_keys($item));
+        $this->assertSame('Тестовая хроника', $item['chronicle_title']);
+        $this->assertNull($item['sheet_image_path']);
         $this->assertIsInt($item['id']);
         $this->assertIsString($item['canonical_name']);
         $this->assertIsString($item['character_type']);

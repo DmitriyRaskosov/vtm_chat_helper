@@ -4,7 +4,6 @@ import { resolveChroniclePath, useCurrentChronicle } from './composables/useCurr
 import LoginView from './views/LoginView.vue';
 import RegisterView from './views/RegisterView.vue';
 import ChatView from './views/ChatView.vue';
-import CharacterListView from './views/CharacterListView.vue';
 import CharacterSheetView from './views/CharacterSheetView.vue';
 import DiaryView from './views/DiaryView.vue';
 import ChronicleListView from './views/ChronicleListView.vue';
@@ -27,12 +26,6 @@ const router = createRouter({
             path: '/c/:chronicleId/chat',
             name: 'chronicle-chat',
             component: ChatView,
-            meta: { auth: true },
-        },
-        {
-            path: '/c/:chronicleId/characters',
-            name: 'characters',
-            component: CharacterListView,
             meta: { auth: true },
         },
         {
@@ -62,7 +55,7 @@ const router = createRouter({
             meta: { auth: true },
         },
         { path: '/chat', redirect: () => resolveChroniclePath('chat') },
-        { path: '/characters', redirect: () => resolveChroniclePath('characters') },
+        { path: '/characters', redirect: '/profile' },
         {
             path: '/characters/:id/diary',
             redirect: (to) => legacyChronicleRedirect(`characters/${to.params.id}/diary`),

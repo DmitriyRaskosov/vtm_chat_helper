@@ -45,11 +45,15 @@ class LibraryCharacterController extends Controller
         $this->authorize('create', LibraryCharacter::class);
 
         $user = $this->user($request);
-        $character = Character::query()->findOrFail((int) $request->validated('character_id'));
+        $validated = $request->validated();
 
-        $this->authorize('manageProfile', $character);
-
-        $libraryCharacter = $this->library->createFromCharacter($user, $character);
+        if (array_key_exists('character_id', $validated)) {
+            $character = Character::query()->findOrFail((int) $validated['character_id']);
+            $this->authorize('manageProfile', $character);
+            $libraryCharacter = $this->library->createFromCharacter($user, $character);
+        } else {
+            $libraryCharacter = $this->library->createTemplate($user, $validated);
+        }
 
         return response()->json([
             'library_character' => (new LibraryCharacterResource($libraryCharacter))->toArray($request),

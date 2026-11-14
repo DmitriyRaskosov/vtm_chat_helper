@@ -14,7 +14,6 @@ import { RouterView, useRoute } from 'vue-router';
 const route = useRoute();
 const shellRoutes = [
     'chronicle-chat',
-    'characters',
     'character',
     'character-diary',
     'chronicles',
@@ -27,8 +26,7 @@ const wrapClass = computed(() => ({
 }));
 
 const showScrollButtons = computed(() => (
-    route.name === 'characters'
-    || route.name === 'character'
+    route.name === 'character'
     || route.name === 'profile'
 ));
 

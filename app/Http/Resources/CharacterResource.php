@@ -28,6 +28,8 @@ class CharacterResource extends JsonResource
             'character_type' => $character->character_type->value,
             'user_id' => $character->user_id === null ? null : (int) $character->user_id,
             'description' => is_array($character->sheet_data) ? ($character->sheet_data['description'] ?? null) : null,
+            'chronicle_title' => $character->chronicle === null ? '' : (string) $character->chronicle->title,
+            'sheet_image_path' => $character->sheet_image_path,
         ];
     }
 }

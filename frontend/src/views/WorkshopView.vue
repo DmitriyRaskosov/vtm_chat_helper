@@ -41,52 +41,50 @@
             <section v-if="tab === 'characters'" class="workshop-panel">
                 <p v-if="characterError" class="error">{{ characterError }}</p>
                 <div class="sheet-actions">
-                    <button type="button" @click="createOpen = !createOpen">Создать персонажа</button>
+                    <button type="button" @click="createOpen = true">Создать персонажа</button>
                 </div>
-                <section v-if="createOpen" class="card character-create">
-                    <div class="character-create-grid">
-                        <label>
-                            Имя
-                            <input v-model="form.canonical_name" type="text" maxlength="100" />
-                        </label>
-                        <label>
-                            Тип
-                            <select v-model="form.character_type">
-                                <option value="npc">НПС</option>
-                                <option value="player">Игрок</option>
-                            </select>
-                        </label>
-                        <label v-if="form.character_type === 'player'">
-                            User ID владельца
-                            <input v-model.number="form.user_id" type="number" min="1" />
-                        </label>
-                    </div>
-                    <button
-                        type="button"
-                        :disabled="characterSaving || !form.canonical_name.trim()"
-                        @click="createCharacter"
-                    >
-                        {{ characterSaving ? 'Создание…' : 'Создать' }}
-                    </button>
-                </section>
+                <p v-if="libraryNotice" class="muted">{{ libraryNotice }}</p>
+                <CreateCharacterModal
+                    v-if="createOpen"
+                    v-model="createOpen"
+                    @created="onLibraryCharacterCreated"
+                />
                 <p v-if="!characters.length && !archived.length" class="muted">Пока нет персонажей.</p>
                 <ul v-else class="character-tree">
                     <li v-for="row in characters" :key="row.id">
                         <div class="character-row">
                             <strong>{{ row.canonical_name }}</strong>
+                            <span v-if="row.chronicle_title" class="chronicle-badge">{{ row.chronicle_title }}</span>
                             <span class="muted"> · {{ characterTypeLabel(row.character_type) }}</span>
-                            <RouterLink class="secondary workshop-edit-link" :to="characterLink(row.id)">
-                                Редактировать
-                            </RouterLink>
+                            <button type="button" class="secondary" @click="openInteractiveSheet(row)">
+                                📄 Интерактивный лист
+                            </button>
+                            <button
+                                type="button"
+                                class="secondary"
+                                :disabled="!row.sheet_image_path"
+                                @click="openSheetPhoto(row)"
+                            >
+                                🖼️ Фото листа
+                            </button>
                         </div>
                     </li>
                     <li v-for="row in archived" :key="`archived-${row.id}`">
                         <div class="character-row">
                             <strong>{{ row.canonical_name }}</strong>
+                            <span v-if="row.chronicle_title" class="chronicle-badge">{{ row.chronicle_title }}</span>
                             <span class="muted"> · скрыт · {{ characterTypeLabel(row.character_type) }}</span>
-                            <RouterLink class="secondary workshop-edit-link" :to="characterLink(row.id)">
-                                Редактировать
-                            </RouterLink>
+                            <button type="button" class="secondary" @click="openInteractiveSheet(row)">
+                                📄 Интерактивный лист
+                            </button>
+                            <button
+                                type="button"
+                                class="secondary"
+                                :disabled="!row.sheet_image_path"
+                                @click="openSheetPhoto(row)"
+                            >
+                                🖼️ Фото листа
+                            </button>
                         </div>
                     </li>
                 </ul>
@@ -190,13 +188,21 @@
 
             <DiaryManagement v-else-if="tab === 'diaries'" :npcs="npcCharacters" />
             <PromptEditor v-else-if="tab === 'prompts'" />
+            <SheetImageModal
+                v-if="sheetPhotoOpen"
+                v-model="sheetPhotoOpen"
+                :image-path="sheetPhoto?.sheet_image_path ?? ''"
+                :title="sheetPhoto?.canonical_name ?? ''"
+            />
         </div>
     </div>
 </template>
 
 <script setup>
 import { computed, onMounted, reactive, ref, watch } from 'vue';
-import { RouterLink, useRoute } from 'vue-router';
+import { useRoute, useRouter } from 'vue-router';
+import CreateCharacterModal from '../components/profile/CreateCharacterModal.vue';
+import SheetImageModal from '../components/profile/SheetImageModal.vue';
 import DiaryManagement from '../components/workshop/DiaryManagement.vue';
 import LocationTree from '../components/workshop/LocationTree.vue';
 import PromptEditor from '../components/workshop/PromptEditor.vue';
@@ -209,27 +215,42 @@ import { apiErrorMessage } from '../utils/apiError';
 import { characterTypeLabel } from '../utils/labels';
 
 const route = useRoute();
+const router = useRouter();
 const chronicleId = computed(() => route.params.chronicleId);
+const sheetPhotoOpen = ref(false);
+const sheetPhoto = ref(null);
 const tab = ref('characters');
 const createOpen = ref(false);
+const libraryNotice = ref('');
 
 const {
     characters,
     archived,
     error: characterError,
-    saving: characterSaving,
-    form,
     load: loadCharacters,
-    createCharacter,
 } = useCharacterList(chronicleId);
+
+function onLibraryCharacterCreated() {
+    createOpen.value = false;
+    libraryNotice.value = 'Персонаж сохранён в библиотеку. Импортируйте его в хронику из личного кабинета.';
+}
 
 const npcCharacters = computed(() => {
     const rows = [...characters.value, ...archived.value];
     return rows.filter((row) => row.character_type === 'npc');
 });
 
-function characterLink(id) {
-    return `/c/${chronicleId.value}/characters/${id}`;
+function openInteractiveSheet(row) {
+    router.push(`/c/${chronicleId.value}/characters/${row.id}`);
+}
+
+function openSheetPhoto(row) {
+    if (!row?.sheet_image_path) {
+        return;
+    }
+
+    sheetPhoto.value = row;
+    sheetPhotoOpen.value = true;
 }
 
 const {
@@ -396,3 +417,15 @@ onMounted(() => {
     loadCharacters();
 });
 </script>
+
+<style scoped>
+.chronicle-badge {
+    display: inline-block;
+    padding: 0.05rem 0.4rem;
+    border: 1px solid var(--gold);
+    border-radius: 999px;
+    color: var(--gold);
+    font-size: 0.75rem;
+    line-height: 1.4;
+}
+</style>

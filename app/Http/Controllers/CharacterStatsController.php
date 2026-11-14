@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Broadcasting\SafeBroadcaster;
+use App\Character\CharacterCreationService;
 use App\Character\CharacterStatsService;
 use App\Events\CharacterStatsUpdated;
 use App\Http\Requests\UpdateCharacterStatsRequest;
 use App\Http\Resources\CharacterStatsResource;
 use App\Models\Character;
 use App\Models\SceneParticipant;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -16,6 +18,7 @@ class CharacterStatsController extends Controller
 {
     public function __construct(
         private CharacterStatsService $stats,
+        private CharacterCreationService $creation,
     ) {}
 
     public function update(UpdateCharacterStatsRequest $request, Character $character): JsonResponse
@@ -23,6 +26,10 @@ class CharacterStatsController extends Controller
         $this->authorize('update', $character);
 
         $saved = $this->stats->replace($character, $request->stats(), $request->sheetData());
+        $user = $request->user();
+        if ($user instanceof User) {
+            $this->creation->recordStorytellerEdit($user, $saved);
+        }
 
         $this->broadcastStatsUpdated($saved, $request);
 

@@ -4,10 +4,6 @@
             <span class="nav-glyph" aria-hidden="true">💬</span>
             <span class="nav-label">Чат</span>
         </RouterLink>
-        <RouterLink :to="charactersLink" class="nav-icon" :class="{ active: current === 'characters' }" title="Персонажи">
-            <span class="nav-glyph" aria-hidden="true">👤</span>
-            <span class="nav-label">Персонажи</span>
-        </RouterLink>
         <RouterLink to="/profile" class="nav-icon" :class="{ active: current === 'profile' }" title="Личный кабинет">
             <span class="nav-glyph" aria-hidden="true">🎭</span>
             <span class="nav-label">Кабинет</span>
@@ -140,7 +136,7 @@ defineProps({
     current: {
         type: String,
         default: null,
-        validator: (value) => value == null || ['chat', 'characters', 'chronicles', 'workshop', 'profile'].includes(value),
+        validator: (value) => value == null || ['chat', 'chronicles', 'workshop', 'profile'].includes(value),
     },
 });
 
@@ -169,12 +165,6 @@ const activeChronicleId = computed(() => {
 const chatLink = computed(() => (
     activeChronicleId.value
         ? `/c/${activeChronicleId.value}/chat`
-        : '/chronicles'
-));
-
-const charactersLink = computed(() => (
-    activeChronicleId.value
-        ? `/c/${activeChronicleId.value}/characters`
         : '/chronicles'
 ));
 

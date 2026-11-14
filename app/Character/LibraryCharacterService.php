@@ -107,6 +107,37 @@ final class LibraryCharacterService
         });
     }
 
+    /**
+     * @param  array<string, mixed>  $fields
+     */
+    public function createTemplate(User $user, array $fields): LibraryCharacter
+    {
+        $name = trim((string) ($fields['name'] ?? ''));
+        if ($name === '') {
+            throw new InvalidCharacterInputException('Укажите имя персонажа.');
+        }
+
+        if ($user->isStorytellerAnywhere()) {
+            $requested = $fields['character_type'] ?? null;
+            $type = $requested instanceof CharacterType
+                ? $requested
+                : CharacterType::from((string) $requested);
+        } else {
+            $type = CharacterType::Player;
+        }
+
+        $concept = $fields['concept'] ?? null;
+        $clanId = $fields['clan_id'] ?? null;
+
+        return LibraryCharacter::query()->create([
+            'user_id' => $user->id,
+            'name' => $name,
+            'character_type' => $type,
+            'clan_id' => $clanId === null || $clanId === '' ? null : (int) $clanId,
+            'concept' => is_string($concept) && trim($concept) !== '' ? trim($concept) : null,
+        ]);
+    }
+
     public function instantiateInChronicle(
         LibraryCharacter $libraryCharacter,
         Chronicle $chronicle,

@@ -53,6 +53,16 @@
                         @click="openCharacter(row)"
                     >
                         <button
+                            v-if="showStorytellerFlag(row)"
+                            type="button"
+                            class="storyteller-flag"
+                            title="Рассказчик внёс изменения в чарлист"
+                            :disabled="isAcknowledging(row)"
+                            @click.stop="acknowledgeStorytellerFlag(row)"
+                        >
+                            !
+                        </button>
+                        <button
                             type="button"
                             class="profile-avatar"
                             :disabled="!row.avatar_path"
@@ -91,8 +101,16 @@
                             <button type="button" class="secondary" @click="sheetInputs[row.id]?.click()">
                                 Загрузить чарлист
                             </button>
-                            <button type="button" class="secondary" @click="openSheet(row)">
-                                Чарлист
+                            <button type="button" class="secondary" @click="openInteractiveSheet(row)">
+                                📄 Интерактивный лист
+                            </button>
+                            <button
+                                type="button"
+                                class="secondary"
+                                :disabled="!row.sheet_image_path"
+                                @click="openSheetPhoto(row)"
+                            >
+                                🖼️ Фото листа
                             </button>
                             <button type="button" class="secondary" @click="openNotes(row)">
                                 Заметки
@@ -182,7 +200,6 @@
         <CreateCharacterModal
             v-if="createOpen"
             v-model="createOpen"
-            :chronicle-id="currentChronicleId"
             @created="onCharacterCreated"
         />
         <MacroModal
@@ -210,24 +227,17 @@
             </div>
         </div>
 
-        <div v-if="sheetCharacter" class="diary-backdrop" @click.self="sheetCharacter = null">
-            <div class="diary-modal card profile-sheet-modal">
-                <header class="diary-modal-header">
-                    <h2>{{ sheetCharacter.canonical_name }}</h2>
-                    <button type="button" class="link" @click="sheetCharacter = null">Закрыть</button>
-                </header>
-                <SheetViewer
-                    :key="sheetViewerKey(sheetCharacter.id)"
-                    :character-id="sheetCharacter.id"
-                    can-upload
-                />
-            </div>
-        </div>
+        <SheetImageModal
+            v-if="sheetPhotoOpen"
+            v-model="sheetPhotoOpen"
+            :image-path="sheetPhoto?.sheet_image_path ?? ''"
+            :title="sheetPhoto?.canonical_name ?? ''"
+        />
     </div>
 </template>
 
 <script setup>
-import { computed, defineAsyncComponent, onMounted, reactive, ref, watch } from 'vue';
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from 'vue';
 import { RouterLink, useRouter } from 'vue-router';
 import AppNav from '../components/layout/AppNav.vue';
 import AvatarModal from '../components/profile/AvatarModal.vue';
@@ -235,14 +245,14 @@ import CreateCharacterModal from '../components/profile/CreateCharacterModal.vue
 import MacroModal from '../components/profile/MacroModal.vue';
 import CharacterNotesModal from '../components/profile/CharacterNotesModal.vue';
 import LibraryCharacterList from '../components/profile/LibraryCharacterList.vue';
-import { currentChronicleId } from '../auth';
+import SheetImageModal from '../components/profile/SheetImageModal.vue';
+import { currentChronicleId, useAuth } from '../auth';
 import { useDiceMacros } from '../composables/useDiceMacros';
 import { useLibraryCharacters } from '../composables/useLibraryCharacters';
 import { useProfile } from '../composables/useProfile';
 
-const SheetViewer = defineAsyncComponent(() => import('../components/profile/SheetViewer.vue'));
-
 const router = useRouter();
+const auth = useAuth();
 const {
     characters,
     loading,
@@ -251,11 +261,11 @@ const {
     uploadAvatar,
     uploadSheet,
     archiveCharacter,
+    acknowledgeUpdate,
     restoreCharacter,
     deleteCharacter,
     avatarUrl,
     avatarImageKey,
-    sheetViewerKey,
     isCharacterOnScene,
     loadScenePresence,
     enterCharacterOnScene,
@@ -292,7 +302,10 @@ const {
 
 const avatarOpen = ref(false);
 const avatarSrc = ref('');
-const sheetCharacter = ref(null);
+const sheetPhotoOpen = ref(false);
+const sheetPhoto = ref(null);
+const acknowledgingIds = ref(new Set());
+const storytellerChannels = new Map();
 const createOpen = ref(false);
 const macroOpen = ref(false);
 const editingMacro = ref(null);
@@ -455,19 +468,10 @@ async function confirmDelete() {
     }
 }
 
-async function onCharacterCreated(character) {
+async function onCharacterCreated() {
     createOpen.value = false;
-    await loadCharacters({ includeArchived: showArchived.value }).catch(() => {});
-    await loadScenePresence(currentChronicleId.value).catch(() => {});
-
-    const chronicleId = character?.chronicle_id ?? currentChronicleId.value;
-    const characterId = character?.id;
-
-    if (!chronicleId || !characterId) {
-        return;
-    }
-
-    await router.push(`/c/${chronicleId}/characters/${characterId}`);
+    activeTab.value = 'library';
+    await fetchLibrary().catch(() => {});
 }
 
 function openAvatar(row) {
@@ -495,9 +499,134 @@ async function toggleScenePresence(row) {
     }
 }
 
-function openSheet(row) {
-    sheetCharacter.value = row;
+function openInteractiveSheet(row) {
+    router.push(characterPath(row));
 }
+
+function openSheetPhoto(row) {
+    if (!row?.sheet_image_path) {
+        return;
+    }
+
+    sheetPhoto.value = row;
+    sheetPhotoOpen.value = true;
+}
+
+const storytellerChronicleKey = computed(() => {
+    const ids = [...new Set(
+        characters.value
+            .map((row) => Number(row.chronicle_id))
+            .filter((id) => Number.isFinite(id) && id > 0),
+    )];
+
+    ids.sort((left, right) => left - right);
+
+    return ids.join(',');
+});
+
+function showStorytellerFlag(row) {
+    return row?.updated_by_storyteller_at != null
+        && row.updated_by_storyteller_at !== '';
+}
+
+function isAcknowledging(row) {
+    return acknowledgingIds.value.has(Number(row?.id));
+}
+
+function setAcknowledging(id, active) {
+    const next = new Set(acknowledgingIds.value);
+
+    if (active) {
+        next.add(id);
+    } else {
+        next.delete(id);
+    }
+
+    acknowledgingIds.value = next;
+}
+
+function setStorytellerFlag(characterId, value) {
+    characters.value = characters.value.map((character) => (
+        Number(character.id) === characterId
+            ? { ...character, updated_by_storyteller_at: value }
+            : character
+    ));
+}
+
+function onStorytellerEdited(payload) {
+    const ownerId = Number(payload?.user_id);
+    const characterId = Number(payload?.character_id);
+    const currentUserId = Number(auth.user.value?.id);
+
+    if (!Number.isFinite(ownerId) || ownerId !== currentUserId || !Number.isFinite(characterId)) {
+        return;
+    }
+
+    setStorytellerFlag(characterId, new Date().toISOString());
+}
+
+function unbindStorytellerChannels() {
+    for (const [chronicleId, channel] of storytellerChannels) {
+        channel.stopListening('.CharacterEditedByStorytellerEvent');
+        window.Echo?.leave(`chronicle.${chronicleId}`);
+    }
+
+    storytellerChannels.clear();
+}
+
+function bindStorytellerChannels() {
+    const ids = storytellerChronicleKey.value === ''
+        ? []
+        : storytellerChronicleKey.value.split(',').map((id) => Number(id));
+    const nextIds = new Set(ids);
+
+    for (const chronicleId of storytellerChannels.keys()) {
+        if (!nextIds.has(chronicleId)) {
+            storytellerChannels.get(chronicleId)?.stopListening('.CharacterEditedByStorytellerEvent');
+            window.Echo?.leave(`chronicle.${chronicleId}`);
+            storytellerChannels.delete(chronicleId);
+        }
+    }
+
+    if (typeof window.Echo?.private !== 'function') {
+        return;
+    }
+
+    for (const chronicleId of nextIds) {
+        if (storytellerChannels.has(chronicleId)) {
+            continue;
+        }
+
+        const channel = window.Echo.private(`chronicle.${chronicleId}`);
+        channel.listen('.CharacterEditedByStorytellerEvent', onStorytellerEdited);
+        storytellerChannels.set(chronicleId, channel);
+    }
+}
+
+async function acknowledgeStorytellerFlag(row) {
+    const id = Number(row?.id);
+
+    if (!Number.isFinite(id) || acknowledgingIds.value.has(id)) {
+        return;
+    }
+
+    const previous = row.updated_by_storyteller_at ?? null;
+
+    setAcknowledging(id, true);
+    setStorytellerFlag(id, null);
+
+    try {
+        await acknowledgeUpdate(id);
+    } catch {
+        setStorytellerFlag(id, previous);
+    } finally {
+        setAcknowledging(id, false);
+    }
+}
+
+watch(storytellerChronicleKey, bindStorytellerChannels, { immediate: true });
+
+onUnmounted(unbindStorytellerChannels);
 
 function setAvatarInput(id, el) {
     avatarInputs[id] = el;
@@ -562,11 +691,53 @@ async function onSheetSelected(row, event) {
 }
 
 .profile-card {
+    position: relative;
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
     cursor: pointer;
     border-color: var(--gold);
+}
+
+.storyteller-flag {
+    position: absolute;
+    top: 0.45rem;
+    right: 0.45rem;
+    z-index: 2;
+    width: 1.6rem;
+    height: 1.6rem;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 999px;
+    background: #b42318;
+    color: #fff;
+    font-weight: 700;
+    line-height: 1.6rem;
+}
+
+.storyteller-flag::after {
+    content: 'Рассказчик внёс изменения в чарлист';
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    right: 0;
+    width: max-content;
+    max-width: 14rem;
+    padding: 0.35rem 0.5rem;
+    border-radius: 4px;
+    background: #1c120e;
+    color: #fff;
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.3;
+    white-space: normal;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.storyteller-flag:hover::after,
+.storyteller-flag:focus-visible::after {
+    opacity: 1;
 }
 
 .profile-avatar {
@@ -608,10 +779,6 @@ async function onSheetSelected(row, event) {
 
 .profile-file {
     display: none;
-}
-
-.profile-sheet-modal {
-    max-width: 52rem;
 }
 
 .profile-empty p {

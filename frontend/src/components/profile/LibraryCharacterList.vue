@@ -15,7 +15,6 @@
                 </div>
                 <h3 class="profile-name">{{ row.name }}</h3>
                 <p v-if="clanLabel(row)" class="muted">{{ clanLabel(row) }}</p>
-                <p class="muted">{{ characterTypeLabel(row.character_type) }}</p>
                 <div class="profile-actions">
                     <button type="button" class="secondary" @click="openImport(row)">
                         Импортировать в хронику
@@ -58,7 +57,6 @@
 import { onMounted, ref, watch } from 'vue';
 import ImportCharacterModal from './ImportCharacterModal.vue';
 import { api } from '../../auth';
-import { characterTypeLabel } from '../../utils/labels';
 import { apiErrorMessage } from '../../utils/apiError';
 
 const props = defineProps({

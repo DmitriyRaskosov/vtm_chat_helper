@@ -35,6 +35,52 @@ export function useLibraryCharacters() {
         }
     }
 
+    async function createTemplate(payload) {
+        const name = String(payload?.name ?? '').trim();
+
+        if (name === '') {
+            error.value = 'Укажите имя персонажа.';
+            throw new Error(error.value);
+        }
+
+        saving.value = true;
+        error.value = '';
+
+        const body = {
+            name,
+            clan_id: Number(payload?.clan_id),
+        };
+        const concept = String(payload?.concept ?? '').trim();
+
+        if (concept !== '') {
+            body.concept = concept;
+        }
+
+        if (payload?.character_type) {
+            body.character_type = payload.character_type;
+        }
+
+        try {
+            const { data } = await api.post('/library-characters', body);
+            const created = data.library_character ?? null;
+
+            if (created) {
+                templates.value = [created, ...templates.value.filter((row) => Number(row.id) !== Number(created.id))];
+            } else {
+                await fetchLibrary();
+            }
+
+            notifySuccess('Персонаж сохранён в библиотеку.');
+
+            return created;
+        } catch (err) {
+            error.value = apiErrorMessage(err, 'Не удалось создать персонажа.');
+            throw err;
+        } finally {
+            saving.value = false;
+        }
+    }
+
     async function saveToLibrary(characterId) {
         const numericId = Number(characterId);
 
@@ -131,6 +177,7 @@ export function useLibraryCharacters() {
         error,
         successMessage,
         fetchLibrary,
+        createTemplate,
         saveToLibrary,
         deleteTemplate,
         importTemplate,

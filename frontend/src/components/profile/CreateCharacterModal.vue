@@ -6,11 +6,19 @@
                 <button type="button" class="link" @click="open = false">Закрыть</button>
             </header>
 
+            <p class="muted">Персонаж сохранится в библиотеку. В хронику его можно добавить отдельно.</p>
             <p v-if="error" class="error">{{ error }}</p>
 
             <label>
                 Имя
                 <input v-model="name" type="text" maxlength="100" required />
+            </label>
+            <label v-if="hasAnyStorytellerRole">
+                Тип
+                <select v-model="characterType">
+                    <option value="player">Игрок</option>
+                    <option value="npc">НПС</option>
+                </select>
             </label>
             <label>
                 Клан
@@ -35,25 +43,21 @@
 
 <script setup>
 import { computed, onMounted, ref } from 'vue';
+import { hasAnyStorytellerRole } from '../../auth';
+import { useLibraryCharacters } from '../../composables/useLibraryCharacters';
 import { useProfile } from '../../composables/useProfile';
-
-const props = defineProps({
-    chronicleId: {
-        type: [Number, String],
-        default: null,
-    },
-});
 
 const open = defineModel({ type: Boolean, default: false });
 const emit = defineEmits(['created']);
 
-const { error, loadClans, createCharacter } = useProfile();
+const { loadClans } = useProfile();
+const { error, saving, createTemplate } = useLibraryCharacters();
 
 const name = ref('');
 const clanId = ref('');
 const concept = ref('');
+const characterType = ref('npc');
 const clans = ref([]);
-const saving = ref(false);
 
 const canSubmit = computed(() => (
     !saving.value
@@ -74,20 +78,22 @@ async function submit() {
         return;
     }
 
-    saving.value = true;
+    const payload = {
+        name: name.value,
+        clan_id: Number(clanId.value),
+        concept: concept.value,
+    };
+
+    if (hasAnyStorytellerRole.value) {
+        payload.character_type = characterType.value;
+    }
 
     try {
-        const character = await createCharacter(props.chronicleId, {
-            canonical_name: name.value,
-            clan_id: Number(clanId.value),
-            concept: concept.value,
-        });
-        emit('created', character);
+        const template = await createTemplate(payload);
+        emit('created', template);
         open.value = false;
     } catch {
-        // error уже в useProfile
-    } finally {
-        saving.value = false;
+        // error уже в useLibraryCharacters
     }
 }
 </script>
